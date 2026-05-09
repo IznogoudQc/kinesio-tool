@@ -15,6 +15,7 @@ asarUnpack:
   - "node_modules/better-sqlite3/**/*"
 
 win:
+  icon: build/icon.ico
   target:
     - target: nsis
       arch:
@@ -26,6 +27,8 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Kinésio Outils
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
   installerLanguages:
     - fr_FR
   language: 1036
@@ -34,3 +37,4 @@ publish:
   provider: github
   owner: IznogoudQc
   repo: kinesio-tool
+  releaseType: release
