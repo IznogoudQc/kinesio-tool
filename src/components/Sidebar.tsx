@@ -1,5 +1,6 @@
 import { Users } from 'lucide-react'
 import { useUpdate } from '../contexts/UpdateContext'
+import logo from '../assets/logo.png'
 
 interface NavItem {
   id: string
@@ -60,10 +61,8 @@ function VersionBadge() {
 export function Sidebar({ activeItem, onNavChange }: SidebarProps) {
   return (
     <aside className="w-60 bg-marine flex flex-col h-full shrink-0">
-      <div className="px-6 py-5 border-b border-marine-light/40">
-        <span className="text-cream font-semibold text-base tracking-wide leading-tight">
-          Kinésio Outils
-        </span>
+      <div className="px-6 py-4 border-b border-marine-light/40">
+        <img src={logo} alt="Kinésio Outils" className="h-[52px] w-auto" />
       </div>
 
       <nav className="flex-1 py-3">
