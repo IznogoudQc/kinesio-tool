@@ -1,0 +1,55 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+dist-electron/
+out/
+release/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Données locales utilisateur (ne JAMAIS commit)
+data/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Obsidian (workspace personnel, garder le contenu mais pas les workspaces)
+docs/.obsidian/workspace*
+docs/.obsidian/cache
+docs/.trash/
+
+# Drizzle
+drizzle/meta/_journal.json.bak
+
+# Claude Code (local settings, pas partagées)
+.claude/settings.local.json
+
+# Fichiers de log de dev
+dev-err.txt
+dev-out.txt

@@ -1,0 +1,36 @@
+appId: com.kinesio-conseil.kinesio-tool
+productName: Kinésio Outils
+copyright: Copyright © 2026 Kinésio Conseil
+
+directories:
+  buildResources: build
+  output: dist
+
+files:
+  - out/**/*
+  - db/migrations/**/*
+  - package.json
+
+asarUnpack:
+  - "node_modules/better-sqlite3/**/*"
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Kinésio Outils
+  installerLanguages:
+    - fr_FR
+  language: 1036
+
+publish:
+  provider: github
+  owner: IznogoudQc
+  repo: kinesio-tool
