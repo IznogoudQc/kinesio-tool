@@ -6,12 +6,14 @@ import { z } from 'zod'
 import { asc, eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { clients } from '../../db/schema'
-import { deleteAvatar, getAvatarPath, saveAvatar } from '../lib/avatars'
+import { deleteAvatar, getAvatarPath, saveAvatar, saveFullbodyAvatar } from '../lib/avatars'
 
 const IsoDateOrNull = z
   .union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date invalide (attendu AAAA-MM-JJ)'), z.null()])
   .optional()
 const SexOrNull = z.union([z.enum(['F', 'M']), z.null()]).optional()
+const UnitLength = z.enum(['cm', 'in']).optional()
+const UnitWeight = z.enum(['kg', 'lb']).optional()
 
 const CreateClientSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(200).trim(),
@@ -22,13 +24,44 @@ const UpdateClientSchema = z.object({
   name: z.string().min(1).max(200).trim().optional(),
   email: z.string().email().trim().optional(),
   birthdate: IsoDateOrNull,
-  sex: SexOrNull
+  sex: SexOrNull,
+  unitLength: UnitLength,
+  unitWeight: UnitWeight
 })
 
 const ClientId = z.string().uuid()
 const AvatarFilename = z.string().regex(/^[0-9a-f-]+\.webp$/i, 'Nom de fichier avatar invalide')
-const ACCEPTED_AVATAR_EXTS = ['.png', '.jpg', '.jpeg', '.webp']
 const MAX_AVATAR_BYTES = 10 * 1024 * 1024
+/**
+ * Valide des octets d'image reçus par IPC (sous forme base64 string) et les
+ * normalise en Buffer.
+ *
+ * On utilise base64 (string) car contextBridge d'Electron ne sérialise pas de
+ * façon fiable les Uint8Array/ArrayBuffer/Array — ils arrivent souvent comme
+ * `undefined`. Une string traverse toujours sans souci.
+ */
+function toImageBuffer(value: unknown): Buffer {
+  if (typeof value !== 'string') {
+    console.error('[toImageBuffer] Attendu string base64, reçu:', {
+      type: typeof value,
+      ctor: (value as { constructor?: { name?: string } } | null | undefined)?.constructor?.name
+    })
+    throw new Error("Format d'image invalide reçu par IPC (base64 string attendu).")
+  }
+  if (value.length === 0) throw new Error('Image vide.')
+
+  const buffer = Buffer.from(value, 'base64')
+  if (buffer.byteLength === 0) throw new Error('Image vide après décodage base64.')
+  if (buffer.byteLength > MAX_AVATAR_BYTES) throw new Error('Image trop volumineuse (maximum 10 Mo).')
+  return buffer
+}
+
+const AVATAR_MIME: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp'
+}
 
 function getClientOrThrow(id: string) {
   const client = getDb().select().from(clients).where(eq(clients.id, id)).get()
@@ -72,10 +105,13 @@ export function registerClientsHandlers(): void {
     const validId = ClientId.parse(id)
     const existing = getDb().select().from(clients).where(eq(clients.id, validId)).get()
     if (existing?.avatarFilename) void deleteAvatar(existing.avatarFilename)
+    if (existing?.avatarFullbodyFilename) void deleteAvatar(existing.avatarFullbodyFilename)
     getDb().delete(clients).where(eq(clients.id, validId)).run()
   })
 
   // ── Photo de profil ─────────────────────────────────────────────────────────
+  // Sélection via dialog natif ; on renvoie directement une data URL pour
+  // alimenter l'éditeur de cadrage côté renderer (évite les soucis `file://`).
   ipcMain.handle('clients:pick-avatar', async () => {
     const result = await dialog.showOpenDialog({
       title: 'Choisir une photo',
@@ -84,38 +120,50 @@ export function registerClientsHandlers(): void {
       filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp'] }]
     })
     if (result.canceled || result.filePaths.length === 0) return { canceled: true as const }
-    return { canceled: false as const, filePath: result.filePaths[0] }
-  })
-
-  ipcMain.handle('clients:set-avatar', async (_event, clientId: unknown, sourcePath: unknown) => {
-    const validId = ClientId.parse(clientId)
-    const validPath = z.string().min(1).parse(sourcePath)
-    if (!ACCEPTED_AVATAR_EXTS.includes(extname(validPath).toLowerCase())) {
-      throw new Error('Format non supporté (formats acceptés : PNG, JPG, JPEG, WEBP).')
-    }
-    const info = await stat(validPath)
+    const filePath = result.filePaths[0]
+    const ext = extname(filePath).toLowerCase()
+    const mime = AVATAR_MIME[ext]
+    if (!mime) throw new Error('Format non supporté (formats acceptés : PNG, JPG, JPEG, WEBP).')
+    const info = await stat(filePath)
     if (info.size > MAX_AVATAR_BYTES) throw new Error('Image trop volumineuse (maximum 10 Mo).')
-
-    const existing = getClientOrThrow(validId)
-    const filename = await saveAvatar(validPath, existing.avatarFilename)
-    const now = new Date().toISOString()
-    const [client] = getDb()
-      .update(clients)
-      .set({ avatarFilename: filename, updatedAt: now })
-      .where(eq(clients.id, validId))
-      .returning()
-      .all()
-    return client
+    const buffer = await readFile(filePath)
+    return { canceled: false as const, dataUrl: `data:${mime};base64,${buffer.toString('base64')}` }
   })
+
+  // Reçoit deux images : `croppedBytes` = version carrée recadrée par l'éditeur
+  // (avatars circulaires) et `originalBytes` = la photo d'origine non recadrée
+  // (affichée en plein corps dans l'onglet Mesures). On optimise et stocke les
+  // deux ; sharp accepte directement un Buffer.
+  ipcMain.handle(
+    'clients:set-avatar',
+    async (_event, clientId: unknown, croppedBytes: unknown, originalBytes: unknown) => {
+      const validId = ClientId.parse(clientId)
+      const cropped = toImageBuffer(croppedBytes)
+      const original = toImageBuffer(originalBytes)
+
+      const existing = getClientOrThrow(validId)
+      const filename = await saveAvatar(cropped, existing.avatarFilename)
+      const fullbodyFilename = await saveFullbodyAvatar(original, existing.avatarFullbodyFilename)
+      const now = new Date().toISOString()
+      const [client] = getDb()
+        .update(clients)
+        .set({ avatarFilename: filename, avatarFullbodyFilename: fullbodyFilename, updatedAt: now })
+        .where(eq(clients.id, validId))
+        .returning()
+        .all()
+      return client
+    }
+  )
 
   ipcMain.handle('clients:remove-avatar', async (_event, clientId: unknown) => {
     const validId = ClientId.parse(clientId)
     const existing = getClientOrThrow(validId)
     if (existing.avatarFilename) await deleteAvatar(existing.avatarFilename)
+    if (existing.avatarFullbodyFilename) await deleteAvatar(existing.avatarFullbodyFilename)
     const now = new Date().toISOString()
     const [client] = getDb()
       .update(clients)
-      .set({ avatarFilename: null, updatedAt: now })
+      .set({ avatarFilename: null, avatarFullbodyFilename: null, updatedAt: now })
       .where(eq(clients.id, validId))
       .returning()
       .all()

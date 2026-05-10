@@ -10,8 +10,14 @@ interface Client {
   birthdate: string | null
   /** Sexe biologique — sert à la silhouette + au calcul du % gras. */
   sex: Sex | null
-  /** Nom du fichier de la photo de profil (`uuid.webp` dans `userData/avatars/`), ou `null`. */
+  /** Photo de profil recadrée en carré (`uuid.webp` dans `userData/avatars/`) — avatars circulaires. `null` si aucune. */
   avatarFilename: string | null
+  /** Photo de profil originale non recadrée (`uuid.webp` dans `userData/avatars/`) — affichée dans l'onglet Mesures. `null` si aucune. */
+  avatarFullbodyFilename: string | null
+  /** Unité préférée pour les longueurs (affichage/saisie). La DB stocke toujours en cm. */
+  unitLength: 'cm' | 'in'
+  /** Unité préférée pour le poids (affichage/saisie). La DB stocke toujours en kg. */
+  unitWeight: 'kg' | 'lb'
   createdAt: string
   updatedAt: string
 }
@@ -123,10 +129,11 @@ interface MesureCirconferences {
   id: string
   clientId: string
   date: string
+  /** Poids en kg (toujours stocké en métrique), `null` si non mesuré. */
+  poidsKg: number | null
   /** Toutes les circonférences en cm, `null` si non mesurée. */
   cou: number | null
-  epauleG: number | null
-  epauleD: number | null
+  epaule: number | null
   bicepsG: number | null
   bicepsD: number | null
   poitrine: number | null
@@ -144,9 +151,10 @@ interface MesureCirconferences {
 /** Champs modifiables d'une entrée de circonférences (mesures en cm). */
 interface CirconferencesInput {
   date?: string
+  /** Poids en kg (déjà converti en métrique côté UI). */
+  poidsKg?: number
   cou?: number
-  epauleG?: number
-  epauleD?: number
+  epaule?: number
   bicepsG?: number
   bicepsD?: number
   poitrine?: number
@@ -198,13 +206,24 @@ interface Window {
       create(data: { name: string; email: string }): Promise<Client>
       update(
         id: string,
-        data: { name?: string; email?: string; birthdate?: string | null; sex?: Sex | null }
+        data: {
+          name?: string
+          email?: string
+          birthdate?: string | null
+          sex?: Sex | null
+          unitLength?: 'cm' | 'in'
+          unitWeight?: 'kg' | 'lb'
+        }
       ): Promise<Client>
       delete(id: string): Promise<void>
-      /** Ouvre le dialog natif de sélection d'une image (PNG/JPG/JPEG/WEBP). */
-      pickAvatar(): Promise<{ canceled: true } | { canceled: false; filePath: string }>
-      /** Optimise puis enregistre l'image comme photo de profil — retourne le client à jour. */
-      setAvatar(clientId: string, sourcePath: string): Promise<Client>
+      /** Ouvre le dialog natif de sélection d'une image (PNG/JPG/JPEG/WEBP) — renvoie une data URL à recadrer. */
+      pickAvatar(): Promise<{ canceled: true } | { canceled: false; dataUrl: string }>
+      /** Enregistre la photo de profil : `croppedBytes` = version carrée recadrée (cercles), `originalBytes` = image d'origine (Mesures). Retourne le client à jour. */
+      setAvatar(
+        clientId: string,
+        croppedBase64: string,
+        originalBase64: string
+      ): Promise<Client>
       /** Supprime la photo de profil — retourne le client à jour. */
       removeAvatar(clientId: string): Promise<Client>
       /** Renvoie une data URL (image/webp) affichable, ou `null` si le fichier est introuvable. */

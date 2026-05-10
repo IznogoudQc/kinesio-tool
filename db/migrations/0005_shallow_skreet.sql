@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `avatar_fullbody_filename` text;

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2 } from 'lucide-react'
 import { settingsService } from '../services/settings'
+import mEvePhoto from '../assets/mEve.png'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -13,12 +14,34 @@ const TEMPLATE_VARIABLES: { key: string; description: string }[] = [
 
 export function SettingsPage() {
   return (
-    <div className="p-8 max-w-3xl space-y-6">
-      <h1 className="text-marine font-semibold text-2xl">Paramètres</h1>
+    <div className="p-8 max-w-6xl">
+      <h1 className="text-marine font-semibold text-2xl mb-6">Paramètres</h1>
 
-      <ProfileCard />
-      <SmtpCard />
-      <TemplateCard />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Colonne gauche : sections de configuration */}
+        <div className="lg:col-span-2 space-y-6">
+          <ProfileCard />
+          <SmtpCard />
+          <TemplateCard />
+        </div>
+
+        {/* Colonne droite : profil Marie-Eve */}
+        <aside className="lg:col-span-1">
+          <div className="bg-white border border-cream-dark rounded-xl p-6 shadow-sm sticky top-6">
+            <div className="w-48 mx-auto aspect-[3/4] rounded-2xl overflow-hidden bg-cream-dark/30">
+              <img
+                src={mEvePhoto}
+                alt="Marie-Eve"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <h3 className="text-center text-marine text-xl font-semibold mt-4">
+              Marie-Eve
+            </h3>
+            <p className="text-center text-marine/60 text-sm">Kinésiologue</p>
+          </div>
+        </aside>
+      </div>
     </div>
   )
 }

@@ -8,17 +8,20 @@ import { calculateAge, calculateBodyFat, type Sex } from '../../src/lib/body-fat
 const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date invalide (attendu AAAA-MM-JJ)')
 
 const cm = z.number().positive('Valeur invalide').max(400).optional()
+const kg = z.number().positive('Valeur invalide').max(500).optional()
 const mm = z.number().positive('Valeur invalide').max(100)
 
 const CIRC_FIELDS = [
-  'cou', 'epauleG', 'epauleD', 'bicepsG', 'bicepsD', 'poitrine',
+  'cou', 'epaule', 'bicepsG', 'bicepsD', 'poitrine',
   'taille', 'abdomen', 'hanche', 'cuisseG', 'cuisseD', 'molletG', 'molletD'
 ] as const
 
 const CircDataSchema = z
   .object({
     date: IsoDateSchema.optional(),
-    cou: cm, epauleG: cm, epauleD: cm, bicepsG: cm, bicepsD: cm, poitrine: cm,
+    // poidsKg : toujours reçu en kg (la conversion lb se fait côté UI).
+    poidsKg: kg,
+    cou: cm, epaule: cm, bicepsG: cm, bicepsD: cm, poitrine: cm,
     taille: cm, abdomen: cm, hanche: cm, cuisseG: cm, cuisseD: cm, molletG: cm, molletD: cm,
     notes: z.string().max(2000).optional()
   })
@@ -94,6 +97,7 @@ export function registerMesuresHandlers(): void {
         id: crypto.randomUUID(),
         clientId: validId,
         date: data.date ?? todayISO(),
+        poidsKg: data.poidsKg ?? null,
         ...circMeasurements(data),
         notes: data.notes ?? null,
         createdAt: now
@@ -113,6 +117,7 @@ export function registerMesuresHandlers(): void {
       .update(mesuresCirconferences)
       .set({
         date: data.date ?? existing.date,
+        poidsKg: data.poidsKg ?? null,
         ...circMeasurements(data),
         notes: data.notes ?? null
       })

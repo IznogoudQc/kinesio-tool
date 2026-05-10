@@ -8,9 +8,16 @@ export const clients = sqliteTable('clients', {
   birthdate: text('birthdate'),
   // 'F' | 'M' | null — sert à la silhouette + aux coefficients Durnin-Womersley.
   sex: text('sex'),
-  // Nom du fichier de la photo de profil (ex. `uuid.webp`), stockée dans
-  // `userData/avatars/` — pas le chemin complet. null = pas de photo, fallback silhouette.
+  // Photo de profil — fichiers `uuid.webp` dans `userData/avatars/` (pas le chemin complet).
+  // `avatarFilename` : version carrée recadrée par l'éditeur (avatars circulaires).
+  // `avatarFullbodyFilename` : image originale non recadrée, affichée dans l'onglet Mesures
+  // à la place de la silhouette générique. null = pas de photo, fallback silhouette/sexe.
   avatarFilename: text('avatar_filename'),
+  avatarFullbodyFilename: text('avatar_fullbody_filename'),
+  // Préférences d'unités pour l'affichage/saisie — la DB stocke TOUJOURS en métrique
+  // (cm, kg) ; la conversion se fait côté UI. Voir src/lib/units.ts.
+  unitLength: text('unit_length', { enum: ['cm', 'in'] }).notNull().default('cm'),
+  unitWeight: text('unit_weight', { enum: ['kg', 'lb'] }).notNull().default('kg'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })
@@ -40,13 +47,14 @@ export type Bilan = typeof bilans.$inferSelect
 export type NewBilan = typeof bilans.$inferInsert
 
 // Circonférences corporelles — toutes les mesures en cm, réelles, nullables.
+// `poidsKg` est toujours stocké en kg (la conversion lb se fait côté UI).
 export const mesuresCirconferences = sqliteTable('mesures_circonferences', {
   id: text('id').primaryKey(),
   clientId: text('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
   date: text('date').notNull(),
+  poidsKg: real('poids_kg'),
   cou: real('cou'),
-  epauleG: real('epaule_g'),
-  epauleD: real('epaule_d'),
+  epaule: real('epaule'),
   bicepsG: real('biceps_g'),
   bicepsD: real('biceps_d'),
   poitrine: real('poitrine'),

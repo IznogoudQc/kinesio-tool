@@ -4,6 +4,27 @@ import { ArrowLeft, Download, ImagePlus, Mail, MoreVertical, Pencil, Trash2 } fr
 import { clientsService } from '../../services/clients'
 import { reportsService } from '../../services/reports'
 import { ClientAvatar } from '../../components/ClientAvatar'
+import { AvatarCropper } from '../../components/AvatarCropper'
+
+/** Convertit un Blob en string base64 (sans le prefix data:...) — pour traverser contextBridge. */
+async function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      // Format : "data:image/png;base64,XXXXX..." → on garde XXXXX
+      const base64 = dataUrl.split(',')[1] ?? ''
+      resolve(base64)
+    }
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+}
+
+/** Extrait la partie base64 d'une data URL ("data:image/...;base64,XXXX" → "XXXX"). */
+function dataUrlToBase64(dataUrl: string): string {
+  return dataUrl.split(',')[1] ?? ''
+}
 
 interface TabDef {
   to: string
@@ -306,34 +327,48 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
   const [email, setEmail] = useState(client.email)
   const [birthdate, setBirthdate] = useState(client.birthdate ?? '')
   const [sex, setSex] = useState<'F' | 'M' | ''>(client.sex ?? '')
+  const [unitLength, setUnitLength] = useState<'cm' | 'in'>(client.unitLength ?? 'cm')
+  const [unitWeight, setUnitWeight] = useState<'kg' | 'lb'>(client.unitWeight ?? 'kg')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [avatarBusy, setAvatarBusy] = useState(false)
   const [confirmRemoveAvatar, setConfirmRemoveAvatar] = useState(false)
+  // Source de l'image en cours de recadrage (data URL) ; `null` = éditeur fermé.
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
 
   const busy = saving || avatarBusy
+  const cropping = cropSrc !== null
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !busy) onCancel()
+      if (e.key === 'Escape' && !busy && !cropping) onCancel()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onCancel, busy])
+  }, [onCancel, busy, cropping])
 
   async function handleChooseAvatar() {
-    if (busy) return
+    if (busy || cropping) return
     const picked = await clientsService.pickAvatar()
     if (picked.canceled) return
     setError(null)
     setConfirmRemoveAvatar(false)
+    setCropSrc(picked.dataUrl)
+  }
+
+  async function handleCropDone(croppedBlob: Blob) {
+    // Les erreurs remontent à l'éditeur de cadrage, qui les affiche et reste ouvert.
+    setAvatarBusy(true)
     try {
-      setAvatarBusy(true)
-      const updated = await clientsService.setAvatar(client.id, picked.filePath)
+      // Note Electron : contextBridge ne sérialise pas Uint8Array/ArrayBuffer/Array
+      // de manière fiable. On encode donc en base64 (string) qui traverse sans souci.
+      const croppedBytes = await blobToBase64(croppedBlob)
+      // `cropSrc` est la data URL de la photo d'origine — on extrait la partie base64
+      const originalBytes = dataUrlToBase64(cropSrc!)
+      const updated = await clientsService.setAvatar(client.id, croppedBytes, originalBytes)
       setCurrent(updated)
       onUpdated(updated)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible d'enregistrer la photo.")
+      setCropSrc(null)
     } finally {
       setAvatarBusy(false)
     }
@@ -375,7 +410,9 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
         name: name.trim(),
         email: email.trim(),
         birthdate: birthdate ? birthdate : null,
-        sex: sex ? sex : null
+        sex: sex ? sex : null,
+        unitLength,
+        unitWeight
       })
       onSaved(updated)
     } catch (err) {
@@ -524,6 +561,52 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
               </div>
               <p className="text-marine/40 text-sm mt-1">Détermine la silhouette affichée et les coefficients du calcul.</p>
             </div>
+
+            <div>
+              <label className="block text-base font-medium text-marine mb-1.5">Unité de longueur</label>
+              <div className="flex items-center gap-5">
+                {([
+                  { value: 'cm', label: 'cm' },
+                  { value: 'in', label: 'po (pouces)' }
+                ] as const).map(opt => (
+                  <label key={opt.value} className="flex items-center gap-2 text-marine text-base cursor-pointer">
+                    <input
+                      type="radio"
+                      name="client-unit-length"
+                      value={opt.value}
+                      checked={unitLength === opt.value}
+                      onChange={() => setUnitLength(opt.value)}
+                      className="accent-gold"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+              <p className="text-marine/40 text-sm mt-1">Unité d'affichage et de saisie des circonférences (les données sont stockées en cm).</p>
+            </div>
+
+            <div>
+              <label className="block text-base font-medium text-marine mb-1.5">Unité de poids</label>
+              <div className="flex items-center gap-5">
+                {([
+                  { value: 'kg', label: 'kg' },
+                  { value: 'lb', label: 'lb (livres)' }
+                ] as const).map(opt => (
+                  <label key={opt.value} className="flex items-center gap-2 text-marine text-base cursor-pointer">
+                    <input
+                      type="radio"
+                      name="client-unit-weight"
+                      value={opt.value}
+                      checked={unitWeight === opt.value}
+                      onChange={() => setUnitWeight(opt.value)}
+                      className="accent-gold"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+              </div>
+              <p className="text-marine/40 text-sm mt-1">Unité d'affichage et de saisie du poids (les données sont stockées en kg).</p>
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-3 mt-6">
@@ -545,6 +628,17 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
           </div>
         </form>
       </div>
+
+      {cropSrc && (
+        <AvatarCropper
+          imageSrc={cropSrc}
+          busy={avatarBusy}
+          onCropDone={handleCropDone}
+          onCancel={() => {
+            if (!avatarBusy) setCropSrc(null)
+          }}
+        />
+      )}
     </div>
   )
 }

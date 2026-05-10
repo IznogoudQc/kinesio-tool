@@ -8,15 +8,25 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('clients:create', data),
     update: (
       id: string,
-      data: { name?: string; email?: string; birthdate?: string | null; sex?: 'F' | 'M' | null }
+      data: {
+        name?: string
+        email?: string
+        birthdate?: string | null
+        sex?: 'F' | 'M' | null
+        unitLength?: 'cm' | 'in'
+        unitWeight?: 'kg' | 'lb'
+      }
     ) =>
       ipcRenderer.invoke('clients:update', id, data),
     delete: (id: string) =>
       ipcRenderer.invoke('clients:delete', id),
     pickAvatar: () =>
       ipcRenderer.invoke('clients:pick-avatar'),
-    setAvatar: (clientId: string, sourcePath: string) =>
-      ipcRenderer.invoke('clients:set-avatar', clientId, sourcePath),
+    setAvatar: (
+      clientId: string,
+      croppedBase64: string,
+      originalBase64: string
+    ) => ipcRenderer.invoke('clients:set-avatar', clientId, croppedBase64, originalBase64),
     removeAvatar: (clientId: string) =>
       ipcRenderer.invoke('clients:remove-avatar', clientId),
     getAvatarUrl: (filename: string) =>

@@ -9,7 +9,14 @@ export const clientsService = {
 
   async update(
     id: string,
-    data: { name?: string; email?: string; birthdate?: string | null; sex?: 'F' | 'M' | null }
+    data: {
+      name?: string
+      email?: string
+      birthdate?: string | null
+      sex?: 'F' | 'M' | null
+      unitLength?: 'cm' | 'in'
+      unitWeight?: 'kg' | 'lb'
+    }
   ): Promise<Client> {
     return window.api.clients.update(id, data)
   },
@@ -19,14 +26,23 @@ export const clientsService = {
   },
 
   // ── Photo de profil ───────────────────────────────────────────────────────
-  /** Ouvre le dialog natif de sélection d'une image. */
-  async pickAvatar(): Promise<{ canceled: true } | { canceled: false; filePath: string }> {
+  /** Ouvre le dialog natif de sélection d'une image ; renvoie une data URL à recadrer. */
+  async pickAvatar(): Promise<{ canceled: true } | { canceled: false; dataUrl: string }> {
     return window.api.clients.pickAvatar()
   },
 
-  /** Optimise et enregistre l'image comme photo de profil ; retourne le client à jour. */
-  async setAvatar(id: string, sourcePath: string): Promise<Client> {
-    return window.api.clients.setAvatar(id, sourcePath)
+  /**
+   * Enregistre la photo de profil. `croppedBytes` = version carrée recadrée par
+   * l'éditeur (utilisée pour les avatars circulaires) ; `originalBytes` = la photo
+   * d'origine non recadrée (affichée en plein corps dans l'onglet Mesures).
+   * Retourne le client à jour.
+   */
+  async setAvatar(
+    id: string,
+    croppedBase64: string,
+    originalBase64: string
+  ): Promise<Client> {
+    return window.api.clients.setAvatar(id, croppedBase64, originalBase64)
   },
 
   /** Supprime la photo de profil ; retourne le client à jour. */

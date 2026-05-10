@@ -113,7 +113,7 @@ permet de les saisir, de calculer le % de gras automatiquement et d'en suivre l'
 
 ### Schéma DB
 - Table `clients` étendue : `birthdate` (ISO date, nullable — pour calculer l'âge) et `sex` (`'F' | 'M' | null` — silhouette + coefficients du calcul).
-- Table `mesures_circonferences` : `id` (UUID), `client_id` (FK → clients, ON DELETE cascade), `date` (ISO), 13 circonférences en cm (`cou`, `epaule_g/d`, `biceps_g/d`, `poitrine`, `taille`, `abdomen`, `hanche`, `cuisse_g/d`, `mollet_g/d`, toutes `real` nullables), `notes`, `created_at`.
+- Table `mesures_circonferences` : `id` (UUID), `client_id` (FK → clients, ON DELETE cascade), `date` (ISO), 12 circonférences en cm (`cou`, `epaule`, `biceps_g/d`, `poitrine`, `taille`, `abdomen`, `hanche`, `cuisse_g/d`, `mollet_g/d`, toutes `real` nullables), `notes`, `created_at`. _(v0.1.11 : `epaule_g`/`epaule_d` fusionnées en une seule mesure `epaule` — migration `0007_round_living_tribunal.sql`, moyenne G+D des données existantes.)_
 - Table `mesures_plis_cutanes` : `id` (UUID), `client_id` (FK cascade), `date` (ISO), 4 plis en mm (`triceps`, `biceps`, `sousscapulaire`, `iliaque`) + valeurs calculées figées (`somme_4_plis`, `densite_corporelle`, `pourcentage_gras_siri`, `pourcentage_gras_brozek`, `age_au_calcul`, `sexe_au_calcul`), `notes`, `created_at`. Migration `0003_bouncy_whirlwind.sql`.
 
 ### Calcul du % de gras — `src/lib/body-fat-calculator.ts`
@@ -125,7 +125,7 @@ permet de les saisir, de calculer le % de gras automatiquement et d'en suivre l'
 
 ### UI — onglet « Mesures »
 - 2 sous-onglets internes : **Circonférences** et **Plis cutanés**.
-- **Circonférences** : grille 3 colonnes (cards côté G · silhouette centrale · cards côté D + central), silhouette `body-male.png` / `body-female.png` selon le sexe (message « complétez le profil » si `sex` est `null`) ; bouton « Enregistrer » → nouvelle entrée à la date du jour ; historique en table (date, taille, hanche, % de variation de la taille vs la précédente, actions Voir / Modifier / Supprimer).
+- **Circonférences** : grille CSS 7 lignes × 3 colonnes — ligne 1 = card **Poids** pleine largeur ; colonne centrale (lignes 2-7) = silhouette `body-male.png` / `body-female.png` selon le sexe (message « complétez le profil » si `sex` est `null`) ou la photo full-body du client ; colonnes 1 & 3 (lignes 2-7) = les 12 circonférences réparties gauche/droite (Cou·Épaule, Biceps G·D, Poitrine·Taille, Abdomen·Hanche, Cuisse G·D, Mollet G·D). Bouton « Enregistrer » → nouvelle entrée à la date du jour ; historique en table (date, taille, hanche, % de variation de la taille vs la précédente, actions Voir / Modifier / Supprimer).
 - **Plis cutanés** : si `birthdate` ou `sex` manquent → message + bouton « Compléter le profil » (`?edit=1`). Sinon : 4 cards de saisie (mm), aperçu en temps réel (somme des 4 plis, densité, **% gras Siri** en gros chiffre gold, % gras Brozek discret, catégorie en placeholder pour v0.1.9), bouton « Enregistrer », historique en table.
 - Formulaire d'édition du client (`ClientDetailLayout`) : ajout des champs **date de naissance** (`input type=date`) et **sexe** (radio F/M), avec ouverture directe via `?edit=1`.
 
@@ -178,6 +178,43 @@ veut pouvoir transporter un dossier de test (Nicholas Jean) d'un PC à l'autre.
   `reports:pick-import-file`, `reports:import-json` — validation **zod** sur tous les payloads.
 - `src/services/reports.ts` : `generatePdfForClient`, `openPdf`, `sendReportByEmail`, `exportClientToJson`,
   `pickImportFile`, `importClientFromJson`.
+
+## ✅ Fait (v0.1.11 — Préférences d'unités par client + champ Poids)
+
+### Objectif : s'adapter aux habitudes de mesure (métrique vs impérial)
+Certains clients/contextes raisonnent en pouces et en livres. On stocke **toujours** en métrique (cm, kg) — la
+conversion se fait uniquement à l'affichage et à la saisie, jamais au stockage (évite les arrondis cumulatifs et les
+bugs de migration). Les plis cutanés restent en mm partout.
+
+### Schéma DB — migration `0006_previous_brother_voodoo.sql`
+- Table `clients` étendue : `unit_length` (`'cm' | 'in'`, défaut `'cm'`, NOT NULL) et `unit_weight`
+  (`'kg' | 'lb'`, défaut `'kg'`, NOT NULL) — préférences d'unités du client.
+- Table `mesures_circonferences` étendue : `poids_kg` (`real`, nullable) — **toujours stocké en kg**.
+
+### Helpers de conversion — `src/lib/units.ts`
+- `cmToIn` / `inToCm`, `kgToLb` / `lbToKg`.
+- `formatLength(cm, unit)` / `formatWeight(kg, unit)` → chaîne `fr-CA` à 1 décimale (`'—'` si `null`).
+- `cmToLengthInput` / `kgToWeightInput` → valeur numérique à pré-remplir dans un champ (valeur exacte en
+  métrique, arrondie à 0,1 en impérial).
+- `lengthInputToCm` / `weightInputToKg` → conversion saisie utilisateur → stockage métrique.
+- `lengthUnitLabel` / `weightUnitLabel` → libellés courts (`cm` / `po`, `kg` / `lb`).
+- Tests : `src/lib/units.test.ts` (`node --test src/lib/units.test.ts`) — aller-retour 220 lb / 38 po → stocké en kg/cm → réaffiché à 0,1 près.
+
+### UI — formulaire d'édition du client (`ClientDetailLayout`)
+- Deux radio-groupes sous la date de naissance / sexe : **Unité de longueur** (cm / po) et **Unité de poids**
+  (kg / lb). Sauvegarde → met à jour `unitLength` / `unitWeight`.
+
+### UI — onglet Mesures > Circonférences
+- Nouvelle card **« Poids »** en haut du formulaire (avant les circonférences), unité = préférence du client.
+- Toutes les cards de circonférences affichent l'unité préférée (`cm` ou `po`) ; conversion à la saisie
+  (l'utilisateur tape en po/lb → on stocke en cm/kg) et à l'édition (on relit le métrique → on réaffiche en po/lb).
+- Précision d'affichage : longueurs et poids à 1 décimale ; plis cutanés inchangés (mm).
+- Historique « Mesures précédentes » : colonne **Poids** ajoutée, en-têtes Taille/Hanche avec l'unité du client.
+  Modal « Voir le détail » : ligne Poids + valeurs converties.
+
+### Service + IPC + export `.kinesio`
+- `clients:update` accepte `unitLength` / `unitWeight` ; `mesures:circ:{create,update}` acceptent `poidsKg` (en kg).
+  Le fichier `.kinesio` transporte aussi ces champs (rétrocompatible : absents → défauts métriques à l'import).
 
 ## 🔮 Prochain (v0.1.10 — Saisie manuelle + catégorisation CPAFLA)
 

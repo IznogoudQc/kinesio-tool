@@ -28,7 +28,9 @@ const KinesioBundleSchema = z.object({
     name: z.string().min(1).max(200),
     email: z.string().email(),
     birthdate: strOrNull,
-    sex: z.union([z.enum(['F', 'M']), z.null()]).optional()
+    sex: z.union([z.enum(['F', 'M']), z.null()]).optional(),
+    unitLength: z.enum(['cm', 'in']).optional(),
+    unitWeight: z.enum(['kg', 'lb']).optional()
   }),
   bilans: z
     .array(
@@ -45,7 +47,11 @@ const KinesioBundleSchema = z.object({
     .array(
       z.object({
         date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        poidsKg: cmOrNull,
         cou: cmOrNull,
+        epaule: cmOrNull,
+        // Legacy : anciens fichiers .kinesio exportaient deux mesures d'épaule (G/D),
+        // désormais fusionnées en une seule — voir le calcul de `epaule` à l'import.
         epauleG: cmOrNull,
         epauleD: cmOrNull,
         bicepsG: cmOrNull,
@@ -98,7 +104,7 @@ const SendReportSchema = z.object({
 })
 
 const CIRC_FIELDS = [
-  'cou', 'epauleG', 'epauleD', 'bicepsG', 'bicepsD', 'poitrine',
+  'cou', 'epaule', 'bicepsG', 'bicepsD', 'poitrine',
   'taille', 'abdomen', 'hanche', 'cuisseG', 'cuisseD', 'molletG', 'molletD'
 ] as const
 
@@ -233,6 +239,8 @@ export function registerReportsHandlers(): void {
           email: bundle.client.email,
           birthdate: bundle.client.birthdate ?? null,
           sex: bundle.client.sex ?? null,
+          unitLength: bundle.client.unitLength ?? 'cm',
+          unitWeight: bundle.client.unitWeight ?? 'kg',
           createdAt: now,
           updatedAt: now
         })
@@ -262,11 +270,19 @@ export function registerReportsHandlers(): void {
     for (const m of bundle.mesures_circonferences) {
       const fields = {} as Record<(typeof CIRC_FIELDS)[number], number | null>
       for (const f of CIRC_FIELDS) fields[f] = m[f] ?? null
+      // Legacy : si le fichier a les anciennes mesures d'épaule G/D, les fusionner
+      // (moyenne si les deux existent, sinon celle qui existe).
+      if (fields.epaule == null) {
+        const g = m.epauleG ?? null
+        const d = m.epauleD ?? null
+        fields.epaule = g != null && d != null ? (g + d) / 2 : g ?? d
+      }
       db.insert(mesuresCirconferences)
         .values({
           id: crypto.randomUUID(),
           clientId: targetId,
           date: m.date,
+          poidsKg: m.poidsKg ?? null,
           ...fields,
           notes: m.notes ?? null,
           createdAt: m.createdAt ?? now

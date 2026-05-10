@@ -4,8 +4,19 @@ import { Calculator, Eye, Loader2, PencilLine, PersonStanding, Ruler, Save, Tras
 import bodyMale from '@/assets/body-male.png'
 import bodyFemale from '@/assets/body-female.png'
 import { useClient } from '../ClientDetailLayout'
+import { clientsService } from '../../../services/clients'
 import { mesuresService } from '../../../services/mesures'
-import { calculateAge, calculateBodyFat, type Sex } from '../../../lib/body-fat-calculator'
+import { calculateAge, calculateBodyFat } from '../../../lib/body-fat-calculator'
+import {
+  cmToLengthInput,
+  formatLength,
+  formatWeight,
+  kgToWeightInput,
+  lengthInputToCm,
+  lengthUnitLabel,
+  weightInputToKg,
+  weightUnitLabel
+} from '../../../lib/units'
 import { formatBilanDate } from '../bilanFields'
 
 // ── Helpers de formatage (fr-CA, virgule décimale) ──────────────────────────────
@@ -20,27 +31,24 @@ function todayISO(): string {
 
 // ── Champs de circonférences ────────────────────────────────────────────────────
 type CircKey =
-  | 'cou' | 'epauleG' | 'epauleD' | 'bicepsG' | 'bicepsD' | 'poitrine'
+  | 'cou' | 'epaule' | 'bicepsG' | 'bicepsD' | 'poitrine'
   | 'taille' | 'abdomen' | 'hanche' | 'cuisseG' | 'cuisseD' | 'molletG' | 'molletD'
 
-const CIRC_LEFT: { key: CircKey; label: string }[] = [
-  { key: 'epauleG', label: 'Épaule G' },
-  { key: 'bicepsG', label: 'Biceps G' },
-  { key: 'cuisseG', label: 'Cuisse G' },
-  { key: 'molletG', label: 'Mollet G' }
-]
-const CIRC_RIGHT: { key: CircKey; label: string }[] = [
+// Toutes les circonférences, dans l'ordre d'affichage du détail / du rapport.
+const CIRC_ALL: { key: CircKey; label: string }[] = [
   { key: 'cou', label: 'Cou' },
-  { key: 'epauleD', label: 'Épaule D' },
+  { key: 'epaule', label: 'Épaule' },
+  { key: 'bicepsG', label: 'Biceps G' },
   { key: 'bicepsD', label: 'Biceps D' },
   { key: 'poitrine', label: 'Poitrine' },
   { key: 'taille', label: 'Taille' },
   { key: 'abdomen', label: 'Abdomen' },
   { key: 'hanche', label: 'Hanche' },
+  { key: 'cuisseG', label: 'Cuisse G' },
   { key: 'cuisseD', label: 'Cuisse D' },
+  { key: 'molletG', label: 'Mollet G' },
   { key: 'molletD', label: 'Mollet D' }
 ]
-const CIRC_ALL = [...CIRC_LEFT, ...CIRC_RIGHT]
 
 type PlisKey = 'triceps' | 'biceps' | 'sousscapulaire' | 'iliaque'
 const PLIS_FIELDS: { key: PlisKey; label: string }[] = [
@@ -53,11 +61,12 @@ const PLIS_FIELDS: { key: PlisKey; label: string }[] = [
 type CircForm = Partial<Record<CircKey, number>>
 type PlisForm = Partial<Record<PlisKey, number>>
 
-function circRowToForm(row: MesureCirconferences): CircForm {
+/** Convertit une ligne (stockée en cm) vers les valeurs à afficher dans les champs, selon l'unité du client. */
+function circRowToForm(row: MesureCirconferences, unit: 'cm' | 'in'): CircForm {
   const f: CircForm = {}
   for (const { key } of CIRC_ALL) {
     const v = row[key]
-    if (typeof v === 'number') f[key] = v
+    if (typeof v === 'number') f[key] = cmToLengthInput(v, unit)
   }
   return f
 }
@@ -159,24 +168,58 @@ function MeasureField({
   )
 }
 
-function Silhouette({ sex }: { sex: Sex | null }) {
-  if (!sex) {
+/**
+ * Visuel central de l'onglet Mesures. Priorité : (1) la photo « plein corps » du
+ * client si elle existe, (2) sinon la silhouette générique selon le sexe, (3) sinon
+ * une invite à compléter le profil.
+ *
+ * NB : la photo est affichée telle quelle. Si Marie-Eve téléverse une photo brute
+ * (fond non transparent), le fond sera visible — recommander un PNG à fond
+ * transparent. Un détourage automatique pourra être ajouté dans une v0.1.x suivante.
+ */
+function Silhouette({ client }: { client: Client }) {
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    // Priorité : avatar full-body s'il existe, sinon avatar circle classique
+    const filename = client.avatarFullbodyFilename ?? client.avatarFilename ?? null
+    if (filename) {
+      clientsService
+        .getAvatarUrl(filename)
+        .then(url => {
+          if (!cancelled) setAvatarUrl(url)
+        })
+        .catch(() => {
+          if (!cancelled) setAvatarUrl(null)
+        })
+    } else {
+      setAvatarUrl(null)
+    }
+    return () => {
+      cancelled = true
+    }
+  }, [client.avatarFullbodyFilename, client.avatarFilename])
+
+  if (!avatarUrl && !client.sex) {
     return (
       <div className="flex flex-col items-center justify-center text-center bg-marine-light/35 border border-dashed border-gold/30 rounded-2xl p-6 min-h-[320px] h-full">
         <PersonStanding size={64} className="text-cream/30" />
         <p className="text-cream/55 text-sm mt-3 max-w-[15rem]">
-          Complétez le profil du client pour personnaliser la silhouette.
+          Complétez le profil du client (ou ajoutez une photo) pour personnaliser la silhouette.
         </p>
       </div>
     )
   }
+
+  const bodyImage = avatarUrl ?? (client.sex === 'F' ? bodyFemale : bodyMale)
   return (
     <div className="flex items-center justify-center h-full">
       <img
-        src={sex === 'F' ? bodyFemale : bodyMale}
-        alt={sex === 'F' ? 'Silhouette femme' : 'Silhouette homme'}
+        src={bodyImage}
+        alt={avatarUrl ? client.name : client.sex === 'F' ? 'Silhouette femme' : 'Silhouette homme'}
         draggable={false}
-        className="max-h-[560px] w-auto object-contain select-none"
+        className="max-h-[560px] max-w-full w-auto object-contain select-none"
       />
     </div>
   )
@@ -251,10 +294,16 @@ function cleanIpcError(err: unknown, fallback: string): string {
 //  Sous-onglet : Circonférences
 // ════════════════════════════════════════════════════════════════════════════════
 function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: string) => void }) {
+  const unitLength = client.unitLength ?? 'cm'
+  const unitWeight = client.unitWeight ?? 'kg'
+  const lenLabel = lengthUnitLabel(unitLength)
+  const wLabel = weightUnitLabel(unitWeight)
   const [list, setList] = useState<MesureCirconferences[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<CircForm>({})
+  // `poids` est exprimé dans l'unité préférée du client (kg ou lb) — converti en kg à l'enregistrement.
+  const [poids, setPoids] = useState<number | undefined>(undefined)
   const [notes, setNotes] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -286,27 +335,40 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
     })
   }
 
+  // Une carte de saisie pour une circonférence (toutes en `lenLabel`).
+  const circCard = (key: CircKey, label: string) => (
+    <MeasureField label={label} unit={lenLabel} value={form[key]} onChange={v => setField(key, v)} />
+  )
+
   function resetForm() {
     setForm({})
+    setPoids(undefined)
     setNotes('')
     setEditId(null)
   }
 
   function startEdit(row: MesureCirconferences) {
-    setForm(circRowToForm(row))
+    setForm(circRowToForm(row, unitLength))
+    setPoids(row.poidsKg != null ? kgToWeightInput(row.poidsKg, unitWeight) : undefined)
     setNotes(row.notes ?? '')
     setEditId(row.id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const hasAny = CIRC_ALL.some(c => form[c.key] !== undefined)
+  const hasAny = poids !== undefined || CIRC_ALL.some(c => form[c.key] !== undefined)
 
   async function save() {
     if (!hasAny) return
     setSaving(true)
     setError(null)
     try {
-      const payload: CirconferencesInput = { ...form, notes: notes.trim() || undefined }
+      // Conversion vers le stockage métrique (cm + kg) — jamais l'inverse.
+      const payload: CirconferencesInput = { notes: notes.trim() || undefined }
+      for (const { key } of CIRC_ALL) {
+        const v = form[key]
+        if (v !== undefined) payload[key] = lengthInputToCm(v, unitLength)
+      }
+      if (poids !== undefined) payload.poidsKg = weightInputToKg(poids, unitWeight)
       if (editId) {
         await mesuresService.circonferences.update(editId, payload)
       } else {
@@ -340,19 +402,50 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-          <div className="lg:col-span-3 space-y-4">
-            {CIRC_LEFT.map(c => (
-              <MeasureField key={c.key} label={c.label} unit="cm" value={form[c.key]} onChange={v => setField(c.key, v)} />
-            ))}
+        {/*
+          Disposition : grille 7 lignes × 3 colonnes, toutes de largeur égale.
+          ─ colonne 2, lignes 1-6 : silhouette (placée explicitement).
+          ─ colonnes 1 & 3, lignes 1-6 : les 12 circonférences, gauche / droite.
+          ─ ligne 7, colonne 2 : Poids — une seule colonne de large, donc exactement
+            la même largeur visuelle que les cartes de circonférences.
+          Les cartes de gauche se placent en auto-flow (col 1) ; celles de droite
+          sont forcées en col 3 via `col-start-3`.
+          `minmax(0,1fr)` sur chaque colonne : empêche l'image de la silhouette
+          (intrinsèquement large) d'élargir la colonne 2 au-delà de sa fraction.
+        */}
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 max-w-5xl mx-auto items-start">
+          {/* Silhouette — colonne centrale, lignes 1 à 6 (étirée sur toute la hauteur des 6 rangées) */}
+          <div className="row-span-6 row-start-1 col-start-2 self-stretch flex items-center justify-center min-h-[320px]">
+            <Silhouette client={client} />
           </div>
-          <div className="lg:col-span-4">
-            <Silhouette sex={client.sex} />
-          </div>
-          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {CIRC_RIGHT.map(c => (
-              <MeasureField key={c.key} label={c.label} unit="cm" value={form[c.key]} onChange={v => setField(c.key, v)} />
-            ))}
+
+          {/* Ligne 1 */}
+          {circCard('cou', 'Cou')}
+          <div className="col-start-3">{circCard('epaule', 'Épaule')}</div>
+
+          {/* Ligne 2 */}
+          {circCard('bicepsG', 'Biceps G')}
+          <div className="col-start-3">{circCard('bicepsD', 'Biceps D')}</div>
+
+          {/* Ligne 3 */}
+          {circCard('poitrine', 'Poitrine')}
+          <div className="col-start-3">{circCard('taille', 'Taille')}</div>
+
+          {/* Ligne 4 */}
+          {circCard('abdomen', 'Abdomen')}
+          <div className="col-start-3">{circCard('hanche', 'Hanche')}</div>
+
+          {/* Ligne 5 */}
+          {circCard('cuisseG', 'Cuisse G')}
+          <div className="col-start-3">{circCard('cuisseD', 'Cuisse D')}</div>
+
+          {/* Ligne 6 */}
+          {circCard('molletG', 'Mollet G')}
+          <div className="col-start-3">{circCard('molletD', 'Mollet D')}</div>
+
+          {/* Ligne 7 : Poids — colonne centrale uniquement (même largeur que les autres cartes) */}
+          <div className="col-start-2 row-start-7">
+            <MeasureField label="Poids" unit={wLabel} value={poids} onChange={setPoids} />
           </div>
         </div>
 
@@ -394,8 +487,9 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
               <thead>
                 <tr className="bg-cream/70 text-marine/55 text-sm uppercase tracking-wide">
                   <th className="text-left font-medium px-4 py-3">Date</th>
-                  <th className="text-right font-medium px-4 py-3">Taille (cm)</th>
-                  <th className="text-right font-medium px-4 py-3">Hanche (cm)</th>
+                  <th className="text-right font-medium px-4 py-3">Poids ({wLabel})</th>
+                  <th className="text-right font-medium px-4 py-3">Taille ({lenLabel})</th>
+                  <th className="text-right font-medium px-4 py-3">Hanche ({lenLabel})</th>
                   <th className="text-right font-medium px-4 py-3">Variation taille</th>
                   <th className="px-4 py-3" />
                 </tr>
@@ -410,8 +504,9 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
                   return (
                     <tr key={row.id} className="border-t border-cream-dark hover:bg-cream/40 transition-colors">
                       <td className="px-4 py-3 text-marine font-medium">{formatBilanDate(row.date)}</td>
-                      <td className="px-4 py-3 text-right text-marine/80">{row.taille != null ? nf1(row.taille) : '—'}</td>
-                      <td className="px-4 py-3 text-right text-marine/80">{row.hanche != null ? nf1(row.hanche) : '—'}</td>
+                      <td className="px-4 py-3 text-right text-marine/80">{formatWeight(row.poidsKg, unitWeight)}</td>
+                      <td className="px-4 py-3 text-right text-marine/80">{formatLength(row.taille, unitLength)}</td>
+                      <td className="px-4 py-3 text-right text-marine/80">{formatLength(row.hanche, unitLength)}</td>
                       <td className="px-4 py-3 text-right">
                         {variation === null ? (
                           <span className="text-marine/30">—</span>
@@ -467,7 +562,7 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
         )}
       </section>
 
-      {viewing && <CircDetailModal row={viewing} onClose={() => setViewing(null)} />}
+      {viewing && <CircDetailModal row={viewing} client={client} onClose={() => setViewing(null)} />}
 
       {deleting && (
         <ConfirmDialog
@@ -491,7 +586,11 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
   )
 }
 
-function CircDetailModal({ row, onClose }: { row: MesureCirconferences; onClose: () => void }) {
+function CircDetailModal({ row, client, onClose }: { row: MesureCirconferences; client: Client; onClose: () => void }) {
+  const unitLength = client.unitLength ?? 'cm'
+  const unitWeight = client.unitWeight ?? 'kg'
+  const lenLabel = lengthUnitLabel(unitLength)
+  const wLabel = weightUnitLabel(unitWeight)
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose()
@@ -512,11 +611,17 @@ function CircDetailModal({ row, onClose }: { row: MesureCirconferences; onClose:
           </button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-5 gap-y-2.5">
+          <div>
+            <p className="text-marine/50 text-xs uppercase tracking-wide">Poids</p>
+            <p className="text-marine font-medium text-base">
+              {row.poidsKg != null ? `${formatWeight(row.poidsKg, unitWeight)} ${wLabel}` : <span className="text-marine/25">—</span>}
+            </p>
+          </div>
           {CIRC_ALL.map(({ key, label }) => (
             <div key={key}>
               <p className="text-marine/50 text-xs uppercase tracking-wide">{label}</p>
               <p className="text-marine font-medium text-base">
-                {row[key] != null ? `${nf1(row[key] as number)} cm` : <span className="text-marine/25">—</span>}
+                {row[key] != null ? `${formatLength(row[key] as number, unitLength)} ${lenLabel}` : <span className="text-marine/25">—</span>}
               </p>
             </div>
           ))}
