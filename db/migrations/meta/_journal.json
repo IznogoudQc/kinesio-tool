@@ -22,6 +22,20 @@
       "when": 1778379805577,
       "tag": "0002_lively_amazoness",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1778420066266,
+      "tag": "0003_bouncy_whirlwind",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1778425147669,
+      "tag": "0004_neat_medusa",
+      "breakpoints": true
     }
   ]
 }

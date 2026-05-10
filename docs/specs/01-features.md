@@ -105,9 +105,83 @@ Trois états :
 ### Dépendance ajoutée
 - `recharts` (pur JS, compatible React 19) — graphiques.
 
-## 🔮 Prochain (v0.1.8 — Saisie manuelle + catégorisation CPAFLA)
+## ✅ Fait (v0.1.8 — Onglet Mesures : circonférences + plis cutanés / % gras)
 
-- **Catégorisation CPAFLA** : encodage des tables de référence dans `src/lib/normes-cpafla.ts` ; classement automatique « À améliorer / Acceptable / Bien / Très bien / Excellent » selon âge et sexe, affiché dans la vue d'un bilan et sur le dashboard.
+### Objectif : suivi anthropométrique régulier entre les bilans complets
+Marie-Eve prend des mesures (circonférences, plis cutanés) plus souvent qu'elle ne fait un bilan complet. L'onglet Mesures
+permet de les saisir, de calculer le % de gras automatiquement et d'en suivre l'évolution.
+
+### Schéma DB
+- Table `clients` étendue : `birthdate` (ISO date, nullable — pour calculer l'âge) et `sex` (`'F' | 'M' | null` — silhouette + coefficients du calcul).
+- Table `mesures_circonferences` : `id` (UUID), `client_id` (FK → clients, ON DELETE cascade), `date` (ISO), 13 circonférences en cm (`cou`, `epaule_g/d`, `biceps_g/d`, `poitrine`, `taille`, `abdomen`, `hanche`, `cuisse_g/d`, `mollet_g/d`, toutes `real` nullables), `notes`, `created_at`.
+- Table `mesures_plis_cutanes` : `id` (UUID), `client_id` (FK cascade), `date` (ISO), 4 plis en mm (`triceps`, `biceps`, `sousscapulaire`, `iliaque`) + valeurs calculées figées (`somme_4_plis`, `densite_corporelle`, `pourcentage_gras_siri`, `pourcentage_gras_brozek`, `age_au_calcul`, `sexe_au_calcul`), `notes`, `created_at`. Migration `0003_bouncy_whirlwind.sql`.
+
+### Calcul du % de gras — `src/lib/body-fat-calculator.ts`
+- Densité corporelle via les équations **Durnin & Womersley (1974)** sur la somme des 4 plis (coefficients par sexe et tranche d'âge), puis conversion densité → % gras avec **Siri (1961)** et **Brožek (1963)**. `calculateAge(birthdate)` pour l'âge révolu. Utilisé côté main (stockage des valeurs calculées) et côté renderer (aperçu en temps réel).
+
+### Service + IPC (API-ready)
+- `electron/ipc/mesures.ts` : `mesures:circ:{list,create,update,delete}` et `mesures:plis:{list,create,update,delete}`. Validation **zod** sur tous les payloads. Le calcul des plis se fait côté main (récupère `birthdate`/`sex` du client, refuse si absents) et stocke les valeurs figées.
+- `src/services/mesures.ts` : `mesuresService.circonferences.*` et `mesuresService.plis.*`. Types `MesureCirconferences` / `MesurePlisCutanes` / `CirconferencesInput` / `PlisInput` dans `env.d.ts`.
+
+### UI — onglet « Mesures »
+- 2 sous-onglets internes : **Circonférences** et **Plis cutanés**.
+- **Circonférences** : grille 3 colonnes (cards côté G · silhouette centrale · cards côté D + central), silhouette `body-male.png` / `body-female.png` selon le sexe (message « complétez le profil » si `sex` est `null`) ; bouton « Enregistrer » → nouvelle entrée à la date du jour ; historique en table (date, taille, hanche, % de variation de la taille vs la précédente, actions Voir / Modifier / Supprimer).
+- **Plis cutanés** : si `birthdate` ou `sex` manquent → message + bouton « Compléter le profil » (`?edit=1`). Sinon : 4 cards de saisie (mm), aperçu en temps réel (somme des 4 plis, densité, **% gras Siri** en gros chiffre gold, % gras Brozek discret, catégorie en placeholder pour v0.1.9), bouton « Enregistrer », historique en table.
+- Formulaire d'édition du client (`ClientDetailLayout`) : ajout des champs **date de naissance** (`input type=date`) et **sexe** (radio F/M), avec ouverture directe via `?edit=1`.
+
+### Dashboard — `DashboardTab.tsx`
+- Carte « Mesures actuelles » (tour de taille, tour de hanche, biceps moy. G/D, cuisse moy. G/D + date de la dernière prise, indicateurs ▲▼ vs la prise précédente — baisse = amélioration pour taille/hanche).
+- Carte « % de gras corporel » (dernier calcul Siri en gold + Brozek + somme des plis + ▲▼).
+- Si ≥ 2 entrées : graphiques `recharts` d'évolution (tour de taille / hanche, % de gras Siri).
+
+## ✅ Fait (v0.1.9 — Rapport PDF + envoi au client + export/import `.kinesio`)
+
+### Objectif : produire un livrable client + se donner un format de sauvegarde/test
+Marie-Eve veut un document propre à remettre au client (et l'envoyer par courriel sans manipuler Word), et on
+veut pouvoir transporter un dossier de test (Nicholas Jean) d'un PC à l'autre.
+
+### Génération du rapport PDF
+- Route React dédiée `/report/:id` (`src/pages/ReportPage.tsx`) — layout autonome (pas de sidebar / header de
+  l'app), **pensé pour l'impression** : fond blanc, texte marine, accents gold-dark (économie d'encre), `@page` Letter
+  marge 14 mm, `break-inside: avoid` sur les sections. Sections : en-tête (logo Kinésio Outils + « Bilan de
+  progression » + nom du client + date du rapport), Profil (nom, courriel, date de naissance, sexe — si renseignés),
+  Dernier bilan (tableaux par groupe Anthropo / Aérobie / Musculo / Indices, champs vides masqués), Évolution dans le
+  temps (graphiques `recharts` : VO2max, composition poids/% gras, mesures corporelles, % gras Siri — affichés dès 2
+  points de données), Historique des bilans (table compacte : date, VO2max, IMC, % gras, tour de taille, score global,
+  source), pied de page (« Rapport généré par Kinésio Outils — Marie-Eve … » + date).
+- `electron/lib/report-generator.ts` : `generateClientReportPdf(clientId)` ouvre une `BrowserWindow` cachée sur
+  `#/report/:id`, attend le drapeau `window.__REPORT_READY__` (posé par ReportPage après mise en page des graphiques),
+  appelle `webContents.printToPDF({ printBackground: true, pageSize: 'Letter', margins: { marginType: 'none' } })` puis
+  écrit `Bilan-Nom-Prenom-AAAA-MM-JJ.pdf` dans `app.getPath('temp')`. Aussi : `loadClientBundle(clientId)` (client +
+  bilans + mesures, partagé avec l'export `.kinesio`).
+
+### Envoi au client par courriel
+- L'IPC d'envoi (`reports:send-email`) génère le rapport, l'attache, l'envoie via le SMTP des Paramètres puis supprime
+  le fichier temp (`try/finally`). Remplace l'ancien `electron/ipc/email.ts` (PDF du dashboard) — `SendBilanModal`
+  passe maintenant par `reportsService`.
+
+### Boutons sur le Dashboard du client
+- En haut à droite : **« Générer le rapport PDF »** (génère + ouvre le PDF avec l'app par défaut via `shell.openPath` —
+  pour vérifier avant d'envoyer) et **« Envoyer au client »** (ouvre `SendBilanModal` : sujet + corps pré-remplis avec
+  le template des Paramètres, pièce jointe automatique ; désactivé si SMTP non configuré).
+
+### Export / import `.kinesio` (test / backup)
+- Menu **« … »** dans le header de la fiche client → **« Exporter en JSON (.kinesio) »** : `dialog.showSaveDialog`
+  (nom par défaut `Nom-Prenom-export-AAAA-MM-JJ.kinesio`), écrit un JSON `{ version, exportedAt, client, bilans,
+  mesures_circonferences, mesures_plis_cutanes }`.
+- Bouton **« Importer »** en haut de la liste des clients → `dialog.showOpenDialog` (`.kinesio` / `.json`), valide le
+  fichier (zod), recrée le client + ses bilans + ses mesures (nouveaux UUID). Si un client a déjà ce courriel → dialog
+  « Fusionner » (ajoute au dossier existant, bilans aux mêmes dates ignorés) ou « Créer un doublon ».
+
+### Service + IPC (API-ready)
+- `electron/ipc/reports.ts` : `reports:generate-pdf`, `reports:open-path`, `reports:send-email`, `reports:export-json`,
+  `reports:pick-import-file`, `reports:import-json` — validation **zod** sur tous les payloads.
+- `src/services/reports.ts` : `generatePdfForClient`, `openPdf`, `sendReportByEmail`, `exportClientToJson`,
+  `pickImportFile`, `importClientFromJson`.
+
+## 🔮 Prochain (v0.1.10 — Saisie manuelle + catégorisation CPAFLA)
+
+- **Catégorisation CPAFLA** : encodage des tables de référence dans `src/lib/normes-cpafla.ts` ; classement automatique « À améliorer / Acceptable / Bien / Très bien / Excellent » selon âge et sexe — pour les bilans **et** pour le % de gras des plis cutanés (remplace le placeholder « catégorie » de l'onglet Mesures).
 - Formulaire de saisie manuelle de bilan (sans passer par .docx) — active le bouton « Saisie manuelle ».
 - Source des tables : à confirmer avec Marie-Eve (manuel CPAFLA, captures du logiciel actuel, ou normes publiques).
 

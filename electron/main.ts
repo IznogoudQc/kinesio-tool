@@ -2,8 +2,9 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import { join, resolve } from 'path'
 import { registerClientsHandlers } from './ipc/clients'
 import { registerSettingsHandlers } from './ipc/settings'
-import { registerEmailHandlers } from './ipc/email'
 import { registerBilansHandlers } from './ipc/bilans'
+import { registerMesuresHandlers } from './ipc/mesures'
+import { registerReportsHandlers } from './ipc/reports'
 import { initDb } from '../db/client'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
@@ -84,8 +85,9 @@ app.whenReady().then(() => {
   initDb(dbPath, migrationsPath)
   registerClientsHandlers()
   registerSettingsHandlers()
-  registerEmailHandlers()
   registerBilansHandlers()
+  registerMesuresHandlers()
+  registerReportsHandlers()
   createWindow()
 
   app.on('activate', () => {

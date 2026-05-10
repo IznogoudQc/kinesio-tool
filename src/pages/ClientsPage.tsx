@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { ChevronRight, Plus, User } from 'lucide-react'
+import { ChevronRight, Plus, Upload, User } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { clientsService } from '../services/clients'
+import { reportsService } from '../services/reports'
+import { ClientAvatar } from '../components/ClientAvatar'
 
 type View = 'list' | 'form'
 
@@ -19,6 +21,8 @@ export function ClientsPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [conflict, setConflict] = useState<{ filePath: string; existingName: string } | null>(null)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -90,6 +94,31 @@ export function ClientsPage() {
     }
   }
 
+  async function runImport(filePath: string, mode?: 'create' | 'merge') {
+    setImporting(true)
+    try {
+      const result = await reportsService.importClientFromJson(filePath, mode)
+      if (result.status === 'conflict') {
+        setConflict({ filePath, existingName: result.existingName })
+        return
+      }
+      setConflict(null)
+      await loadClients()
+      navigate(`/clients/${result.clientId}/dashboard`)
+    } catch (err) {
+      setConflict(null)
+      setToast(err instanceof Error ? err.message : "Échec de l'import.")
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  async function handleImportClick() {
+    const picked = await reportsService.pickImportFile()
+    if (picked.canceled) return
+    await runImport(picked.filePath)
+  }
+
   if (view === 'form') {
     return (
       <div className="p-8 max-w-lg">
@@ -157,13 +186,24 @@ export function ClientsPage() {
         <span className="text-marine/50 text-base">
           {!loading && `${clients.length} client${clients.length !== 1 ? 's' : ''}`}
         </span>
-        <button
-          onClick={openForm}
-          className="flex items-center gap-2 px-4 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors"
-        >
-          <Plus size={16} />
-          Nouveau client
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleImportClick}
+            disabled={importing}
+            title="Importer un dossier client exporté en .kinesio"
+            className="flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Upload size={16} />
+            {importing ? 'Import…' : 'Importer'}
+          </button>
+          <button
+            onClick={openForm}
+            className="flex items-center gap-2 px-4 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors"
+          >
+            <Plus size={16} />
+            Nouveau client
+          </button>
+        </div>
       </div>
 
       {loading && (
@@ -194,9 +234,7 @@ export function ClientsPage() {
               to={`/clients/${client.id}/dashboard`}
               className="group flex items-center gap-4 bg-white border border-cream-dark rounded-lg px-4 py-3.5 hover:border-gold/50 hover:shadow-sm transition-all"
             >
-              <div className="w-10 h-10 bg-marine/8 rounded-full flex items-center justify-center shrink-0 group-hover:bg-gold/15 transition-colors">
-                <User size={18} className="text-marine/40 group-hover:text-gold transition-colors" />
-              </div>
+              <ClientAvatar client={client} size="sm" className="group-hover:ring-2 group-hover:ring-gold/30 transition-all" />
               <div className="flex-1 min-w-0">
                 <p className="text-marine font-medium text-base truncate">{client.name}</p>
                 <p className="text-marine/50 text-sm mt-0.5 truncate">{client.email}</p>
@@ -204,6 +242,48 @@ export function ClientsPage() {
               <ChevronRight size={18} className="text-marine/25 group-hover:text-gold/80 transition-colors shrink-0" />
             </Link>
           ))}
+        </div>
+      )}
+
+      {conflict && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
+          <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark p-6">
+            <h2 className="text-marine font-semibold text-xl mb-3">Un client porte déjà ce courriel</h2>
+            <p className="text-marine/70 text-base mb-2">
+              Le dossier importé correspond à <span className="font-semibold text-marine">{conflict.existingName}</span>, qui
+              existe déjà.
+            </p>
+            <p className="text-marine/50 text-sm mb-5">
+              « Fusionner » ajoute les bilans et mesures du fichier au dossier existant (les bilans aux mêmes dates sont
+              ignorés). « Créer un doublon » crée une nouvelle fiche distincte.
+            </p>
+            <div className="flex items-center justify-end gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setConflict(null)}
+                disabled={importing}
+                className="px-4 py-2 text-marine/65 text-base hover:text-marine transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => runImport(conflict.filePath, 'create')}
+                disabled={importing}
+                className="px-4 py-2 text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Créer un doublon
+              </button>
+              <button
+                type="button"
+                onClick={() => runImport(conflict.filePath, 'merge')}
+                disabled={importing}
+                className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Fusionner
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

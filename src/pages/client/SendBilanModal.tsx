@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Loader2, Paperclip } from 'lucide-react'
 import { settingsService } from '../../services/settings'
-import { emailService } from '../../services/email'
+import { reportsService } from '../../services/reports'
 
 interface SendBilanModalProps {
   client: Client
@@ -62,8 +62,8 @@ export function SendBilanModal({ client, onCancel, onSent }: SendBilanModalProps
     }
     try {
       setSending(true)
-      const result = await emailService.sendBilan(client.id, subject, body)
-      onSent(result.sentTo)
+      await reportsService.sendReportByEmail(client.id, subject, body)
+      onSent(client.email)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur lors de l\'envoi.'
       setError(message)
@@ -112,7 +112,7 @@ export function SendBilanModal({ client, onCancel, onSent }: SendBilanModalProps
 
               <div className="flex items-center gap-2 text-marine/65 text-sm bg-cream/70 border border-cream-dark rounded-md px-3 py-2">
                 <Paperclip size={15} className="text-gold shrink-0" />
-                Une copie PDF du dashboard sera attachée automatiquement.
+                Le rapport PDF de progression sera attaché automatiquement.
               </div>
             </div>
           )}

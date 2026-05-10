@@ -4,10 +4,12 @@ import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
 import { ClientsPage } from './pages/ClientsPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { ReportPage } from './pages/ReportPage'
 import { ClientDetailLayout } from './pages/client/ClientDetailLayout'
 import { DashboardTab } from './pages/client/tabs/DashboardTab'
 import { BilansTab } from './pages/client/tabs/BilansTab'
 import { BilanDetailTab } from './pages/client/tabs/BilanDetailTab'
+import { MesuresTab } from './pages/client/tabs/MesuresTab'
 import { PlaceholderTab } from './pages/client/tabs/PlaceholderTab'
 import { UpdateProvider } from './contexts/UpdateContext'
 import { UpdateToast } from './components/UpdateToast'
@@ -66,6 +68,8 @@ export function App() {
     <UpdateProvider>
       <HashRouter>
         <Routes>
+          {/* Route dédiée à la génération du PDF — layout autonome, sans le shell de l'app. */}
+          <Route path="/report/:id" element={<ReportPage />} />
           <Route element={<AppShell />}>
             <Route index element={<Navigate to="/clients" replace />} />
             <Route path="/clients" element={<ClientsPage />} />
@@ -75,7 +79,7 @@ export function App() {
               <Route path="dashboard" element={<DashboardTab />} />
               <Route path="bilans" element={<BilansTab />} />
               <Route path="bilans/:bilanId" element={<BilanDetailTab />} />
-              <Route path="mesures" element={<PlaceholderTab title="Mesures" />} />
+              <Route path="mesures" element={<MesuresTab />} />
               <Route path="notes" element={<PlaceholderTab title="Notes" />} />
               <Route path="historique" element={<PlaceholderTab title="Historique" />} />
             </Route>

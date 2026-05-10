@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
-import { ArrowLeft, Mail, Pencil, Trash2 } from 'lucide-react'
+import { ArrowLeft, Download, ImagePlus, Mail, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { clientsService } from '../../services/clients'
+import { reportsService } from '../../services/reports'
+import { ClientAvatar } from '../../components/ClientAvatar'
 
 interface TabDef {
   to: string
@@ -12,7 +14,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { to: 'dashboard', label: 'Dashboard', enabled: true },
   { to: 'bilans', label: 'Bilans', enabled: true },
-  { to: 'mesures', label: 'Mesures', enabled: false },
+  { to: 'mesures', label: 'Mesures', enabled: true },
   { to: 'notes', label: 'Notes', enabled: false },
   { to: 'historique', label: 'Historique', enabled: false }
 ]
@@ -28,13 +30,35 @@ export function useClient(): Client {
 export function ClientDetailLayout() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const printMode = searchParams.get('print') === '1'
   const [client, setClient] = useState<Client | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [editing, setEditing] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 3500)
+    return () => clearTimeout(t)
+  }, [toast])
+
+  // Permet à un onglet (ex. Mesures) d'ouvrir directement le modal d'édition
+  // via `?edit=1` pour compléter le profil (date de naissance / sexe).
+  useEffect(() => {
+    if (searchParams.get('edit') === '1') setEditing(true)
+  }, [searchParams])
+
+  function closeEdit() {
+    setEditing(false)
+    if (searchParams.has('edit')) {
+      const next = new URLSearchParams(searchParams)
+      next.delete('edit')
+      setSearchParams(next, { replace: true })
+    }
+  }
 
   useEffect(() => {
     let cancelled = false
@@ -102,11 +126,14 @@ export function ClientDetailLayout() {
         </Link>
 
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h1 className="text-marine font-semibold text-2xl truncate">{client.name}</h1>
-            <div className="flex items-center gap-2 mt-1.5 text-marine/60 text-base">
-              <Mail size={15} className="shrink-0" />
-              <span className="truncate">{client.email}</span>
+          <div className="flex items-center gap-4 min-w-0">
+            <ClientAvatar client={client} size="lg" />
+            <div className="min-w-0">
+              <h1 className="text-marine font-semibold text-2xl truncate">{client.name}</h1>
+              <div className="flex items-center gap-2 mt-1.5 text-marine/60 text-base">
+                <Mail size={15} className="shrink-0" />
+                <span className="truncate">{client.email}</span>
+              </div>
             </div>
           </div>
 
@@ -128,6 +155,7 @@ export function ClientDetailLayout() {
               <Trash2 size={15} />
               Supprimer
             </button>
+            <ClientActionsMenu clientId={client.id} onMessage={setToast} />
           </div>
         </div>
 
@@ -168,10 +196,11 @@ export function ClientDetailLayout() {
       {editing && (
         <EditClientModal
           client={client}
-          onCancel={() => setEditing(false)}
+          onCancel={closeEdit}
+          onUpdated={setClient}
           onSaved={updated => {
             setClient(updated)
-            setEditing(false)
+            closeEdit()
           }}
         />
       )}
@@ -183,6 +212,79 @@ export function ClientDetailLayout() {
           onConfirm={handleDelete}
         />
       )}
+
+      {toast && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
+          {toast}
+        </div>
+      )}
+    </div>
+  )
+}
+
+interface ClientActionsMenuProps {
+  clientId: string
+  onMessage: (message: string) => void
+}
+
+function ClientActionsMenu({ clientId, onMessage }: ClientActionsMenuProps) {
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function onDown(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false)
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    window.addEventListener('mousedown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('mousedown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  async function handleExport() {
+    setOpen(false)
+    setBusy(true)
+    try {
+      const result = await reportsService.exportClientToJson(clientId)
+      if ('filePath' in result) onMessage('Dossier client exporté')
+    } catch (err) {
+      onMessage(err instanceof Error ? err.message : "Échec de l'export.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div ref={wrapRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        disabled={busy}
+        title="Plus d'actions"
+        aria-label="Plus d'actions"
+        className="flex items-center px-2 py-2 text-marine/60 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <MoreVertical size={16} />
+      </button>
+      {open && (
+        <div className="absolute right-0 mt-1.5 w-60 bg-white border border-cream-dark rounded-md shadow-xl py-1 z-30">
+          <button
+            type="button"
+            onClick={handleExport}
+            className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-marine/80 hover:bg-cream hover:text-marine text-base text-left transition-colors"
+          >
+            <Download size={15} className="text-gold shrink-0" />
+            Exporter en JSON (.kinesio)
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -190,22 +292,67 @@ export function ClientDetailLayout() {
 interface EditClientModalProps {
   client: Client
   onCancel: () => void
+  /** Appelé après une modif appliquée immédiatement (photo) — ne ferme pas le modal. */
+  onUpdated: (client: Client) => void
+  /** Appelé après l'enregistrement du formulaire — ferme le modal. */
   onSaved: (client: Client) => void
 }
 
-function EditClientModal({ client, onCancel, onSaved }: EditClientModalProps) {
+function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientModalProps) {
+  // `current` reflète l'état serveur du client (incl. la photo, modifiée à part) ;
+  // les autres champs sont édités localement puis enregistrés à la soumission.
+  const [current, setCurrent] = useState(client)
   const [name, setName] = useState(client.name)
   const [email, setEmail] = useState(client.email)
+  const [birthdate, setBirthdate] = useState(client.birthdate ?? '')
+  const [sex, setSex] = useState<'F' | 'M' | ''>(client.sex ?? '')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [avatarBusy, setAvatarBusy] = useState(false)
+  const [confirmRemoveAvatar, setConfirmRemoveAvatar] = useState(false)
+
+  const busy = saving || avatarBusy
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape' && !saving) onCancel()
+      if (e.key === 'Escape' && !busy) onCancel()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onCancel, saving])
+  }, [onCancel, busy])
+
+  async function handleChooseAvatar() {
+    if (busy) return
+    const picked = await clientsService.pickAvatar()
+    if (picked.canceled) return
+    setError(null)
+    setConfirmRemoveAvatar(false)
+    try {
+      setAvatarBusy(true)
+      const updated = await clientsService.setAvatar(client.id, picked.filePath)
+      setCurrent(updated)
+      onUpdated(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Impossible d'enregistrer la photo.")
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
+
+  async function handleRemoveAvatar() {
+    setError(null)
+    try {
+      setAvatarBusy(true)
+      const updated = await clientsService.removeAvatar(client.id)
+      setCurrent(updated)
+      onUpdated(updated)
+      setConfirmRemoveAvatar(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de retirer la photo.')
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -218,11 +365,17 @@ function EditClientModal({ client, onCancel, onSaved }: EditClientModalProps) {
       setError('Le courriel est requis.')
       return
     }
+    if (birthdate && !/^\d{4}-\d{2}-\d{2}$/.test(birthdate)) {
+      setError('Date de naissance invalide.')
+      return
+    }
     try {
       setSaving(true)
       const updated = await clientsService.update(client.id, {
         name: name.trim(),
-        email: email.trim()
+        email: email.trim(),
+        birthdate: birthdate ? birthdate : null,
+        sex: sex ? sex : null
       })
       onSaved(updated)
     } catch (err) {
@@ -243,6 +396,64 @@ function EditClientModal({ client, onCancel, onSaved }: EditClientModalProps) {
               {error}
             </div>
           )}
+
+          <div className="flex items-center gap-4 mb-5">
+            <button
+              type="button"
+              onClick={handleChooseAvatar}
+              disabled={busy}
+              title="Changer la photo"
+              className="relative group rounded-full disabled:cursor-not-allowed"
+            >
+              <ClientAvatar client={current} size="lg" />
+              <span className="absolute inset-0 rounded-full bg-marine/65 text-cream text-[11px] font-medium leading-tight flex items-center justify-center text-center px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                {avatarBusy ? '…' : 'Changer la photo'}
+              </span>
+            </button>
+            <div className="flex flex-col items-start gap-1.5 min-w-0">
+              <button
+                type="button"
+                onClick={handleChooseAvatar}
+                disabled={busy}
+                className="inline-flex items-center gap-1.5 text-marine/80 hover:text-marine text-sm font-medium border border-cream-dark hover:border-gold/60 rounded-md px-3 py-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ImagePlus size={14} />
+                Choisir une photo…
+              </button>
+              {current.avatarFilename &&
+                (confirmRemoveAvatar ? (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-marine/60">Retirer&nbsp;?</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      disabled={busy}
+                      className="text-red-600 hover:text-red-700 font-medium disabled:opacity-50"
+                    >
+                      Oui
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmRemoveAvatar(false)}
+                      disabled={busy}
+                      className="text-marine/50 hover:text-marine"
+                    >
+                      Non
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmRemoveAvatar(true)}
+                    disabled={busy}
+                    className="text-red-600/80 hover:text-red-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Retirer la photo
+                  </button>
+                ))}
+              <p className="text-marine/40 text-xs">PNG, JPG ou WEBP · max 10&nbsp;Mo</p>
+            </div>
+          </div>
 
           <div className="space-y-4">
             <div>
@@ -265,20 +476,68 @@ function EditClientModal({ client, onCancel, onSaved }: EditClientModalProps) {
                 className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
               />
             </div>
+
+            <div>
+              <label className="block text-base font-medium text-marine mb-1.5">
+                Date de naissance <span className="text-marine/40 font-normal">(facultatif)</span>
+              </label>
+              <input
+                type="date"
+                value={birthdate}
+                max={new Date().toISOString().slice(0, 10)}
+                onChange={e => setBirthdate(e.target.value)}
+                className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+              />
+              <p className="text-marine/40 text-sm mt-1">Sert au calcul du pourcentage de gras à partir des plis cutanés.</p>
+            </div>
+
+            <div>
+              <label className="block text-base font-medium text-marine mb-1.5">
+                Sexe <span className="text-marine/40 font-normal">(facultatif)</span>
+              </label>
+              <div className="flex items-center gap-5">
+                {([
+                  { value: 'F', label: 'Femme' },
+                  { value: 'M', label: 'Homme' }
+                ] as const).map(opt => (
+                  <label key={opt.value} className="flex items-center gap-2 text-marine text-base cursor-pointer">
+                    <input
+                      type="radio"
+                      name="client-sex"
+                      value={opt.value}
+                      checked={sex === opt.value}
+                      onChange={() => setSex(opt.value)}
+                      className="accent-gold"
+                    />
+                    {opt.label}
+                  </label>
+                ))}
+                {sex && (
+                  <button
+                    type="button"
+                    onClick={() => setSex('')}
+                    className="text-marine/45 hover:text-marine text-sm underline"
+                  >
+                    Effacer
+                  </button>
+                )}
+              </div>
+              <p className="text-marine/40 text-sm mt-1">Détermine la silhouette affichée et les coefficients du calcul.</p>
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-3 mt-6">
             <button
               type="button"
               onClick={onCancel}
-              disabled={saving}
+              disabled={busy}
               className="px-4 py-2 text-marine/60 text-base hover:text-marine transition-colors"
             >
               Annuler
             </button>
             <button
               type="submit"
-              disabled={saving}
+              disabled={busy}
               className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Enregistrement…' : 'Enregistrer'}

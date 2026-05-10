@@ -15,6 +15,7 @@
     "electron/**/*",
     "db/**/*",
     "electron.vite.config.ts",
-    "drizzle.config.ts"
+    "drizzle.config.ts",
+    "src/lib/body-fat-calculator.ts"
   ]
 }

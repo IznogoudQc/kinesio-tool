@@ -1,9 +1,17 @@
 /// <reference types="vite/client" />
 
+type Sex = 'F' | 'M'
+
 interface Client {
   id: string
   name: string
   email: string
+  /** Date de naissance ISO `AAAA-MM-JJ`, ou `null` si non renseignée. */
+  birthdate: string | null
+  /** Sexe biologique — sert à la silhouette + au calcul du % gras. */
+  sex: Sex | null
+  /** Nom du fichier de la photo de profil (`uuid.webp` dans `userData/avatars/`), ou `null`. */
+  avatarFilename: string | null
   createdAt: string
   updatedAt: string
 }
@@ -110,13 +118,111 @@ interface SmtpTestResult {
   error?: string
 }
 
+// ── Mesures : circonférences corporelles ──────────────────────────────────────
+interface MesureCirconferences {
+  id: string
+  clientId: string
+  date: string
+  /** Toutes les circonférences en cm, `null` si non mesurée. */
+  cou: number | null
+  epauleG: number | null
+  epauleD: number | null
+  bicepsG: number | null
+  bicepsD: number | null
+  poitrine: number | null
+  taille: number | null
+  abdomen: number | null
+  hanche: number | null
+  cuisseG: number | null
+  cuisseD: number | null
+  molletG: number | null
+  molletD: number | null
+  notes: string | null
+  createdAt: string
+}
+
+/** Champs modifiables d'une entrée de circonférences (mesures en cm). */
+interface CirconferencesInput {
+  date?: string
+  cou?: number
+  epauleG?: number
+  epauleD?: number
+  bicepsG?: number
+  bicepsD?: number
+  poitrine?: number
+  taille?: number
+  abdomen?: number
+  hanche?: number
+  cuisseG?: number
+  cuisseD?: number
+  molletG?: number
+  molletD?: number
+  notes?: string
+}
+
+// ── Mesures : plis cutanés (4 plis Durnin-Womersley) ──────────────────────────
+interface MesurePlisCutanes {
+  id: string
+  clientId: string
+  date: string
+  /** Plis en mm. */
+  triceps: number
+  biceps: number
+  sousscapulaire: number
+  iliaque: number
+  /** Valeurs calculées et figées au moment de l'enregistrement. */
+  somme4Plis: number
+  densiteCorporelle: number
+  pourcentageGrasSiri: number
+  pourcentageGrasBrozek: number
+  ageAuCalcul: number
+  sexeAuCalcul: string
+  notes: string | null
+  createdAt: string
+}
+
+/** Champs modifiables d'une entrée de plis cutanés (les 4 plis en mm). */
+interface PlisInput {
+  date?: string
+  triceps: number
+  biceps: number
+  sousscapulaire: number
+  iliaque: number
+  notes?: string
+}
+
 interface Window {
   api: {
     clients: {
       list(): Promise<Client[]>
       create(data: { name: string; email: string }): Promise<Client>
-      update(id: string, data: { name?: string; email?: string }): Promise<Client>
+      update(
+        id: string,
+        data: { name?: string; email?: string; birthdate?: string | null; sex?: Sex | null }
+      ): Promise<Client>
       delete(id: string): Promise<void>
+      /** Ouvre le dialog natif de sélection d'une image (PNG/JPG/JPEG/WEBP). */
+      pickAvatar(): Promise<{ canceled: true } | { canceled: false; filePath: string }>
+      /** Optimise puis enregistre l'image comme photo de profil — retourne le client à jour. */
+      setAvatar(clientId: string, sourcePath: string): Promise<Client>
+      /** Supprime la photo de profil — retourne le client à jour. */
+      removeAvatar(clientId: string): Promise<Client>
+      /** Renvoie une data URL (image/webp) affichable, ou `null` si le fichier est introuvable. */
+      getAvatarUrl(filename: string): Promise<string | null>
+    }
+    mesures: {
+      circ: {
+        list(clientId: string): Promise<MesureCirconferences[]>
+        create(clientId: string, data: CirconferencesInput): Promise<MesureCirconferences>
+        update(id: string, data: CirconferencesInput): Promise<MesureCirconferences>
+        delete(id: string): Promise<void>
+      }
+      plis: {
+        list(clientId: string): Promise<MesurePlisCutanes[]>
+        create(clientId: string, data: PlisInput): Promise<MesurePlisCutanes>
+        update(id: string, data: PlisInput): Promise<MesurePlisCutanes>
+        delete(id: string): Promise<void>
+      }
     }
     settings: {
       getProfile(): Promise<ProfileSettings>
@@ -129,8 +235,22 @@ interface Window {
       getEmailTemplate(): Promise<EmailTemplate>
       setEmailTemplate(data: EmailTemplate): Promise<void>
     }
-    email: {
-      sendBilan(data: { clientId: string; subject: string; body: string }): Promise<{ sentTo: string }>
+    reports: {
+      /** Génère le rapport PDF d'un client (route React `/report/:id`) — retourne le chemin du PDF. */
+      generatePdf(clientId: string): Promise<string>
+      /** Ouvre un fichier local avec l'application par défaut du système. */
+      openPath(filePath: string): Promise<void>
+      /** Génère le rapport PDF, l'attache et l'envoie au client par courriel, puis supprime le fichier temp. */
+      sendEmail(data: { clientId: string; subject: string; body: string }): Promise<{ sentTo: string }>
+      /** Exporte tout le dossier d'un client en `.kinesio` (dialog natif inclus). */
+      exportJson(clientId: string): Promise<{ filePath: string } | { canceled: true }>
+      /** Ouvre le dialog natif de sélection d'un fichier `.kinesio` à importer. */
+      pickImportFile(): Promise<{ canceled: true } | { canceled: false; filePath: string; fileName: string }>
+      /** Importe un fichier `.kinesio`. Sans `mode`, retourne `conflict` si un client a déjà ce courriel. */
+      importJson(data: {
+        filePath: string
+        mode?: 'create' | 'merge'
+      }): Promise<{ status: 'ok'; clientId: string } | { status: 'conflict'; existingName: string }>
     }
     bilans: {
       pickDocxFile(): Promise<PickedDocx>

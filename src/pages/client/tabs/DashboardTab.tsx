@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ClipboardList, FileUp, Mail, TrendingUp } from 'lucide-react'
+import { Calculator, ClipboardList, FileText, FileUp, Mail, Ruler, TrendingUp } from 'lucide-react'
 import {
   Bar,
   CartesianGrid,
@@ -14,8 +14,11 @@ import {
   YAxis
 } from 'recharts'
 import { useClient } from '../ClientDetailLayout'
+import { ClientAvatar } from '../../../components/ClientAvatar'
 import { bilansService } from '../../../services/bilans'
+import { mesuresService } from '../../../services/mesures'
 import { settingsService } from '../../../services/settings'
+import { reportsService } from '../../../services/reports'
 import { SendBilanModal } from '../SendBilanModal'
 import { BilanForm } from '../BilanForm'
 import { compareField, type ValueComparison } from '../../../lib/bilan-comparison'
@@ -130,22 +133,32 @@ export function DashboardTab() {
 
   const [bilans, setBilans] = useState<Bilan[] | null>(null)
   const [stats, setStats] = useState<BilanStats | null>(null)
+  const [circList, setCircList] = useState<MesureCirconferences[]>([])
+  const [plisList, setPlisList] = useState<MesurePlisCutanes[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const [smtpReady, setSmtpReady] = useState<boolean | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [generating, setGenerating] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     setError(null)
-    Promise.all([bilansService.getBilansForClient(client.id), bilansService.getBilanStats(client.id)])
-      .then(([list, st]) => {
+    Promise.all([
+      bilansService.getBilansForClient(client.id),
+      bilansService.getBilanStats(client.id),
+      mesuresService.circonferences.list(client.id),
+      mesuresService.plis.list(client.id)
+    ])
+      .then(([list, st, circ, plis]) => {
         if (cancelled) return
         setBilans(list)
         setStats(st)
+        setCircList(circ)
+        setPlisList(plis)
       })
       .catch(() => {
         if (!cancelled) setError('Impossible de charger les bilans du client.')
@@ -211,14 +224,25 @@ export function DashboardTab() {
     navigate(`/clients/${client.id}/bilans`)
   }
 
+  async function handleGenerateReport() {
+    setGenerating(true)
+    try {
+      const path = await reportsService.generatePdfForClient(client.id)
+      await reportsService.openPdf(path)
+      setToast('Rapport PDF généré')
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : 'Erreur lors de la génération du rapport.')
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   // ── État A : aucun bilan ────────────────────────────────────────────────────
   if (count === 0 || !latest) {
     return (
       <div className="p-8 max-w-3xl">
         <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="w-20 h-20 bg-marine-light/95 border border-gold/20 rounded-2xl flex items-center justify-center mb-5">
-            <ClipboardList size={36} className="text-gold" />
-          </div>
+          <ClientAvatar client={client} size="xl" className="mb-5 shadow-sm" />
           <h2 className="text-marine font-semibold text-xl">Aucun bilan enregistré pour {client.name}</h2>
           <p className="text-marine/50 text-base mt-2 max-w-md">
             Importez un bilan <code className="text-marine/45">.doc</code> ou <code className="text-marine/45">.docx</code>{' '}
@@ -245,24 +269,38 @@ export function DashboardTab() {
 
   const Header = (
     <div className="flex items-start justify-between gap-4 flex-wrap">
-      <div className="min-w-0">
-        <h1 className="text-marine font-semibold text-2xl">{client.name}</h1>
-        <p className="text-marine/55 text-base mt-1">
-          Dernier bilan : <span className="text-marine font-medium">{formatBilanDate(latest.date)}</span>
-          {count > 1 && <span className="text-marine/40"> · {count} bilans au total</span>}
-        </p>
+      <div className="flex items-center gap-5 min-w-0">
+        <ClientAvatar client={client} size="xl" className="shadow-sm" />
+        <div className="min-w-0">
+          <h1 className="text-marine font-semibold text-2xl">{client.name}</h1>
+          <p className="text-marine/55 text-base mt-1">
+            Dernier bilan : <span className="text-marine font-medium">{formatBilanDate(latest.date)}</span>
+            {count > 1 && <span className="text-marine/40"> · {count} bilans au total</span>}
+          </p>
+        </div>
       </div>
       {!printMode && (
-        <button
-          type="button"
-          onClick={() => setShowModal(true)}
-          disabled={sendDisabled}
-          title={sendTooltip}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <Mail size={17} />
-          Envoyer ce dashboard
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleGenerateReport}
+            disabled={generating}
+            className="inline-flex items-center gap-2 px-4 py-2.5 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FileText size={17} />
+            {generating ? 'Génération…' : 'Générer le rapport PDF'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowModal(true)}
+            disabled={sendDisabled}
+            title={sendTooltip}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Mail size={17} />
+            Envoyer au client
+          </button>
+        </div>
       )}
     </div>
   )
@@ -309,6 +347,7 @@ export function DashboardTab() {
       <div className="p-8 max-w-5xl space-y-5">
         {Header}
         {HeroStats}
+        <MesuresSection circList={circList} plisList={plisList} />
         <Card title="Dernier bilan complet" icon={ClipboardList} className="md:p-7">
           <BilanForm date={latest.date} data={latest.data} readOnly variant="marine" />
         </Card>
@@ -338,6 +377,7 @@ export function DashboardTab() {
     <div className="p-8 max-w-5xl space-y-5">
       {Header}
       {HeroStats}
+      <MesuresSection circList={circList} plisList={plisList} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <Card title="VO2max au fil du temps" icon={TrendingUp}>
@@ -482,5 +522,162 @@ function Toast({ message }: { message: string }) {
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
       {message}
     </div>
+  )
+}
+
+// ── Section « Mesures » du dashboard (circonférences + % gras) ───────────────────
+function num2(v: number | null | undefined): number | null {
+  return typeof v === 'number' && !Number.isNaN(v) ? v : null
+}
+
+function avgGD(a: number | null, b: number | null): number | null {
+  const vals = [a, b].filter((v): v is number => typeof v === 'number')
+  return vals.length ? vals.reduce((s, x) => s + x, 0) / vals.length : null
+}
+
+function Trend({ current, previous, lowerIsBetter }: { current: number | null; previous: number | null; lowerIsBetter: boolean }) {
+  if (current === null || previous === null) return null
+  const delta = current - previous
+  if (delta === 0) return <p className="text-cream/40 text-xs mt-1.5">= stable vs précédente</p>
+  const improvement = lowerIsBetter ? delta < 0 : delta > 0
+  return (
+    <p className={`text-sm mt-1.5 font-semibold ${improvement ? 'text-green-400' : 'text-red-400'}`}>
+      {delta > 0 ? '▲' : '▼'} {formatNumber(Math.abs(delta))}
+      <span className="text-cream/40 font-normal"> vs précédente</span>
+    </p>
+  )
+}
+
+function MesureMini({
+  label,
+  value,
+  unit,
+  children
+}: {
+  label: string
+  value: number | null
+  unit: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div>
+      <p className="text-cream/55 text-xs uppercase tracking-wide">{label}</p>
+      <p className="text-cream text-2xl font-bold mt-0.5 leading-tight">
+        {value === null ? <span className="text-cream/25">—</span> : formatNumber(value)}
+        {value !== null && <span className="text-cream/40 text-base font-medium ml-1.5">{unit}</span>}
+      </p>
+      {children}
+    </div>
+  )
+}
+
+function MesuresSection({ circList, plisList }: { circList: MesureCirconferences[]; plisList: MesurePlisCutanes[] }) {
+  if (circList.length === 0 && plisList.length === 0) return null
+
+  const c0 = circList[0] as MesureCirconferences | undefined
+  const c1 = circList[1] as MesureCirconferences | undefined
+  const p0 = plisList[0] as MesurePlisCutanes | undefined
+  const p1 = plisList[1] as MesurePlisCutanes | undefined
+
+  const circChart = [...circList]
+    .reverse()
+    .map(r => ({ label: formatBilanMonth(r.date), taille: num2(r.taille), hanche: num2(r.hanche) }))
+  const plisChart = [...plisList].reverse().map(r => ({ label: formatBilanMonth(r.date), gras: num2(r.pourcentageGrasSiri) }))
+
+  return (
+    <>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <Card title="Mesures actuelles" icon={Ruler}>
+          {c0 ? (
+            <>
+              <p className="text-cream/45 text-sm mb-4">Dernière prise : {formatBilanDate(c0.date)}</p>
+              <div className="grid grid-cols-2 gap-x-5 gap-y-4">
+                <MesureMini label="Tour de taille" value={num2(c0.taille)} unit="cm">
+                  <Trend current={num2(c0.taille)} previous={num2(c1?.taille)} lowerIsBetter />
+                </MesureMini>
+                <MesureMini label="Tour de hanche" value={num2(c0.hanche)} unit="cm">
+                  <Trend current={num2(c0.hanche)} previous={num2(c1?.hanche)} lowerIsBetter />
+                </MesureMini>
+                <MesureMini label="Biceps (moy. G/D)" value={avgGD(num2(c0.bicepsG), num2(c0.bicepsD))} unit="cm">
+                  <Trend
+                    current={avgGD(num2(c0.bicepsG), num2(c0.bicepsD))}
+                    previous={c1 ? avgGD(num2(c1.bicepsG), num2(c1.bicepsD)) : null}
+                    lowerIsBetter={false}
+                  />
+                </MesureMini>
+                <MesureMini label="Cuisse (moy. G/D)" value={avgGD(num2(c0.cuisseG), num2(c0.cuisseD))} unit="cm">
+                  <Trend
+                    current={avgGD(num2(c0.cuisseG), num2(c0.cuisseD))}
+                    previous={c1 ? avgGD(num2(c1.cuisseG), num2(c1.cuisseD)) : null}
+                    lowerIsBetter={false}
+                  />
+                </MesureMini>
+              </div>
+            </>
+          ) : (
+            <p className="text-cream/45 text-base">Aucune circonférence enregistrée pour ce client.</p>
+          )}
+        </Card>
+
+        <Card title="% de gras corporel" icon={Calculator}>
+          {p0 ? (
+            <>
+              <p className="text-cream/45 text-sm mb-4">Dernier calcul : {formatBilanDate(p0.date)}</p>
+              <p className="text-gold text-4xl font-bold leading-none">
+                {formatNumber(p0.pourcentageGrasSiri)}
+                <span className="text-2xl"> %</span>
+                <span className="text-cream/40 text-sm font-medium ml-2">Siri</span>
+              </p>
+              <p className="text-cream/55 text-base mt-2">
+                Brozek : {formatNumber(p0.pourcentageGrasBrozek)} % · somme des 4 plis {formatNumber(p0.somme4Plis)} mm
+              </p>
+              <Trend current={num2(p0.pourcentageGrasSiri)} previous={num2(p1?.pourcentageGrasSiri)} lowerIsBetter />
+              <p className="text-cream/40 text-xs mt-2">
+                Calculé pour {p0.ageAuCalcul} ans · {p0.sexeAuCalcul === 'F' ? 'femme' : 'homme'} (Durnin-Womersley)
+              </p>
+            </>
+          ) : (
+            <p className="text-cream/45 text-base">Aucun calcul de plis cutanés pour ce client.</p>
+          )}
+        </Card>
+      </div>
+
+      {(circList.length >= 2 || plisList.length >= 2) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {circList.length >= 2 && (
+            <Card title="Évolution — tour de taille / hanche" icon={TrendingUp}>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={circChart} margin={{ top: 4, right: 12, bottom: 0, left: -8 }}>
+                    <CartesianGrid stroke={GRID_STROKE} vertical={false} />
+                    <XAxis dataKey="label" tick={AXIS_TICK} stroke={AXIS_STROKE} />
+                    <YAxis tick={AXIS_TICK} stroke={AXIS_STROKE} width={44} domain={['auto', 'auto']} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Legend wrapperStyle={LEGEND_STYLE} />
+                    <Line type="monotone" dataKey="taille" name="Tour de taille (cm)" stroke={COLORS.gold} strokeWidth={2.5} dot={{ r: 3.5, fill: COLORS.gold }} connectNulls />
+                    <Line type="monotone" dataKey="hanche" name="Tour de hanche (cm)" stroke={COLORS.marineSoft} strokeWidth={2.5} dot={{ r: 3.5, fill: COLORS.marineSoft }} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          )}
+          {plisList.length >= 2 && (
+            <Card title="Évolution — % de gras (Siri)" icon={TrendingUp}>
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={plisChart} margin={{ top: 4, right: 12, bottom: 0, left: -8 }}>
+                    <CartesianGrid stroke={GRID_STROKE} vertical={false} />
+                    <XAxis dataKey="label" tick={AXIS_TICK} stroke={AXIS_STROKE} />
+                    <YAxis tick={AXIS_TICK} stroke={AXIS_STROKE} width={44} domain={['auto', 'auto']} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} />
+                    <Line type="monotone" dataKey="gras" name="% de gras (Siri)" stroke={COLORS.goldLight} strokeWidth={2.5} dot={{ r: 4, fill: COLORS.goldLight }} activeDot={{ r: 5 }} connectNulls />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+    </>
   )
 }

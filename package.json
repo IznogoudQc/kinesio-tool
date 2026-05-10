@@ -1,6 +1,6 @@
 {
   "name": "kinesio-tool",
-  "version": "0.1.4",
+  "version": "0.1.9",
   "description": "Application locale pour Marie-Eve kinésiologue",
   "main": "out/main/index.js",
   "author": "Kinésio Conseil",
@@ -29,6 +29,7 @@
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.15.0",
     "recharts": "^3.8.1",
+    "sharp": "^0.34.5",
     "zod": "^3.24.0"
   },
   "devDependencies": {

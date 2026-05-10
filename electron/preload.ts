@@ -6,10 +6,43 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('clients:list'),
     create: (data: { name: string; email: string }) =>
       ipcRenderer.invoke('clients:create', data),
-    update: (id: string, data: { name?: string; email?: string }) =>
+    update: (
+      id: string,
+      data: { name?: string; email?: string; birthdate?: string | null; sex?: 'F' | 'M' | null }
+    ) =>
       ipcRenderer.invoke('clients:update', id, data),
     delete: (id: string) =>
-      ipcRenderer.invoke('clients:delete', id)
+      ipcRenderer.invoke('clients:delete', id),
+    pickAvatar: () =>
+      ipcRenderer.invoke('clients:pick-avatar'),
+    setAvatar: (clientId: string, sourcePath: string) =>
+      ipcRenderer.invoke('clients:set-avatar', clientId, sourcePath),
+    removeAvatar: (clientId: string) =>
+      ipcRenderer.invoke('clients:remove-avatar', clientId),
+    getAvatarUrl: (filename: string) =>
+      ipcRenderer.invoke('clients:get-avatar-url', filename)
+  },
+  mesures: {
+    circ: {
+      list: (clientId: string) =>
+        ipcRenderer.invoke('mesures:circ:list', clientId),
+      create: (clientId: string, data: unknown) =>
+        ipcRenderer.invoke('mesures:circ:create', clientId, data),
+      update: (id: string, data: unknown) =>
+        ipcRenderer.invoke('mesures:circ:update', id, data),
+      delete: (id: string) =>
+        ipcRenderer.invoke('mesures:circ:delete', id)
+    },
+    plis: {
+      list: (clientId: string) =>
+        ipcRenderer.invoke('mesures:plis:list', clientId),
+      create: (clientId: string, data: unknown) =>
+        ipcRenderer.invoke('mesures:plis:create', clientId, data),
+      update: (id: string, data: unknown) =>
+        ipcRenderer.invoke('mesures:plis:update', id, data),
+      delete: (id: string) =>
+        ipcRenderer.invoke('mesures:plis:delete', id)
+    }
   },
   settings: {
     getProfile: () =>
@@ -31,9 +64,19 @@ contextBridge.exposeInMainWorld('api', {
     setEmailTemplate: (data: { subject: string; body: string }) =>
       ipcRenderer.invoke('settings:template:set', data)
   },
-  email: {
-    sendBilan: (data: { clientId: string; subject: string; body: string }) =>
-      ipcRenderer.invoke('email:sendBilan', data)
+  reports: {
+    generatePdf: (clientId: string) =>
+      ipcRenderer.invoke('reports:generate-pdf', clientId),
+    openPath: (filePath: string) =>
+      ipcRenderer.invoke('reports:open-path', filePath),
+    sendEmail: (data: { clientId: string; subject: string; body: string }) =>
+      ipcRenderer.invoke('reports:send-email', data),
+    exportJson: (clientId: string) =>
+      ipcRenderer.invoke('reports:export-json', clientId),
+    pickImportFile: () =>
+      ipcRenderer.invoke('reports:pick-import-file'),
+    importJson: (data: { filePath: string; mode?: 'create' | 'merge' }) =>
+      ipcRenderer.invoke('reports:import-json', data)
   },
   bilans: {
     pickDocxFile: () =>
