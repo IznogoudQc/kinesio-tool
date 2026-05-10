@@ -46,7 +46,7 @@ Conséquence : **l'app et le développeur (toi) n'ont quasi aucune obligation Lo
 
 ## Scope v1
 
-L'app v1 **ne facilite pas activement** ces obligations à Marie-Eve. Elle reproduit simplement sa pratique actuelle (envoi d'emails avec PJ). Voir [[../specs/01-features#v3]] pour les features de conformité renforcée prévues plus tard.
+L'app v1 **ne facilite pas activement** ces obligations à Marie-Eve. Elle reproduit simplement sa pratique actuelle (envoi d'emails avec PJ). Voir [[../specs/01-features#v0-5]] pour les features de conformité renforcée prévues plus tard.
 
 ## Conséquences
 

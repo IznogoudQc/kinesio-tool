@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Plus, User } from 'lucide-react'
+import { ChevronRight, Plus, User } from 'lucide-react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { clientsService } from '../services/clients'
 
 type View = 'list' | 'form'
@@ -17,10 +18,28 @@ export function ClientsPage() {
   const [form, setForm] = useState<FormState>({ name: '', email: '' })
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
+
+  const location = useLocation()
+  const navigate = useNavigate()
 
   useEffect(() => {
     loadClients()
   }, [])
+
+  useEffect(() => {
+    const state = location.state as { deletedClientName?: string } | null
+    if (state?.deletedClientName) {
+      setToast(`${state.deletedClientName} a été supprimé`)
+      navigate(location.pathname, { replace: true, state: null })
+    }
+  }, [location, navigate])
+
+  useEffect(() => {
+    if (!toast) return
+    const t = setTimeout(() => setToast(null), 3500)
+    return () => clearTimeout(t)
+  }, [toast])
 
   async function loadClients() {
     try {
@@ -74,17 +93,17 @@ export function ClientsPage() {
   if (view === 'form') {
     return (
       <div className="p-8 max-w-lg">
-        <h2 className="text-marine font-semibold text-lg mb-6">Nouveau client</h2>
+        <h2 className="text-marine font-semibold text-xl mb-6">Nouveau client</h2>
 
         <form onSubmit={handleSubmit} className="space-y-5">
           {formError && (
-            <div className="text-red-700 text-sm bg-red-50 border border-red-200 rounded-md px-4 py-3">
+            <div className="text-red-700 text-base bg-red-50 border border-red-200 rounded-md px-4 py-3">
               {formError}
             </div>
           )}
 
           <div>
-            <label className="block text-sm font-medium text-marine mb-1.5">
+            <label className="block text-base font-medium text-marine mb-1.5">
               Nom
             </label>
             <input
@@ -93,12 +112,12 @@ export function ClientsPage() {
               onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Marie-Eve Tremblay"
               autoFocus
-              className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+              className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-marine mb-1.5">
+            <label className="block text-base font-medium text-marine mb-1.5">
               Courriel
             </label>
             <input
@@ -106,7 +125,7 @@ export function ClientsPage() {
               value={form.email}
               onChange={e => setForm(prev => ({ ...prev, email: e.target.value }))}
               placeholder="marie@exemple.com"
-              className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+              className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
             />
           </div>
 
@@ -114,7 +133,7 @@ export function ClientsPage() {
             <button
               type="submit"
               disabled={saving}
-              className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-sm hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Enregistrement…' : 'Enregistrer'}
             </button>
@@ -122,7 +141,7 @@ export function ClientsPage() {
               type="button"
               onClick={cancelForm}
               disabled={saving}
-              className="px-4 py-2 text-marine/60 text-sm hover:text-marine transition-colors"
+              className="px-4 py-2 text-marine/60 text-base hover:text-marine transition-colors"
             >
               Annuler
             </button>
@@ -135,24 +154,24 @@ export function ClientsPage() {
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
-        <span className="text-marine/50 text-sm">
+        <span className="text-marine/50 text-base">
           {!loading && `${clients.length} client${clients.length !== 1 ? 's' : ''}`}
         </span>
         <button
           onClick={openForm}
-          className="flex items-center gap-2 px-4 py-2 bg-gold text-marine font-semibold rounded-md text-sm hover:bg-gold-dark transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors"
         >
-          <Plus size={15} />
+          <Plus size={16} />
           Nouveau client
         </button>
       </div>
 
       {loading && (
-        <p className="text-marine/40 text-sm">Chargement…</p>
+        <p className="text-marine/40 text-base">Chargement…</p>
       )}
 
       {loadError && (
-        <p className="text-red-600 text-sm">{loadError}</p>
+        <p className="text-red-600 text-base">{loadError}</p>
       )}
 
       {!loading && !loadError && clients.length === 0 && (
@@ -160,8 +179,8 @@ export function ClientsPage() {
           <div className="w-16 h-16 bg-cream-dark rounded-full flex items-center justify-center mb-4">
             <User size={28} className="text-marine/25" />
           </div>
-          <p className="text-marine/50 text-sm font-medium">Aucun client pour l'instant</p>
-          <p className="text-marine/35 text-xs mt-1">
+          <p className="text-marine/50 text-base font-medium">Aucun client pour l'instant</p>
+          <p className="text-marine/35 text-sm mt-1">
             Cliquez sur « Nouveau client » pour commencer.
           </p>
         </div>
@@ -170,19 +189,27 @@ export function ClientsPage() {
       {!loading && !loadError && clients.length > 0 && (
         <div className="space-y-2 max-w-2xl">
           {clients.map(client => (
-            <div
+            <Link
               key={client.id}
-              className="flex items-center gap-4 bg-white border border-cream-dark rounded-lg px-4 py-3.5 hover:border-gold/40 hover:shadow-sm transition-all"
+              to={`/clients/${client.id}/dashboard`}
+              className="group flex items-center gap-4 bg-white border border-cream-dark rounded-lg px-4 py-3.5 hover:border-gold/50 hover:shadow-sm transition-all"
             >
-              <div className="w-9 h-9 bg-marine/8 rounded-full flex items-center justify-center shrink-0">
-                <User size={16} className="text-marine/40" />
+              <div className="w-10 h-10 bg-marine/8 rounded-full flex items-center justify-center shrink-0 group-hover:bg-gold/15 transition-colors">
+                <User size={18} className="text-marine/40 group-hover:text-gold transition-colors" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-marine font-medium text-sm truncate">{client.name}</p>
-                <p className="text-marine/50 text-xs mt-0.5 truncate">{client.email}</p>
+                <p className="text-marine font-medium text-base truncate">{client.name}</p>
+                <p className="text-marine/50 text-sm mt-0.5 truncate">{client.email}</p>
               </div>
-            </div>
+              <ChevronRight size={18} className="text-marine/25 group-hover:text-gold/80 transition-colors shrink-0" />
+            </Link>
           ))}
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
+          {toast}
         </div>
       )}
     </div>

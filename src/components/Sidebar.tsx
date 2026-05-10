@@ -1,26 +1,54 @@
-import { Users } from 'lucide-react'
+import { Menu, Settings, Users } from 'lucide-react'
+import { NavLink } from 'react-router-dom'
 import { useUpdate } from '../contexts/UpdateContext'
-import logo from '../assets/logo.png'
+import iconLogo from '../assets/icon.png'
 
 interface NavItem {
-  id: string
+  to: string
   label: string
   icon: React.ComponentType<{ size?: number; className?: string }>
+  matchPrefix?: string
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { id: 'clients', label: 'Clients', icon: Users }
+  { to: '/clients', label: 'Clients', icon: Users, matchPrefix: '/clients' }
 ]
 
-interface SidebarProps {
-  activeItem: string
-  onNavChange: (id: string) => void
+const BOTTOM_NAV_ITEMS: NavItem[] = [
+  { to: '/settings', label: 'Paramètres', icon: Settings, matchPrefix: '/settings' }
+]
+
+function navLinkClass(collapsed: boolean) {
+  return ({ isActive }: { isActive: boolean }) =>
+    [
+      'w-full flex items-center transition-colors text-left font-medium px-4 py-3',
+      collapsed ? '' : 'gap-3 text-base',
+      isActive
+        ? 'bg-gold/15 text-cream border-r-2 border-gold'
+        : 'text-cream/60 hover:bg-marine-light/60 hover:text-cream/90'
+    ].join(' ')
 }
 
-function VersionBadge() {
+interface SidebarProps {
+  collapsed: boolean
+  onToggle: () => void
+}
+
+function VersionBadge({ collapsed }: { collapsed: boolean }) {
   const { currentVersion, latestVersion, status, errorMessage, quitAndInstall } = useUpdate()
 
   if (status === 'downloaded') {
+    if (collapsed) {
+      return (
+        <button
+          onClick={quitAndInstall}
+          className="text-gold text-xs animate-pulse cursor-pointer hover:text-gold-light transition-colors"
+          title={`Cliquer pour redémarrer et installer v${latestVersion}`}
+        >
+          v{latestVersion}
+        </button>
+      )
+    }
     return (
       <button
         onClick={quitAndInstall}
@@ -32,7 +60,7 @@ function VersionBadge() {
     )
   }
 
-  if (status === 'available') {
+  if (status === 'available' && !collapsed) {
     return (
       <span className="text-gold text-xs">
         v{currentVersion} → v{latestVersion} disponible
@@ -58,36 +86,73 @@ function VersionBadge() {
   )
 }
 
-export function Sidebar({ activeItem, onNavChange }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   return (
-    <aside className="w-60 bg-marine flex flex-col h-full shrink-0">
-      <div className="px-6 py-4 border-b border-marine-light/40">
-        <img src={logo} alt="Kinésio Outils" className="h-[52px] w-auto" />
+    <aside
+      className={[
+        'bg-marine flex flex-col h-full shrink-0 transition-[width] duration-200 ease-out rounded-tr-2xl',
+        collapsed ? 'w-16' : 'w-60'
+      ].join(' ')}
+    >
+      <div
+        className={[
+          'flex items-center border-b border-marine-light/40 h-14',
+          collapsed ? 'justify-center' : 'justify-between px-4'
+        ].join(' ')}
+      >
+        {!collapsed && (
+          <div className="flex items-center gap-2 min-w-0">
+            <img src={iconLogo} alt="" className="h-7 w-7 shrink-0" />
+            <span className="text-cream font-semibold text-base truncate">Kinésio Outils</span>
+          </div>
+        )}
+        <button
+          onClick={onToggle}
+          title={collapsed ? 'Ouvrir le menu' : 'Replier le menu'}
+          aria-label={collapsed ? 'Ouvrir le menu' : 'Replier le menu'}
+          className="text-cream/70 hover:text-cream hover:bg-marine-light/60 rounded-md p-1.5 transition-colors shrink-0"
+        >
+          <Menu size={20} />
+        </button>
       </div>
 
-      <nav className="flex-1 py-3">
-        {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
-          const isActive = activeItem === id
-          return (
-            <button
-              key={id}
-              onClick={() => onNavChange(id)}
-              className={[
-                'w-full flex items-center gap-3 px-5 py-3 text-sm font-medium transition-colors text-left',
-                isActive
-                  ? 'bg-gold/15 text-cream border-r-2 border-gold'
-                  : 'text-cream/60 hover:bg-marine-light/60 hover:text-cream/90'
-              ].join(' ')}
+      <nav className="flex flex-col flex-1 py-3 min-h-0">
+        <div>
+          {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              title={collapsed ? label : undefined}
+              className={navLinkClass(collapsed)}
             >
-              <Icon size={17} />
-              {label}
-            </button>
-          )
-        })}
+              <Icon size={20} />
+              {!collapsed && <span>{label}</span>}
+            </NavLink>
+          ))}
+        </div>
+
+        <div className="mt-auto">
+          {BOTTOM_NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              title={collapsed ? label : undefined}
+              className={navLinkClass(collapsed)}
+            >
+              <Icon size={20} />
+              {!collapsed && <span>{label}</span>}
+            </NavLink>
+          ))}
+        </div>
       </nav>
 
-      <div className="px-5 py-4 border-t border-marine-light/40">
-        <VersionBadge />
+      <div
+        className={[
+          'border-t border-marine-light/40 flex',
+          collapsed ? 'justify-center px-2 py-3' : 'px-5 py-4'
+        ].join(' ')}
+      >
+        <VersionBadge collapsed={collapsed} />
       </div>
     </aside>
   )

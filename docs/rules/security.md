@@ -40,7 +40,7 @@ L'app manipule des **données personnelles potentiellement sensibles** (coordonn
 
 ## Ce qu'on NE fait PAS en v1
 
-(documenté pour qu'on s'en souvienne quand on activera la conformité Loi 25 renforcée — voir [[../specs/01-features#v3]])
+(documenté pour qu'on s'en souvienne quand on activera la conformité Loi 25 renforcée — voir [[../specs/01-features#v0-5]])
 
 - Trace des envois en DB
 - Consentement explicite documenté
