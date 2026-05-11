@@ -8,8 +8,21 @@ directories:
 
 files:
   - out/**/*
-  - db/migrations/**/*
   - package.json
+
+# Migrations Drizzle copiées dans resources/migrations/ (lues par initDb en prod)
+# Avatars de demo (Nicholas Jean, Sabrina Dumais) copies dans resources/demo-avatars/
+extraResources:
+  - from: db/migrations
+    to: migrations
+    filter:
+      - "**/*"
+  - from: build/demo-avatars
+    to: demo-avatars
+    filter:
+      - "**/*.png"
+      - "**/*.jpg"
+      - "**/*.webp"
 
 asarUnpack:
   - "node_modules/better-sqlite3/**/*"
