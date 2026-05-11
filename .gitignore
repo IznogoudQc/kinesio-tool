@@ -67,3 +67,5 @@ electron/**/*.d.ts
 
 # Backups d'images originales (conservees en local seulement)
 src/assets/*-original.png
+src/assets/*.previous.png
+src/assets/silhouettes-source.png
