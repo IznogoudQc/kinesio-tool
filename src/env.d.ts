@@ -203,7 +203,14 @@ interface Window {
   api: {
     clients: {
       list(): Promise<Client[]>
-      create(data: { name: string; email: string }): Promise<Client>
+      create(data: {
+        name: string
+        email: string
+        birthdate?: string | null
+        sex?: Sex | null
+        unitLength?: 'cm' | 'in'
+        unitWeight?: 'kg' | 'lb'
+      }): Promise<Client>
       update(
         id: string,
         data: {

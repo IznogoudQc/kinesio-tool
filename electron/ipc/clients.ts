@@ -17,7 +17,11 @@ const UnitWeight = z.enum(['kg', 'lb']).optional()
 
 const CreateClientSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(200).trim(),
-  email: z.string().email('Courriel invalide').trim()
+  email: z.string().email('Courriel invalide').trim(),
+  birthdate: IsoDateOrNull,
+  sex: SexOrNull,
+  unitLength: UnitLength,
+  unitWeight: UnitWeight
 })
 
 const UpdateClientSchema = z.object({
@@ -81,7 +85,18 @@ export function registerClientsHandlers(): void {
     const id = crypto.randomUUID()
     const [client] = db
       .insert(clients)
-      .values({ id, name: validated.name, email: validated.email, createdAt: now, updatedAt: now })
+      .values({
+        id,
+        name: validated.name,
+        email: validated.email,
+        birthdate: validated.birthdate ?? null,
+        sex: validated.sex ?? null,
+        // Si non fournis, on laisse les défauts DB s'appliquer ('cm' / 'kg').
+        unitLength: validated.unitLength,
+        unitWeight: validated.unitWeight,
+        createdAt: now,
+        updatedAt: now
+      })
       .returning()
       .all()
     return client

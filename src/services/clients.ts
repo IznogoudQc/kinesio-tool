@@ -3,7 +3,14 @@ export const clientsService = {
     return window.api.clients.list()
   },
 
-  async create(data: { name: string; email: string }): Promise<Client> {
+  async create(data: {
+    name: string
+    email: string
+    birthdate?: string | null
+    sex?: 'F' | 'M' | null
+    unitLength?: 'cm' | 'in'
+    unitWeight?: 'kg' | 'lb'
+  }): Promise<Client> {
     return window.api.clients.create(data)
   },
 

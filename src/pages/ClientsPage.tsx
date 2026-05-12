@@ -10,6 +10,20 @@ type View = 'list' | 'form'
 interface FormState {
   name: string
   email: string
+  birthdate: string
+  sex: 'F' | 'M' | ''
+  unitLength: 'cm' | 'in'
+  unitWeight: 'kg' | 'lb'
+}
+
+// Les unités ont toujours une valeur (jamais null) ; défaut métrique, comme en DB.
+const EMPTY_FORM: FormState = {
+  name: '',
+  email: '',
+  birthdate: '',
+  sex: '',
+  unitLength: 'cm',
+  unitWeight: 'kg'
 }
 
 export function ClientsPage() {
@@ -17,7 +31,7 @@ export function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [form, setForm] = useState<FormState>({ name: '', email: '' })
+  const [form, setForm] = useState<FormState>(EMPTY_FORM)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
@@ -59,7 +73,7 @@ export function ClientsPage() {
   }
 
   function openForm() {
-    setForm({ name: '', email: '' })
+    setForm(EMPTY_FORM)
     setFormError(null)
     setView('form')
   }
@@ -80,10 +94,27 @@ export function ClientsPage() {
       setFormError('Le courriel est requis.')
       return
     }
+    if (form.birthdate) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(form.birthdate)) {
+        setFormError('Date de naissance invalide.')
+        return
+      }
+      if (form.birthdate > new Date().toISOString().slice(0, 10)) {
+        setFormError('La date de naissance ne peut pas être dans le futur.')
+        return
+      }
+    }
 
     try {
       setSaving(true)
-      await clientsService.create({ name: form.name.trim(), email: form.email.trim() })
+      await clientsService.create({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        birthdate: form.birthdate ? form.birthdate : null,
+        sex: form.sex ? form.sex : null,
+        unitLength: form.unitLength,
+        unitWeight: form.unitWeight
+      })
       await loadClients()
       setView('list')
     } catch (err) {
@@ -156,6 +187,100 @@ export function ClientsPage() {
               placeholder="marie@exemple.com"
               className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
             />
+          </div>
+
+          <div>
+            <label className="block text-base font-medium text-marine mb-1.5">
+              Date de naissance <span className="text-marine/40 font-normal">(facultatif)</span>
+            </label>
+            <input
+              type="date"
+              value={form.birthdate}
+              max={new Date().toISOString().slice(0, 10)}
+              onChange={e => setForm(prev => ({ ...prev, birthdate: e.target.value }))}
+              className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+            />
+            <p className="text-marine/40 text-sm mt-1">Sert au calcul du pourcentage de gras à partir des plis cutanés.</p>
+          </div>
+
+          <div>
+            <label className="block text-base font-medium text-marine mb-1.5">
+              Sexe <span className="text-marine/40 font-normal">(facultatif)</span>
+            </label>
+            <div className="flex items-center gap-5">
+              {([
+                { value: 'F', label: 'Femme' },
+                { value: 'M', label: 'Homme' }
+              ] as const).map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 text-marine text-base cursor-pointer">
+                  <input
+                    type="radio"
+                    name="new-client-sex"
+                    value={opt.value}
+                    checked={form.sex === opt.value}
+                    onChange={() => setForm(prev => ({ ...prev, sex: opt.value }))}
+                    className="accent-gold"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+              {form.sex && (
+                <button
+                  type="button"
+                  onClick={() => setForm(prev => ({ ...prev, sex: '' }))}
+                  className="text-marine/45 hover:text-marine text-sm underline"
+                >
+                  Effacer
+                </button>
+              )}
+            </div>
+            <p className="text-marine/40 text-sm mt-1">Détermine la silhouette affichée et les coefficients du calcul.</p>
+          </div>
+
+          <div>
+            <label className="block text-base font-medium text-marine mb-1.5">Unité de longueur</label>
+            <div className="flex items-center gap-5">
+              {([
+                { value: 'cm', label: 'cm' },
+                { value: 'in', label: 'po (pouces)' }
+              ] as const).map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 text-marine text-base cursor-pointer">
+                  <input
+                    type="radio"
+                    name="new-client-unit-length"
+                    value={opt.value}
+                    checked={form.unitLength === opt.value}
+                    onChange={() => setForm(prev => ({ ...prev, unitLength: opt.value }))}
+                    className="accent-gold"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            <p className="text-marine/40 text-sm mt-1">Unité d'affichage et de saisie des circonférences (les données sont stockées en cm).</p>
+          </div>
+
+          <div>
+            <label className="block text-base font-medium text-marine mb-1.5">Unité de poids</label>
+            <div className="flex items-center gap-5">
+              {([
+                { value: 'kg', label: 'kg' },
+                { value: 'lb', label: 'lb (livres)' }
+              ] as const).map(opt => (
+                <label key={opt.value} className="flex items-center gap-2 text-marine text-base cursor-pointer">
+                  <input
+                    type="radio"
+                    name="new-client-unit-weight"
+                    value={opt.value}
+                    checked={form.unitWeight === opt.value}
+                    onChange={() => setForm(prev => ({ ...prev, unitWeight: opt.value }))}
+                    className="accent-gold"
+                  />
+                  {opt.label}
+                </label>
+              ))}
+            </div>
+            <p className="text-marine/40 text-sm mt-1">Unité d'affichage et de saisie du poids (les données sont stockées en kg).</p>
           </div>
 
           <div className="flex items-center gap-3 pt-2">

@@ -4,7 +4,14 @@ contextBridge.exposeInMainWorld('api', {
   clients: {
     list: () =>
       ipcRenderer.invoke('clients:list'),
-    create: (data: { name: string; email: string }) =>
+    create: (data: {
+      name: string
+      email: string
+      birthdate?: string | null
+      sex?: 'F' | 'M' | null
+      unitLength?: 'cm' | 'in'
+      unitWeight?: 'kg' | 'lb'
+    }) =>
       ipcRenderer.invoke('clients:create', data),
     update: (
       id: string,
