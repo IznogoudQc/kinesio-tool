@@ -6,7 +6,9 @@ import { ClientsPage } from './pages/ClientsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ReportPage } from './pages/ReportPage'
 import { ClientDetailLayout } from './pages/client/ClientDetailLayout'
-import { DashboardTab } from './pages/client/tabs/DashboardTab'
+import { DashboardLayout } from './pages/client/dashboard/DashboardLayout'
+import { MesuresOverview } from './pages/client/dashboard/MesuresOverview'
+import { BilanOverview } from './pages/client/dashboard/BilanOverview'
 import { BilansTab } from './pages/client/tabs/BilansTab'
 import { BilanDetailTab } from './pages/client/tabs/BilanDetailTab'
 import { MesuresTab } from './pages/client/tabs/MesuresTab'
@@ -76,7 +78,11 @@ export function App() {
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/clients/:id" element={<ClientDetailLayout />}>
               <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardTab />} />
+              <Route path="dashboard" element={<DashboardLayout />}>
+                <Route index element={<MesuresOverview />} />
+                <Route path="mesures" element={<MesuresOverview />} />
+                <Route path="bilan" element={<BilanOverview />} />
+              </Route>
               <Route path="bilans" element={<BilansTab />} />
               <Route path="bilans/:bilanId" element={<BilanDetailTab />} />
               <Route path="mesures" element={<MesuresTab />} />

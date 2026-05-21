@@ -15,19 +15,36 @@ export interface BilanData {
   pourcentage_gras?: number
   vo2max?: number
   test_aerobie?: string
+  aerobie_test_type?: 'bruce' | 'cooper' | 'leger' | 'manual'
+  bruce_duration_sec?: number
+  cooper_distance_m?: number
+  leger_palier?: number
+  met_equivalent?: number
   fc_repos?: number
+  fc_max_predite?: number
   pa_systolique?: number
   pa_diastolique?: number
+  recup_1min_pa_sys?: number
+  recup_1min_pa_dia?: number
+  recup_1min_fc?: number
+  recup_3min_pa_sys?: number
+  recup_3min_pa_dia?: number
+  recup_3min_fc?: number
+  recup_5min_pa_sys?: number
+  recup_5min_pa_dia?: number
+  recup_5min_fc?: number
   pushups?: number
   situps?: number
   saut_vertical_cm?: number
   puissance_jambes_watts?: number
+  puissance_calculated_auto?: boolean
   flexion_tronc_cm?: number
   endurance_dos_sec?: number
   score_composition?: number
   indice_sante_dos?: number
   score_musculo_global?: number
   score_global?: number
+  notes?: string
 }
 
 export interface ExtractedBilan {
@@ -124,6 +141,8 @@ function extractCurrent(text: string): BilanData {
   data.situps = parseFrenchNumber(chevronValue(text, 'Redressement Assis Partiel'))
   data.saut_vertical_cm = parseFrenchNumber(chevronValue(text, 'Saut vertical'))
   data.puissance_jambes_watts = parseFrenchNumber(chevronValue(text, 'Puissance des Jambes'))
+  // Valeur officielle du logiciel d'origine — on la préserve telle quelle, pas de recalcul Sayers.
+  if (data.puissance_jambes_watts !== undefined) data.puissance_calculated_auto = false
   data.flexion_tronc_cm = parseFrenchNumber(chevronValue(text, 'Flexion Avant du Tronc'))
   data.endurance_dos_sec = parseFrenchNumber(chevronValue(text, 'Endurance des Extenseurs du Dos'))
 

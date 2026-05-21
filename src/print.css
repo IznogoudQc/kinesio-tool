@@ -1,0 +1,51 @@
+/* Styles dédiés au rapport PDF (ReportPage). Importé uniquement par ReportPage.
+ *
+ * Polices bundlées localement (Fraunces + Inter, sous-ensemble latin, fichiers
+ * variables) — le rapport est généré par Electron, parfois sans connexion :
+ * un @import CDN retomberait sur une serif système. Voir ADR 0011. */
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: block;
+  src: url('./assets/fonts/fraunces-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: block;
+  src: url('./assets/fonts/inter-latin.woff2') format('woff2');
+}
+
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+.report-display {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.report-body {
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* Chaque section occupe sa propre page A4. */
+.report-page {
+  break-after: page;
+  break-inside: avoid;
+}
+
+.report-page:last-child {
+  break-after: auto;
+}

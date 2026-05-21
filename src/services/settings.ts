@@ -33,5 +33,13 @@ export const settingsService = {
 
   async setEmailTemplate(data: EmailTemplate): Promise<void> {
     return window.api.settings.setEmailTemplate(data)
+  },
+
+  async getCategorizationNorms(): Promise<'acsm' | 'cpafla'> {
+    return window.api.settings.getCategorizationNorms()
+  },
+
+  async setCategorizationNorms(value: 'acsm' | 'cpafla'): Promise<void> {
+    return window.api.settings.setCategorizationNorms(value)
   }
 }

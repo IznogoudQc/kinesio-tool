@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Calculator, Eye, Loader2, PencilLine, PersonStanding, Ruler, Save, Trash2, UserCog, X } from 'lucide-react'
+import { ArrowUpCircle, Calculator, Eye, Loader2, PencilLine, PersonStanding, Ruler, Save, Trash2, UserCog, X } from 'lucide-react'
 import bodyMale from '@/assets/body-male.png'
 import bodyFemale from '@/assets/body-female.png'
 import { useClient } from '../ClientDetailLayout'
@@ -18,6 +18,8 @@ import {
   weightUnitLabel
 } from '../../../lib/units'
 import { formatBilanDate } from '../bilanFields'
+import { MeasureDelta } from '../../../components/MeasureDelta'
+import { WaistRiskBar } from '../../../components/WaistRiskBar'
 
 // ── Helpers de formatage (fr-CA, virgule décimale) ──────────────────────────────
 const nf1 = (n: number): string => n.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
@@ -141,12 +143,24 @@ function MeasureField({
   label,
   unit,
   value,
-  onChange
+  onChange,
+  previousValue,
+  previousDate,
+  lowerIsBetter,
+  extra
 }: {
   label: string
   unit: string
   value: number | undefined
   onChange: (v: number | undefined) => void
+  /** Valeur de la mesure précédente (même unité que `value`) — affiche un delta. */
+  previousValue?: number
+  /** Date ISO de la mesure précédente — suffixe « depuis 10 sept 2025 ». */
+  previousDate?: string
+  /** Pour tour de taille / hanche / abdomen / IMC : baisse = bien (couleur inversée). */
+  lowerIsBetter?: boolean
+  /** Slot pour une visualisation supplémentaire (ex: <WaistRiskBar>). */
+  extra?: React.ReactNode
 }) {
   return (
     <div className="bg-marine-light/95 border border-gold/20 rounded-xl px-4 py-3">
@@ -164,6 +178,33 @@ function MeasureField({
         />
         <span className="text-cream/40 text-sm font-medium shrink-0">{unit}</span>
       </div>
+      <MeasureDelta
+        current={value}
+        previous={previousValue}
+        previousDate={previousDate}
+        unit={unit}
+        lowerIsBetter={lowerIsBetter}
+        theme="dark"
+      />
+      {extra}
+    </div>
+  )
+}
+
+/** Champ « Date de la mesure » placé en haut du formulaire. Défaut aujourd'hui,
+ *  `max={today}` empêche la sélection d'une date future. */
+function DateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const today = todayISO()
+  return (
+    <div className="mb-4 max-w-5xl mx-auto bg-marine-light/95 border border-gold/20 rounded-xl px-4 py-3">
+      <p className="text-cream/55 text-xs uppercase tracking-wide">Date de la mesure</p>
+      <input
+        type="date"
+        value={value}
+        max={today}
+        onChange={e => onChange(e.target.value || today)}
+        className="mt-1 bg-transparent text-cream text-lg font-semibold outline-none border-0 [color-scheme:dark]"
+      />
     </div>
   )
 }
@@ -304,6 +345,9 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
   const [form, setForm] = useState<CircForm>({})
   // `poids` est exprimé dans l'unité préférée du client (kg ou lb) — converti en kg à l'enregistrement.
   const [poids, setPoids] = useState<number | undefined>(undefined)
+  // Date de la session de mesure (ISO `AAAA-MM-JJ`). Éditable pour permettre
+  // une saisie en retard (Marie-Eve note sur papier puis entre les jours suivants).
+  const [date, setDate] = useState<string>(todayISO())
   const [notes, setNotes] = useState('')
   const [editId, setEditId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -335,14 +379,72 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
     })
   }
 
+  // Mesure précédente, dans l'ordre temporel relatif à ce qu'on est en train de saisir.
+  // - Si on édite la ligne d'index `i` → précédent = list[i + 1] (plus ancien).
+  // - Si on crée une nouvelle ligne → précédent = list[0] (la plus récente sauvegardée).
+  const previousRow = useMemo<MesureCirconferences | null>(() => {
+    if (!list.length) return null
+    if (editId) {
+      const idx = list.findIndex(r => r.id === editId)
+      return idx >= 0 ? list[idx + 1] ?? null : null
+    }
+    return list[0]
+  }, [list, editId])
+
+  /** Valeur de la circonférence dans la mesure précédente, convertie dans l'unité du client. */
+  const previousCirc = (key: CircKey): number | undefined => {
+    if (!previousRow) return undefined
+    const v = previousRow[key]
+    return typeof v === 'number' ? cmToLengthInput(v, unitLength) : undefined
+  }
+  const previousPoids = previousRow?.poidsKg != null ? kgToWeightInput(previousRow.poidsKg, unitWeight) : undefined
+
+  // Tour de taille / hanche / abdomen : baisse = amélioration.
+  const LOWER_IS_BETTER_CIRC: Partial<Record<CircKey, boolean>> = {
+    taille: true,
+    hanche: true,
+    abdomen: true
+  }
+
   // Une carte de saisie pour une circonférence (toutes en `lenLabel`).
-  const circCard = (key: CircKey, label: string) => (
-    <MeasureField label={label} unit={lenLabel} value={form[key]} onChange={v => setField(key, v)} />
-  )
+  const circCard = (key: CircKey, label: string) => {
+    // Barre de risque OMS sous la mesure pour tour de taille et hanche.
+    let riskBar: React.ReactNode = null
+    if ((key === 'taille' || key === 'hanche') && client.sex && typeof form[key] === 'number') {
+      // Convertit la valeur saisie (peut être en pouces) en cm pour l'évaluation OMS.
+      const valueCm = lengthInputToCm(form[key] as number, unitLength)
+      riskBar = <WaistRiskBar value={valueCm} sex={client.sex} type="waist" />
+    }
+    return (
+      <MeasureField
+        label={label}
+        unit={lenLabel}
+        value={form[key]}
+        onChange={v => setField(key, v)}
+        previousValue={previousCirc(key)}
+        previousDate={previousRow?.date}
+        lowerIsBetter={LOWER_IS_BETTER_CIRC[key] ?? false}
+        extra={riskBar}
+      />
+    )
+  }
+
+  // Ratio T/H calculé (en cm — indépendant de l'unité d'affichage).
+  const ratioTH = useMemo(() => {
+    const tCm = form.taille !== undefined ? lengthInputToCm(form.taille, unitLength) : null
+    const hCm = form.hanche !== undefined ? lengthInputToCm(form.hanche, unitLength) : null
+    if (tCm === null || hCm === null || hCm <= 0) return null
+    return Math.round((tCm / hCm) * 100) / 100
+  }, [form.taille, form.hanche, unitLength])
+  const previousRatioTH = useMemo(() => {
+    if (!previousRow?.taille || !previousRow?.hanche || previousRow.hanche <= 0) return undefined
+    return Math.round((previousRow.taille / previousRow.hanche) * 100) / 100
+  }, [previousRow])
 
   function resetForm() {
     setForm({})
     setPoids(undefined)
+    setDate(todayISO())
     setNotes('')
     setEditId(null)
   }
@@ -350,6 +452,7 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
   function startEdit(row: MesureCirconferences) {
     setForm(circRowToForm(row, unitLength))
     setPoids(row.poidsKg != null ? kgToWeightInput(row.poidsKg, unitWeight) : undefined)
+    setDate(row.date)
     setNotes(row.notes ?? '')
     setEditId(row.id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -363,7 +466,7 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
     setError(null)
     try {
       // Conversion vers le stockage métrique (cm + kg) — jamais l'inverse.
-      const payload: CirconferencesInput = { notes: notes.trim() || undefined }
+      const payload: CirconferencesInput = { date, notes: notes.trim() || undefined }
       for (const { key } of CIRC_ALL) {
         const v = form[key]
         if (v !== undefined) payload[key] = lengthInputToCm(v, unitLength)
@@ -372,7 +475,7 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
       if (editId) {
         await mesuresService.circonferences.update(editId, payload)
       } else {
-        await mesuresService.circonferences.create(client.id, { ...payload, date: todayISO() })
+        await mesuresService.circonferences.create(client.id, payload)
       }
       resetForm()
       await reload()
@@ -384,16 +487,64 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
     }
   }
 
+  const [showPrefillModal, setShowPrefillModal] = useState(false)
+
+  /** Champs disponibles dans la mesure précédente (sources potentielles du pré-remplissage). */
+  const prefillSources = useMemo<CircKey[]>(() => {
+    if (!previousRow) return []
+    return CIRC_ALL.filter(({ key }) => typeof previousRow[key] === 'number').map(c => c.key)
+  }, [previousRow])
+  const previousPoidsAvailable = previousRow?.poidsKg != null
+  const prefillAvailableCount = prefillSources.length + (previousPoidsAvailable ? 1 : 0)
+
+  function applyPrefill(selectedCirc: Set<CircKey>, includePoids: boolean, overwrite: boolean) {
+    if (!previousRow) return
+    setForm(prev => {
+      const next = { ...prev }
+      for (const key of selectedCirc) {
+        if (!overwrite && next[key] !== undefined) continue
+        const v = previousRow[key]
+        if (typeof v === 'number') next[key] = cmToLengthInput(v, unitLength)
+      }
+      return next
+    })
+    if (includePoids && previousRow.poidsKg != null) {
+      if (overwrite || poids === undefined) {
+        setPoids(kgToWeightInput(previousRow.poidsKg, unitWeight))
+      }
+    }
+    setShowPrefillModal(false)
+  }
+
   return (
     <div className="space-y-7">
       {error && (
         <div className="text-red-700 text-base bg-red-50 border border-red-200 rounded-md px-4 py-3">{error}</div>
       )}
 
+      {!editId && previousRow && prefillAvailableCount > 0 && (
+        <button
+          type="button"
+          onClick={() => setShowPrefillModal(true)}
+          className="w-full bg-gold/10 border border-gold/40 hover:border-gold rounded-md px-4 py-3 flex items-center gap-3 transition-colors text-left"
+        >
+          <ArrowUpCircle size={20} className="text-gold-dark shrink-0" />
+          <div className="flex-1">
+            <p className="text-marine font-medium text-sm">
+              Reprendre les valeurs de la mesure du {formatBilanDate(previousRow.date)}
+            </p>
+            <p className="text-marine/55 text-xs mt-0.5">
+              {prefillAvailableCount} champ{prefillAvailableCount > 1 ? 's' : ''} disponible{prefillAvailableCount > 1 ? 's' : ''} à pré-remplir
+            </p>
+          </div>
+          <span className="px-3 py-1.5 bg-gold text-marine font-semibold rounded-md text-xs">Pré-remplir</span>
+        </button>
+      )}
+
       <div>
         <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
           <h2 className="text-marine font-semibold text-lg">
-            {editId ? `Modifier les circonférences du ${formatBilanDate(list.find(r => r.id === editId)?.date ?? todayISO())}` : 'Nouvelle prise de mesures'}
+            {editId ? `Modifier les circonférences du ${formatBilanDate(list.find(r => r.id === editId)?.date ?? date)}` : 'Nouvelle prise de mesures'}
           </h2>
           {editId && (
             <button type="button" onClick={resetForm} className="text-marine/50 hover:text-marine text-sm underline">
@@ -401,6 +552,8 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
             </button>
           )}
         </div>
+
+        <DateField value={date} onChange={setDate} />
 
         {/*
           Disposition : grille 7 lignes × 3 colonnes, toutes de largeur égale.
@@ -445,9 +598,39 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
 
           {/* Ligne 7 : Poids — colonne centrale uniquement (même largeur que les autres cartes) */}
           <div className="col-start-2 row-start-7">
-            <MeasureField label="Poids" unit={wLabel} value={poids} onChange={setPoids} />
+            <MeasureField
+              label="Poids"
+              unit={wLabel}
+              value={poids}
+              onChange={setPoids}
+              previousValue={previousPoids}
+              previousDate={previousRow?.date}
+              lowerIsBetter
+            />
           </div>
         </div>
+
+        {/* Ratio Taille/Hanche : calculé dès que les 2 sont saisis, avec barre OMS */}
+        {ratioTH !== null && client.sex && (
+          <div className="mt-3 max-w-5xl mx-auto bg-marine-light/95 border border-gold/20 rounded-xl px-4 py-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <div>
+                <p className="text-cream/55 text-xs uppercase tracking-wide">Ratio Taille / Hanche</p>
+                <p className="text-cream text-2xl font-bold mt-0.5">{ratioTH.toFixed(2)}</p>
+                <MeasureDelta
+                  current={ratioTH}
+                  previous={previousRatioTH}
+                  previousDate={previousRow?.date}
+                  lowerIsBetter
+                  theme="dark"
+                />
+              </div>
+              <div className="flex-1 min-w-[180px]">
+                <WaistRiskBar value={ratioTH} sex={client.sex} type="ratio" />
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-5">
           <label className="block text-marine/60 text-sm font-medium uppercase tracking-wide mb-1.5">Notes</label>
@@ -564,6 +747,16 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
 
       {viewing && <CircDetailModal row={viewing} client={client} onClose={() => setViewing(null)} />}
 
+      {showPrefillModal && previousRow && (
+        <CircPrefillModal
+          previousRow={previousRow}
+          unitLength={unitLength}
+          unitWeight={unitWeight}
+          onCancel={() => setShowPrefillModal(false)}
+          onApply={applyPrefill}
+        />
+      )}
+
       {deleting && (
         <ConfirmDialog
           message={`Supprimer les mesures du ${formatBilanDate(deleting.date)} ?`}
@@ -582,6 +775,127 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
           }}
         />
       )}
+    </div>
+  )
+}
+
+interface CircPrefillModalProps {
+  previousRow: MesureCirconferences
+  unitLength: 'cm' | 'in'
+  unitWeight: 'kg' | 'lb'
+  onCancel: () => void
+  onApply: (selected: Set<CircKey>, includePoids: boolean, overwrite: boolean) => void
+}
+
+function CircPrefillModal({ previousRow, unitLength, unitWeight, onCancel, onApply }: CircPrefillModalProps) {
+  const availableCirc = useMemo(
+    () => CIRC_ALL.filter(({ key }) => typeof previousRow[key] === 'number'),
+    [previousRow]
+  )
+  const poidsAvailable = previousRow.poidsKg != null
+
+  const [selected, setSelected] = useState<Set<CircKey>>(
+    () => new Set(availableCirc.map(c => c.key))
+  )
+  const [includePoids, setIncludePoids] = useState(poidsAvailable)
+  const [overwrite, setOverwrite] = useState(false)
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onCancel])
+
+  function toggle(key: CircKey) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  const totalSelected = selected.size + (includePoids ? 1 : 0)
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
+      <div className="bg-cream rounded-lg shadow-2xl w-full max-w-lg border border-cream-dark">
+        <div className="px-6 py-5 border-b border-cream-dark">
+          <h3 className="text-marine font-semibold text-lg">
+            Pré-remplir depuis le {formatBilanDate(previousRow.date)}
+          </h3>
+          <p className="text-marine/55 text-sm mt-1">
+            Décocher les valeurs qu'on ne veut pas reprendre.
+          </p>
+        </div>
+
+        <div className="px-6 py-4 max-h-[55vh] overflow-y-auto">
+          {poidsAvailable && (
+            <label className="flex items-center gap-3 cursor-pointer hover:bg-white/50 px-2 py-1.5 rounded mb-1">
+              <input
+                type="checkbox"
+                checked={includePoids}
+                onChange={() => setIncludePoids(v => !v)}
+                className="w-4 h-4 accent-gold cursor-pointer"
+              />
+              <span className="flex-1 text-marine text-base">Poids</span>
+              <span className="text-marine/50 text-sm font-mono">
+                {formatWeight(previousRow.poidsKg as number, unitWeight)} {weightUnitLabel(unitWeight)}
+              </span>
+            </label>
+          )}
+          <ul className="space-y-0.5">
+            {availableCirc.map(c => (
+              <li key={c.key}>
+                <label className="flex items-center gap-3 cursor-pointer hover:bg-white/50 px-2 py-1.5 rounded">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(c.key)}
+                    onChange={() => toggle(c.key)}
+                    className="w-4 h-4 accent-gold cursor-pointer"
+                  />
+                  <span className="flex-1 text-marine text-base">{c.label}</span>
+                  <span className="text-marine/50 text-sm font-mono">
+                    {formatLength(previousRow[c.key] as number, unitLength)} {lengthUnitLabel(unitLength)}
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="px-6 py-3 border-t border-cream-dark bg-cream/40">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={overwrite}
+              onChange={() => setOverwrite(v => !v)}
+              className="w-4 h-4 accent-gold cursor-pointer"
+            />
+            <span className="text-marine/70 text-sm">Écraser les champs déjà saisis</span>
+          </label>
+        </div>
+
+        <div className="px-6 py-4 border-t border-cream-dark flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-marine/70 hover:text-marine border border-cream-dark rounded-md text-base transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={() => onApply(selected, includePoids, overwrite)}
+            disabled={totalSelected === 0}
+            className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Pré-remplir ({totalSelected})
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -647,6 +961,7 @@ function PlisPanel({ client, notify }: { client: Client; notify: (m: string) => 
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<PlisForm>({})
   const [notes, setNotes] = useState('')
+  const [date, setDate] = useState<string>(todayISO())
   const [editId, setEditId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<MesurePlisCutanes | null>(null)
@@ -681,12 +996,39 @@ function PlisPanel({ client, notify }: { client: Client; notify: (m: string) => 
   function resetForm() {
     setForm({})
     setNotes('')
+    setDate(todayISO())
     setEditId(null)
+  }
+
+  // Mesure précédente — pour delta et pré-remplissage (4 plis = lower is better).
+  const previousPlisRow = useMemo<MesurePlisCutanes | null>(() => {
+    if (!list.length) return null
+    if (editId) {
+      const idx = list.findIndex(r => r.id === editId)
+      return idx >= 0 ? list[idx + 1] ?? null : null
+    }
+    return list[0]
+  }, [list, editId])
+
+  const [showPlisPrefillModal, setShowPlisPrefillModal] = useState(false)
+
+  function applyPlisPrefill(selected: Set<PlisKey>, overwrite: boolean) {
+    if (!previousPlisRow) return
+    setForm(prev => {
+      const next = { ...prev }
+      for (const key of selected) {
+        if (!overwrite && next[key] !== undefined) continue
+        next[key] = previousPlisRow[key]
+      }
+      return next
+    })
+    setShowPlisPrefillModal(false)
   }
 
   function startEdit(row: MesurePlisCutanes) {
     setForm({ triceps: row.triceps, biceps: row.biceps, sousscapulaire: row.sousscapulaire, iliaque: row.iliaque })
     setNotes(row.notes ?? '')
+    setDate(row.date)
     setEditId(row.id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -719,6 +1061,7 @@ function PlisPanel({ client, notify }: { client: Client; notify: (m: string) => 
     setError(null)
     try {
       const payload: PlisInput = {
+        date,
         triceps: form.triceps as number,
         biceps: form.biceps as number,
         sousscapulaire: form.sousscapulaire as number,
@@ -728,7 +1071,7 @@ function PlisPanel({ client, notify }: { client: Client; notify: (m: string) => 
       if (editId) {
         await mesuresService.plis.update(editId, payload)
       } else {
-        await mesuresService.plis.create(client.id, { ...payload, date: todayISO() })
+        await mesuresService.plis.create(client.id, payload)
       }
       resetForm()
       await reload()
@@ -787,9 +1130,38 @@ function PlisPanel({ client, notify }: { client: Client; notify: (m: string) => 
               </button>
             )}
           </div>
+          <div className="mb-3">
+            <DateField value={date} onChange={setDate} />
+          </div>
+          {!editId && previousPlisRow && (
+            <button
+              type="button"
+              onClick={() => setShowPlisPrefillModal(true)}
+              className="w-full bg-gold/10 border border-gold/40 hover:border-gold rounded-md px-4 py-3 flex items-center gap-3 transition-colors text-left mb-4"
+            >
+              <ArrowUpCircle size={20} className="text-gold-dark shrink-0" />
+              <div className="flex-1">
+                <p className="text-marine font-medium text-sm">
+                  Reprendre les valeurs de la mesure du {formatBilanDate(previousPlisRow.date)}
+                </p>
+                <p className="text-marine/55 text-xs mt-0.5">4 plis disponibles à pré-remplir</p>
+              </div>
+              <span className="px-3 py-1.5 bg-gold text-marine font-semibold rounded-md text-xs">Pré-remplir</span>
+            </button>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {PLIS_FIELDS.map(f => (
-              <MeasureField key={f.key} label={f.label} unit="mm" value={form[f.key]} onChange={v => setField(f.key, v)} />
+              <MeasureField
+                key={f.key}
+                label={f.label}
+                unit="mm"
+                value={form[f.key]}
+                onChange={v => setField(f.key, v)}
+                previousValue={previousPlisRow?.[f.key]}
+                previousDate={previousPlisRow?.date}
+                lowerIsBetter
+              />
             ))}
           </div>
 
@@ -938,6 +1310,100 @@ function PlisPanel({ client, notify }: { client: Client; notify: (m: string) => 
           }}
         />
       )}
+
+      {showPlisPrefillModal && previousPlisRow && (
+        <PlisPrefillModal
+          previousRow={previousPlisRow}
+          onCancel={() => setShowPlisPrefillModal(false)}
+          onApply={applyPlisPrefill}
+        />
+      )}
+    </div>
+  )
+}
+
+interface PlisPrefillModalProps {
+  previousRow: MesurePlisCutanes
+  onCancel: () => void
+  onApply: (selected: Set<PlisKey>, overwrite: boolean) => void
+}
+
+function PlisPrefillModal({ previousRow, onCancel, onApply }: PlisPrefillModalProps) {
+  const [selected, setSelected] = useState<Set<PlisKey>>(() => new Set(PLIS_FIELDS.map(f => f.key)))
+  const [overwrite, setOverwrite] = useState(false)
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCancel()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onCancel])
+
+  function toggle(key: PlisKey) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
+      <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark">
+        <div className="px-6 py-5 border-b border-cream-dark">
+          <h3 className="text-marine font-semibold text-lg">
+            Pré-remplir depuis le {formatBilanDate(previousRow.date)}
+          </h3>
+        </div>
+        <div className="px-6 py-4">
+          <ul className="space-y-0.5">
+            {PLIS_FIELDS.map(f => (
+              <li key={f.key}>
+                <label className="flex items-center gap-3 cursor-pointer hover:bg-white/50 px-2 py-1.5 rounded">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(f.key)}
+                    onChange={() => toggle(f.key)}
+                    className="w-4 h-4 accent-gold cursor-pointer"
+                  />
+                  <span className="flex-1 text-marine text-base">{f.label}</span>
+                  <span className="text-marine/50 text-sm font-mono">{previousRow[f.key]} mm</span>
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="px-6 py-3 border-t border-cream-dark bg-cream/40">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={overwrite}
+              onChange={() => setOverwrite(v => !v)}
+              className="w-4 h-4 accent-gold cursor-pointer"
+            />
+            <span className="text-marine/70 text-sm">Écraser les champs déjà saisis</span>
+          </label>
+        </div>
+        <div className="px-6 py-4 border-t border-cream-dark flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-marine/70 hover:text-marine border border-cream-dark rounded-md text-base transition-colors"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={() => onApply(selected, overwrite)}
+            disabled={selected.size === 0}
+            className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Pré-remplir ({selected.size})
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

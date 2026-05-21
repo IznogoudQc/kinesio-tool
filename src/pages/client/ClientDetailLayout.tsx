@@ -40,12 +40,20 @@ const TABS: TabDef[] = [
   { to: 'historique', label: 'Historique', enabled: false }
 ]
 
-interface ClientOutletContext {
+/** Contexte exposé par `<ClientDetailLayout>` à toutes ses sous-routes (et
+ *  re-forwardé par les couches intermédiaires type `<DashboardLayout>`). */
+export interface ClientOutletContext {
   client: Client
 }
 
 export function useClient(): Client {
   return useOutletContext<ClientOutletContext>().client
+}
+
+/** Permet aux couches intermédiaires de récupérer le contexte parent tel quel
+ *  et de le re-forwarder à `<Outlet context={...} />`. */
+export function useClientOutletContext(): ClientOutletContext {
+  return useOutletContext<ClientOutletContext>()
 }
 
 export function ClientDetailLayout() {

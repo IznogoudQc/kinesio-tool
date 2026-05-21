@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Loader2, Pencil } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
 import { bilansService } from '../../../services/bilans'
-import { BilanForm } from '../BilanForm'
+import { settingsService } from '../../../services/settings'
+import { BilanForm, deriveBilanFields } from '../BilanForm'
 import { formatBilanDate } from '../bilanFields'
+import { computeAge, getCategorization, type Category, type NormsType } from '../../../lib/norms'
+import { BILAN_TO_TEST_KEY } from '../../../lib/norms/bilan-keys'
 
 export function BilanDetailTab() {
   const client = useClient()
@@ -19,6 +22,23 @@ export function BilanDetailTab() {
   const [draftDate, setDraftDate] = useState('')
   const [draftData, setDraftData] = useState<BilanData>({})
   const [saving, setSaving] = useState(false)
+  const [norms, setNorms] = useState<NormsType>('acsm')
+
+  useEffect(() => {
+    settingsService.getCategorizationNorms().then(setNorms).catch(() => undefined)
+  }, [])
+
+  const age = useMemo(() => computeAge(client.birthdate), [client.birthdate])
+  const categorize = useMemo(() => {
+    if (age === null || client.sex === null) return undefined
+    const sex = client.sex
+    const knownAge = age
+    return (key: keyof BilanData, value: number): Category | null => {
+      const testKey = BILAN_TO_TEST_KEY[key]
+      if (!testKey) return null
+      return getCategorization(testKey, value, knownAge, sex, norms)
+    }
+  }, [age, client.sex, norms])
 
   const load = useCallback(async () => {
     if (!bilanId) return
@@ -55,7 +75,8 @@ export function BilanDetailTab() {
     setSaving(true)
     setError(null)
     try {
-      const updated = await bilansService.update(bilan.id, { date: draftDate, data: draftData })
+      const finalData = deriveBilanFields(draftData, age, client.sex)
+      const updated = await bilansService.update(bilan.id, { date: draftDate, data: finalData })
       setBilan(updated)
       setEditing(false)
     } catch (err) {
@@ -117,7 +138,7 @@ export function BilanDetailTab() {
         <p className="text-cream/55 text-sm mb-6">
           {bilan.source === 'import_docx' ? 'Importé depuis un fichier .docx' : 'Saisie manuelle'}
           {' · '}
-          La catégorisation CPAFLA (« À améliorer / Acceptable / Bien… ») arrivera en v0.1.7.
+          Catégorisation selon les normes <span className="font-medium">{norms === 'cpafla' ? 'CPAFLA' : 'ACSM'}</span> — modifiable dans Paramètres.
         </p>
 
         {editing ? (
@@ -126,9 +147,20 @@ export function BilanDetailTab() {
             data={draftData}
             onDateChange={setDraftDate}
             onDataChange={setDraftData}
+            client={client}
+            norms={norms}
+            showSynthesis
           />
         ) : (
-          <BilanForm date={bilan.date} data={bilan.data} readOnly />
+          <BilanForm
+            date={bilan.date}
+            data={bilan.data}
+            readOnly
+            categorize={categorize}
+            client={client}
+            norms={norms}
+            showSynthesis
+          />
         )}
 
         {editing && (

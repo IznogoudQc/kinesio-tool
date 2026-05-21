@@ -54,19 +54,47 @@ interface BilanData {
   pourcentage_gras?: number
   vo2max?: number
   test_aerobie?: string
+  /** Protocole utilisé pour estimer le VO2max — pilote l'UI de saisie. */
+  aerobie_test_type?: 'bruce' | 'cooper' | 'leger' | 'manual'
+  /** Bruce : durée totale tenue sur le tapis (secondes). */
+  bruce_duration_sec?: number
+  /** Cooper : distance parcourue en 12 min (mètres). */
+  cooper_distance_m?: number
+  /** Léger : palier atteint (navette 20 m). */
+  leger_palier?: number
+  /** MET équivalent — VO2max / 3.5 (calculé auto, mais persisté pour les rapports). */
+  met_equivalent?: number
   fc_repos?: number
+  /** FC max prédite via Tanaka — 208 - 0.7 × âge (calculée auto). */
+  fc_max_predite?: number
   pa_systolique?: number
   pa_diastolique?: number
+  /** Récupération à 1, 3 et 5 minutes après l'effort. */
+  recup_1min_pa_sys?: number
+  recup_1min_pa_dia?: number
+  recup_1min_fc?: number
+  recup_3min_pa_sys?: number
+  recup_3min_pa_dia?: number
+  recup_3min_fc?: number
+  recup_5min_pa_sys?: number
+  recup_5min_pa_dia?: number
+  recup_5min_fc?: number
   pushups?: number
   situps?: number
   saut_vertical_cm?: number
+  /** Puissance maximale des jambes (Watts) — calculée via Sayers ou importée du logiciel d'origine. */
   puissance_jambes_watts?: number
+  /** `true` : valeur calculée par l'app (Sayers). `false` : valeur importée du .docx — on préserve.
+   *  `undefined` : ancien bilan sans flag, on calcule si saut + poids sont disponibles. */
+  puissance_calculated_auto?: boolean
   flexion_tronc_cm?: number
   endurance_dos_sec?: number
   score_composition?: number
   indice_sante_dos?: number
   score_musculo_global?: number
   score_global?: number
+  /** Observations / conseils libres saisis par Marie-Eve (uniquement saisie manuelle). */
+  notes?: string
 }
 
 interface ExtractedBilan {
@@ -260,6 +288,8 @@ interface Window {
       testSmtpConnection(): Promise<SmtpTestResult>
       getEmailTemplate(): Promise<EmailTemplate>
       setEmailTemplate(data: EmailTemplate): Promise<void>
+      getCategorizationNorms(): Promise<'acsm' | 'cpafla'>
+      setCategorizationNorms(value: 'acsm' | 'cpafla'): Promise<void>
     }
     reports: {
       /** Génère le rapport PDF d'un client (route React `/report/:id`) — retourne le chemin du PDF. */
@@ -288,6 +318,26 @@ interface Window {
       dedupe(clientId: string): Promise<DedupeSummary>
       list(clientId: string): Promise<Bilan[]>
       getById(id: string): Promise<Bilan | null>
+    }
+    ai: {
+      hasApiKey(): Promise<boolean>
+      setApiKey(key: string): Promise<void>
+      removeApiKey(): Promise<void>
+      testConnection(): Promise<{ ok: boolean; error?: string; code?: string }>
+      /** Réponse : `{ ok: true, advice: AIAdvice }` ou `{ ok: false, error, code }`. */
+      generate(payload: {
+        sex: 'F' | 'M' | null
+        age: number | null
+        metrics: Array<{
+          key: string
+          label: string
+          value: number | string
+          unit?: string
+          category?: string
+          percentile?: number
+          deltaPct?: number
+        }>
+      }): Promise<{ ok: boolean; advice?: unknown; error?: string; code?: string }>
     }
     app: {
       getVersion(): Promise<string>

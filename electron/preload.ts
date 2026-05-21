@@ -79,7 +79,11 @@ contextBridge.exposeInMainWorld('api', {
     getEmailTemplate: () =>
       ipcRenderer.invoke('settings:template:get'),
     setEmailTemplate: (data: { subject: string; body: string }) =>
-      ipcRenderer.invoke('settings:template:set', data)
+      ipcRenderer.invoke('settings:template:set', data),
+    getCategorizationNorms: () =>
+      ipcRenderer.invoke('settings:norms:get'),
+    setCategorizationNorms: (value: 'acsm' | 'cpafla') =>
+      ipcRenderer.invoke('settings:norms:set', value)
   },
   reports: {
     generatePdf: (clientId: string) =>
@@ -114,6 +118,15 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('bilans:list', clientId),
     getById: (id: string) =>
       ipcRenderer.invoke('bilans:get-by-id', id)
+  },
+  ai: {
+    hasApiKey: (): Promise<boolean> => ipcRenderer.invoke('ai:has-api-key'),
+    setApiKey: (key: string): Promise<void> => ipcRenderer.invoke('ai:set-api-key', key),
+    removeApiKey: (): Promise<void> => ipcRenderer.invoke('ai:remove-api-key'),
+    testConnection: (): Promise<{ ok: boolean; error?: string; code?: string }> =>
+      ipcRenderer.invoke('ai:test-connection'),
+    generate: (payload: unknown): Promise<{ ok: boolean; advice?: unknown; error?: string; code?: string }> =>
+      ipcRenderer.invoke('ai:generate', payload)
   },
   app: {
     getVersion: (): Promise<string> =>

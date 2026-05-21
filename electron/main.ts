@@ -5,6 +5,7 @@ import { registerSettingsHandlers } from './ipc/settings'
 import { registerBilansHandlers } from './ipc/bilans'
 import { registerMesuresHandlers } from './ipc/mesures'
 import { registerReportsHandlers } from './ipc/reports'
+import { registerAIHandlers } from './ipc/ai'
 import { initDb } from '../db/client'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
@@ -88,6 +89,7 @@ app.whenReady().then(() => {
   registerBilansHandlers()
   registerMesuresHandlers()
   registerReportsHandlers()
+  registerAIHandlers()
   createWindow()
 
   app.on('activate', () => {

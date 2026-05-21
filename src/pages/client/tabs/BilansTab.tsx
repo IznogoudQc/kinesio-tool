@@ -5,6 +5,7 @@ import { useClient } from '../ClientDetailLayout'
 import { bilansService } from '../../../services/bilans'
 import { ImportBilanModal } from '../ImportBilanModal'
 import { DedupeBilansModal } from '../DedupeBilansModal'
+import { CreateBilanModal } from '../CreateBilanModal'
 import { formatBilanDate } from '../bilanFields'
 
 interface PendingImport {
@@ -22,6 +23,7 @@ export function BilansTab() {
   const [pending, setPending] = useState<PendingImport | null>(null)
   const [deleting, setDeleting] = useState<Bilan | null>(null)
   const [showDedupe, setShowDedupe] = useState(false)
+  const [showCreate, setShowCreate] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
@@ -100,9 +102,8 @@ export function BilansTab() {
         <div className="flex items-center gap-3 flex-wrap">
           <button
             type="button"
-            disabled
-            title="Disponible dans une prochaine version"
-            className="inline-flex items-center gap-2 px-4 py-2 border border-cream-dark text-marine/30 rounded-md text-base cursor-not-allowed"
+            onClick={() => setShowCreate(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 border border-cream-dark text-marine hover:border-gold/60 rounded-md text-base transition-colors"
           >
             <PencilLine size={16} />
             Saisie manuelle
@@ -219,6 +220,19 @@ export function BilansTab() {
           dateLabel={formatBilanDate(deleting.date)}
           onCancel={() => setDeleting(null)}
           onConfirm={confirmDelete}
+        />
+      )}
+
+      {showCreate && (
+        <CreateBilanModal
+          client={client}
+          onCancel={() => setShowCreate(false)}
+          onSaved={created => {
+            setShowCreate(false)
+            setToast(`Bilan du ${formatBilanDate(created.date)} enregistré`)
+            reload()
+            navigate(`/clients/${client.id}/bilans/${created.id}`)
+          }}
         />
       )}
 

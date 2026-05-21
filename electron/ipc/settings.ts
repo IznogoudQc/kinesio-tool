@@ -13,8 +13,12 @@ const KEYS = {
   profileName: 'profile.name',
   profileSignature: 'profile.signature',
   smtp: 'smtp.config',
-  emailTemplate: 'email.template'
+  emailTemplate: 'email.template',
+  categorizationNorms: 'categorization_norms'
 } as const
+
+const CategorizationNormsSchema = z.enum(['acsm', 'cpafla'])
+const DEFAULT_CATEGORIZATION_NORMS = 'acsm' as const
 
 const ProfileSchema = z.object({
   name: z.string().max(200).trim(),
@@ -142,6 +146,18 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:template:set', async (_e, data: unknown) => {
     const validated = EmailTemplateSchema.parse(data)
     await writeKey(KEYS.emailTemplate, JSON.stringify(validated))
+  })
+
+  ipcMain.handle('settings:norms:get', async () => {
+    const raw = await readKey(KEYS.categorizationNorms)
+    if (!raw) return DEFAULT_CATEGORIZATION_NORMS
+    const parsed = CategorizationNormsSchema.safeParse(raw)
+    return parsed.success ? parsed.data : DEFAULT_CATEGORIZATION_NORMS
+  })
+
+  ipcMain.handle('settings:norms:set', async (_e, value: unknown) => {
+    const validated = CategorizationNormsSchema.parse(value)
+    await writeKey(KEYS.categorizationNorms, validated)
   })
 }
 

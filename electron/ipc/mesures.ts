@@ -5,7 +5,13 @@ import { getDb } from '../../db/client'
 import { clients, mesuresCirconferences, mesuresPlisCutanes } from '../../db/schema'
 import { calculateAge, calculateBodyFat, type Sex } from '../../src/lib/body-fat-calculator'
 
-const IsoDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date invalide (attendu AAAA-MM-JJ)')
+// Date ISO `AAAA-MM-JJ` qui ne peut pas être dans le futur. Le contrôle UI
+// (`max={today}` sur l'input) couvre 99 % des cas, mais un copier-coller manuel
+// pourrait sinon passer outre.
+const IsoDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date invalide (attendu AAAA-MM-JJ)')
+  .refine(d => d <= todayISO(), 'La date de la mesure ne peut pas être dans le futur.')
 
 const cm = z.number().positive('Valeur invalide').max(400).optional()
 const kg = z.number().positive('Valeur invalide').max(500).optional()
