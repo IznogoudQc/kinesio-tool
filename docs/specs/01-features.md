@@ -636,6 +636,16 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.46 — Rapport : 2 micro-correctifs)
+
+Repérés sur le rapport régénéré de Nicholas :
+- **Marge droite des graphiques** portée à 34 (était 20) — la dernière date de l'axe X (« juin 2026 ») n'est plus
+  coupée au bord.
+- **« (+0 unité) » supprimé quand l'écart est nul** — sur les pages « En détail » et le plan d'action, la parenthèse
+  d'écart ne s'affiche plus si `delta === 0` (cas d'une valeur pile au seuil, ex. IMC 30 → « ≤ 30 kg/m² » sans « (+0) »).
+
+Suite 137/137 ; `tsc` web + node clean ; build OK. Version : 0.1.45 → 0.1.46.
+
 ## ✅ Fait (v0.1.45 — Rapport : mot du kinésiologue personnalisé + plan d'action)
 
 ### Mot du kinésiologue (personnalisé)

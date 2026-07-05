@@ -1060,7 +1060,7 @@ function SingleLineChart({
   scoreAxis?: boolean
 }) {
   return (
-    <LineChart data={data} margin={{ top: 18, right: 20, bottom: 4, left: -8 }}>
+    <LineChart data={data} margin={{ top: 18, right: 34, bottom: 4, left: -8 }}>
       <CartesianGrid stroke={GRID} vertical={false} />
       <XAxis
         dataKey="label"
@@ -1086,7 +1086,7 @@ function SingleLineChart({
 
 function SingleBarChart({ data }: { data: ChartPoint[] }) {
   return (
-    <BarChart data={data} margin={{ top: 18, right: 20, bottom: 4, left: -8 }}>
+    <BarChart data={data} margin={{ top: 18, right: 34, bottom: 4, left: -8 }}>
       <CartesianGrid stroke={GRID} vertical={false} />
       <XAxis
         dataKey="label"
@@ -1114,7 +1114,7 @@ function DualLineChart({
   nameB: string
 }) {
   return (
-    <LineChart data={data} margin={{ top: 8, right: 16, bottom: 4, left: -8 }}>
+    <LineChart data={data} margin={{ top: 8, right: 34, bottom: 4, left: -8 }}>
       <CartesianGrid stroke={GRID} vertical={false} />
       <XAxis
         dataKey="label"
@@ -1251,11 +1251,13 @@ function MetricBlock({
         <p style={{ fontSize: '9.5pt', color: MARINE, marginTop: '3mm' }}>
           <Target size={11} style={{ display: 'inline', verticalAlign: '-1px', color: GOLD }} />{' '}
           Pour atteindre <strong>{CATEGORY_LABELS[norm.next.nextCategory]}</strong> :{' '}
-          {norm.lowerIsBetter ? '≤' : '≥'} {fmt(norm.next.targetValue)} {metric.unit}{' '}
-          <span style={{ color: INK_SOFT }}>
-            ({norm.next.delta >= 0 ? '+' : ''}
-            {fmt(norm.next.delta)} {metric.unit})
-          </span>
+          {norm.lowerIsBetter ? '≤' : '≥'} {fmt(norm.next.targetValue)} {metric.unit}
+          {norm.next.delta !== 0 && (
+            <span style={{ color: INK_SOFT }}>
+              {' '}({norm.next.delta >= 0 ? '+' : ''}
+              {fmt(norm.next.delta)} {metric.unit})
+            </span>
+          )}
         </p>
       )}
       {norm?.next?.isAtTop && (
@@ -1462,8 +1464,8 @@ function ForcesEtAxesPage({
                   <p style={{ fontSize: '9.5pt', color: MARINE, marginTop: '1mm', fontWeight: 600 }}>
                     Objectif : {a.lowerIsBetter ? '≤' : '≥'} {fmt(a.next.targetValue)} {a.metric.unit}{' '}
                     <span style={{ color: INK_SOFT, fontWeight: 400 }}>
-                      pour atteindre « {CATEGORY_LABELS[a.next.nextCategory]} » ({a.next.delta >= 0 ? '+' : ''}
-                      {fmt(a.next.delta)} {a.metric.unit})
+                      pour atteindre « {CATEGORY_LABELS[a.next.nextCategory]} »
+                      {a.next.delta !== 0 && ` (${a.next.delta >= 0 ? '+' : ''}${fmt(a.next.delta)} ${a.metric.unit})`}
                     </span>
                   </p>
                 )}
