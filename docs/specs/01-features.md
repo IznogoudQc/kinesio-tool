@@ -636,6 +636,12 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.55 — Rapport : espace sous les graphiques)
+
+Les graphiques et l'encart « Ce que ça veut dire » (deux cartes crème) se touchaient presque. `BigChartCard`
+marginBottom 7 → 10 mm — plus d'air entre le dernier graphique et l'interprétation (et entre graphiques). Via la marge
+**basse** (pas de fuite au saut de page). Version : 0.1.54 → 0.1.55.
+
 ## ✅ Fait (v0.1.54 — Rapport : marge du haut augmentée à 20 mm)
 
 La marge de 12 mm (v0.1.53) était trop petite (contenu trop haut). Cause probable additionnelle : `@page { margin: 0 }`

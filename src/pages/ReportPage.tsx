@@ -1209,7 +1209,7 @@ interface ChartPoint {
 /** Carte de graphique pleine largeur (grand format). */
 function BigChartCard({ title, children }: { title: string; children: React.ReactElement }) {
   return (
-    <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm 4mm', marginBottom: '7mm' }}>
+    <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm 4mm', marginBottom: '10mm' }}>
       <p style={{ fontSize: '11pt', fontWeight: 600, color: MARINE, marginBottom: '3mm' }}>{title}</p>
       <div style={{ width: '100%', height: '72mm' }}>
         <ResponsiveContainer width="100%" height="100%">
