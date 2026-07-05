@@ -636,6 +636,12 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.70 — « Nouveau client » : barre de boutons fixe)
+
+Cohérence avec v0.1.69 : la vue « Nouveau client » (page pleine, déjà défilable via `<main overflow-auto>`) reçoit une
+**barre de boutons collée en bas** (`sticky bottom-0`) — Enregistrer/Annuler restent visibles même sur petit écran.
+Version : 0.1.69 → 0.1.70.
+
 ## 🐛 Corrigé (v0.1.69 — Modale « Modifier le client » : boutons inaccessibles)
 
 Avec tous les champs nutrition ajoutés, la fenêtre « Modifier le client » dépassait la hauteur de l'écran et les boutons

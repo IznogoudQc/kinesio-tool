@@ -283,7 +283,7 @@ export function ClientsPage() {
             <p className="text-marine/40 text-sm mt-1">Unité d'affichage et de saisie du poids (les données sont stockées en kg).</p>
           </div>
 
-          <div className="flex items-center gap-3 pt-2">
+          <div className="sticky bottom-0 -mx-8 mt-2 flex items-center gap-3 border-t border-cream-dark bg-cream px-8 py-4">
             <button
               type="submit"
               disabled={saving}
