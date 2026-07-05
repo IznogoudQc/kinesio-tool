@@ -18,6 +18,13 @@ interface Client {
   unitLength: 'cm' | 'in'
   /** Unité préférée pour le poids (affichage/saisie). La DB stocke toujours en kg. */
   unitWeight: 'kg' | 'lb'
+  /** Module « Objectif chiffré & nutrition » activé pour ce client (opt-in). */
+  nutritionEnabled: boolean
+  /** % de gras corporel visé par le client (ex. 15). `null` si non défini. */
+  nutritionTargetBodyFat: number | null
+  /** Niveau d'activité pour l'estimation calorique. `null` si non défini.
+   *  Union alignée sur `ActivityLevel` de src/lib/nutrition.ts. */
+  nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
   createdAt: string
   updatedAt: string
 }
@@ -251,6 +258,9 @@ interface Window {
           sex?: Sex | null
           unitLength?: 'cm' | 'in'
           unitWeight?: 'kg' | 'lb'
+          nutritionEnabled?: boolean
+          nutritionTargetBodyFat?: number | null
+          nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
         }
       ): Promise<Client>
       delete(id: string): Promise<void>

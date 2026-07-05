@@ -31,6 +31,8 @@ import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { classifyBloodPressure } from '../lib/norms/clinical'
 import { computeSynthesis, type BilanProfile, type CompositeScore } from '../lib/norms/scoring'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
+import { bodyFatGoal, estimateMacros } from '../lib/nutrition'
+import { kgToLb } from '../lib/units'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
 import logo from '../assets/logo.png'
@@ -522,6 +524,129 @@ function ScoreRing({ score }: { score: number | null }) {
 }
 
 // ── Section 1 — Vue d'ensemble (score + composites + parcours) ────────────────
+/** Encadré « Votre objectif » en tête de la Vue d'ensemble. Toujours affiche le
+ *  texte libre s'il existe ; si le module nutrition est activé pour le client et
+ *  que le % de gras + poids sont disponibles, ajoute la cible chiffrée (livres à
+ *  perdre, poids visé) et des repères nutritionnels indicatifs. */
+function ObjectifBlock({
+  objectif,
+  client,
+  latest,
+  profile
+}: {
+  objectif: string
+  client: Client
+  latest: Bilan
+  profile: BilanProfile
+}) {
+  const computed = computeBilan(latest.data, profile)
+  const weightKg = num(latest.data.poids_kg)
+  const bodyFatPct =
+    computed.pourcentageGrasDurnin ??
+    (typeof latest.data.pourcentage_gras === 'number' ? latest.data.pourcentage_gras : null)
+  const target = client.nutritionEnabled ? client.nutritionTargetBodyFat : null
+  const goal = bodyFatGoal(weightKg, bodyFatPct, target)
+  const macros =
+    goal && client.nutritionEnabled && client.nutritionActivityLevel
+      ? estimateMacros({
+          weightKg,
+          heightCm: num(latest.data.taille_cm),
+          age: profile.age,
+          sex: profile.sex,
+          activity: client.nutritionActivityLevel,
+          goalKg: goal.goalKg
+        })
+      : null
+
+  if (objectif === '' && goal === null) return null
+
+  const unit = client.unitWeight
+  const w = (kg: number) => `${Math.round(unit === 'lb' ? kgToLb(kg) : kg)} ${unit === 'lb' ? 'lb' : 'kg'}`
+  const atGoal = goal !== null && goal.toLoseKg <= 0.3
+
+  return (
+    <div
+      className="break-inside-avoid"
+      style={{ background: CREAM, borderRadius: '4mm', borderLeft: `2mm solid ${GOLD}`, padding: '6mm 8mm' }}
+    >
+      <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '2.5mm' }}>
+        Votre objectif
+      </p>
+
+      {objectif !== '' && (
+        <p style={{ fontSize: '13pt', lineHeight: 1.5, color: MARINE, fontStyle: 'italic', marginBottom: goal ? '5mm' : '0' }}>
+          «&nbsp;{objectif}&nbsp;»
+        </p>
+      )}
+
+      {goal !== null && bodyFatPct !== null && target !== null && (
+        <div style={{ background: '#fff', borderRadius: '3mm', padding: '5mm 6mm' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6mm', flexWrap: 'wrap' }}>
+            <ObjStat label="% de gras actuel" value={`${bodyFatPct.toFixed(1)} %`} />
+            <span style={{ fontSize: '16pt', color: GOLD }}>→</span>
+            <ObjStat label="% de gras visé" value={`${target} %`} accent />
+          </div>
+
+          {atGoal ? (
+            <p style={{ fontSize: '12pt', color: MARINE, marginTop: '4mm', fontWeight: 600 }}>
+              🎉&nbsp;Objectif de composition atteint — on maintient&nbsp;!
+            </p>
+          ) : (
+            <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '4mm', lineHeight: 1.5 }}>
+              Pour l'atteindre&nbsp;: viser une perte d'environ{' '}
+              <span style={{ fontSize: '14pt', fontWeight: 700, color: MARINE }}>{w(goal.toLoseKg)}</span> (poids visé&nbsp;:{' '}
+              <strong style={{ color: MARINE }}>{w(goal.goalKg)}</strong>, en préservant la masse musculaire).
+            </p>
+          )}
+
+          {macros !== null && !atGoal && (
+            <div style={{ marginTop: '5mm', borderTop: `0.3mm solid ${GRID}`, paddingTop: '4mm' }}>
+              <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, fontWeight: 700, marginBottom: '3mm' }}>
+                Repères nutritionnels quotidiens
+              </p>
+              <div style={{ display: 'flex', gap: '4mm', flexWrap: 'wrap' }}>
+                <MacroChip label="Calories" value={`${macros.targetKcal}`} unit="kcal" />
+                <MacroChip label="Protéines" value={`${macros.proteinG}`} unit="g" />
+                <MacroChip label="Glucides" value={`${macros.carbsG}`} unit="g" />
+                <MacroChip label="Lipides" value={`${macros.fatG}`} unit="g" />
+              </div>
+              <p style={{ fontSize: '8pt', color: INK_SOFT, fontStyle: 'italic', marginTop: '3mm', lineHeight: 1.45 }}>
+                Estimation générale à titre indicatif. Pour un plan alimentaire personnalisé, consultez un(e)
+                nutritionniste/diététiste.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ObjStat({ label, value, accent }: { label: string; value: string; accent?: boolean }) {
+  return (
+    <div>
+      <p style={{ fontSize: '8pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: INK_SOFT, marginBottom: '1mm' }}>
+        {label}
+      </p>
+      <p style={{ fontSize: '20pt', fontWeight: 700, color: accent ? GOLD : MARINE, lineHeight: 1 }}>{value}</p>
+    </div>
+  )
+}
+
+function MacroChip({ label, value, unit }: { label: string; value: string; unit: string }) {
+  return (
+    <div style={{ flex: '1 1 0', minWidth: '28mm', background: CREAM, borderRadius: '2.5mm', padding: '3mm 4mm', textAlign: 'center' }}>
+      <p style={{ fontSize: '15pt', fontWeight: 700, color: MARINE, lineHeight: 1 }}>
+        {value}
+        <span style={{ fontSize: '9pt', fontWeight: 500, color: INK_SOFT }}>&nbsp;{unit}</span>
+      </p>
+      <p style={{ fontSize: '8pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT, marginTop: '1.5mm' }}>
+        {label}
+      </p>
+    </div>
+  )
+}
+
 function OverviewSection({
   client,
   bilans,
@@ -588,20 +713,8 @@ function OverviewSection({
       intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 1 à 5 — plus il est élevé, meilleure est votre santé physique globale."
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '9mm' }}>
-      {/* Objectif du client — donne du sens aux scores qui suivent. */}
-      {objectif !== '' && (
-        <div
-          className="break-inside-avoid"
-          style={{ background: CREAM, borderRadius: '4mm', borderLeft: `2mm solid ${GOLD}`, padding: '6mm 8mm' }}
-        >
-          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '2.5mm' }}>
-            Votre objectif
-          </p>
-          <p style={{ fontSize: '13pt', lineHeight: 1.5, color: MARINE, fontStyle: 'italic' }}>
-            «&nbsp;{objectif}&nbsp;»
-          </p>
-        </div>
-      )}
+      {/* Objectif du client — texte libre + (si activé) cible chiffrée & nutrition. */}
+      <ObjectifBlock objectif={objectif} client={client} latest={latest} profile={profile} />
       {/* Score + 4 composites */}
       <div className="break-inside-avoid" style={{ display: 'flex', gap: '9mm', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flexShrink: 0, textAlign: 'center' }}>

@@ -14,6 +14,11 @@ const IsoDateOrNull = z
 const SexOrNull = z.union([z.enum(['F', 'M']), z.null()]).optional()
 const UnitLength = z.enum(['cm', 'in']).optional()
 const UnitWeight = z.enum(['kg', 'lb']).optional()
+// Module « Objectif chiffré & nutrition » (opt-in par client).
+const NutritionActivity = z
+  .union([z.enum(['sedentaire', 'leger', 'modere', 'actif', 'tres_actif']), z.null()])
+  .optional()
+const BodyFatTarget = z.union([z.number().min(3).max(60), z.null()]).optional()
 
 const CreateClientSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(200).trim(),
@@ -30,7 +35,10 @@ const UpdateClientSchema = z.object({
   birthdate: IsoDateOrNull,
   sex: SexOrNull,
   unitLength: UnitLength,
-  unitWeight: UnitWeight
+  unitWeight: UnitWeight,
+  nutritionEnabled: z.boolean().optional(),
+  nutritionTargetBodyFat: BodyFatTarget,
+  nutritionActivityLevel: NutritionActivity
 })
 
 const ClientId = z.string().uuid()

@@ -18,6 +18,15 @@ export const clients = sqliteTable('clients', {
   // (cm, kg) ; la conversion se fait côté UI. Voir src/lib/units.ts.
   unitLength: text('unit_length', { enum: ['cm', 'in'] }).notNull().default('cm'),
   unitWeight: text('unit_weight', { enum: ['kg', 'lb'] }).notNull().default('kg'),
+  // Module « Objectif chiffré & nutrition » — activable par client (opt-in).
+  // Quand activé, le rapport calcule les livres à perdre pour atteindre
+  // `nutritionTargetBodyFat` (% de gras visé) et propose des macros indicatives
+  // selon `nutritionActivityLevel`. Voir docs/decisions/0015.
+  nutritionEnabled: integer('nutrition_enabled', { mode: 'boolean' }).notNull().default(false),
+  nutritionTargetBodyFat: real('nutrition_target_body_fat'),
+  nutritionActivityLevel: text('nutrition_activity_level', {
+    enum: ['sedentaire', 'leger', 'modere', 'actif', 'tres_actif']
+  }),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

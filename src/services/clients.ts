@@ -23,6 +23,9 @@ export const clientsService = {
       sex?: 'F' | 'M' | null
       unitLength?: 'cm' | 'in'
       unitWeight?: 'kg' | 'lb'
+      nutritionEnabled?: boolean
+      nutritionTargetBodyFat?: number | null
+      nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
     }
   ): Promise<Client> {
     return window.api.clients.update(id, data)

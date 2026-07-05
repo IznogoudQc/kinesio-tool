@@ -636,6 +636,23 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.61 — Objectif chiffré & module nutrition, opt-in par client)
+
+Extension de l'objectif texte (v0.1.60) vers un **objectif chiffré** activable par client. Voir
+`docs/decisions/0015-objectif-chiffre-nutrition.md`.
+
+- **Config par client** (dossier → Modifier) : case « Objectif chiffré & nutrition » + % de gras visé + niveau d'activité.
+  3 nouvelles colonnes `clients` (`nutrition_enabled`, `nutrition_target_body_fat`, `nutrition_activity_level`),
+  migration Drizzle `0008`. Désactivé par défaut.
+- **Moteur pur** `src/lib/nutrition.ts` (12 tests) : `bodyFatGoal` (livres à perdre, masse maigre préservée),
+  `mifflinBmr`, `estimateMacros` (TDEE − 20 %, protéines 2 g/kg cible, lipides 25 %, glucides = reste).
+- **Rapport** : l'encadré « Votre objectif » affiche, si activé, « % actuel → cible », les livres à perdre + poids visé
+  (unité du client), et 4 repères nutritionnels (calories/protéines/glucides/lipides).
+- **Champ de pratique** : macros affichées **avec avertissement** (« estimation générale — consultez un(e)
+  nutritionniste »), car la planification alimentaire relève de l'OPDQ, pas du kinésiologue.
+
+Version : 0.1.60 → 0.1.61.
+
 ## ✅ Fait (v0.1.60 — Section « Objectif du client »)
 
 Nouveau champ `objectif` (texte libre, dans les mots du client) saisi au bilan, à côté des observations. Il apparaît en

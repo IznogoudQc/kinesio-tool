@@ -5,6 +5,7 @@ import { clientsService } from '../../services/clients'
 import { reportsService } from '../../services/reports'
 import { ClientAvatar } from '../../components/ClientAvatar'
 import { AvatarCropper } from '../../components/AvatarCropper'
+import { ACTIVITY_LABELS, ACTIVITY_ORDER, type ActivityLevel } from '../../lib/nutrition'
 
 /** Convertit un Blob en string base64 (sans le prefix data:...) — pour traverser contextBridge. */
 async function blobToBase64(blob: Blob): Promise<string> {
@@ -337,6 +338,11 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
   const [sex, setSex] = useState<'F' | 'M' | ''>(client.sex ?? '')
   const [unitLength, setUnitLength] = useState<'cm' | 'in'>(client.unitLength ?? 'cm')
   const [unitWeight, setUnitWeight] = useState<'kg' | 'lb'>(client.unitWeight ?? 'kg')
+  const [nutritionEnabled, setNutritionEnabled] = useState(client.nutritionEnabled ?? false)
+  const [targetBodyFat, setTargetBodyFat] = useState(
+    client.nutritionTargetBodyFat != null ? String(client.nutritionTargetBodyFat) : ''
+  )
+  const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>(client.nutritionActivityLevel ?? '')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [avatarBusy, setAvatarBusy] = useState(false)
@@ -412,6 +418,11 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
       setError('Date de naissance invalide.')
       return
     }
+    const targetPct = targetBodyFat.trim() !== '' ? Number(targetBodyFat) : null
+    if (nutritionEnabled && targetPct !== null && (!Number.isFinite(targetPct) || targetPct < 3 || targetPct > 60)) {
+      setError('Le % de gras visé doit être compris entre 3 et 60.')
+      return
+    }
     try {
       setSaving(true)
       const updated = await clientsService.update(client.id, {
@@ -420,7 +431,10 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
         birthdate: birthdate ? birthdate : null,
         sex: sex ? sex : null,
         unitLength,
-        unitWeight
+        unitWeight,
+        nutritionEnabled,
+        nutritionTargetBodyFat: nutritionEnabled ? targetPct : null,
+        nutritionActivityLevel: nutritionEnabled && activityLevel !== '' ? activityLevel : null
       })
       onSaved(updated)
     } catch (err) {
@@ -614,6 +628,59 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
                 ))}
               </div>
               <p className="text-marine/40 text-sm mt-1">Unité d'affichage et de saisie du poids (les données sont stockées en kg).</p>
+            </div>
+
+            <div className="pt-4 border-t border-cream-dark">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={nutritionEnabled}
+                  onChange={e => setNutritionEnabled(e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+                <span className="text-base font-medium text-marine">Objectif chiffré &amp; nutrition</span>
+              </label>
+              <p className="text-marine/40 text-sm mt-1">
+                Ajoute au rapport les livres à perdre pour atteindre le % de gras visé, et des macros
+                alimentaires indicatives.
+              </p>
+
+              {nutritionEnabled && (
+                <div className="mt-3 space-y-3 pl-6">
+                  <div>
+                    <label className="block text-sm font-medium text-marine mb-1">% de gras corporel visé</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={3}
+                        max={60}
+                        step={0.5}
+                        value={targetBodyFat}
+                        onChange={e => setTargetBodyFat(e.target.value)}
+                        placeholder="15"
+                        className="w-24 px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+                      />
+                      <span className="text-marine/50 text-base">%</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-marine mb-1">Niveau d'activité</label>
+                    <select
+                      value={activityLevel}
+                      onChange={e => setActivityLevel(e.target.value as ActivityLevel | '')}
+                      className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+                    >
+                      <option value="">— Choisir —</option>
+                      {ACTIVITY_ORDER.map(a => (
+                        <option key={a} value={a}>
+                          {ACTIVITY_LABELS[a]}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-marine/40 text-xs mt-1">Sert à l'estimation calorique pour les macros.</p>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
