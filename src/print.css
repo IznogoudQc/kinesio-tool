@@ -40,12 +40,26 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-/* Chaque section occupe sa propre page A4. */
+/* Chaque section démarre sur une nouvelle page A4 (break-before). On n'utilise
+ * PAS break-after pour éviter les doubles sauts (page blanche) entre une section
+ * « page » et une section « flow ». */
+.report-page,
+.report-flow {
+  break-before: page;
+}
+
+/* La première section (couverture) ne saute pas avant. */
+.report-page:first-child,
+.report-flow:first-child {
+  break-before: auto;
+}
+
+/* Sections « page » : tiennent sur une seule page A4 (couverture, vue
+ * d'ensemble, forces & plan). */
 .report-page {
-  break-after: page;
   break-inside: avoid;
 }
 
-.report-page:last-child {
-  break-after: auto;
-}
+/* Sections « flow » : peuvent s'étaler sur plusieurs pages A4 (sections par
+ * domaine avec grands graphiques). Les blocs internes portent la classe
+ * Tailwind `break-inside-avoid` pour ne pas être coupés au milieu d'une page. */

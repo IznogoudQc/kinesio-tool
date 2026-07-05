@@ -636,6 +636,41 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.49 — Rapport : refonte thématique par domaine)
+
+### Objectif : un rapport organisé par thème, avec de grands graphiques et des explications
+Retour de Marie-Eve : le rapport éparpillait chaque domaine entre les sections « Progression » et « En détail ».
+Réécriture complète de `ReportPage.tsx` en **6 sections thématiques** (noms « chaleureux »), validée via une maquette
+avant codage.
+
+### Nouvelle structure
+1. **Couverture** — inchangée.
+2. **Votre bilan en un coup d'œil** (Section 1) — score global + 4 composites + parcours (héros, frise, avant/après)
+   + légende des couleurs. Fusion des anciennes sections Parcours + Synthèse.
+3. **Votre composition corporelle** (Section 2) — mesures (IMC, tour de taille, ratio, poids optimal, % gras, plis) +
+   résultats catégorisés + **grands graphiques** (% gras, poids, IMC, tour de taille) + interprétation.
+4. **Votre cœur et votre endurance** (Section 3) — VO2max/FC/tension catégorisés + tension nommée + zones cardiaques
+   (grille 2 colonnes) + récupération + grands graphiques (VO2max, FC repos) + interprétation.
+5. **Votre force musculaire** (Section 4) — pompes/redressements/saut/puissance + graphiques + interprétation.
+6. **Votre dos et votre souplesse** (Section 5) — flexion + endurance dos + graphiques + interprétation.
+7. **Vos forces et votre plan d'action** (Section 6) — inchangée (+ mot du kinésiologue).
+
+### Changements techniques
+- **Modèle de pages** (`print.css`) : passage de `break-after` + `break-inside:avoid` (1 page/section) à
+  `break-before:page` + sections **« flow »** (`ReportFlowSection`) qui peuvent s'étaler sur **plusieurs pages A4** ;
+  les blocs internes portent `break-inside-avoid`. Permet les grands graphiques (2-3 pages/section au besoin).
+- **Grands graphiques** : `BigChartCard` pleine largeur, 88 mm de haut (vs 80 mm en 2 colonnes avant). Un graphique
+  n'apparaît que si ≥ 2 bilans renseignent la donnée.
+- **Textes d'interprétation** : `domainInterpretation` génère un « Ce que ça veut dire pour vous » par domaine (catégorie
+  composite + point fort / à travailler + tendance de la métrique phare).
+- Blocs réutilisés/extraits : `CompositionExtras`, `CardioExtras`, `RecoveryTable`, `MetricBlock`, `JourneyTimeline`,
+  charts. Anciennes sections page-uniques (`ParcoursPage`, `SynthesePage`, `CompositionPage`, `ProgressionChartsPage`,
+  `MetricDetailsPages`, `RecuperationEtNotesPage`) supprimées.
+
+### Vérifs
+- Suite **138/138 pass** ; `tsc` web + node clean ; `npm run build` OK ; `npm run lint` baseline inchangée (18).
+- ⚠️ Rendu PDF multi-pages non vérifiable hors Electron — à confirmer par régénération. Version : 0.1.48 → 0.1.49.
+
 ## ✅ Fait (v0.1.48 — Rapport : section Composition sur une seule page)
 
 Correctif de mise en page : l'ajout du bloc « Tension artérielle » (v0.1.47) avait poussé la table des zones

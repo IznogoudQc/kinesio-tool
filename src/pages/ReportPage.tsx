@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
   LabelList,
   Legend,
@@ -64,6 +62,13 @@ const CAT_FG: Record<Category, string> = {
   TRES_BIEN: '#0a1c5e',
   EXCELLENT: '#ffffff'
 }
+const SCORE_OF: Record<Category, number> = {
+  A_AMELIORER: 1,
+  ACCEPTABLE: 2,
+  BIEN: 3,
+  TRES_BIEN: 4,
+  EXCELLENT: 5
+}
 
 const SEX_LABEL: Record<string, string> = { F: 'Femme', M: 'Homme' }
 
@@ -74,7 +79,7 @@ declare global {
   }
 }
 
-// ── Métriques suivies (ordre des pages détaillées) ───────────────────────────
+// ── Métriques suivies ────────────────────────────────────────────────────────
 interface MetricDef {
   key: keyof BilanData
   label: string
@@ -95,8 +100,11 @@ const METRICS: MetricDef[] = [
   { key: 'flexion_tronc_cm', label: 'Flexion du tronc', unit: 'cm' },
   { key: 'endurance_dos_sec', label: 'Endurance des muscles du dos', unit: 's' }
 ]
+const METRIC_BY_KEY: Partial<Record<keyof BilanData, MetricDef>> = Object.fromEntries(
+  METRICS.map(m => [m.key, m])
+)
 
-/** Recommandations courtes génériques, par métrique — section Forces & axes. */
+/** Recommandations courtes génériques, par métrique — plan d'action. */
 const RECO: Partial<Record<keyof BilanData, string>> = {
   vo2max: 'Intégrez 2 à 3 séances de cardio par semaine (continu ou par intervalles).',
   pourcentage_gras: 'Associez un léger déficit calorique à de la musculation pour préserver la masse maigre.',
@@ -202,7 +210,6 @@ export function ReportPage() {
         setCoachName(profile.name)
         setSignature(profile.signature)
         setNorms(activeNorms)
-        // Couverture : avatar carré (focus visage) — pas la version plein corps.
         const avatarFile = found.avatarFilename
         if (avatarFile) {
           const url = await clientsService.getAvatarUrl(avatarFile).catch(() => null)
@@ -231,7 +238,7 @@ export function ReportPage() {
       } catch {
         // best effort — on génère quand même
       }
-      await new Promise(resolve => setTimeout(resolve, 600))
+      await new Promise(resolve => setTimeout(resolve, 700))
       if (!cancelled) window.__REPORT_READY__ = true
     }
     signalReady()
@@ -246,10 +253,7 @@ export function ReportPage() {
   )
   // Du plus ancien au plus récent.
   const chrono = useMemo(() => [...bilans].reverse(), [bilans])
-  const syntheses = useMemo(
-    () => chrono.map(b => computeSynthesis(b.data, profile)),
-    [chrono, profile]
-  )
+  const syntheses = useMemo(() => chrono.map(b => computeSynthesis(b.data, profile)), [chrono, profile])
 
   if (loading) {
     return <div className="report-body p-10 text-base" style={{ color: MARINE }}>Préparation du rapport…</div>
@@ -262,13 +266,15 @@ export function ReportPage() {
   const latestSynth = latest ? computeSynthesis(latest.data, profile) : null
   const latestComputed = latest ? computeBilan(latest.data, profile) : null
 
-  if (!latest || !latestSynth) {
+  if (!latest || !latestSynth || !latestComputed) {
     return (
       <article className="report-body" style={{ color: MARINE, background: '#fff' }}>
         <CoverPage client={client} latest={null} coachName={coachName} totalBilans={0} avatarUrl={avatarUrl} overall={null} />
       </article>
     )
   }
+
+  const shared = { latest, bilans, chrono, syntheses, profile }
 
   return (
     <article className="report-body" style={{ color: MARINE, background: '#fff' }}>
@@ -281,18 +287,18 @@ export function ReportPage() {
         overall={latestSynth.overall.score}
         overallCategory={latestSynth.overall.category}
       />
-      <ParcoursPage client={client} bilans={bilans} chrono={chrono} syntheses={syntheses} profile={profile} />
-      <SynthesePage synth={latestSynth} bilanDate={latest.date} />
-      {latestComputed && <CompositionPage latest={latest} computed={latestComputed} />}
-      <ProgressionChartsPage chrono={chrono} syntheses={syntheses} />
-      <MetricDetailsPages latest={latest} bilans={bilans} profile={profile} />
-      <RecuperationEtNotesPage latest={latest} />
-      <ForcesEtAxesPage latest={latest} profile={profile} coachName={coachName} signature={signature} />
+      <OverviewSection client={client} synth={latestSynth} {...shared} />
+      <CompositionSection {...shared} computed={latestComputed} />
+      <CardioSection {...shared} computed={latestComputed} />
+      <ForceSection {...shared} />
+      <DosSection {...shared} />
+      <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} />
     </article>
   )
 }
 
-// ── Wrapper de section : une page A4 ─────────────────────────────────────────
+// ── Wrappers de section ──────────────────────────────────────────────────────
+/** Section « page » : tient sur une seule page A4 (couverture, vue d'ensemble, plan). */
 function ReportSection({
   children,
   title,
@@ -318,24 +324,65 @@ function ReportSection({
         background: '#fff'
       }}
     >
-      {title && (
-        <header className="flex items-end justify-between" style={{ marginBottom: '9mm' }}>
-          <h1 className="report-display" style={{ fontWeight: 600, fontSize: '28pt', color: MARINE, lineHeight: 1.05 }}>
-            {title}
-          </h1>
-          {sectionNumber && (
-            <span style={{ color: '#bcb6a4', fontSize: '9pt', letterSpacing: '0.2em', textTransform: 'uppercase' }}>
-              {sectionNumber}
-            </span>
-          )}
-        </header>
-      )}
+      {title && <SectionHeader title={title} sectionNumber={sectionNumber} />}
       <div style={{ flex: 1 }}>{children}</div>
     </section>
   )
 }
 
-// ── Section 1 — Couverture ───────────────────────────────────────────────────
+/** Section « flow » : peut s'étaler sur plusieurs pages A4 (sections par domaine). */
+function ReportFlowSection({
+  children,
+  title,
+  sectionNumber,
+  intro
+}: {
+  children: React.ReactNode
+  title: string
+  sectionNumber: string
+  intro?: string
+}) {
+  return (
+    <section
+      className="report-flow"
+      style={{ width: '210mm', minHeight: '293mm', margin: '0 auto', padding: '16mm 17mm', boxSizing: 'border-box', background: '#fff' }}
+    >
+      <SectionHeader title={title} sectionNumber={sectionNumber} />
+      {intro && (
+        <p style={{ fontSize: '11pt', lineHeight: 1.55, color: INK_SOFT, maxWidth: '160mm', marginTop: '-5mm', marginBottom: '9mm' }}>
+          {intro}
+        </p>
+      )}
+      {children}
+    </section>
+  )
+}
+
+function SectionHeader({ title, sectionNumber }: { title: string; sectionNumber?: string }) {
+  return (
+    <header className="flex items-end justify-between" style={{ marginBottom: '9mm' }}>
+      <h1 className="report-display" style={{ fontWeight: 600, fontSize: '27pt', color: MARINE, lineHeight: 1.05 }}>
+        {title}
+      </h1>
+      {sectionNumber && (
+        <span style={{ color: '#bcb6a4', fontSize: '9pt', letterSpacing: '0.2em', textTransform: 'uppercase', whiteSpace: 'nowrap', marginLeft: '6mm' }}>
+          {sectionNumber}
+        </span>
+      )}
+    </header>
+  )
+}
+
+/** Titre de bloc (eyebrow doré) à l'intérieur d'une section. */
+function BlockTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, fontWeight: 700, margin: '0 0 4mm' }}>
+      {children}
+    </p>
+  )
+}
+
+// ── Couverture ───────────────────────────────────────────────────────────────
 function CoverPage({
   client,
   latest,
@@ -360,20 +407,16 @@ function CoverPage({
   return (
     <ReportSection pad={false}>
       <div style={{ padding: '20mm 20mm 16mm', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        {/* En-tête */}
         <div className="flex items-start justify-between">
           <img src={logo} alt="Kinésio Outils" style={{ height: '16mm', width: 'auto' }} />
           <div style={{ textAlign: 'right' }}>
             <p style={{ fontSize: '8pt', letterSpacing: '0.16em', textTransform: 'uppercase', color: INK_SOFT }}>
               Bilan de progression
             </p>
-            {latest && (
-              <p style={{ fontSize: '10pt', color: MARINE, marginTop: '1mm' }}>{formatBilanDate(latest.date)}</p>
-            )}
+            {latest && <p style={{ fontSize: '10pt', color: MARINE, marginTop: '1mm' }}>{formatBilanDate(latest.date)}</p>}
           </div>
         </div>
 
-        {/* Centre — avatar + identité */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <div
             style={{
@@ -391,24 +434,14 @@ function CoverPage({
             {avatarUrl ? (
               <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             ) : client.sex ? (
-              <img
-                src={client.sex === 'M' ? bodyMale : bodyFemale}
-                alt=""
-                style={{ width: '78%', height: '78%', objectFit: 'contain' }}
-              />
+              <img src={client.sex === 'M' ? bodyMale : bodyFemale} alt="" style={{ width: '78%', height: '78%', objectFit: 'contain' }} />
             ) : null}
           </div>
-          <h1
-            className="report-display"
-            style={{ fontWeight: 600, fontSize: '40pt', color: MARINE, marginTop: '9mm', textAlign: 'center', lineHeight: 1.05 }}
-          >
+          <h1 className="report-display" style={{ fontWeight: 600, fontSize: '40pt', color: MARINE, marginTop: '9mm', textAlign: 'center', lineHeight: 1.05 }}>
             {client.name}
           </h1>
-          {subtitle && (
-            <p style={{ fontSize: '12pt', color: INK_SOFT, marginTop: '2mm' }}>{subtitle}</p>
-          )}
+          {subtitle && <p style={{ fontSize: '12pt', color: INK_SOFT, marginTop: '2mm' }}>{subtitle}</p>}
 
-          {/* Score global */}
           <p style={{ marginTop: '12mm', fontSize: '8.5pt', letterSpacing: '0.16em', textTransform: 'uppercase', color: GOLD }}>
             Condition physique globale
           </p>
@@ -422,7 +455,6 @@ function CoverPage({
           )}
         </div>
 
-        {/* Pied */}
         <p style={{ textAlign: 'center', fontSize: '9.5pt', color: INK_SOFT }}>
           {totalBilans > 0 ? `Bilan nº ${totalBilans} · ` : ''}
           {latest ? `${formatBilanDate(latest.date)} · ` : ''}
@@ -443,25 +475,8 @@ function ScoreRing({ score }: { score: number | null }) {
   return (
     <svg viewBox={`0 0 ${size} ${size}`} style={{ width: '46mm', height: '46mm' }}>
       <circle cx={cx} cy={cx} r={r} fill="none" stroke={GRID} strokeWidth={14} />
-      <circle
-        cx={cx}
-        cy={cx}
-        r={r}
-        fill="none"
-        stroke={GOLD}
-        strokeWidth={14}
-        strokeLinecap="round"
-        strokeDasharray={`${circ * frac} ${circ}`}
-        transform={`rotate(-90 ${cx} ${cx})`}
-      />
-      <text
-        x={cx}
-        y={cx - 4}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="report-display"
-        style={{ fontSize: '64px', fontWeight: 700, fill: MARINE }}
-      >
+      <circle cx={cx} cy={cx} r={r} fill="none" stroke={GOLD} strokeWidth={14} strokeLinecap="round" strokeDasharray={`${circ * frac} ${circ}`} transform={`rotate(-90 ${cx} ${cx})`} />
+      <text x={cx} y={cx - 4} textAnchor="middle" dominantBaseline="middle" className="report-display" style={{ fontSize: '64px', fontWeight: 700, fill: MARINE }}>
         {score === null ? '—' : score.toFixed(1)}
       </text>
       <text x={cx} y={cx + 34} textAnchor="middle" style={{ fontSize: '20px', fill: INK_SOFT }}>
@@ -471,25 +486,33 @@ function ScoreRing({ score }: { score: number | null }) {
   )
 }
 
-// ── Section 2 — Votre parcours ───────────────────────────────────────────────
-function ParcoursPage({
+// ── Section 1 — Vue d'ensemble (score + composites + parcours) ────────────────
+function OverviewSection({
   client,
   bilans,
   chrono,
   syntheses,
-  profile
+  profile,
+  synth
 }: {
   client: Client
   bilans: Bilan[]
   chrono: Bilan[]
   syntheses: ReturnType<typeof computeSynthesis>[]
   profile: BilanProfile
+  synth: ReturnType<typeof computeSynthesis>
 }) {
+  const single = bilans.length < 2
   const oldest = chrono[0]
   const latest = chrono[chrono.length - 1]
-  const single = bilans.length < 2
 
-  // Métrique héros : plus grande amélioration relative entre 1er et dernier bilan.
+  const cards: { title: string; score: CompositeScore }[] = [
+    { title: 'Composition corporelle', score: synth.composition },
+    { title: 'Cœur et endurance', score: synth.aerobic },
+    { title: 'Force musculaire', score: synth.musculoGlobal },
+    { title: 'Dos et souplesse', score: synth.backHealth }
+  ]
+
   const hero = useMemo(() => {
     if (single) return null
     let best: { label: string; unit: string; from: number; to: number; pct: number } | null = null
@@ -497,18 +520,13 @@ function ParcoursPage({
       const from = num(oldest.data[m.key])
       const to = num(latest.data[m.key])
       if (from === null || to === null || from === 0) continue
-      const norm = metricNorm(m.key, to, profile)
-      const lower = norm?.lowerIsBetter ?? false
-      const improvement = lower ? from - to : to - from
-      const pct = (improvement / Math.abs(from)) * 100
-      if (pct > 0 && (best === null || pct > best.pct)) {
-        best = { label: m.label, unit: m.unit, from, to, pct }
-      }
+      const lower = metricNorm(m.key, to, profile)?.lowerIsBetter ?? false
+      const pct = ((lower ? from - to : to - from) / Math.abs(from)) * 100
+      if (pct > 0 && (best === null || pct > best.pct)) best = { label: m.label, unit: m.unit, from, to, pct }
     }
     return best
   }, [single, oldest, latest, profile])
 
-  // Avant / après — jusqu'à 6 métriques renseignées aux deux bornes.
   const beforeAfter = useMemo(() => {
     if (single) return []
     const rows: { label: string; unit: string; from: number; to: number; lower: boolean }[] = []
@@ -523,81 +541,76 @@ function ParcoursPage({
   }, [single, oldest, latest, profile])
 
   const years = single ? 0 : yearsBetween(oldest.date, latest.date)
-  const durationLabel =
-    years >= 1 ? `${years.toFixed(years >= 3 ? 0 : 1)} années de suivi` : `${Math.round(years * 12)} mois de suivi`
 
   return (
-    <ReportSection title="Votre parcours" sectionNumber="Section 2">
+    <ReportSection title="Votre bilan en un coup d'œil" sectionNumber="Section 1">
+      <p style={{ fontSize: '11pt', lineHeight: 1.55, color: INK_SOFT, maxWidth: '160mm', marginTop: '-5mm', marginBottom: '8mm' }}>
+        Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle
+        de 0 à 5 — plus il est élevé, meilleure est votre santé physique globale.
+      </p>
+
+      {/* Score + 4 composites */}
+      <div style={{ display: 'flex', gap: '9mm', alignItems: 'center', marginBottom: '9mm', flexWrap: 'wrap' }}>
+        <div style={{ flexShrink: 0, textAlign: 'center' }}>
+          <ScoreRing score={synth.overall.score} />
+          {synth.overall.category && (
+            <div style={{ marginTop: '2mm' }}>
+              <CategoryPill category={synth.overall.category} />
+            </div>
+          )}
+        </div>
+        <div style={{ flex: 1, minWidth: '110mm', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5mm' }}>
+          {cards.map(c => (
+            <div key={c.title} style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}>
+              <p className="report-display" style={{ fontSize: '13pt', fontWeight: 600, color: MARINE }}>{c.title}</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '2mm', margin: '1.5mm 0 1mm' }}>
+                <span className="report-display" style={{ fontSize: '26pt', fontWeight: 700, color: MARINE }}>
+                  {c.score.score === null ? '—' : c.score.score.toFixed(1)}
+                </span>
+                <span style={{ fontSize: '10pt', color: INK_SOFT }}>/ 5</span>
+                {c.score.category && (
+                  <span style={{ marginLeft: 'auto' }}>
+                    <CategoryPill category={c.score.category} />
+                  </span>
+                )}
+              </div>
+              <ScoreBar score={c.score.score} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Parcours : hero + timeline + avant/après */}
       {single ? (
-        <div
-          style={{
-            border: `1px dashed ${GOLD_SOFT}`,
-            borderRadius: '4mm',
-            padding: '14mm',
-            textAlign: 'center',
-            background: CREAM
-          }}
-        >
-          <p className="report-display" style={{ fontSize: '20pt', color: MARINE, fontWeight: 600 }}>
-            Premier bilan
-          </p>
-          <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '3mm', maxWidth: '120mm', margin: '3mm auto 0' }}>
-            La progression de {client.name.split(' ')[0]} deviendra visible dès le prochain bilan. Ce
-            document présente l’état actuel comme point de départ.
+        <div style={{ border: `1px dashed ${GOLD_SOFT}`, borderRadius: '4mm', padding: '12mm', textAlign: 'center', background: CREAM }}>
+          <p className="report-display" style={{ fontSize: '18pt', color: MARINE, fontWeight: 600 }}>Premier bilan</p>
+          <p style={{ fontSize: '11pt', color: INK_SOFT, maxWidth: '120mm', margin: '3mm auto 0' }}>
+            La progression de {client.name.split(' ')[0]} deviendra visible dès le prochain bilan. Ce document présente
+            l’état actuel comme point de départ.
           </p>
         </div>
       ) : (
         <>
-          <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '-4mm', marginBottom: '8mm' }}>
-            Du {formatBilanDate(oldest.date)} à aujourd’hui — {durationLabel}.
-          </p>
-
-          {/* Bloc 1 — métrique héros */}
           {hero && (
-            <div
-              style={{
-                background: CREAM,
-                borderRadius: '4mm',
-                padding: '9mm 11mm',
-                marginBottom: '9mm',
-                display: 'flex',
-                alignItems: 'baseline',
-                justifyContent: 'space-between',
-                gap: '8mm'
-              }}
-            >
+            <div style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', marginBottom: '8mm', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8mm' }}>
               <div>
-                <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD }}>
-                  Votre plus belle progression
-                </p>
-                <p className="report-display" style={{ fontSize: '22pt', fontWeight: 600, color: MARINE, marginTop: '1mm' }}>
-                  {hero.label}
-                </p>
-                <p className="report-display" style={{ fontSize: '34pt', fontWeight: 700, color: MARINE, lineHeight: 1.1 }}>
+                <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD }}>Votre plus belle progression</p>
+                <p className="report-display" style={{ fontSize: '18pt', fontWeight: 600, color: MARINE, marginTop: '1mm' }}>{hero.label}</p>
+                <p className="report-display" style={{ fontSize: '30pt', fontWeight: 700, color: MARINE, lineHeight: 1.1 }}>
                   {fmt(hero.from)} → {fmt(hero.to)}
-                  <span style={{ fontSize: '14pt', color: INK_SOFT, fontWeight: 500 }}> {hero.unit}</span>
+                  <span style={{ fontSize: '13pt', color: INK_SOFT, fontWeight: 500 }}> {hero.unit}</span>
                 </p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <p className="report-display" style={{ fontSize: '40pt', fontWeight: 700, color: GOLD }}>
-                  +{Math.round(hero.pct)} %
-                </p>
-                <p style={{ fontSize: '10pt', color: INK_SOFT }}>
-                  en {years >= 1 ? `${years.toFixed(years >= 3 ? 0 : 1)} ans` : `${Math.round(years * 12)} mois`}
-                </p>
+                <p className="report-display" style={{ fontSize: '36pt', fontWeight: 700, color: GOLD }}>+{Math.round(hero.pct)} %</p>
+                <p style={{ fontSize: '10pt', color: INK_SOFT }}>en {years >= 1 ? `${years.toFixed(years >= 3 ? 0 : 1)} ans` : `${Math.round(years * 12)} mois`}</p>
               </div>
             </div>
           )}
-
-          {/* Bloc 2 — timeline */}
           <JourneyTimeline chrono={chrono} syntheses={syntheses} />
-
-          {/* Bloc 3 — avant / après */}
           {beforeAfter.length > 0 && (
-            <div style={{ marginTop: '10mm' }}>
-              <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '2mm' }}>
-                Avant / après
-              </p>
+            <div style={{ marginTop: '9mm' }}>
+              <BlockTitle>Avant / après</BlockTitle>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5pt' }}>
                 <thead>
                   <tr style={{ color: INK_SOFT, fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
@@ -615,23 +628,11 @@ function ParcoursPage({
                     const arrow = delta < 0 ? '▼' : delta > 0 ? '▲' : '='
                     return (
                       <tr key={r.label} style={{ borderTop: `1px solid ${GRID}` }}>
-                        <td style={{ padding: '2.6mm 0', color: MARINE }}>{r.label}</td>
-                        <td style={{ textAlign: 'right', color: INK_SOFT }}>
-                          {fmt(r.from)} {r.unit}
-                        </td>
-                        <td style={{ textAlign: 'right', color: MARINE, fontWeight: 600 }}>
-                          {fmt(r.to)} {r.unit}
-                        </td>
-                        <td
-                          style={{
-                            textAlign: 'right',
-                            fontWeight: 600,
-                            color: delta === 0 ? INK_SOFT : improved ? '#2f7d32' : '#c0392b'
-                          }}
-                        >
-                          {arrow} {delta > 0 ? '+' : ''}
-                          {fmt(delta)} {r.unit} ({pct > 0 ? '+' : ''}
-                          {pct} %)
+                        <td style={{ padding: '2.4mm 0', color: MARINE }}>{r.label}</td>
+                        <td style={{ textAlign: 'right', color: INK_SOFT }}>{fmt(r.from)} {r.unit}</td>
+                        <td style={{ textAlign: 'right', color: MARINE, fontWeight: 600 }}>{fmt(r.to)} {r.unit}</td>
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: delta === 0 ? INK_SOFT : improved ? '#2f7d32' : '#c0392b' }}>
+                          {arrow} {delta > 0 ? '+' : ''}{fmt(delta)} {r.unit} ({pct > 0 ? '+' : ''}{pct} %)
                         </td>
                       </tr>
                     )
@@ -642,42 +643,30 @@ function ParcoursPage({
           )}
         </>
       )}
+      <ColorLegend />
     </ReportSection>
   )
 }
 
-/** Frise horizontale : 1 point par bilan, espacés selon les dates réelles. */
-function JourneyTimeline({
-  chrono,
-  syntheses
-}: {
-  chrono: Bilan[]
-  syntheses: ReturnType<typeof computeSynthesis>[]
-}) {
+/** Frise horizontale : 1 point par bilan, espacement régulier. */
+function JourneyTimeline({ chrono, syntheses }: { chrono: Bilan[]; syntheses: ReturnType<typeof computeSynthesis>[] }) {
   const W = 1000
   const H = 150
   const padX = 40
   const y = 78
-  // Espacement RÉGULIER (par index), pas selon la date réelle : sinon des bilans
-  // rapprochés dans le temps (ex. 10 bilans récents + 1 ancien) se chevauchent.
   const n = chrono.length
   const pts = chrono.map((b, i) => ({
     x: n <= 1 ? W / 2 : padX + (i / (n - 1)) * (W - 2 * padX),
     date: b.date,
     score: syntheses[i]?.overall.score ?? null
   }))
-  // Anti-chevauchement des dates : au-delà de 8 points, on n'affiche qu'une
-  // étiquette sur deux (le premier et le dernier restent toujours visibles).
   const labelStep = n > 8 ? 2 : 1
   const showLabel = (i: number) => i === 0 || i === n - 1 || i % labelStep === 0
 
   return (
     <div>
-      <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '1mm' }}>
-        Vos {chrono.length} bilans
-      </p>
+      <BlockTitle>Vos {chrono.length} bilans</BlockTitle>
       <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '32mm' }}>
-        {/* Segments colorés selon la tendance du score global */}
         {pts.slice(1).map((p, i) => {
           const prev = pts[i]
           const a = prev.score
@@ -691,26 +680,14 @@ function JourneyTimeline({
             <g key={i}>
               <circle cx={p.x} cy={y} r={isLast ? 11 : 8} fill={isLast ? GOLD : '#fff'} stroke={isLast ? GOLD : MARINE} strokeWidth={3} />
               {showLabel(i) && (
-                <text
-                  x={p.x}
-                  y={y + 32}
-                  textAnchor={i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'}
-                  style={{ fontSize: '17px', fill: INK_SOFT }}
-                >
+                <text x={p.x} y={y + 32} textAnchor={i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'} style={{ fontSize: '17px', fill: INK_SOFT }}>
                   {formatBilanMonth(p.date)}
                 </text>
               )}
               {isLast && p.score !== null && (
                 <>
                   <circle cx={p.x} cy={y - 40} r={20} fill={GOLD} />
-                  <text
-                    x={p.x}
-                    y={y - 40}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    className="report-display"
-                    style={{ fontSize: '21px', fontWeight: 700, fill: '#fff' }}
-                  >
+                  <text x={p.x} y={y - 40} textAnchor="middle" dominantBaseline="middle" className="report-display" style={{ fontSize: '21px', fontWeight: 700, fill: '#fff' }}>
                     {p.score.toFixed(1)}
                   </text>
                 </>
@@ -723,71 +700,6 @@ function JourneyTimeline({
   )
 }
 
-// ── Section 3 — Synthèse ─────────────────────────────────────────────────────
-function SynthesePage({
-  synth,
-  bilanDate
-}: {
-  synth: ReturnType<typeof computeSynthesis>
-  bilanDate: string
-}) {
-  const cards: { title: string; score: CompositeScore; blurb: string }[] = [
-    {
-      title: 'Composition corporelle',
-      score: synth.composition,
-      blurb: 'Combine l’IMC et le tour de taille — un repère du risque métabolique.'
-    },
-    {
-      title: 'Aptitude aérobie',
-      score: synth.aerobic,
-      blurb: 'Capacité cardio-respiratoire mesurée par le VO2max.'
-    },
-    {
-      title: 'Aptitude musculosquelettique',
-      score: synth.musculoGlobal,
-      blurb: 'Force et puissance globales des principaux groupes musculaires.'
-    },
-    {
-      title: 'Santé du dos',
-      score: synth.backHealth,
-      blurb: 'Souplesse et endurance des muscles qui soutiennent la colonne.'
-    }
-  ]
-  return (
-    <ReportSection title="Synthèse" sectionNumber="Section 3">
-      <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '-4mm', marginBottom: '9mm' }}>
-        Vue d’ensemble au {formatBilanDate(bilanDate)}.
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '7mm' }}>
-        {cards.map(c => (
-          <div
-            key={c.title}
-            style={{ border: `1px solid ${GRID}`, borderRadius: '4mm', padding: '7mm 7mm 8mm', background: '#fff' }}
-          >
-            <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE }}>
-              {c.title}
-            </p>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '2mm', margin: '2mm 0 1mm' }}>
-              <span className="report-display" style={{ fontSize: '34pt', fontWeight: 700, color: MARINE }}>
-                {c.score.score === null ? '—' : c.score.score.toFixed(1)}
-              </span>
-              <span style={{ fontSize: '11pt', color: INK_SOFT }}>/ 5</span>
-              {c.score.category && (
-                <span style={{ marginLeft: 'auto' }}>
-                  <CategoryPill category={c.score.category} />
-                </span>
-              )}
-            </div>
-            <ScoreBar score={c.score.score} />
-            <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginTop: '5mm' }}>{c.blurb}</p>
-          </div>
-        ))}
-      </div>
-      <ColorLegend />
-    </ReportSection>
-  )
-}
-
 /** Barre 5 segments pour un score composite 0-5. */
 function ScoreBar({ score }: { score: number | null }) {
   const segs: Category[] = ['A_AMELIORER', 'ACCEPTABLE', 'BIEN', 'TRES_BIEN', 'EXCELLENT']
@@ -795,9 +707,7 @@ function ScoreBar({ score }: { score: number | null }) {
   return (
     <div style={{ position: 'relative', paddingTop: pos !== null ? '5mm' : 0 }}>
       {pos !== null && (
-        <div style={{ position: 'absolute', top: 0, left: `${pos}%`, transform: 'translateX(-50%)', fontSize: '9pt', color: MARINE }}>
-          ▼
-        </div>
+        <div style={{ position: 'absolute', top: 0, left: `${pos}%`, transform: 'translateX(-50%)', fontSize: '9pt', color: MARINE }}>▼</div>
       )}
       <div style={{ display: 'flex', height: '4mm', borderRadius: '1.5mm', overflow: 'hidden' }}>
         {segs.map(s => (
@@ -810,19 +720,7 @@ function ScoreBar({ score }: { score: number | null }) {
 
 function CategoryPill({ category, label }: { category: Category; label?: string }) {
   return (
-    <span
-      style={{
-        background: CAT_BG[category],
-        color: CAT_FG[category],
-        fontSize: '8pt',
-        fontWeight: 700,
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-        padding: '1mm 2.5mm',
-        borderRadius: '2mm',
-        whiteSpace: 'nowrap'
-      }}
-    >
+    <span style={{ background: CAT_BG[category], color: CAT_FG[category], fontSize: '8pt', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', padding: '1mm 2.5mm', borderRadius: '2mm', whiteSpace: 'nowrap' }}>
       {label ?? CATEGORY_LABELS[category]}
     </span>
   )
@@ -832,7 +730,7 @@ function CategoryPill({ category, label }: { category: Category; label?: string 
 function ColorLegend() {
   const cats: Category[] = ['A_AMELIORER', 'ACCEPTABLE', 'BIEN', 'TRES_BIEN', 'EXCELLENT']
   return (
-    <div style={{ marginTop: '10mm', paddingTop: '5mm', borderTop: `1px solid ${GRID}` }}>
+    <div style={{ marginTop: '9mm', paddingTop: '5mm', borderTop: `1px solid ${GRID}` }}>
       <p style={{ fontSize: '8pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: INK_SOFT, marginBottom: '2.5mm' }}>
         Comment lire les couleurs
       </p>
@@ -851,10 +749,178 @@ function ColorLegend() {
   )
 }
 
-// ── Section 4 — Composition corporelle & zones d'entraînement ────────────────
-function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanComputed }) {
+// ── Sections par domaine ─────────────────────────────────────────────────────
+type ChartConfig =
+  | { kind: 'line'; key: keyof BilanData; title: string; color: string; scoreAxis?: boolean }
+  | { kind: 'dual'; a: keyof BilanData; b: keyof BilanData; title: string; nameA: string; nameB: string }
+
+interface DomainProps {
+  latest: Bilan
+  bilans: Bilan[]
+  chrono: Bilan[]
+  syntheses: ReturnType<typeof computeSynthesis>[]
+  profile: BilanProfile
+}
+
+/** Corps commun d'une section domaine : intro, extras, résultats, graphiques, interprétation. */
+function DomainSection({
+  title,
+  sectionNumber,
+  intro,
+  detailKeys,
+  charts,
+  composite,
+  heroKey,
+  domainWord,
+  topExtra,
+  bottomExtra,
+  latest,
+  bilans,
+  chrono,
+  profile
+}: DomainProps & {
+  title: string
+  sectionNumber: string
+  intro: string
+  detailKeys: (keyof BilanData)[]
+  charts: ChartConfig[]
+  composite: CompositeScore
+  heroKey: keyof BilanData
+  domainWord: string
+  topExtra?: React.ReactNode
+  bottomExtra?: React.ReactNode
+}) {
+  const recent = bilans.slice(0, 4)
+  const presentDetails = detailKeys.map(k => METRIC_BY_KEY[k]).filter((m): m is MetricDef => !!m && num(latest.data[m.key]) !== null)
+
+  // Graphiques : on ne garde que ceux qui ont ≥ 2 points de données.
+  const chartData = charts
+    .map(c => {
+      if (c.kind === 'line') {
+        const data = chrono.map(b => ({ label: formatBilanMonth(b.date), value: num(b.data[c.key]) }))
+        const count = data.filter(p => p.value !== null).length
+        return count >= 2 ? { cfg: c, data } : null
+      }
+      const data = chrono.map(b => ({ label: formatBilanMonth(b.date), a: num(b.data[c.a]), b: num(b.data[c.b]) }))
+      const count = data.filter(p => p.a !== null || p.b !== null).length
+      return count >= 2 ? { cfg: c, data } : null
+    })
+    .filter(Boolean) as ({ cfg: Extract<ChartConfig, { kind: 'line' }>; data: ChartPoint[] } | { cfg: Extract<ChartConfig, { kind: 'dual' }>; data: { label: string; a: number | null; b: number | null }[] })[]
+
+  const interp = domainInterpretation({ domainWord, composite, detailKeys, heroKey, chrono, latest, profile })
+
+  return (
+    <ReportFlowSection title={title} sectionNumber={sectionNumber} intro={intro}>
+      {topExtra}
+
+      {presentDetails.length > 0 && (
+        <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
+          <BlockTitle>Vos résultats</BlockTitle>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '5mm' }}>
+            {presentDetails.map(m => (
+              <MetricBlock key={m.key} metric={m} latest={latest} recent={recent} profile={profile} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {bottomExtra}
+
+      {chartData.length > 0 && (
+        <div style={{ marginTop: '2mm' }}>
+          <BlockTitle>Évolution dans le temps</BlockTitle>
+          {chartData.map((c, i) => (
+            <BigChartCard key={i} title={c.cfg.title}>
+              {c.cfg.kind === 'line' ? (
+                <SingleLineChart data={c.data as ChartPoint[]} color={c.cfg.color} scoreAxis={c.cfg.scoreAxis} />
+              ) : (
+                <DualLineChart data={c.data as { label: string; a: number | null; b: number | null }[]} nameA={c.cfg.nameA} nameB={c.cfg.nameB} />
+              )}
+            </BigChartCard>
+          ))}
+        </div>
+      )}
+
+      {interp && (
+        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', marginTop: '8mm' }}>
+          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '3mm' }}>
+            Ce que ça veut dire pour vous
+          </p>
+          <p style={{ fontSize: '11pt', lineHeight: 1.6, color: '#3a3f52' }}>{interp}</p>
+        </div>
+      )}
+    </ReportFlowSection>
+  )
+}
+
+/** Texte d'interprétation par domaine — généré selon la catégorie composite,
+ *  le point fort / à travailler et la tendance de la métrique phare. */
+function domainInterpretation({
+  domainWord,
+  composite,
+  detailKeys,
+  heroKey,
+  chrono,
+  latest,
+  profile
+}: {
+  domainWord: string
+  composite: CompositeScore
+  detailKeys: (keyof BilanData)[]
+  heroKey: keyof BilanData
+  chrono: Bilan[]
+  latest: Bilan
+  profile: BilanProfile
+}): React.ReactNode {
+  const parts: string[] = []
+
+  if (composite.category) {
+    parts.push(`Votre ${domainWord} est globalement ${CATEGORY_LABELS[composite.category].toLowerCase()}.`)
+  }
+
+  // Point fort / à travailler parmi les métriques du domaine.
+  const rated = detailKeys
+    .map(k => {
+      const v = num(latest.data[k])
+      if (v === null) return null
+      const cat = metricNorm(k, v, profile)?.category
+      const label = METRIC_BY_KEY[k]?.label
+      return cat && label ? { label, cat } : null
+    })
+    .filter((x): x is { label: string; cat: Category } => x !== null)
+  if (rated.length > 0) {
+    const strong = [...rated].sort((a, b) => SCORE_OF[b.cat] - SCORE_OF[a.cat])[0]
+    const weak = [...rated].sort((a, b) => SCORE_OF[a.cat] - SCORE_OF[b.cat])[0]
+    if (SCORE_OF[strong.cat] >= 4) parts.push(`Votre point fort : ${strong.label.toLowerCase()} (${CATEGORY_LABELS[strong.cat].toLowerCase()}).`)
+    if (weak.label !== strong.label && SCORE_OF[weak.cat] <= 2) {
+      parts.push(`Le principal levier de progression : ${weak.label.toLowerCase()}.`)
+    }
+  }
+
+  // Tendance de la métrique phare (premier → dernier bilan renseigné).
+  const series = chrono.map(b => num(b.data[heroKey])).filter((v): v is number => v !== null)
+  if (series.length >= 2) {
+    const from = series[0]
+    const to = series[series.length - 1]
+    if (from !== to) {
+      const lower = metricNorm(heroKey, to, profile)?.lowerIsBetter ?? false
+      const improved = lower ? to < from : to > from
+      const heroLabel = METRIC_BY_KEY[heroKey]?.label.toLowerCase() ?? 'votre indicateur clé'
+      parts.push(
+        improved
+          ? `Bonne nouvelle : votre ${heroLabel} a progressé de ${fmt(from)} à ${fmt(to)} — continuez sur cette lancée.`
+          : `Surveillez votre ${heroLabel}, passé de ${fmt(from)} à ${fmt(to)} sur la période.`
+      )
+    }
+  }
+
+  return parts.length > 0 ? parts.join(' ') : null
+}
+
+// Composition — extras (chiffres clés + plis cutanés).
+function CompositionExtras({ latest, computed }: { latest: Bilan; computed: BilanComputed }) {
   const d = latest.data as Record<string, unknown>
-  const plis: { label: string; key: string }[] = [
+  const plis = [
     { label: 'Triceps', key: 'pli_triceps' },
     { label: 'Biceps', key: 'pli_biceps' },
     { label: 'Sous-scapulaire', key: 'pli_sous_scap' },
@@ -866,99 +932,74 @@ function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanC
   const durnin4 = ['pli_triceps', 'pli_biceps', 'pli_sous_scap', 'pli_iliaque'].map(k => num(d[k]))
   const sommePlis = durnin4.every(v => v !== null) ? (durnin4 as number[]).reduce((a, b) => a + b, 0) : null
 
-  // Tension artérielle au repos — zones cliniques nommées (Optimale → HTA 2).
-  const sys = num(d.pa_systolique)
-  const dia = num(d.pa_diastolique)
-  const sysClass = sys !== null ? classifyBloodPressure(sys, 'systolic') : null
-  const diaClass = dia !== null ? classifyBloodPressure(dia, 'diastolic') : null
-  const bpRows = [
-    { label: 'Systolique', value: sys, cls: sysClass },
-    { label: 'Diastolique', value: dia, cls: diaClass }
-  ].filter(r => r.value !== null)
-
   const stats: { label: string; value: string; hint?: string }[] = [
     { label: 'IMC', value: computed.imc === null ? '—' : `${fmt(computed.imc)} kg/m²` },
     { label: 'Tour de taille', value: num(d.tour_taille_cm) === null ? '—' : `${fmt(num(d.tour_taille_cm))} cm` },
-    {
-      label: 'Ratio taille / hanche',
-      value: computed.ratioTailleHanche === null ? '—' : fmt(computed.ratioTailleHanche, 2)
-    },
-    {
-      label: 'Poids optimal max',
-      value: computed.poidsOptimalMaxKg === null ? '—' : `${fmt(computed.poidsOptimalMaxKg)} kg`,
-      hint: 'Poids pour un IMC de 25'
-    },
-    {
-      label: '% de gras',
-      value: computed.pourcentageGrasDurnin === null ? '—' : `${fmt(computed.pourcentageGrasDurnin)} %`,
-      hint: 'Méthode Durnin-Womersley (4 plis)'
-    },
+    { label: 'Ratio taille / hanche', value: computed.ratioTailleHanche === null ? '—' : fmt(computed.ratioTailleHanche, 2) },
+    { label: 'Poids optimal max', value: computed.poidsOptimalMaxKg === null ? '—' : `${fmt(computed.poidsOptimalMaxKg)} kg`, hint: 'Poids pour un IMC de 25' },
+    { label: '% de gras', value: computed.pourcentageGrasDurnin === null ? '—' : `${fmt(computed.pourcentageGrasDurnin)} %`, hint: 'Méthode Durnin-Womersley (4 plis)' },
     { label: 'Somme des 4 plis', value: sommePlis === null ? '—' : `${fmt(sommePlis)} mm` }
   ]
 
-  const zones = computed.fcZones
-  const zoneRows = zones
-    ? [
-        { pct: '60 %', bpm: zones.z60, libelle: 'Échauffement' },
-        { pct: '65 %', bpm: zones.z65, libelle: 'Endurance de base' },
-        { pct: '70 %', bpm: zones.z70, libelle: 'Endurance' },
-        { pct: '75 %', bpm: zones.z75, libelle: 'Aérobie' },
-        { pct: '80 %', bpm: zones.z80, libelle: 'Seuil' },
-        { pct: '85 %', bpm: zones.z85, libelle: 'Anaérobie' },
-        { pct: '90 %', bpm: zones.z90, libelle: 'VO2max' }
-      ]
-    : []
-
   return (
-    <ReportSection title="Composition corporelle" sectionNumber="Section 4">
-      <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '-4mm', marginBottom: '6mm' }}>
-        Vos mesures anthropométriques au {formatBilanDate(latest.date)}.
-      </p>
-
-      {/* Chiffres clés */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm', marginBottom: '6mm' }}>
+    <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
+      <BlockTitle>Vos mesures</BlockTitle>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm', marginBottom: plisPresents.length ? '6mm' : 0 }}>
         {stats.map(s => (
           <div key={s.label} style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}>
-            <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT }}>
-              {s.label}
-            </p>
-            <p className="report-display" style={{ fontSize: '20pt', fontWeight: 700, color: MARINE, marginTop: '1mm' }}>
-              {s.value}
-            </p>
+            <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT }}>{s.label}</p>
+            <p className="report-display" style={{ fontSize: '20pt', fontWeight: 700, color: MARINE, marginTop: '1mm' }}>{s.value}</p>
             {s.hint && <p style={{ fontSize: '8pt', color: AXIS, marginTop: '0.5mm' }}>{s.hint}</p>}
           </div>
         ))}
       </div>
-
-      {/* Détail des plis cutanés */}
       {plisPresents.length > 0 && (
-        <div className="break-inside-avoid" style={{ marginBottom: '6mm' }}>
-          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '3mm' }}>
-            Plis cutanés (mm)
-          </p>
+        <>
+          <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: INK_SOFT, marginBottom: '2.5mm' }}>Plis cutanés (mm)</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4mm' }}>
             {plisPresents.map(p => (
-              <div
-                key={p.key}
-                style={{ background: CREAM, borderRadius: '2mm', padding: '3mm 5mm', minWidth: '30mm' }}
-              >
+              <div key={p.key} style={{ background: CREAM, borderRadius: '2mm', padding: '3mm 5mm', minWidth: '30mm' }}>
                 <span style={{ fontSize: '9pt', color: INK_SOFT }}>{p.label} </span>
                 <span style={{ fontSize: '11pt', fontWeight: 600, color: MARINE }}>{fmt(p.value)}</span>
               </div>
             ))}
           </div>
-        </div>
+        </>
       )}
+    </div>
+  )
+}
 
-      {/* Tension artérielle au repos — zones cliniques nommées */}
+// Cardio — extras (tension nommée + zones cardiaques + récupération).
+function CardioExtras({ latest, computed }: { latest: Bilan; computed: BilanComputed }) {
+  const d = latest.data as Record<string, unknown>
+  const sys = num(d.pa_systolique)
+  const dia = num(d.pa_diastolique)
+  const bpRows = [
+    { label: 'Systolique', value: sys, cls: sys !== null ? classifyBloodPressure(sys, 'systolic') : null },
+    { label: 'Diastolique', value: dia, cls: dia !== null ? classifyBloodPressure(dia, 'diastolic') : null }
+  ].filter(r => r.value !== null)
+
+  const z = computed.fcZones
+  const zoneRows = z
+    ? [
+        { pct: '60 %', bpm: z.z60, libelle: 'Échauffement' },
+        { pct: '65 %', bpm: z.z65, libelle: 'Endurance de base' },
+        { pct: '70 %', bpm: z.z70, libelle: 'Endurance' },
+        { pct: '75 %', bpm: z.z75, libelle: 'Aérobie' },
+        { pct: '80 %', bpm: z.z80, libelle: 'Seuil' },
+        { pct: '85 %', bpm: z.z85, libelle: 'Anaérobie' },
+        { pct: '90 %', bpm: z.z90, libelle: 'VO2max' }
+      ]
+    : []
+
+  return (
+    <>
       {bpRows.length > 0 && (
-        <div className="break-inside-avoid" style={{ marginBottom: '6mm' }}>
-          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '2mm' }}>
-            Tension artérielle au repos
-          </p>
-          <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '4mm' }}>
-            Classée selon les seuils cliniques : Optimale · Normale · Pré-hypertension · Hypertension 1 · Hypertension 2
-            (OMS / JNC).
+        <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
+          <BlockTitle>Tension artérielle au repos</BlockTitle>
+          <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '3mm' }}>
+            Classée selon les seuils cliniques : Optimale · Normale · Pré-hypertension · Hypertension 1 · Hypertension 2 (OMS / JNC).
           </p>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11pt' }}>
             <tbody>
@@ -966,9 +1007,7 @@ function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanC
                 <tr key={r.label} style={{ borderBottom: `1px solid ${GRID}` }}>
                   <td style={{ padding: '3mm', color: INK_SOFT }}>{r.label}</td>
                   <td style={{ padding: '3mm', color: MARINE, fontWeight: 700 }}>{fmt(r.value, 0)} mmHg</td>
-                  <td style={{ padding: '3mm', textAlign: 'right' }}>
-                    {r.cls && <CategoryPill category={r.cls.category} label={r.cls.zone} />}
-                  </td>
+                  <td style={{ padding: '3mm', textAlign: 'right' }}>{r.cls && <CategoryPill category={r.cls.category} label={r.cls.zone} />}</td>
                 </tr>
               ))}
             </tbody>
@@ -976,104 +1015,163 @@ function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanC
         </div>
       )}
 
-      {/* Zones d'entraînement cardiaque */}
       {zoneRows.length > 0 && (
-        <div className="break-inside-avoid">
-          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '2mm' }}>
-            Zones d'entraînement cardiaque
-          </p>
-          <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '4mm' }}>
+        <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
+          <BlockTitle>Zones d'entraînement cardiaque</BlockTitle>
+          <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '3mm' }}>
             Fréquences cibles selon votre FC maximale prédite
-            {computed.fcMaxPredite !== null ? ` (${computed.fcMaxPredite} bpm, formule de Tanaka)` : ''}. Pour développer
-            l'endurance, visez 60-75 % ; au-delà de 80 %, l'effort devient intense.
+            {computed.fcMaxPredite !== null ? ` (${computed.fcMaxPredite} bpm, formule de Tanaka)` : ''}. Pour développer l'endurance, visez 60-75 % ; au-delà de 80 %, l'effort devient intense.
           </p>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5pt' }}>
-            <thead>
-              <tr style={{ borderBottom: `1.5px solid ${GRID}`, color: INK_SOFT, fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                <th style={{ textAlign: 'left', padding: '2.5mm 3mm' }}>% FC max</th>
-                <th style={{ textAlign: 'left', padding: '2.5mm 3mm' }}>Zone</th>
-                <th style={{ textAlign: 'right', padding: '2.5mm 3mm' }}>Fréquence cible</th>
-              </tr>
-            </thead>
-            <tbody>
-              {zoneRows.map(z => (
-                <tr key={z.pct} style={{ borderBottom: `1px solid ${GRID}` }}>
-                  <td style={{ padding: '2.1mm 3mm', color: MARINE, fontWeight: 600 }}>{z.pct}</td>
-                  <td style={{ padding: '2.1mm 3mm', color: INK_SOFT }}>{z.libelle}</td>
-                  <td style={{ textAlign: 'right', padding: '2.1mm 3mm', color: MARINE, fontWeight: 600 }}>{z.bpm} bpm</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '9mm' }}>
+            {zoneRows.map(zr => (
+              <div key={zr.pct} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '2mm 0', borderBottom: `1px solid ${GRID}`, fontSize: '10.5pt' }}>
+                <span>
+                  <strong style={{ color: MARINE }}>{zr.pct}</strong> <span style={{ color: INK_SOFT, fontSize: '9.5pt' }}>{zr.libelle}</span>
+                </span>
+                <span style={{ color: MARINE, fontWeight: 600 }}>{zr.bpm} bpm</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
-    </ReportSection>
-  )
-}
 
-// ── Section 5 — Graphiques de progression ────────────────────────────────────
-interface ChartPoint {
-  label: string
-  value: number | null
-}
-function ProgressionChartsPage({
-  chrono,
-  syntheses
-}: {
-  chrono: Bilan[]
-  syntheses: ReturnType<typeof computeSynthesis>[]
-}) {
-  const series = (key: keyof BilanData): ChartPoint[] =>
-    chrono.map(b => ({ label: formatBilanMonth(b.date), value: num(b.data[key]) }))
-  const scoreSeries = (pick: (s: ReturnType<typeof computeSynthesis>) => CompositeScore): ChartPoint[] =>
-    chrono.map((b, i) => ({ label: formatBilanMonth(b.date), value: syntheses[i] ? pick(syntheses[i]).score : null }))
-
-  const dual = (a: keyof BilanData, b: keyof BilanData) =>
-    chrono.map(x => ({ label: formatBilanMonth(x.date), a: num(x.data[a]), b: num(x.data[b]) }))
-
-  return (
-    <>
-      <ReportSection title="Votre progression" sectionNumber="Section 5 · 1/2">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8mm' }}>
-          <ChartCard title="VO2max (ml/kg/min)">
-            <SingleLineChart data={series('vo2max')} color={GOLD} />
-          </ChartCard>
-          <ChartCard title="% de gras corporel">
-            <SingleLineChart data={series('pourcentage_gras')} color={MARINE} />
-          </ChartCard>
-          <ChartCard title="Poids (kg)">
-            <SingleLineChart data={series('poids_kg')} color={GOLD} />
-          </ChartCard>
-          <ChartCard title="IMC (kg/m²)">
-            <SingleLineChart data={series('imc')} color={MARINE} />
-          </ChartCard>
-        </div>
-      </ReportSection>
-      <ReportSection title="Votre progression" sectionNumber="Section 5 · 2/2">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8mm' }}>
-          <ChartCard title="Score musculosquelettique (/ 5)">
-            <SingleBarChart data={scoreSeries(s => s.musculoGlobal)} />
-          </ChartCard>
-          <ChartCard title="Score santé du dos (/ 5)">
-            <SingleLineChart data={scoreSeries(s => s.backHealth)} color={MARINE} scoreAxis />
-          </ChartCard>
-          <ChartCard title="Pompes & redressements (reps)">
-            <DualLineChart data={dual('pushups', 'situps')} nameA="Pompes" nameB="Redressements" />
-          </ChartCard>
-          <ChartCard title="Saut vertical & puissance">
-            <DualLineChart data={dual('saut_vertical_cm', 'puissance_jambes_watts')} nameA="Saut (cm)" nameB="Puissance (W)" />
-          </ChartCard>
-        </div>
-      </ReportSection>
+      <RecoveryTable latest={latest} />
     </>
   )
 }
 
-function ChartCard({ title, children }: { title: string; children: React.ReactElement }) {
+function RecoveryTable({ latest }: { latest: Bilan }) {
+  const data = latest.data as Record<string, unknown>
+  if (!hasRecoveryData(data)) return null
+  const intervals = [
+    { label: '1 min', sys: 'recup_1min_pa_sys', dia: 'recup_1min_pa_dia', fc: 'recup_1min_fc' },
+    { label: '3 min', sys: 'recup_3min_pa_sys', dia: 'recup_3min_pa_dia', fc: 'recup_3min_fc' },
+    { label: '5 min', sys: 'recup_5min_pa_sys', dia: 'recup_5min_pa_dia', fc: 'recup_5min_fc' }
+  ]
+  const th: React.CSSProperties = { textAlign: 'right', padding: '2.5mm 3mm', fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.04em', color: INK_SOFT }
+  const td: React.CSSProperties = { textAlign: 'right', padding: '3mm', color: MARINE, fontWeight: 600 }
   return (
-    <div style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 5mm 3mm' }}>
-      <p style={{ fontSize: '9.5pt', fontWeight: 600, color: MARINE, marginBottom: '2mm' }}>{title}</p>
-      <div style={{ width: '100%', height: '80mm' }}>
+    <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
+      <BlockTitle>Récupération post-effort</BlockTitle>
+      <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '3mm' }}>
+        Le retour de la fréquence cardiaque et de la pression artérielle vers les valeurs de repos après l'effort est un indicateur de la santé cardiovasculaire.
+      </p>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11pt' }}>
+        <thead>
+          <tr style={{ borderBottom: `1.5px solid ${GRID}` }}>
+            <th style={{ ...th, textAlign: 'left' }}>Après l'effort</th>
+            <th style={th}>FC (bpm)</th>
+            <th style={th}>PA systolique</th>
+            <th style={th}>PA diastolique</th>
+          </tr>
+        </thead>
+        <tbody>
+          {intervals.map(iv => (
+            <tr key={iv.label} style={{ borderBottom: `1px solid ${GRID}` }}>
+              <td style={{ padding: '3mm', color: MARINE, fontWeight: 600 }}>{iv.label}</td>
+              <td style={td}>{fmt(num(data[iv.fc]), 0)}</td>
+              <td style={td}>{fmt(num(data[iv.sys]), 0)}</td>
+              <td style={td}>{fmt(num(data[iv.dia]), 0)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function CompositionSection({ computed, ...props }: DomainProps & { computed: BilanComputed }) {
+  return (
+    <DomainSection
+      {...props}
+      title="Votre composition corporelle"
+      sectionNumber="Section 2"
+      domainWord="composition corporelle"
+      intro="La composition corporelle décrit la répartition entre la masse grasse et la masse maigre de votre corps. Un excès de gras, surtout à la taille, augmente le risque de maladies cardiovasculaires et de diabète. On l'évalue par l'IMC, le tour de taille et le pourcentage de gras estimé à partir des plis cutanés."
+      detailKeys={['imc', 'tour_taille_cm', 'pourcentage_gras']}
+      heroKey="pourcentage_gras"
+      composite={computeSynthesis(props.latest.data, props.profile).composition}
+      charts={[
+        { kind: 'line', key: 'pourcentage_gras', title: '% de gras corporel', color: MARINE },
+        { kind: 'line', key: 'poids_kg', title: 'Poids (kg)', color: GOLD },
+        { kind: 'line', key: 'imc', title: 'IMC (kg/m²)', color: MARINE },
+        { kind: 'line', key: 'tour_taille_cm', title: 'Tour de taille (cm)', color: GOLD }
+      ]}
+      topExtra={<CompositionExtras latest={props.latest} computed={computed} />}
+    />
+  )
+}
+
+function CardioSection({ computed, ...props }: DomainProps & { computed: BilanComputed }) {
+  return (
+    <DomainSection
+      {...props}
+      title="Votre cœur et votre endurance"
+      sectionNumber="Section 3"
+      domainWord="capacité cardiovasculaire"
+      intro="Votre capacité cardiovasculaire reflète l'efficacité de votre cœur, de vos poumons et de vos muscles à utiliser l'oxygène pendant l'effort. C'est l'un des meilleurs prédicteurs de santé et de longévité. On la mesure par le VO2max, complété par votre tension et votre fréquence cardiaque au repos."
+      detailKeys={['vo2max', 'fc_repos', 'pa_systolique', 'pa_diastolique']}
+      heroKey="vo2max"
+      composite={computeSynthesis(props.latest.data, props.profile).aerobic}
+      charts={[
+        { kind: 'line', key: 'vo2max', title: 'VO2max (ml/kg/min)', color: GOLD },
+        { kind: 'line', key: 'fc_repos', title: 'Fréquence cardiaque au repos (bpm)', color: MARINE }
+      ]}
+      bottomExtra={<CardioExtras latest={props.latest} computed={computed} />}
+    />
+  )
+}
+
+function ForceSection(props: DomainProps) {
+  return (
+    <DomainSection
+      {...props}
+      title="Votre force musculaire"
+      sectionNumber="Section 4"
+      domainWord="force musculaire"
+      intro="La force et l'endurance musculaires vous permettent de bouger, de porter et de rester autonome avec l'âge. On les évalue par des tests d'extension des bras, de redressements assis, de saut vertical et de puissance des jambes."
+      detailKeys={['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts']}
+      heroKey="pushups"
+      composite={computeSynthesis(props.latest.data, props.profile).musculoGlobal}
+      charts={[
+        { kind: 'dual', a: 'pushups', b: 'situps', title: 'Pompes & redressements (reps)', nameA: 'Pompes', nameB: 'Redressements' },
+        { kind: 'dual', a: 'saut_vertical_cm', b: 'puissance_jambes_watts', title: 'Saut vertical & puissance', nameA: 'Saut (cm)', nameB: 'Puissance (W)' }
+      ]}
+    />
+  )
+}
+
+function DosSection(props: DomainProps) {
+  return (
+    <DomainSection
+      {...props}
+      title="Votre dos et votre souplesse"
+      sectionNumber="Section 5"
+      domainWord="santé du dos"
+      intro="Un dos endurant et souple protège contre les douleurs lombaires, l'une des causes les plus fréquentes d'arrêt de travail. On mesure la souplesse par la flexion du tronc et l'endurance des muscles qui soutiennent la colonne."
+      detailKeys={['flexion_tronc_cm', 'endurance_dos_sec']}
+      heroKey="endurance_dos_sec"
+      composite={computeSynthesis(props.latest.data, props.profile).backHealth}
+      charts={[
+        { kind: 'line', key: 'endurance_dos_sec', title: 'Endurance du dos (secondes)', color: GOLD },
+        { kind: 'line', key: 'flexion_tronc_cm', title: 'Flexion du tronc (cm)', color: MARINE }
+      ]}
+    />
+  )
+}
+
+// ── Graphiques ───────────────────────────────────────────────────────────────
+interface ChartPoint {
+  label: string
+  value: number | null
+}
+
+/** Carte de graphique pleine largeur (grand format). */
+function BigChartCard({ title, children }: { title: string; children: React.ReactElement }) {
+  return (
+    <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '6mm 6mm 4mm', marginBottom: '7mm' }}>
+      <p style={{ fontSize: '11pt', fontWeight: 600, color: MARINE, marginBottom: '3mm' }}>{title}</p>
+      <div style={{ width: '100%', height: '88mm' }}>
         <ResponsiveContainer width="100%" height="100%">
           {children}
         </ResponsiveContainer>
@@ -1082,9 +1180,7 @@ function ChartCard({ title, children }: { title: string; children: React.ReactEl
   )
 }
 
-/** Étiquette de valeur affichée UNIQUEMENT sur le dernier point (le plus récent)
- *  — évite le chevauchement des labels quand il y a beaucoup de bilans. Recharts
- *  clone cet élément en injectant x / y / value / index. */
+/** Étiquette de valeur affichée uniquement sur le dernier point. */
 function EndpointValueLabel({
   x,
   y,
@@ -1104,40 +1200,18 @@ function EndpointValueLabel({
   const v = num(value)
   if (v === null) return null
   return (
-    <text x={x} y={(y ?? 0) + dy} textAnchor="middle" style={{ fontSize: 10, fontWeight: 600, fill: MARINE }}>
+    <text x={x} y={(y ?? 0) + dy} textAnchor="middle" style={{ fontSize: 11, fontWeight: 600, fill: MARINE }}>
       {fmt(v)}
     </text>
   )
 }
 
-function SingleLineChart({
-  data,
-  color,
-  scoreAxis = false
-}: {
-  data: ChartPoint[]
-  color: string
-  /** Force l'axe Y sur l'échelle de score 0-5 (ticks entiers). */
-  scoreAxis?: boolean
-}) {
+function SingleLineChart({ data, color, scoreAxis = false }: { data: ChartPoint[]; color: string; scoreAxis?: boolean }) {
   return (
-    <LineChart data={data} margin={{ top: 18, right: 34, bottom: 4, left: -8 }}>
+    <LineChart data={data} margin={{ top: 18, right: 34, bottom: 4, left: -6 }}>
       <CartesianGrid stroke={GRID} vertical={false} />
-      <XAxis
-        dataKey="label"
-        interval="preserveStartEnd"
-        minTickGap={30}
-        tickMargin={6}
-        tick={{ fill: AXIS, fontSize: 10 }}
-        stroke={GRID}
-      />
-      <YAxis
-        tick={{ fill: AXIS, fontSize: 10 }}
-        stroke={GRID}
-        width={40}
-        domain={scoreAxis ? [0, 5] : ['auto', 'auto']}
-        ticks={scoreAxis ? [0, 1, 2, 3, 4, 5] : undefined}
-      />
+      <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={34} tickMargin={6} tick={{ fill: AXIS, fontSize: 11 }} stroke={GRID} />
+      <YAxis tick={{ fill: AXIS, fontSize: 11 }} stroke={GRID} width={42} domain={scoreAxis ? [0, 5] : ['auto', 'auto']} ticks={scoreAxis ? [0, 1, 2, 3, 4, 5] : undefined} />
       <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2.5} dot={{ r: 3.5, fill: color }} isAnimationActive={false} connectNulls>
         <LabelList content={<EndpointValueLabel lastIdx={data.length - 1} />} />
       </Line>
@@ -1145,143 +1219,37 @@ function SingleLineChart({
   )
 }
 
-function SingleBarChart({ data }: { data: ChartPoint[] }) {
+function DualLineChart({ data, nameA, nameB }: { data: { label: string; a: number | null; b: number | null }[]; nameA: string; nameB: string }) {
   return (
-    <BarChart data={data} margin={{ top: 18, right: 34, bottom: 4, left: -8 }}>
+    <LineChart data={data} margin={{ top: 8, right: 34, bottom: 4, left: -6 }}>
       <CartesianGrid stroke={GRID} vertical={false} />
-      <XAxis
-        dataKey="label"
-        interval="preserveStartEnd"
-        minTickGap={30}
-        tickMargin={6}
-        tick={{ fill: AXIS, fontSize: 10 }}
-        stroke={GRID}
-      />
-      <YAxis tick={{ fill: AXIS, fontSize: 10 }} stroke={GRID} width={40} domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
-      <Bar dataKey="value" fill={GOLD_SOFT} radius={[2, 2, 0, 0]} barSize={26} isAnimationActive={false}>
-        <LabelList content={<EndpointValueLabel lastIdx={data.length - 1} dy={-4} />} />
-      </Bar>
-    </BarChart>
-  )
-}
-
-function DualLineChart({
-  data,
-  nameA,
-  nameB
-}: {
-  data: { label: string; a: number | null; b: number | null }[]
-  nameA: string
-  nameB: string
-}) {
-  return (
-    <LineChart data={data} margin={{ top: 8, right: 34, bottom: 4, left: -8 }}>
-      <CartesianGrid stroke={GRID} vertical={false} />
-      <XAxis
-        dataKey="label"
-        interval="preserveStartEnd"
-        minTickGap={30}
-        tickMargin={6}
-        tick={{ fill: AXIS, fontSize: 10 }}
-        stroke={GRID}
-      />
-      <YAxis tick={{ fill: AXIS, fontSize: 10 }} stroke={GRID} width={40} domain={['auto', 'auto']} />
-      <Legend wrapperStyle={{ fontSize: 9.5 }} />
+      <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={34} tickMargin={6} tick={{ fill: AXIS, fontSize: 11 }} stroke={GRID} />
+      <YAxis tick={{ fill: AXIS, fontSize: 11 }} stroke={GRID} width={42} domain={['auto', 'auto']} />
+      <Legend wrapperStyle={{ fontSize: 10.5 }} />
       <Line type="monotone" dataKey="a" name={nameA} stroke={GOLD} strokeWidth={2.5} dot={{ r: 3, fill: GOLD }} isAnimationActive={false} connectNulls />
       <Line type="monotone" dataKey="b" name={nameB} stroke={MARINE} strokeWidth={2.5} dot={{ r: 3, fill: MARINE }} isAnimationActive={false} connectNulls />
     </LineChart>
   )
 }
 
-// ── Section 5 — Pages détaillées par métrique ────────────────────────────────
-function MetricDetailsPages({
-  latest,
-  bilans,
-  profile
-}: {
-  latest: Bilan
-  bilans: Bilan[]
-  profile: BilanProfile
-}) {
-  // Métriques renseignées dans le dernier bilan.
-  const present = METRICS.filter(m => num(latest.data[m.key]) !== null)
-  // Pagination équilibrée : max 3 cartes/page (une carte « haute » — sparkline +
-  // objectif + phrase — tient à 3 par page A4). On répartit uniformément pour
-  // éviter une dernière page avec une seule carte orpheline (ex. 13 → 3,3,3,2,2).
-  const MAX_PER_PAGE = 3
-  const pageCount = Math.max(1, Math.ceil(present.length / MAX_PER_PAGE))
-  const base = Math.floor(present.length / pageCount)
-  const extra = present.length % pageCount
-  const pages: MetricDef[][] = []
-  let cursor = 0
-  for (let p = 0; p < pageCount; p++) {
-    const size = base + (p < extra ? 1 : 0)
-    pages.push(present.slice(cursor, cursor + size))
-    cursor += size
-  }
-  // Bilans du plus récent au plus ancien — 4 derniers pour la sparkline.
-  const recent = bilans.slice(0, 4)
-
-  return (
-    <>
-      {pages.map((page, pi) => (
-        <ReportSection
-          key={pi}
-          title="En détail"
-          sectionNumber={`Section 6 · ${pi + 1}/${pages.length}`}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6mm' }}>
-            {page.map(m => (
-              <MetricBlock key={m.key} metric={m} latest={latest} recent={recent} profile={profile} />
-            ))}
-          </div>
-        </ReportSection>
-      ))}
-    </>
-  )
-}
-
-function MetricBlock({
-  metric,
-  latest,
-  recent,
-  profile
-}: {
-  metric: MetricDef
-  latest: Bilan
-  recent: Bilan[]
-  profile: BilanProfile
-}) {
+// ── Bloc de détail par métrique (valeur + barème + objectif) ──────────────────
+function MetricBlock({ metric, latest, recent, profile }: { metric: MetricDef; latest: Bilan; recent: Bilan[]; profile: BilanProfile }) {
   const value = num(latest.data[metric.key])
   if (value === null) return null
   const norm = metricNorm(metric.key, value, profile)
-  // Pour le VO2max : rappel du protocole utilisé et de son paramètre brut.
   const protocol = metric.key === 'vo2max' ? aerobicProtocolLabel(latest.data as Record<string, unknown>, formatMmSs) : null
-  const spark = recent
-    .slice()
-    .reverse()
-    .map(b => num(b.data[metric.key]))
-    .filter((v): v is number => v !== null)
-
-  // Phrase explicative — une par catégorie ; aucune si la métrique n'est pas catégorisée.
+  const spark = recent.slice().reverse().map(b => num(b.data[metric.key])).filter((v): v is number => v !== null)
   const blurb = norm?.category ? EXPLANATION_BY_CATEGORY[norm.category] : null
 
   return (
-    <div
-      className="break-inside-avoid"
-      style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}
-    >
+    <div className="break-inside-avoid" style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}>
       <div className="flex items-center justify-between">
-        <h2 className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE }}>
-          {metric.label}
-        </h2>
+        <h2 className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE }}>{metric.label}</h2>
         {norm?.category && <CategoryPill category={norm.category} />}
       </div>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8mm', marginTop: '2mm' }}>
         <div style={{ flexShrink: 0 }}>
-          <span className="report-display" style={{ fontSize: '30pt', fontWeight: 700, color: MARINE }}>
-            {fmt(value)}
-          </span>
+          <span className="report-display" style={{ fontSize: '30pt', fontWeight: 700, color: MARINE }}>{fmt(value)}</span>
           <span style={{ fontSize: '11pt', color: INK_SOFT, marginLeft: '1.5mm' }}>{metric.unit}</span>
           {norm?.percentile !== null && norm?.percentile !== undefined && (
             <p style={{ fontSize: '9pt', color: INK_SOFT }}>{Math.round(norm.percentile)}ᵉ percentile</p>
@@ -1296,13 +1264,7 @@ function MetricBlock({
         )}
         <div style={{ flex: 1 }}>
           {norm?.percentiles ? (
-            <CategoryRangeBar
-              value={value}
-              percentiles={norm.percentiles}
-              unit={metric.unit}
-              lowerIsBetter={norm.lowerIsBetter}
-              variant="compact"
-            />
+            <CategoryRangeBar value={value} percentiles={norm.percentiles} unit={metric.unit} lowerIsBetter={norm.lowerIsBetter} variant="compact" />
           ) : (
             <p style={{ fontSize: '9pt', color: AXIS }}>Pas de barème normatif pour cette mesure.</p>
           )}
@@ -1315,8 +1277,7 @@ function MetricBlock({
           {norm.lowerIsBetter ? '≤' : '≥'} {fmt(norm.next.targetValue)} {metric.unit}
           {norm.next.delta !== 0 && (
             <span style={{ color: INK_SOFT }}>
-              {' '}({norm.next.delta >= 0 ? '+' : ''}
-              {fmt(norm.next.delta)} {metric.unit})
+              {' '}({norm.next.delta >= 0 ? '+' : ''}{fmt(norm.next.delta)} {metric.unit})
             </span>
           )}
         </p>
@@ -1354,118 +1315,30 @@ function MiniSpark({ values }: { values: number[] }) {
   )
 }
 
-// ── Section 7 — Récupération post-effort ─────────────────────────────────────
-/** Rendue seulement si des données de récupération sont présentes (sinon `null`,
- *  aucune page ajoutée). Les notes de la kinésiologue vivent désormais dans le
- *  « mot du kinésiologue » (Section 8), plus dans une section séparée. */
-function RecuperationEtNotesPage({ latest }: { latest: Bilan }) {
-  const data = latest.data as Record<string, unknown>
-  if (!hasRecoveryData(data)) return null
-
-  const intervals = [
-    { label: '1 min', sys: 'recup_1min_pa_sys', dia: 'recup_1min_pa_dia', fc: 'recup_1min_fc' },
-    { label: '3 min', sys: 'recup_3min_pa_sys', dia: 'recup_3min_pa_dia', fc: 'recup_3min_fc' },
-    { label: '5 min', sys: 'recup_5min_pa_sys', dia: 'recup_5min_pa_dia', fc: 'recup_5min_fc' }
-  ]
-  const thStyle: React.CSSProperties = {
-    textAlign: 'right',
-    padding: '2.5mm 3mm',
-    fontSize: '8.5pt',
-    textTransform: 'uppercase',
-    letterSpacing: '0.04em',
-    color: INK_SOFT
-  }
-  const tdStyle: React.CSSProperties = { textAlign: 'right', padding: '3mm', color: MARINE, fontWeight: 600 }
-
-  return (
-    <ReportSection title="Récupération post-effort" sectionNumber="Section 7">
-      <div className="break-inside-avoid">
-        <p style={{ fontSize: '10pt', color: INK_SOFT, marginTop: '-4mm', marginBottom: '5mm', maxWidth: '150mm' }}>
-          Le retour de la fréquence cardiaque et de la pression artérielle vers les valeurs de repos après l’effort
-          est un indicateur de la santé cardiovasculaire.
-        </p>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11pt' }}>
-          <thead>
-            <tr style={{ borderBottom: `1.5px solid ${GRID}` }}>
-              <th style={{ ...thStyle, textAlign: 'left' }}>Après l’effort</th>
-              <th style={thStyle}>FC (bpm)</th>
-              <th style={thStyle}>PA systolique (mmHg)</th>
-              <th style={thStyle}>PA diastolique (mmHg)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {intervals.map(iv => (
-              <tr key={iv.label} style={{ borderBottom: `1px solid ${GRID}` }}>
-                <td style={{ padding: '3mm', color: MARINE, fontWeight: 600 }}>{iv.label}</td>
-                <td style={tdStyle}>{fmt(num(data[iv.fc]), 0)}</td>
-                <td style={tdStyle}>{fmt(num(data[iv.sys]), 0)}</td>
-                <td style={tdStyle}>{fmt(num(data[iv.dia]), 0)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </ReportSection>
-  )
-}
-
-// ── Section 7 — Forces & axes de progression ─────────────────────────────────
-function ForcesEtAxesPage({
-  latest,
-  profile,
-  coachName,
-  signature
-}: {
-  latest: Bilan
-  profile: BilanProfile
-  coachName: string
-  signature: string
-}) {
-  const SCORE_OF: Record<Category, number> = {
-    A_AMELIORER: 1,
-    ACCEPTABLE: 2,
-    BIEN: 3,
-    TRES_BIEN: 4,
-    EXCELLENT: 5
-  }
+// ── Section 6 — Forces & plan d'action ───────────────────────────────────────
+function ForcesEtPlanSection({ latest, profile, coachName, signature }: { latest: Bilan; profile: BilanProfile; coachName: string; signature: string }) {
   const ranked = METRICS.map(m => {
     const value = num(latest.data[m.key])
     if (value === null) return null
     const norm = metricNorm(m.key, value, profile)
     if (!norm?.category) return null
-    return {
-      metric: m,
-      value,
-      category: norm.category,
-      percentile: norm.percentile,
-      next: norm.next,
-      lowerIsBetter: norm.lowerIsBetter
-    }
+    return { metric: m, value, category: norm.category, percentile: norm.percentile, next: norm.next, lowerIsBetter: norm.lowerIsBetter }
   }).filter((x): x is NonNullable<typeof x> => x !== null)
 
-  const forces = ranked
-    .filter(r => r.category === 'EXCELLENT' || r.category === 'TRES_BIEN')
-    .sort((a, b) => SCORE_OF[b.category] - SCORE_OF[a.category])
-    .slice(0, 3)
-  const axes = ranked
-    .filter(r => r.category === 'A_AMELIORER' || r.category === 'ACCEPTABLE')
-    .sort((a, b) => SCORE_OF[a.category] - SCORE_OF[b.category])
-    .slice(0, 3)
+  const forces = ranked.filter(r => r.category === 'EXCELLENT' || r.category === 'TRES_BIEN').sort((a, b) => SCORE_OF[b.category] - SCORE_OF[a.category]).slice(0, 3)
+  const axes = ranked.filter(r => r.category === 'A_AMELIORER' || r.category === 'ACCEPTABLE').sort((a, b) => SCORE_OF[a.category] - SCORE_OF[b.category]).slice(0, 3)
 
   const notes = typeof latest.data.notes === 'string' ? latest.data.notes.trim() : ''
   const signOff = signature.trim() || `${coachName || 'Marie-Eve Bélanger'}\nKinésiologue`
 
   return (
-    <ReportSection title="Vos forces et votre plan d’action" sectionNumber="Section 8">
-      {/* Forces */}
+    <ReportSection title="Vos forces et votre plan d'action" sectionNumber="Section 6">
       <div style={{ marginTop: '2mm', marginBottom: '9mm' }}>
         <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
           <Trophy size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Vos forces
         </p>
         {forces.length === 0 ? (
-          <p style={{ fontSize: '10pt', color: INK_SOFT }}>
-            Continuez vos efforts — vos forces apparaîtront à mesure que vos résultats progressent.
-          </p>
+          <p style={{ fontSize: '10pt', color: INK_SOFT }}>Continuez vos efforts — vos forces apparaîtront à mesure que vos résultats progressent.</p>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm' }}>
             {forces.map(f => (
@@ -1484,43 +1357,22 @@ function ForcesEtAxesPage({
         )}
       </div>
 
-      {/* Plan d'action — priorités numérotées avec objectif chiffré */}
       <div>
         <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
-          <Target size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Votre plan d’action
+          <Target size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Votre plan d'action
         </p>
         {axes.length === 0 ? (
-          <p style={{ fontSize: '10pt', color: INK_SOFT }}>
-            Aucun point faible marqué — beau travail ! Maintenez vos habitudes actuelles et vos résultats.
-          </p>
+          <p style={{ fontSize: '10pt', color: INK_SOFT }}>Aucun point faible marqué — beau travail ! Maintenez vos habitudes actuelles et vos résultats.</p>
         ) : (
           axes.map((a, i) => (
             <div key={a.metric.key as string} style={{ display: 'flex', gap: '4mm', marginBottom: '5mm' }} className="break-inside-avoid">
-              <div
-                style={{
-                  flexShrink: 0,
-                  width: '8mm',
-                  height: '8mm',
-                  borderRadius: '50%',
-                  background: GOLD,
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                  fontSize: '11pt'
-                }}
-              >
-                {i + 1}
-              </div>
+              <div style={{ flexShrink: 0, width: '8mm', height: '8mm', borderRadius: '50%', background: GOLD, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '11pt' }}>{i + 1}</div>
               <div style={{ flex: 1 }}>
                 <div className="flex items-center justify-between">
                   <span style={{ fontSize: '11pt', fontWeight: 600, color: MARINE }}>{a.metric.label}</span>
                   <CategoryPill category={a.category} />
                 </div>
-                <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginTop: '0.5mm' }}>
-                  {RECO[a.metric.key] ?? 'Discutez d’un plan ciblé avec votre kinésiologue.'}
-                </p>
+                <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginTop: '0.5mm' }}>{RECO[a.metric.key] ?? 'Discutez d’un plan ciblé avec votre kinésiologue.'}</p>
                 {a.next && !a.next.isAtTop && (
                   <p style={{ fontSize: '9.5pt', color: MARINE, marginTop: '1mm', fontWeight: 600 }}>
                     Objectif : {a.lowerIsBetter ? '≤' : '≥'} {fmt(a.next.targetValue)} {a.metric.unit}{' '}
@@ -1536,19 +1388,10 @@ function ForcesEtAxesPage({
         )}
       </div>
 
-      {/* Mot du kinésiologue — message personnalisé (notes du bilan) + signature */}
       <div style={{ marginTop: '12mm', background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
-        <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>
-          Le mot de votre kinésiologue
-        </p>
-        {notes !== '' && (
-          <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '5mm' }}>
-            {notes}
-          </p>
-        )}
-        <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: notes !== '' ? 'italic' : 'normal' }}>
-          {signOff}
-        </p>
+        <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>Le mot de votre kinésiologue</p>
+        {notes !== '' && <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '5mm' }}>{notes}</p>}
+        <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: notes !== '' ? 'italic' : 'normal' }}>{signOff}</p>
       </div>
 
       <p style={{ marginTop: 'auto', paddingTop: '10mm', fontSize: '8pt', color: AXIS, textAlign: 'center' }}>
