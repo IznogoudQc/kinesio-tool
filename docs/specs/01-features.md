@@ -636,6 +636,15 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.64 — Vue d'ensemble : fin de la page blanche)
+
+La Vue d'ensemble (Section 1) laissait une grande zone blanche : titre + intro sur la page 1, puis tout le contenu
+(objectif, trajectoire, scores…) poussé sur la page 2. Cause : le conteneur était un **flex column**, qui se fragmente
+mal à l'impression (Chromium le pousse en entier sur la page suivante). Correctif : passage en **flux bloc** via la classe
+`.report-stack` (`> * + * { margin-top: 9mm }` dans `print.css`) — le contenu se coupe naturellement entre les pages et
+remplit la page 1 (titre + objectif + trajectoire ensemble). Aucun changement visuel autre que la pagination.
+Version : 0.1.63 → 0.1.64.
+
 ## ✅ Fait (v0.1.63 — « Âge en forme » + trajectoire projetée)
 
 Deux repères visuels ajoutés au rapport (voir `docs/decisions/0016-age-en-forme-et-trajectoire.md`).

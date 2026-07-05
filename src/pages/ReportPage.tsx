@@ -817,7 +817,7 @@ function OverviewSection({
       sectionNumber="Section 1"
       intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 1 à 5 — plus il est élevé, meilleure est votre santé physique globale."
     >
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '9mm' }}>
+      <div className="report-stack">
       {/* Objectif du client — texte libre + (si activé) cible chiffrée & nutrition. */}
       <ObjectifBlock objectif={objectif} client={client} latest={latest} chrono={chrono} profile={profile} />
 

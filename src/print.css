@@ -65,6 +65,15 @@
   break-inside: avoid;
 }
 
+/* Empilement vertical en FLUX BLOC (et non flex) : un conteneur flex se
+ * fragmente mal à l'impression — il est poussé en entier sur la page suivante et
+ * laisse une grande zone blanche. Le flux bloc, lui, se coupe naturellement
+ * entre ses enfants et remplit chaque page. L'espacement inter-blocs (équivalent
+ * de `gap`) est porté par la marge du frère suivant. */
+.report-stack > * + * {
+  margin-top: 9mm;
+}
+
 /* Sections « flow » : peuvent s'étaler sur plusieurs pages A4 (sections par
  * domaine avec grands graphiques). Les blocs internes portent la classe
  * Tailwind `break-inside-avoid` pour ne pas être coupés au milieu d'une page. */
