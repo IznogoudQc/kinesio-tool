@@ -31,7 +31,7 @@ import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { classifyBloodPressure } from '../lib/norms/clinical'
 import { computeSynthesis, type BilanProfile, type CompositeScore } from '../lib/norms/scoring'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
-import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
+import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { fitnessAge } from '../lib/fitness-age'
 import { kgToLb } from '../lib/units'
 import { formatMmSs } from '../lib/vo2max-calculator'
@@ -591,14 +591,23 @@ function ObjectifBlock({
   const unit = client.unitWeight
   const w = (kg: number) => dualWeight(kg, unit)
   const atGoal = goal !== null && goal.toLoseKg <= 0.3
-  const weeks = goal ? weeksToGoal(goal.toLoseKg, rate) : null
+
+  // Rythme effectif : si les calories sont fixées manuellement, on le DÉDUIT du
+  // déficit réel (TDEE − calories manuelles) pour que l'échéance colle aux macros ;
+  // sinon on prend le rythme choisi par Marie.
+  const manualKcal = client.nutritionEnabled ? client.nutritionTargetKcal : null
+  const effectiveRate =
+    manualKcal !== null && macros !== null ? weeklyLossFromDeficit(macros.tdee - macros.targetKcal) : rate
+  const noDeficit = manualKcal !== null && macros !== null && effectiveRate === null
+
+  const weeks = goal ? weeksToGoal(goal.toLoseKg, effectiveRate) : null
   const goalDate = weeks !== null ? estimatedGoalDate(latest.date, weeks) : null
   const rateDisplay =
-    rate === null
+    effectiveRate === null
       ? ''
       : unit === 'lb'
-        ? `${kgToLb(rate).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} lb/sem`
-        : `${rate.toLocaleString('fr-CA')} kg/sem`
+        ? `${kgToLb(effectiveRate).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} lb/sem`
+        : `${effectiveRate.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} kg/sem`
 
   // Trajectoire projetée du poids : historique réel (plein) + segment pointillé
   // du poids actuel vers le poids-cible, à l'échéance estimée.
@@ -610,7 +619,7 @@ function ObjectifBlock({
           .filter((h): h is { label: string; kg: number } => h.kg !== null)
       : []
   const projectionData =
-    goal !== null && !atGoal && weightHistory.length >= 1
+    goal !== null && !atGoal && weeks !== null && weightHistory.length >= 1
       ? [
           ...weightHistory.map((h, i) => ({
             label: h.label,
@@ -666,6 +675,11 @@ function ObjectifBlock({
                     </>
                   )}
                   .
+                </p>
+              )}
+              {noDeficit && (
+                <p style={{ fontSize: '10pt', color: INK_SOFT, marginTop: '2.5mm', lineHeight: 1.5 }}>
+                  Les calories choisies ne créent pas de déficit&nbsp;: aucune perte de poids n'est projetée à ce niveau.
                 </p>
               )}
             </>

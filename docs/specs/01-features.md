@@ -636,6 +636,14 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.68 — Échéance déduite des calories manuelles)
+
+Quand les calories sont fixées manuellement, l'échéance estimée est désormais **déduite du déficit réel** (TDEE − calories
+manuelles) au lieu de suivre le rythme choisi : `weeklyLossFromDeficit(dailyDeficit) = déficit × 7 ÷ 7700`. L'échéance,
+le rythme affiché et la trajectoire deviennent cohérents avec les calories choisies. Si les calories ne créent aucun
+déficit (≥ TDEE), aucune perte n'est projetée (note explicite, pas de trajectoire). En mode automatique, rien ne change.
+Version : 0.1.67 → 0.1.68.
+
 ## ✅ Fait (v0.1.67 — Poids en double unité + calories manuelles)
 
 Deux ajustements demandés par Marie :

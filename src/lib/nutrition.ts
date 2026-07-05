@@ -66,6 +66,14 @@ export function dailyDeficitForRate(rateKgPerWeek: number | null | undefined): n
   return Math.round(((rateKgPerWeek as number) * KCAL_PER_KG_FAT) / 7)
 }
 
+/** Inverse : rythme hebdomadaire (kg/sem) impliqué par un déficit quotidien —
+ *  sert à déduire le rythme quand les calories sont fixées manuellement.
+ *  `null` si le déficit est nul ou négatif (aucune perte projetée). */
+export function weeklyLossFromDeficit(dailyDeficitKcal: number | null | undefined): number | null {
+  if (!Number.isFinite(dailyDeficitKcal ?? NaN) || (dailyDeficitKcal as number) <= 0) return null
+  return ((dailyDeficitKcal as number) * 7) / KCAL_PER_KG_FAT
+}
+
 /** Nombre de semaines estimé pour perdre `toLoseKg` au rythme donné (kg/sem).
  *  `null` si les données sont absentes ou s'il n'y a rien à perdre. */
 export function weeksToGoal(

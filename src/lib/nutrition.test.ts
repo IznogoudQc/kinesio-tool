@@ -16,7 +16,14 @@
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { bodyFatGoal, mifflinBmr, estimateMacros, dailyDeficitForRate, weeksToGoal } from './nutrition.ts'
+import {
+  bodyFatGoal,
+  mifflinBmr,
+  estimateMacros,
+  dailyDeficitForRate,
+  weeklyLossFromDeficit,
+  weeksToGoal
+} from './nutrition.ts'
 import { kgToLb } from './units.ts'
 
 const close = (a: number, b: number, eps = 0.15) => Math.abs(a - b) <= eps
@@ -114,6 +121,18 @@ test('dailyDeficitForRate — rythme absent/invalide → null', () => {
   assert.equal(dailyDeficitForRate(null), null)
   assert.equal(dailyDeficitForRate(0), null)
   assert.equal(dailyDeficitForRate(-0.5), null)
+})
+
+test('weeklyLossFromDeficit — inverse de dailyDeficitForRate (550 → ~0.5 kg/sem)', () => {
+  const close = (a: number, b: number) => Math.abs(a - b) <= 0.01
+  assert.ok(close(weeklyLossFromDeficit(550)!, 0.5))
+  assert.ok(close(weeklyLossFromDeficit(1100)!, 1.0))
+})
+
+test('weeklyLossFromDeficit — déficit nul ou négatif → null (aucune perte)', () => {
+  assert.equal(weeklyLossFromDeficit(0), null)
+  assert.equal(weeklyLossFromDeficit(-200), null)
+  assert.equal(weeklyLossFromDeficit(null), null)
 })
 
 test('weeksToGoal — 17.8 kg à 0.5 kg/sem → 35.6 semaines', () => {
