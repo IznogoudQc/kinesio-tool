@@ -492,8 +492,9 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
-      <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark">
-        <form onSubmit={handleSubmit} className="p-6">
+      <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark max-h-[92vh] flex flex-col overflow-hidden">
+        <form onSubmit={handleSubmit} className="flex flex-col min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto p-6">
           <h2 className="text-marine font-semibold text-xl mb-5">Modifier le client</h2>
 
           {error && (
@@ -822,8 +823,9 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
               )}
             </div>
           </div>
+          </div>
 
-          <div className="flex items-center justify-end gap-3 mt-6">
+          <div className="shrink-0 flex items-center justify-end gap-3 px-6 py-4 border-t border-cream-dark bg-cream">
             <button
               type="button"
               onClick={onCancel}

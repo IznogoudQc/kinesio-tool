@@ -636,6 +636,13 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## 🐛 Corrigé (v0.1.69 — Modale « Modifier le client » : boutons inaccessibles)
+
+Avec tous les champs nutrition ajoutés, la fenêtre « Modifier le client » dépassait la hauteur de l'écran et les boutons
+« Annuler / Enregistrer » (tout en bas) devenaient **hors de vue** → impossible d'enregistrer. Correctif : la modale a
+maintenant un **corps défilable** (`max-h-[92vh]`, `overflow-y-auto`) et une **barre de boutons fixe en bas** (toujours
+visible). Version : 0.1.68 → 0.1.69.
+
 ## ✅ Fait (v0.1.68 — Échéance déduite des calories manuelles)
 
 Quand les calories sont fixées manuellement, l'échéance estimée est désormais **déduite du déficit réel** (TDEE − calories
