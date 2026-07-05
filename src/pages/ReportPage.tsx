@@ -317,7 +317,7 @@ function ReportSection({
         width: '210mm',
         minHeight: '293mm',
         margin: '0 auto',
-        padding: pad ? '16mm 17mm' : 0,
+        padding: pad ? '10mm 16mm' : 0,
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
@@ -345,7 +345,7 @@ function ReportFlowSection({
   return (
     <section
       className="report-flow"
-      style={{ width: '210mm', minHeight: '293mm', margin: '0 auto', padding: '16mm 17mm', boxSizing: 'border-box', background: '#fff' }}
+      style={{ width: '210mm', minHeight: '293mm', margin: '0 auto', padding: '10mm 16mm', boxSizing: 'border-box', background: '#fff' }}
     >
       <SectionHeader title={title} sectionNumber={sectionNumber} />
       {intro && (

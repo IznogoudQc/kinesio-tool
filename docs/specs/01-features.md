@@ -636,6 +636,14 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.51 — Rapport : marge du haut réduite)
+
+Marie-Eve : marge du haut trop grande sur toutes les pages. Cause : `@page` margin à 0 (printToPDF `marginType:none`),
+donc l'espace en haut vient du **padding de section** (16 mm), que Chromium applique en haut de **chaque page fragment**
+(confirmé : un `BigChartCard` sans marge propre a quand même de l'espace au-dessus sur une page de continuation). Padding
+des sections (`ReportSection` + `ReportFlowSection`) réduit de `16mm 17mm` à `10mm 16mm` → marge du haut plus fine sur
+toutes les pages. `tsc` web + node ; build OK. Version : 0.1.50 → 0.1.51.
+
 ## ✅ Fait (v0.1.50 — Rapport : correctifs de pagination de la refonte)
 
 La refonte v0.1.49 avait des défauts de sauts de page (vus sur le PDF réel) :
