@@ -30,6 +30,7 @@ import {
   type TestKey
 } from '../lib/norms'
 import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
+import { classifyBloodPressure } from '../lib/norms/clinical'
 import { computeSynthesis, type BilanProfile, type CompositeScore } from '../lib/norms/scoring'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
 import { formatMmSs } from '../lib/vo2max-calculator'
@@ -782,6 +783,7 @@ function SynthesePage({
           </div>
         ))}
       </div>
+      <ColorLegend />
     </ReportSection>
   )
 }
@@ -806,7 +808,7 @@ function ScoreBar({ score }: { score: number | null }) {
   )
 }
 
-function CategoryPill({ category }: { category: Category }) {
+function CategoryPill({ category, label }: { category: Category; label?: string }) {
   return (
     <span
       style={{
@@ -821,8 +823,31 @@ function CategoryPill({ category }: { category: Category }) {
         whiteSpace: 'nowrap'
       }}
     >
-      {CATEGORY_LABELS[category]}
+      {label ?? CATEGORY_LABELS[category]}
     </span>
+  )
+}
+
+/** Légende du code couleur des barèmes (5 zones À améliorer → Excellent). */
+function ColorLegend() {
+  const cats: Category[] = ['A_AMELIORER', 'ACCEPTABLE', 'BIEN', 'TRES_BIEN', 'EXCELLENT']
+  return (
+    <div style={{ marginTop: '10mm', paddingTop: '5mm', borderTop: `1px solid ${GRID}` }}>
+      <p style={{ fontSize: '8pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: INK_SOFT, marginBottom: '2.5mm' }}>
+        Comment lire les couleurs
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5mm' }}>
+        {cats.map(c => (
+          <div key={c} style={{ display: 'flex', alignItems: 'center', gap: '1.5mm' }}>
+            <span style={{ width: '4mm', height: '4mm', borderRadius: '1mm', background: CAT_BG[c], display: 'inline-block' }} />
+            <span style={{ fontSize: '9pt', color: MARINE }}>{CATEGORY_LABELS[c]}</span>
+          </div>
+        ))}
+      </div>
+      <p style={{ fontSize: '8.5pt', color: AXIS, marginTop: '2.5mm' }}>
+        Chaque barre situe votre résultat sur cette échelle, selon les normes ACSM pour votre âge et votre sexe.
+      </p>
+    </div>
   )
 }
 
@@ -840,6 +865,16 @@ function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanC
   const plisPresents = plis.map(p => ({ ...p, value: num(d[p.key]) })).filter(p => p.value !== null)
   const durnin4 = ['pli_triceps', 'pli_biceps', 'pli_sous_scap', 'pli_iliaque'].map(k => num(d[k]))
   const sommePlis = durnin4.every(v => v !== null) ? (durnin4 as number[]).reduce((a, b) => a + b, 0) : null
+
+  // Tension artérielle au repos — zones cliniques nommées (Optimale → HTA 2).
+  const sys = num(d.pa_systolique)
+  const dia = num(d.pa_diastolique)
+  const sysClass = sys !== null ? classifyBloodPressure(sys, 'systolic') : null
+  const diaClass = dia !== null ? classifyBloodPressure(dia, 'diastolic') : null
+  const bpRows = [
+    { label: 'Systolique', value: sys, cls: sysClass },
+    { label: 'Diastolique', value: dia, cls: diaClass }
+  ].filter(r => r.value !== null)
 
   const stats: { label: string; value: string; hint?: string }[] = [
     { label: 'IMC', value: computed.imc === null ? '—' : `${fmt(computed.imc)} kg/m²` },
@@ -912,6 +947,32 @@ function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanC
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Tension artérielle au repos — zones cliniques nommées */}
+      {bpRows.length > 0 && (
+        <div className="break-inside-avoid" style={{ marginBottom: '10mm' }}>
+          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '2mm' }}>
+            Tension artérielle au repos
+          </p>
+          <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '4mm' }}>
+            Classée selon les seuils cliniques : Optimale · Normale · Pré-hypertension · Hypertension 1 · Hypertension 2
+            (OMS / JNC).
+          </p>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11pt' }}>
+            <tbody>
+              {bpRows.map(r => (
+                <tr key={r.label} style={{ borderBottom: `1px solid ${GRID}` }}>
+                  <td style={{ padding: '3mm', color: INK_SOFT }}>{r.label}</td>
+                  <td style={{ padding: '3mm', color: MARINE, fontWeight: 700 }}>{fmt(r.value, 0)} mmHg</td>
+                  <td style={{ padding: '3mm', textAlign: 'right' }}>
+                    {r.cls && <CategoryPill category={r.cls.category} label={r.cls.zone} />}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

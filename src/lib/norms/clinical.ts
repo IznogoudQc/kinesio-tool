@@ -17,7 +17,7 @@
  *     est appliqué. Simplification assumée (v0.1.37).
  */
 
-import type { NormPercentiles, NormRange, TestKey } from './types'
+import type { Category, NormPercentiles, NormRange, TestKey } from './types'
 
 /** Les percentiles sont en ordre décroissant (lowerIsBetter) : p10 = pire,
  *  p75 = seuil d'excellence, p90 = repère « encore meilleur ». */
@@ -37,6 +37,29 @@ const CLINICAL: Partial<Record<TestKey, { M: NormPercentiles; F: NormPercentiles
     M: { p10: 72, p25: 67, p50: 63, p75: 56, p90: 50 },
     F: { p10: 75, p25: 70, p50: 66, p75: 59, p90: 53 }
   }
+}
+
+export type BpKind = 'systolic' | 'diastolic'
+export interface BpClassification {
+  /** Nom de la zone clinique (Optimale → Hypertension 2). */
+  zone: string
+  /** Catégorie associée — pour la couleur (via CAT_BG/CAT_FG). */
+  category: Category
+}
+
+/** Classe une valeur de tension artérielle dans les zones cliniques nommées
+ *  (indépendantes de l'âge et du sexe — seuils OMS/JNC, alignés sur `CLINICAL`).
+ *    Systolique : Optimale <120 · Normale 120-129 · Pré-HT 130-139 · HT1 140-159 · HT2 ≥160
+ *    Diastolique : Optimale <80 · Normale 80-84 · Pré-HT 85-89 · HT1 90-99 · HT2 ≥100
+ */
+export function classifyBloodPressure(value: number, kind: BpKind): BpClassification | null {
+  if (!Number.isFinite(value)) return null
+  const t = kind === 'systolic' ? [120, 130, 140, 160] : [80, 85, 90, 100]
+  if (value < t[0]) return { zone: 'Optimale', category: 'EXCELLENT' }
+  if (value < t[1]) return { zone: 'Normale', category: 'TRES_BIEN' }
+  if (value < t[2]) return { zone: 'Pré-hypertension', category: 'BIEN' }
+  if (value < t[3]) return { zone: 'Hypertension 1', category: 'ACCEPTABLE' }
+  return { zone: 'Hypertension 2', category: 'A_AMELIORER' }
 }
 
 /** Retourne la plage clinique pour un test donné, ou `null` si le test n'est

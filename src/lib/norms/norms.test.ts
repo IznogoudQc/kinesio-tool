@@ -16,6 +16,7 @@ import { test } from 'node:test'
 // n'aiment pas ces extensions dans le code applicatif.
 import { getAcsmRange } from './acsm.ts'
 import { getCpaflaRange, cpaflaHasTables } from './cpafla.ts'
+import { classifyBloodPressure } from './clinical.ts'
 import type { Category, NormPercentiles, NormsType, TestKey } from './types.ts'
 
 function computeAge(birthdate: string | null, refDate: Date = new Date()): number | null {
@@ -207,6 +208,25 @@ test('CPAFLA — ossature prête, tables non encore encodées → null partout',
 
 test('Valeur invalide → null', () => {
   assert.equal(getCategorization('vo2max', Number.NaN, 35, 'M'), null)
+})
+
+test('classifyBloodPressure — zones cliniques nommées', () => {
+  // Nicholas : 112/74 → Optimale sur les deux.
+  assert.equal(classifyBloodPressure(112, 'systolic')?.zone, 'Optimale')
+  assert.equal(classifyBloodPressure(74, 'diastolic')?.zone, 'Optimale')
+  // Bornes systoliques
+  assert.equal(classifyBloodPressure(125, 'systolic')?.zone, 'Normale')
+  assert.equal(classifyBloodPressure(135, 'systolic')?.zone, 'Pré-hypertension')
+  assert.equal(classifyBloodPressure(150, 'systolic')?.zone, 'Hypertension 1')
+  assert.equal(classifyBloodPressure(165, 'systolic')?.zone, 'Hypertension 2')
+  // Bornes diastoliques
+  assert.equal(classifyBloodPressure(82, 'diastolic')?.zone, 'Normale')
+  assert.equal(classifyBloodPressure(105, 'diastolic')?.zone, 'Hypertension 2')
+  // Couleur : Optimale → EXCELLENT ; HT2 → A_AMELIORER
+  assert.equal(classifyBloodPressure(112, 'systolic')?.category, 'EXCELLENT')
+  assert.equal(classifyBloodPressure(165, 'systolic')?.category, 'A_AMELIORER')
+  // Valeur invalide → null
+  assert.equal(classifyBloodPressure(Number.NaN, 'systolic'), null)
 })
 
 // ── Tests v0.1.18 : percentiles et delta vs moyenne ──────────────────────────

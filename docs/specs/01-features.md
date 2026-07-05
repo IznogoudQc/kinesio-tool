@@ -636,6 +636,25 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.47 — Rapport : légende des couleurs + zones de tension nommées)
+
+Derniers items de contenu du rapport.
+
+### Légende du code couleur
+Composant `ColorLegend` en bas de la Synthèse (Section 3) : les 5 zones (À améliorer → Excellent) avec leur pastille
+de couleur + une phrase expliquant que chaque barre situe le résultat sur cette échelle (normes ACSM par âge/sexe).
+Explique une fois pour tout le rapport le sens des couleurs des `CategoryRangeBar`.
+
+### Zones de tension artérielle nommées
+- `src/lib/norms/clinical.ts` : `classifyBloodPressure(value, 'systolic' | 'diastolic')` → `{ zone, category }` avec
+  les zones cliniques nommées (Optimale · Normale · Pré-hypertension · Hypertension 1 · Hypertension 2, seuils OMS/JNC,
+  alignés sur les percentiles cliniques existants). Testé (`norms.test.ts`).
+- Bloc « Tension artérielle au repos » dans la section Composition (Section 4) : systolique + diastolique avec la
+  **pastille de zone nommée** (couleur = catégorie). `CategoryPill` accepte désormais un `label` optionnel.
+
+### Vérifs
+- Suite **138/138 pass** ; `tsc` web + node clean ; build OK. Version : 0.1.46 → 0.1.47.
+
 ## ✅ Fait (v0.1.46 — Rapport : 2 micro-correctifs)
 
 Repérés sur le rapport régénéré de Nicholas :
