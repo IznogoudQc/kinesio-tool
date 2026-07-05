@@ -373,10 +373,12 @@ function SectionHeader({ title, sectionNumber }: { title: string; sectionNumber?
   )
 }
 
-/** Titre de bloc (eyebrow doré) à l'intérieur d'une section. */
+/** Titre de bloc (eyebrow doré) à l'intérieur d'une section. `break-after: avoid`
+ *  + `break-inside: avoid` : le titre ne se retrouve jamais orphelin en bas de
+ *  page, il migre avec le contenu qui le suit. */
 function BlockTitle({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, fontWeight: 700, margin: '0 0 4mm' }}>
+    <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, fontWeight: 700, margin: '0 0 4mm', breakAfter: 'avoid', breakInside: 'avoid' }}>
       {children}
     </p>
   )
@@ -543,14 +545,13 @@ function OverviewSection({
   const years = single ? 0 : yearsBetween(oldest.date, latest.date)
 
   return (
-    <ReportSection title="Votre bilan en un coup d'œil" sectionNumber="Section 1">
-      <p style={{ fontSize: '11pt', lineHeight: 1.55, color: INK_SOFT, maxWidth: '160mm', marginTop: '-5mm', marginBottom: '8mm' }}>
-        Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle
-        de 0 à 5 — plus il est élevé, meilleure est votre santé physique globale.
-      </p>
-
+    <ReportFlowSection
+      title="Votre bilan en un coup d'œil"
+      sectionNumber="Section 1"
+      intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 0 à 5 — plus il est élevé, meilleure est votre santé physique globale."
+    >
       {/* Score + 4 composites */}
-      <div style={{ display: 'flex', gap: '9mm', alignItems: 'center', marginBottom: '9mm', flexWrap: 'wrap' }}>
+      <div className="break-inside-avoid" style={{ display: 'flex', gap: '9mm', alignItems: 'center', marginBottom: '9mm', flexWrap: 'wrap' }}>
         <div style={{ flexShrink: 0, textAlign: 'center' }}>
           <ScoreRing score={synth.overall.score} />
           {synth.overall.category && (
@@ -592,7 +593,7 @@ function OverviewSection({
       ) : (
         <>
           {hero && (
-            <div style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', marginBottom: '8mm', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8mm' }}>
+            <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', marginBottom: '8mm', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8mm' }}>
               <div>
                 <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD }}>Votre plus belle progression</p>
                 <p className="report-display" style={{ fontSize: '18pt', fontWeight: 600, color: MARINE, marginTop: '1mm' }}>{hero.label}</p>
@@ -607,9 +608,11 @@ function OverviewSection({
               </div>
             </div>
           )}
-          <JourneyTimeline chrono={chrono} syntheses={syntheses} />
+          <div className="break-inside-avoid">
+            <JourneyTimeline chrono={chrono} syntheses={syntheses} />
+          </div>
           {beforeAfter.length > 0 && (
-            <div style={{ marginTop: '9mm' }}>
+            <div className="break-inside-avoid" style={{ marginTop: '9mm' }}>
               <BlockTitle>Avant / après</BlockTitle>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5pt' }}>
                 <thead>
@@ -643,8 +646,10 @@ function OverviewSection({
           )}
         </>
       )}
-      <ColorLegend />
-    </ReportSection>
+      <div className="break-inside-avoid">
+        <ColorLegend />
+      </div>
+    </ReportFlowSection>
   )
 }
 
@@ -814,13 +819,11 @@ function DomainSection({
       {topExtra}
 
       {presentDetails.length > 0 && (
-        <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
+        <div style={{ marginBottom: '8mm', display: 'flex', flexDirection: 'column', gap: '5mm' }}>
           <BlockTitle>Vos résultats</BlockTitle>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '5mm' }}>
-            {presentDetails.map(m => (
-              <MetricBlock key={m.key} metric={m} latest={latest} recent={recent} profile={profile} />
-            ))}
-          </div>
+          {presentDetails.map(m => (
+            <MetricBlock key={m.key} metric={m} latest={latest} recent={recent} profile={profile} />
+          ))}
         </div>
       )}
 
@@ -942,9 +945,9 @@ function CompositionExtras({ latest, computed }: { latest: Bilan; computed: Bila
   ]
 
   return (
-    <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
+    <div style={{ marginBottom: '8mm' }}>
       <BlockTitle>Vos mesures</BlockTitle>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm', marginBottom: plisPresents.length ? '6mm' : 0 }}>
+      <div className="break-inside-avoid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm', marginBottom: plisPresents.length ? '6mm' : 0 }}>
         {stats.map(s => (
           <div key={s.label} style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}>
             <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT }}>{s.label}</p>
@@ -954,8 +957,8 @@ function CompositionExtras({ latest, computed }: { latest: Bilan; computed: Bila
         ))}
       </div>
       {plisPresents.length > 0 && (
-        <>
-          <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: INK_SOFT, marginBottom: '2.5mm' }}>Plis cutanés (mm)</p>
+        <div className="break-inside-avoid">
+          <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: INK_SOFT, marginBottom: '2.5mm', breakAfter: 'avoid' }}>Plis cutanés (mm)</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4mm' }}>
             {plisPresents.map(p => (
               <div key={p.key} style={{ background: CREAM, borderRadius: '2mm', padding: '3mm 5mm', minWidth: '30mm' }}>
@@ -964,7 +967,7 @@ function CompositionExtras({ latest, computed }: { latest: Bilan; computed: Bila
               </div>
             ))}
           </div>
-        </>
+        </div>
       )}
     </div>
   )

@@ -636,6 +636,20 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.50 — Rapport : correctifs de pagination de la refonte)
+
+La refonte v0.1.49 avait des défauts de sauts de page (vus sur le PDF réel) :
+- **Titres orphelins** : « Avant / après », « Évolution dans le temps » restaient seuls en bas de page. Corrigé :
+  `BlockTitle` porte `break-after: avoid` + `break-inside: avoid` → le titre migre avec son contenu.
+- **Groupes sautant en bloc** : le wrapper « Vos résultats » (4 cartes) et `CompositionExtras` étaient marqués
+  `break-inside-avoid`, donc sautaient entièrement s'ils ne rentraient pas → grand vide (intro seule sur une page).
+  Corrigé : `break-inside-avoid` retiré des **groupes**, conservé uniquement sur les **éléments atomiques**
+  (chaque `MetricBlock`, `BigChartCard`, grille de mesures, table BP/FC/récup, encart interprétation).
+- **Vue d'ensemble** : passait mal en 2 pages (forcée en 1 page via `report-page`). Convertie en section **flow**
+  avec chaque bloc (score+composites, héros, frise, avant/après, légende) protégé individuellement.
+
+Suite 138/138 ; `tsc` web + node ; build OK. Version : 0.1.49 → 0.1.50. Rendu à reconfirmer par régénération.
+
 ## ✅ Fait (v0.1.49 — Rapport : refonte thématique par domaine)
 
 ### Objectif : un rapport organisé par thème, avec de grands graphiques et des explications
