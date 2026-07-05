@@ -136,10 +136,15 @@ export async function generateClientReportPdf(clientId: string): Promise<string>
 
     await waitForReportReady(win)
 
+    // Marges haut/bas au niveau de la PAGE PDF (~12 mm) → identiques sur chaque
+    // page, y compris les pages de continuation d'une section (le padding CSS
+    // d'une section ne s'applique qu'à sa 1re page). Gauche/droite = 0 ici : géré
+    // par le padding horizontal des sections (qui, lui, s'applique à toutes les
+    // pages). Valeurs en pouces (0.47" ≈ 12 mm).
     const pdfData = await win.webContents.printToPDF({
       printBackground: true,
       pageSize: 'A4',
-      margins: { marginType: 'none' }
+      margins: { top: 0.47, bottom: 0.47, left: 0, right: 0 }
     })
 
     const fileName = `Bilan-${safeClientFileName(client.name)}-${todayISODate()}.pdf`

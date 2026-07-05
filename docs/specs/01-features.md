@@ -636,6 +636,22 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.53 — Rapport : marge constante sur toutes les pages + graphiques réduits)
+
+### Marge constante (haut/bas) sur toutes les pages
+Problème : le padding vertical d'une section ne s'applique qu'à sa **1re page** (Chromium), donc les pages de
+**continuation** n'avaient plus de marge haut/bas (texte collé au bord) — incohérent avec les débuts de section.
+Solution : déplacer la marge **haut/bas au niveau de la page PDF** via `printToPDF({ margins: { top: 0.47, bottom:
+0.47, left: 0, right: 0 } })` (pouces ≈ 12 mm) — appliquée **identiquement à chaque page physique**. Les sections
+n'ont plus que du padding **horizontal** (`0 16mm`, qui lui s'applique déjà à toutes les pages). `minHeight` des
+sections 293 → 265 mm (aire imprimable = 297 − 24 = 273 mm). Couverture : padding interne réduit en conséquence.
+
+### Graphiques réduits (moins de vides)
+`BigChartCard` 88 → 72 mm : toujours pleine largeur (plus grand que les anciens en 2 colonnes) mais rentre plus souvent
+dans l'espace restant → moins de vides en bas de page avant « Évolution ».
+
+`tsc` web + node ; build OK. Version : 0.1.52 → 0.1.53. ⚠️ Marges PDF non simulables hors Electron — à confirmer par régénération.
+
 ## ✅ Fait (v0.1.52 — Rapport : marge du haut (fix définitif) + barèmes ACSM)
 
 ### Marge du haut — fix définitif (flex gap)

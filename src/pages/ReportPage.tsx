@@ -346,9 +346,11 @@ function ReportSection({
       className="report-page"
       style={{
         width: '210mm',
-        minHeight: '293mm',
+        minHeight: '265mm',
         margin: '0 auto',
-        padding: pad ? '10mm 16mm' : 0,
+        // Padding VERTICAL = 0 : la marge haut/bas vient de la page PDF (printToPDF,
+        // constante sur toutes les pages). Seul le padding HORIZONTAL reste ici.
+        padding: pad ? '0 16mm' : 0,
         boxSizing: 'border-box',
         display: 'flex',
         flexDirection: 'column',
@@ -376,7 +378,7 @@ function ReportFlowSection({
   return (
     <section
       className="report-flow"
-      style={{ width: '210mm', minHeight: '293mm', margin: '0 auto', padding: '10mm 16mm', boxSizing: 'border-box', background: '#fff' }}
+      style={{ width: '210mm', minHeight: '265mm', margin: '0 auto', padding: '0 16mm', boxSizing: 'border-box', background: '#fff' }}
     >
       <SectionHeader title={title} sectionNumber={sectionNumber} />
       {intro && (
@@ -439,7 +441,7 @@ function CoverPage({
     .join(' · ')
   return (
     <ReportSection pad={false}>
-      <div style={{ padding: '20mm 20mm 16mm', display: 'flex', flexDirection: 'column', flex: 1 }}>
+      <div style={{ padding: '6mm 20mm 12mm', display: 'flex', flexDirection: 'column', flex: 1 }}>
         <div className="flex items-start justify-between">
           <img src={logo} alt="Kinésio Outils" style={{ height: '16mm', width: 'auto' }} />
           <div style={{ textAlign: 'right' }}>
@@ -1207,9 +1209,9 @@ interface ChartPoint {
 /** Carte de graphique pleine largeur (grand format). */
 function BigChartCard({ title, children }: { title: string; children: React.ReactElement }) {
   return (
-    <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '6mm 6mm 4mm', marginBottom: '7mm' }}>
+    <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm 4mm', marginBottom: '7mm' }}>
       <p style={{ fontSize: '11pt', fontWeight: 600, color: MARINE, marginBottom: '3mm' }}>{title}</p>
-      <div style={{ width: '100%', height: '88mm' }}>
+      <div style={{ width: '100%', height: '72mm' }}>
         <ResponsiveContainer width="100%" height="100%">
           {children}
         </ResponsiveContainer>
