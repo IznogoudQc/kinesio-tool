@@ -3,8 +3,12 @@
 
 import type { NormPercentiles } from './norms/types'
 
-/** Position du marqueur (0-100 %) sur l'axe « percentile de performance ».
- *  Pour `lowerIsBetter`, l'axe des valeurs est inversé (low value = high perf). */
+/** Position du marqueur (0-100 %) — ALIGNÉE sur les 5 segments de la barre
+ *  (À améliorer 0-20, Acceptable 20-40, Bien 40-60, Très bien 60-80,
+ *  Excellent 80-100). Les seuils de catégorie P10/P25/P50/P75 tombent donc
+ *  exactement aux jonctions 20/40/60/80 % : le marqueur est toujours dans le
+ *  même segment que la catégorie affichée. Pour `lowerIsBetter`, l'axe des
+ *  valeurs est inversé (valeur basse = haute performance). */
 export function calculatePosition(
   value: number,
   p: NormPercentiles,
@@ -12,11 +16,11 @@ export function calculatePosition(
 ): number {
   if (!Number.isFinite(value)) return 0
   const anchors = [
-    { pct: 10, value: p.p10 },
-    { pct: 25, value: p.p25 },
-    { pct: 50, value: p.p50 },
-    { pct: 75, value: p.p75 },
-    { pct: 90, value: p.p90 }
+    { pct: 20, value: p.p10 },
+    { pct: 40, value: p.p25 },
+    { pct: 60, value: p.p50 },
+    { pct: 80, value: p.p75 },
+    { pct: 100, value: p.p90 }
   ]
   const perf = (v: number) => (lowerIsBetter ? -v : v)
   const v = perf(value)

@@ -636,6 +636,20 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.57 — Bug barre de couleur : marqueur dans le bon segment)
+
+Marie-Eve : « des fois la barre ne fonctionne pas » — la pastille dit « Bien » mais le marqueur ▲ est dans
+« Acceptable ». **Vrai bug** dans `calculatePosition` : le marqueur était placé sur une échelle de **percentiles**
+(P10→10 %, P25→25 %, P50→50 %, P75→75 %) alors que les **segments** de la barre sont à intervalles égaux
+(20/40/60/80 %). Les deux échelles ne coïncidaient pas → marqueur dans le mauvais segment (écart max sur les
+métriques `lowerIsBetter` : tour de taille, IMC, % gras).
+
+Correctif : ancres du marqueur réalignées sur les segments (**P10/P25/P50/P75 → 20/40/60/80 %**, P90 → 100 %). Le
+marqueur tombe désormais toujours dans le même segment que la catégorie affichée. Ex. tour de taille 93 (Bien) → ~43 %
+(segment Bien), au lieu de ~29 % (Acceptable). S'applique au rapport ET au dashboard (composant partagé).
+
+Tests `CategoryRangeBar.test.ts` recalculés (10/10). Suite **138/138** ; `tsc` web + node ; build. Version : 0.1.56 → 0.1.57.
+
 ## ✅ Fait (v0.1.56 — Scores composites : échelle 1-5, « Force » réalignée, détail des sous-scores)
 
 Marie-Eve trouvait « Force musculaire 3,8/5 » surprenant (pompes/redressements Excellents). Deux causes corrigées :
