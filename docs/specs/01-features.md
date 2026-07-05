@@ -636,6 +636,20 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.74 — Conseils IA : analyse « forces & à travailler » en 1 clic)
+
+Le Mode conseils IA ne demande plus de **cocher des métriques**. Un bouton **« Analyser avec l'IA »** (à côté du bloc
+« Forces & à travailler » du Dashboard) envoie **tout le bilan** (métriques + catégories + percentiles, toujours anonyme)
+et l'IA renvoie : une **synthèse**, les **forces** (avec le pourquoi), les points **à travailler** (avec une **piste**
+concrète chacun) et des **avertissements** cliniques. Voir `docs/decisions/0018`.
+
+- Collecte auto : `src/lib/ai-metrics.ts`. Nouveau schéma + prompt IPC (`electron/ipc/ai.ts`). Sortie `AIAdvice` réécrite.
+- Retiré : toggle « Mode conseils IA », bandeau, FAB, sélection multi-métriques. Les pistes = activité physique (champ du
+  kinésiologue) ; nutrition détaillée → référée à un(e) nutritionniste.
+- Code désormais mort (`AIAdviceContext`, `MetricSelectable`) à nettoyer séparément.
+
+Version : 0.1.73 → 0.1.74.
+
 ## ✅ Fait (v0.1.73 — Dashboard : parité avec le rapport)
 
 Le Dashboard « Bilan complet » reçoit ce qu'on a construit pour le rapport :

@@ -6,16 +6,21 @@ export interface AIAdvicePayload {
   metrics: MetricSelection[]
 }
 
+export interface AIForce {
+  titre: string
+  explication: string
+}
+export interface AIWeakness {
+  titre: string
+  explication: string
+  piste: string
+}
+/** Analyse « forces & à travailler » du bilan complet (remplace l'ancien
+ *  programme intégré sur sélection manuelle). */
 export interface AIAdvice {
-  diagnostic: string
-  objectifsPrioritaires: string[]
-  programmeIntegre: {
-    cardio: string[]
-    musculation: string[]
-    souplesse: string[]
-    habitudes: string[]
-  }
-  echeance: string
+  synthese: string
+  forces: AIForce[]
+  aTravailler: AIWeakness[]
   warnings: string[]
 }
 
@@ -74,26 +79,18 @@ export const aiAdviceService = {
   }
 }
 
-/** Formate une `AIAdvice` en markdown — utilisé par le bouton « Copier ». */
+/** Formate une `AIAdvice` (forces & à travailler) en markdown — bouton « Copier ». */
 export function formatAdviceAsText(advice: AIAdvice): string {
   const lines: string[] = []
-  lines.push('# Conseils kinésiologie\n')
-  lines.push('## Diagnostic')
-  lines.push(advice.diagnostic + '\n')
-  lines.push('## Objectifs prioritaires')
-  for (const o of advice.objectifsPrioritaires) lines.push(`- ${o}`)
-  lines.push('\n## Programme intégré')
-  lines.push('\n### Cardio')
-  for (const x of advice.programmeIntegre.cardio) lines.push(`- ${x}`)
-  lines.push('\n### Musculation')
-  for (const x of advice.programmeIntegre.musculation) lines.push(`- ${x}`)
-  lines.push('\n### Souplesse')
-  for (const x of advice.programmeIntegre.souplesse) lines.push(`- ${x}`)
-  lines.push('\n### Habitudes')
-  for (const x of advice.programmeIntegre.habitudes) lines.push(`- ${x}`)
-  lines.push('\n## Échéance')
-  lines.push(advice.echeance + '\n')
-  lines.push('## Avertissements')
-  for (const w of advice.warnings) lines.push(`- ${w}`)
+  lines.push('# Forces & à travailler\n')
+  lines.push(advice.synthese + '\n')
+  lines.push('## Forces')
+  for (const f of advice.forces) lines.push(`- **${f.titre}** — ${f.explication}`)
+  lines.push('\n## À travailler')
+  for (const w of advice.aTravailler) lines.push(`- **${w.titre}** — ${w.explication}\n  Piste : ${w.piste}`)
+  if (advice.warnings.length) {
+    lines.push('\n## Avertissements')
+    for (const w of advice.warnings) lines.push(`- ${w}`)
+  }
   return lines.join('\n')
 }

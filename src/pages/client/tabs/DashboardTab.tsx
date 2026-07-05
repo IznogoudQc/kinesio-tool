@@ -21,6 +21,8 @@ import {
   DEFAULT_RATE_KG_PER_WEEK
 } from '../../../lib/nutrition'
 import { dualWeight, estimatedGoalDate } from '../../../lib/objectif-format'
+import { gatherBilanMetrics } from '../../../lib/ai-metrics'
+import { AIAnalysisPanel } from '../dashboard/AIAdvicePanel'
 import { ScoreDonut } from '../dashboard/ScoreDonut'
 import { StatCardXL } from '../dashboard/StatCardXL'
 import { CompositeMiniCard } from '../dashboard/CompositeMiniCard'
@@ -238,6 +240,7 @@ export function DashboardTab() {
     client.sex
   )
   const objectif = buildObjectif(client, activeData, computed, age, (activeBilan ?? latest)!.date)
+  const aiMetrics = gatherBilanMetrics(activeData, age, client.sex, norms)
   // Vrai si Marie-Eve regarde un bilan ANCIEN spécifique (pas la synthèse,
   // pas le plus récent). Sert au bandeau gold « vous consultez un bilan ancien ».
   const isViewingOlder =
@@ -538,7 +541,13 @@ export function DashboardTab() {
         </>
       )}
 
-      <StrengthsAndWeaknesses data={activeData} age={age} sex={client.sex} norms={norms} />
+      <section className="space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold">Analyse du bilan</p>
+          {!printMode && <AIAnalysisPanel sex={client.sex} age={age} metrics={aiMetrics} />}
+        </div>
+        <StrengthsAndWeaknesses data={activeData} age={age} sex={client.sex} norms={norms} />
+      </section>
 
       {showModal && (
         <SendBilanModal

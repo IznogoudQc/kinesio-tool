@@ -42,50 +42,38 @@ const PayloadSchema = z.object({
   metrics: z.array(MetricSchema).min(1).max(20)
 })
 
-const AdviceSchema = z.object({
-  diagnostic: z.string(),
-  objectifsPrioritaires: z.array(z.string()),
-  programmeIntegre: z.object({
-    cardio: z.array(z.string()),
-    musculation: z.array(z.string()),
-    souplesse: z.array(z.string()),
-    habitudes: z.array(z.string())
-  }),
-  echeance: z.string(),
+const AnalysisSchema = z.object({
+  synthese: z.string(),
+  forces: z.array(z.object({ titre: z.string(), explication: z.string() })),
+  aTravailler: z.array(z.object({ titre: z.string(), explication: z.string(), piste: z.string() })),
   warnings: z.array(z.string())
 })
 
 const SYSTEM_PROMPT = `Tu es un assistant pour un kinésiologue canadien.
 
-Tu reçois des données anonymes d'un client (sexe, âge, et un ensemble de métriques avec leurs valeurs, catégories ACSM/OMS et percentiles). Marie-Eve a *sélectionné explicitement* les métriques qu'elle veut faire analyser ensemble — donc cherche les **liens** entre elles et propose un **programme intégré**, pas des conseils isolés par métrique.
+Tu reçois le bilan complet anonyme d'un client (sexe, âge, et TOUTES ses métriques avec valeurs, catégories ACSM/OMS et percentiles). Ton rôle : aider le/la kinésiologue à IDENTIFIER les FORCES et les points À TRAVAILLER de ce bilan, avec un regard d'ensemble.
 
 Réponds avec un objet JSON STRICT, sans aucun texte autour, suivant exactement ce schéma :
 
 {
-  "diagnostic": "Synthèse de ce que les métriques racontent ensemble (2-3 phrases)",
-  "objectifsPrioritaires": ["objectif 1", "objectif 2", "objectif 3"],
-  "programmeIntegre": {
-    "cardio": ["séance ou recommandation 1", "..."],
-    "musculation": ["..."],
-    "souplesse": ["..."],
-    "habitudes": ["sommeil, hydratation, nutrition, gestion du stress, ..."]
-  },
-  "echeance": "Estimation du temps pour voir des résultats notables",
+  "synthese": "1 à 2 phrases résumant l'état général de forme du client",
+  "forces": [ { "titre": "nom court de la force (ex. Capacité cardiovasculaire)", "explication": "pourquoi c'est un atout pour sa santé (1-2 phrases)" } ],
+  "aTravailler": [ { "titre": "nom court du point à travailler", "explication": "en quoi c'est un enjeu (1-2 phrases)", "piste": "une piste concrète et réaliste d'amélioration" } ],
   "warnings": ["contre-indications éventuelles ou red flags cliniques"]
 }
 
 Règles :
-- Reste sobre, factuel, et professionnel — pas de motivations émotionnelles.
-- 3 à 6 items par liste maximum.
-- Tiens compte du sexe et de l'âge dans tes recommandations.
-- Si une métrique indique un risque cardio-métabolique élevé (tour de taille très élevé OMS, ratio T/H élevé, etc.), ajoute un warning sur la nécessité d'un bilan médical.
-- Si l'âge est ≥ 50, mentionne la validation médicale avant exercices haute intensité.
-- N'invente pas de données du client : si une métrique manque, tu ne peux pas en déduire des conseils dessus.`
+- Base-toi UNIQUEMENT sur les métriques fournies — n'invente aucune donnée. Si une métrique manque, ne l'évoque pas.
+- Reste sobre, factuel, professionnel — pas de motivation émotionnelle.
+- 2 à 5 items par liste. Si aucune force (ou aucun point faible) évident, mets une liste vide plutôt que d'inventer.
+- Catégories Très bien / Excellent → forces ; Acceptable / À améliorer → à travailler ; Bien → neutre (à mentionner seulement si pertinent).
+- Les « pistes » sont des recommandations d'ACTIVITÉ PHYSIQUE (le champ du kinésiologue). Pour la nutrition détaillée, réfère à un(e) nutritionniste au lieu de prescrire.
+- Si tour de taille / ratio taille-hanche à risque OMS élevé, ou âge ≥ 50 avec exercice haute intensité, ajoute un warning de validation médicale.`
 
 function buildUserMessage(payload: z.infer<typeof PayloadSchema>): string {
   const sex = payload.sex === 'F' ? 'Femme' : payload.sex === 'M' ? 'Homme' : 'sexe non renseigné'
   const age = payload.age !== null ? `${payload.age} ans` : 'âge non renseigné'
-  const lines = [`Profil anonyme : ${sex}, ${age}.`, '', 'Métriques sélectionnées :']
+  const lines = [`Profil anonyme : ${sex}, ${age}.`, '', 'Métriques du bilan :']
   for (const m of payload.metrics) {
     let line = `- ${m.label} : ${m.value}`
     if (m.unit) line += ` ${m.unit}`
@@ -241,7 +229,7 @@ export function registerAIHandlers(): void {
       })
       const text = extractText(response)
       const parsed = parseAdviceJson(text)
-      const advice = AdviceSchema.parse(parsed)
+      const advice = AnalysisSchema.parse(parsed)
       return { ok: true, advice }
     } catch (err) {
       if (err instanceof AIError) return { ok: false, error: err.message, code: err.code }

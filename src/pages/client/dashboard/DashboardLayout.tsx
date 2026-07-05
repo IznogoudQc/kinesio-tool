@@ -1,11 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { Bot, ClipboardList, Ruler } from 'lucide-react'
+import { ClipboardList, Ruler } from 'lucide-react'
 import { useClient, useClientOutletContext } from '../ClientDetailLayout'
 import { bilansService } from '../../../services/bilans'
 import { mesuresService } from '../../../services/mesures'
-import { AIAdviceProvider, useAIAdvice } from '../../../contexts/AIAdviceContext'
-import { AIAdvicePanel } from './AIAdvicePanel'
 
 /** Clé localStorage du dernier sous-onglet visité, par client.
  *  Permet à Marie-Eve d'atterrir directement sur le bon sous-onglet quand elle
@@ -27,20 +25,7 @@ function readPreference(clientId: string): SubTab {
  *  `<Outlet />`. Les compteurs (N) à côté du nom indiquent le nombre de sessions.
  */
 export function DashboardLayout() {
-  // Le provider IA enveloppe tout le contenu du Dashboard pour que les cards
-  // (MesuresOverview, BilanOverview, etc.) puissent consulter le mode de
-  // sélection via `useAIAdvice()`. La logique métier (toggle, FAB, modals)
-  // vit dans un composant interne pour avoir accès au contexte.
-  return (
-    <AIAdviceProvider>
-      <DashboardLayoutInner />
-    </AIAdviceProvider>
-  )
-}
-
-function DashboardLayoutInner() {
   const client = useClient()
-  const ai = useAIAdvice()
   // On récupère le contexte parent tel quel pour le re-forwarder via <Outlet />.
   // Sans ça, `useClient()` retourne `undefined` dans MesuresOverview / BilanOverview.
   const parentContext = useClientOutletContext()
@@ -104,33 +89,9 @@ function DashboardLayoutInner() {
       <nav className="bg-white border-b border-cream-dark/40 px-6 lg:px-8 py-2.5 flex items-center gap-1 sticky top-0 z-10">
         <SubTabPill to="mesures" icon={Ruler} label="Mesures" count={mesuresTotal} emphasis />
         <SubTabPill to="bilan" icon={ClipboardList} label="Bilan complet" count={bilansCount} />
-        <button
-          type="button"
-          onClick={ai.toggleMode}
-          title="Activer la sélection multi-métriques pour générer des conseils IA croisés"
-          className={[
-            'ml-auto inline-flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors border',
-            ai.mode
-              ? 'bg-gold text-marine border-gold shadow-sm'
-              : 'bg-white text-marine/65 border-cream-dark hover:border-gold/60 hover:text-marine'
-          ].join(' ')}
-        >
-          <Bot size={15} />
-          <span>{ai.mode ? 'Quitter le mode IA' : 'Mode conseils IA'}</span>
-        </button>
       </nav>
 
-      {/* Bandeau d'aide visible quand le mode IA est actif. */}
-      {ai.mode && (
-        <div className="bg-gold/15 border-b border-gold/30 px-6 lg:px-8 py-2 text-marine/75 text-sm">
-          <Bot size={14} className="inline -mt-0.5 mr-1.5 text-gold-dark" />
-          Cochez les métriques à analyser ensemble — l'IA proposera un programme intégré.
-        </div>
-      )}
-
       <Outlet context={parentContext} />
-
-      <AIAdvicePanel client={client} />
     </div>
   )
 }
