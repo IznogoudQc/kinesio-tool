@@ -636,6 +636,14 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.48 — Rapport : section Composition sur une seule page)
+
+Correctif de mise en page : l'ajout du bloc « Tension artérielle » (v0.1.47) avait poussé la table des zones
+cardiaques (avec `break-inside-avoid`) juste au-delà de la page 4 → elle débordait seule sur une page presque vide.
+Marges internes de la section resserrées (blocs 10 → 6 mm, lignes de la table cardiaque 2,6 → 2,1 mm) : tout le
+contenu de la section Composition (mensurations, plis, tension, zones cardiaques) revient sur **une seule page A4**.
+Suite 138/138 ; `tsc` web + node ; build OK. Version : 0.1.47 → 0.1.48.
+
 ## ✅ Fait (v0.1.47 — Rapport : légende des couleurs + zones de tension nommées)
 
 Derniers items de contenu du rapport.

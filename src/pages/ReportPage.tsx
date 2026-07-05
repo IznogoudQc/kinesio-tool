@@ -911,12 +911,12 @@ function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanC
 
   return (
     <ReportSection title="Composition corporelle" sectionNumber="Section 4">
-      <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '-4mm', marginBottom: '8mm' }}>
+      <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '-4mm', marginBottom: '6mm' }}>
         Vos mesures anthropométriques au {formatBilanDate(latest.date)}.
       </p>
 
       {/* Chiffres clés */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm', marginBottom: '10mm' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm', marginBottom: '6mm' }}>
         {stats.map(s => (
           <div key={s.label} style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}>
             <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT }}>
@@ -932,7 +932,7 @@ function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanC
 
       {/* Détail des plis cutanés */}
       {plisPresents.length > 0 && (
-        <div className="break-inside-avoid" style={{ marginBottom: '10mm' }}>
+        <div className="break-inside-avoid" style={{ marginBottom: '6mm' }}>
           <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '3mm' }}>
             Plis cutanés (mm)
           </p>
@@ -952,7 +952,7 @@ function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanC
 
       {/* Tension artérielle au repos — zones cliniques nommées */}
       {bpRows.length > 0 && (
-        <div className="break-inside-avoid" style={{ marginBottom: '10mm' }}>
+        <div className="break-inside-avoid" style={{ marginBottom: '6mm' }}>
           <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '2mm' }}>
             Tension artérielle au repos
           </p>
@@ -998,9 +998,9 @@ function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanC
             <tbody>
               {zoneRows.map(z => (
                 <tr key={z.pct} style={{ borderBottom: `1px solid ${GRID}` }}>
-                  <td style={{ padding: '2.6mm 3mm', color: MARINE, fontWeight: 600 }}>{z.pct}</td>
-                  <td style={{ padding: '2.6mm 3mm', color: INK_SOFT }}>{z.libelle}</td>
-                  <td style={{ textAlign: 'right', padding: '2.6mm 3mm', color: MARINE, fontWeight: 600 }}>{z.bpm} bpm</td>
+                  <td style={{ padding: '2.1mm 3mm', color: MARINE, fontWeight: 600 }}>{z.pct}</td>
+                  <td style={{ padding: '2.1mm 3mm', color: INK_SOFT }}>{z.libelle}</td>
+                  <td style={{ textAlign: 'right', padding: '2.1mm 3mm', color: MARINE, fontWeight: 600 }}>{z.bpm} bpm</td>
                 </tr>
               ))}
             </tbody>
