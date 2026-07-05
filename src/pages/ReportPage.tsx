@@ -34,6 +34,7 @@ import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { fitnessAge } from '../lib/fitness-age'
 import { kgToLb } from '../lib/units'
+import { dualWeight, estimatedGoalDate } from '../lib/objectif-format'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
 import logo from '../assets/logo.png'
@@ -525,26 +526,6 @@ function ScoreRing({ score }: { score: number | null }) {
 }
 
 // ── Section 1 — Vue d'ensemble (score + composites + parcours) ────────────────
-/** Formate un poids (stocké en kg) en montrant les DEUX unités : l'unité préférée
- *  du client d'abord, l'autre entre parenthèses. Ex. lb → « 199 lb (90 kg) ». */
-function dualWeight(kg: number | null, unit: 'kg' | 'lb'): string {
-  if (kg === null) return '—'
-  const lb = Math.round(kgToLb(kg))
-  const k = Math.round(kg)
-  return unit === 'lb' ? `${lb} lb (${k} kg)` : `${k} kg (${lb} lb)`
-}
-
-/** Date d'échéance estimée = date du bilan + `weeks` semaines, formatée « mois
- *  année » (fr-CA). Construite en composantes locales pour éviter tout décalage
- *  de fuseau horaire. `null` si la date de départ est invalide. */
-function estimatedGoalDate(startIso: string, weeks: number): string | null {
-  const [y, m, d] = startIso.split('-').map(Number)
-  if (!y || !m || !d) return null
-  const date = new Date(y, m - 1, d)
-  date.setDate(date.getDate() + Math.round(weeks * 7))
-  return date.toLocaleDateString('fr-CA', { month: 'long', year: 'numeric' })
-}
-
 /** Encadré « Votre objectif » en tête de la Vue d'ensemble. Toujours affiche le
  *  texte libre s'il existe ; si le module nutrition est activé pour le client et
  *  que le % de gras + poids sont disponibles, ajoute la cible chiffrée (livres à

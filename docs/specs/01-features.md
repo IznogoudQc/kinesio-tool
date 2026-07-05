@@ -636,6 +636,20 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.73 — Dashboard : parité avec le rapport)
+
+Le Dashboard « Bilan complet » reçoit ce qu'on a construit pour le rapport :
+
+- **Âge en forme** : carte « XX ans » (VO2max → âge physiologique via `fitness-age.ts`) avec l'écart à l'âge réel.
+- **Carte Objectif** (si module nutrition activé) : livres à perdre (double unité), cible % de gras, poids visé, échéance,
+  et les 4 repères de macros. Réutilise `nutrition.ts` + le rythme effectif déduit des calories manuelles.
+- **Trajectoire projetée** : la courbe « % gras » de « Progression dans le temps » se prolonge en pointillé jusqu'à la
+  cible, à l'échéance.
+- **Poids en double unité** : lb + kg (helper `dualWeight`) dans la carte Objectif.
+
+Helpers `dualWeight` / `estimatedGoalDate` extraits dans `src/lib/objectif-format.ts` (partagés rapport ↔ dashboard).
+Version : 0.1.72 → 0.1.73.
+
 ## ✅ Fait (v0.1.72 — Mesures : avertissement « modifications non enregistrées »)
 
 Complément à v0.1.71 : quand on **quitte** l'onglet Mesures (autre onglet, retour, autre client) avec une saisie non

@@ -28,9 +28,19 @@ interface ProgressionChartProps {
   profile: BilanProfile
   /** Si fourni, le point correspondant à ce bilan est mis en évidence (gold, plus gros). */
   activeBilanId?: string
+  /** Objectif de % de gras (module nutrition) → trajectoire projetée sur la courbe « % gras ». */
+  bodyFatTarget?: number | null
+  /** Libellé de l'échéance (ex. « mars 2027 ») — point final de la projection. */
+  bodyFatGoalLabel?: string | null
 }
 
-export function ProgressionChart({ bilans, profile, activeBilanId }: ProgressionChartProps) {
+export function ProgressionChart({
+  bilans,
+  profile,
+  activeBilanId,
+  bodyFatTarget,
+  bodyFatGoalLabel
+}: ProgressionChartProps) {
   const [metric, setMetric] = useState<MetricKey>('vo2max')
 
   const data = useMemo(() => {
@@ -46,6 +56,21 @@ export function ProgressionChart({ bilans, profile, activeBilanId }: Progression
       return { label, value: typeof raw === 'number' ? raw : null, isActive }
     })
   }, [bilans, metric, profile, activeBilanId])
+
+  // Trajectoire projetée : uniquement sur la courbe « % gras » quand un objectif
+  // est défini. Ligne pointillée du dernier % gras réel vers la cible à l'échéance.
+  const showProjection =
+    metric === 'pourcentage_gras' && typeof bodyFatTarget === 'number' && Boolean(bodyFatGoalLabel)
+  const chartData = useMemo(() => {
+    const base = data.map(d => ({ ...d, projected: null as number | null }))
+    if (!showProjection) return base
+    let lastActual = -1
+    for (let i = 0; i < base.length; i++) if (base[i].value !== null) lastActual = i
+    if (lastActual < 0) return base
+    base[lastActual] = { ...base[lastActual], projected: base[lastActual].value }
+    base.push({ label: bodyFatGoalLabel as string, value: null, isActive: false, projected: bodyFatTarget as number })
+    return base
+  }, [data, showProjection, bodyFatTarget, bodyFatGoalLabel])
 
   // Moyenne population (P50) — affichée en pointillé pour comparaison continue.
   const populationAverage = useMemo(() => {
@@ -83,7 +108,7 @@ export function ProgressionChart({ bilans, profile, activeBilanId }: Progression
 
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 16, bottom: 0, left: -8 }}>
+          <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -8 }}>
             <CartesianGrid stroke="rgba(10, 28, 94, 0.08)" vertical={false} />
             <XAxis dataKey="label" tick={{ fill: 'rgba(10, 28, 94, 0.55)', fontSize: 11 }} stroke="rgba(10, 28, 94, 0.15)" />
             <YAxis
@@ -140,6 +165,18 @@ export function ProgressionChart({ bilans, profile, activeBilanId }: Progression
               connectNulls
               isAnimationActive
             />
+            {showProjection && (
+              <Line
+                type="monotone"
+                dataKey="projected"
+                stroke="#0a1c5e"
+                strokeWidth={2}
+                strokeDasharray="5 4"
+                dot={{ r: 3.5, fill: '#0a1c5e' }}
+                connectNulls
+                isAnimationActive={false}
+              />
+            )}
           </LineChart>
         </ResponsiveContainer>
       </div>

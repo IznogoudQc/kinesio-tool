@@ -10,7 +10,17 @@ import { reportsService } from '../../../services/reports'
 import { SendBilanModal } from '../SendBilanModal'
 import { formatBilanDate } from '../bilanFields'
 import { computeAge, type NormsType } from '../../../lib/norms'
-import { computeBilan, type BilanProfile } from '../../../lib/bilan-computed'
+import { computeBilan, type BilanComputed, type BilanProfile } from '../../../lib/bilan-computed'
+import { fitnessAge } from '../../../lib/fitness-age'
+import {
+  bodyFatGoal,
+  estimateMacros,
+  weeksToGoal,
+  dailyDeficitForRate,
+  weeklyLossFromDeficit,
+  DEFAULT_RATE_KG_PER_WEEK
+} from '../../../lib/nutrition'
+import { dualWeight, estimatedGoalDate } from '../../../lib/objectif-format'
 import { ScoreDonut } from '../dashboard/ScoreDonut'
 import { StatCardXL } from '../dashboard/StatCardXL'
 import { CompositeMiniCard } from '../dashboard/CompositeMiniCard'
@@ -221,6 +231,13 @@ export function DashboardTab() {
   const previousData = previousActiveBilan?.data
   const computed = computeBilan(activeData, profile)
   const previousComputed = previousData ? computeBilan(previousData, profile) : undefined
+
+  // Miroir du rapport : âge en forme (VO2max → âge) + objectif chiffré (si module activé).
+  const fitAge = fitnessAge(
+    computed.vo2max ?? (typeof activeData.vo2max === 'number' ? activeData.vo2max : null),
+    client.sex
+  )
+  const objectif = buildObjectif(client, activeData, computed, age, (activeBilan ?? latest)!.date)
   // Vrai si Marie-Eve regarde un bilan ANCIEN spécifique (pas la synthèse,
   // pas le plus récent). Sert au bandeau gold « vous consultez un bilan ancien ».
   const isViewingOlder =
@@ -468,10 +485,23 @@ export function DashboardTab() {
       {Hero}
       {StatsRow}
 
+      {(fitAge !== null || objectif !== null) && (
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {fitAge !== null && <FitnessAgeCard fitAge={fitAge} age={age} />}
+          {objectif !== null && <ObjectifCard objectif={objectif} unit={client.unitWeight ?? 'kg'} />}
+        </section>
+      )}
+
       {hasMultiple ? (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <div className="lg:col-span-8 space-y-5">
-            <ProgressionChart bilans={bilans!} profile={profile} activeBilanId={activeBilan!.id} />
+            <ProgressionChart
+              bilans={bilans!}
+              profile={profile}
+              activeBilanId={activeBilan!.id}
+              bodyFatTarget={objectif && !objectif.atGoal ? objectif.target : null}
+              bodyFatGoalLabel={objectif?.goalDate ?? null}
+            />
             <MusculoRadar
               current={activeData}
               previous={previousData}
@@ -546,6 +576,112 @@ function Toast({ message }: { message: string }) {
   return (
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
       {message}
+    </div>
+  )
+}
+
+// ── Objectif chiffré (miroir du rapport) ──────────────────────────────────────
+/** Construit le résumé d'objectif à partir de la config nutrition du client et du
+ *  bilan actif. `null` si le module est désactivé ou le calcul impossible. */
+function buildObjectif(
+  client: Client,
+  data: BilanData,
+  computed: BilanComputed,
+  age: number | null,
+  startDateIso: string
+) {
+  if (!client.nutritionEnabled || client.nutritionTargetBodyFat == null) return null
+  const weightKg = typeof data.poids_kg === 'number' ? data.poids_kg : null
+  const bodyFatPct =
+    computed.pourcentageGrasDurnin ?? (typeof data.pourcentage_gras === 'number' ? data.pourcentage_gras : null)
+  const goal = bodyFatGoal(weightKg, bodyFatPct, client.nutritionTargetBodyFat)
+  if (!goal) return null
+  const rate = client.nutritionRateKgPerWeek ?? DEFAULT_RATE_KG_PER_WEEK
+  const macros = client.nutritionActivityLevel
+    ? estimateMacros({
+        weightKg,
+        heightCm: typeof data.taille_cm === 'number' ? data.taille_cm : null,
+        age,
+        sex: client.sex,
+        activity: client.nutritionActivityLevel,
+        leanKg: goal.leanKg,
+        dailyDeficitKcal: dailyDeficitForRate(rate),
+        proteinPerLbLean: client.nutritionProteinPerLbLean,
+        fatMaxG: client.nutritionFatMaxG,
+        targetKcalOverride: client.nutritionTargetKcal
+      })
+    : null
+  const manualKcal = client.nutritionTargetKcal
+  const effectiveRate = manualKcal != null && macros ? weeklyLossFromDeficit(macros.tdee - macros.targetKcal) : rate
+  const atGoal = goal.toLoseKg <= 0.3
+  const weeks = atGoal ? null : weeksToGoal(goal.toLoseKg, effectiveRate)
+  const goalDate = weeks != null ? estimatedGoalDate(startDateIso, weeks) : null
+  return { goal, target: client.nutritionTargetBodyFat, macros, weeks, goalDate, atGoal }
+}
+
+type ObjectifSummary = NonNullable<ReturnType<typeof buildObjectif>>
+
+function FitnessAgeCard({ fitAge, age }: { fitAge: number; age: number | null }) {
+  let sub = 'Votre VO2max traduit en âge physiologique.'
+  if (age !== null) {
+    const d = age - fitAge
+    if (d > 0) sub = `Soit ${d} an${d > 1 ? 's' : ''} de moins que votre âge réel (${age} ans) 🎉`
+    else if (d < 0) sub = `Soit ${-d} an${-d > 1 ? 's' : ''} de plus que votre âge réel (${age} ans).`
+    else sub = `Pile votre âge réel (${age} ans).`
+  }
+  return (
+    <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
+      <p className="text-marine/50 text-xs uppercase tracking-wide font-medium mb-1">Âge en forme</p>
+      <p className="text-marine font-bold text-4xl leading-none">
+        {fitAge}
+        <span className="text-lg font-semibold text-marine/45 ml-1.5">ans</span>
+      </p>
+      <p className="text-marine/55 text-sm mt-2">{sub}</p>
+    </div>
+  )
+}
+
+function ObjectifCard({ objectif, unit }: { objectif: ObjectifSummary; unit: 'kg' | 'lb' }) {
+  const { goal, target, macros, weeks, goalDate, atGoal } = objectif
+  return (
+    <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
+      <p className="text-gold-dark text-xs uppercase tracking-wide font-semibold mb-1">Objectif</p>
+      {atGoal ? (
+        <p className="text-marine font-semibold text-base mt-1">
+          Objectif de composition atteint — on maintient&nbsp;! 🎉
+        </p>
+      ) : (
+        <>
+          <p className="text-marine font-bold text-2xl leading-tight">
+            {dualWeight(goal.toLoseKg, unit)}
+            <span className="text-base font-medium text-marine/50"> à perdre</span>
+          </p>
+          <p className="text-marine/60 text-sm mt-1">
+            Cible {target} % de gras · poids visé {dualWeight(goal.goalKg, unit)}
+          </p>
+          {weeks !== null && goalDate && (
+            <p className="text-marine/50 text-sm mt-0.5">
+              ≈ {Math.round(weeks)} semaines · échéance {goalDate}
+            </p>
+          )}
+          {macros && (
+            <div className="mt-3 pt-3 border-t border-cream-dark/40 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+              <span className="text-marine/70">
+                <b className="text-marine">{macros.targetKcal}</b> kcal
+              </span>
+              <span className="text-marine/70">
+                <b className="text-marine">{macros.proteinG}</b> g prot
+              </span>
+              <span className="text-marine/70">
+                <b className="text-marine">{macros.carbsG}</b> g gluc
+              </span>
+              <span className="text-marine/70">
+                <b className="text-marine">{macros.fatG}</b> g lip
+              </span>
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }
