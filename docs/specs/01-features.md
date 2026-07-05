@@ -636,6 +636,25 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.45 — Rapport : mot du kinésiologue personnalisé + plan d'action)
+
+### Mot du kinésiologue (personnalisé)
+Le bloc de clôture affichait seulement la signature générique. Il utilise désormais les **notes du bilan**
+(`latest.data.notes`) comme message personnalisé au client, suivi de la signature en guise de signature manuscrite
+(en italique). Sans notes → signature seule (comme avant).
+- Le doublon « Observations » est retiré de la section Récupération (Section 7 = récupération post-effort seule,
+  rendue uniquement si des données de récupération existent). Les notes n'apparaissent donc plus qu'une fois, à
+  l'endroit le plus valorisant (la clôture).
+
+### Plan d'action (priorités numérotées + objectifs chiffrés)
+La colonne « À travailler » devient **« Votre plan d'action »** : les axes faibles (ACCEPTABLE / À améliorer) sont
+présentés en **priorités numérotées** (badge 1, 2, 3), chacune avec sa recommandation concrète (`RECO`) et un
+**objectif chiffré** dérivé de `getNextCategoryTarget` (« Objectif : ≥ X unité pour atteindre « Bien » (+Δ) »).
+Les forces passent en 3 cartes compactes au-dessus. Titre de section : « Vos forces et votre plan d'action ».
+
+### Vérifs
+- Suite **137/137 pass** ; `tsc` web + node clean ; build OK. Version : 0.1.44 → 0.1.45.
+
 ## ✅ Fait (v0.1.44 — Rapport : section Composition corporelle + retrait CPAFLA de l'UI)
 
 ### Retrait de CPAFLA de l'interface (retour 100 % ACSM)

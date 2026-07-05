@@ -1291,14 +1291,13 @@ function MiniSpark({ values }: { values: number[] }) {
   )
 }
 
-// ── Section 6 — Récupération post-effort & observations ──────────────────────
-/** Rendue seulement si des données de récupération OU des notes sont présentes.
- *  Si les deux sont absentes, retourne `null` (aucune page ajoutée au PDF). */
+// ── Section 7 — Récupération post-effort ─────────────────────────────────────
+/** Rendue seulement si des données de récupération sont présentes (sinon `null`,
+ *  aucune page ajoutée). Les notes de la kinésiologue vivent désormais dans le
+ *  « mot du kinésiologue » (Section 8), plus dans une section séparée. */
 function RecuperationEtNotesPage({ latest }: { latest: Bilan }) {
   const data = latest.data as Record<string, unknown>
-  const showRecovery = hasRecoveryData(data)
-  const notes = typeof data.notes === 'string' ? data.notes.trim() : ''
-  if (!showRecovery && notes === '') return null
+  if (!hasRecoveryData(data)) return null
 
   const intervals = [
     { label: '1 min', sys: 'recup_1min_pa_sys', dia: 'recup_1min_pa_dia', fc: 'recup_1min_fc' },
@@ -1316,49 +1315,33 @@ function RecuperationEtNotesPage({ latest }: { latest: Bilan }) {
   const tdStyle: React.CSSProperties = { textAlign: 'right', padding: '3mm', color: MARINE, fontWeight: 600 }
 
   return (
-    <ReportSection title="Récupération & observations" sectionNumber="Section 7">
-      {showRecovery && (
-        <div className="break-inside-avoid" style={{ marginBottom: notes ? '12mm' : 0 }}>
-          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '3mm' }}>
-            Récupération post-effort
-          </p>
-          <p style={{ fontSize: '10pt', color: INK_SOFT, marginBottom: '4mm', maxWidth: '150mm' }}>
-            Le retour de la fréquence cardiaque et de la pression artérielle vers les valeurs de repos après l’effort
-            est un indicateur de la santé cardiovasculaire.
-          </p>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11pt' }}>
-            <thead>
-              <tr style={{ borderBottom: `1.5px solid ${GRID}` }}>
-                <th style={{ ...thStyle, textAlign: 'left' }}>Après l’effort</th>
-                <th style={thStyle}>FC (bpm)</th>
-                <th style={thStyle}>PA systolique (mmHg)</th>
-                <th style={thStyle}>PA diastolique (mmHg)</th>
+    <ReportSection title="Récupération post-effort" sectionNumber="Section 7">
+      <div className="break-inside-avoid">
+        <p style={{ fontSize: '10pt', color: INK_SOFT, marginTop: '-4mm', marginBottom: '5mm', maxWidth: '150mm' }}>
+          Le retour de la fréquence cardiaque et de la pression artérielle vers les valeurs de repos après l’effort
+          est un indicateur de la santé cardiovasculaire.
+        </p>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11pt' }}>
+          <thead>
+            <tr style={{ borderBottom: `1.5px solid ${GRID}` }}>
+              <th style={{ ...thStyle, textAlign: 'left' }}>Après l’effort</th>
+              <th style={thStyle}>FC (bpm)</th>
+              <th style={thStyle}>PA systolique (mmHg)</th>
+              <th style={thStyle}>PA diastolique (mmHg)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {intervals.map(iv => (
+              <tr key={iv.label} style={{ borderBottom: `1px solid ${GRID}` }}>
+                <td style={{ padding: '3mm', color: MARINE, fontWeight: 600 }}>{iv.label}</td>
+                <td style={tdStyle}>{fmt(num(data[iv.fc]), 0)}</td>
+                <td style={tdStyle}>{fmt(num(data[iv.sys]), 0)}</td>
+                <td style={tdStyle}>{fmt(num(data[iv.dia]), 0)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {intervals.map(iv => (
-                <tr key={iv.label} style={{ borderBottom: `1px solid ${GRID}` }}>
-                  <td style={{ padding: '3mm', color: MARINE, fontWeight: 600 }}>{iv.label}</td>
-                  <td style={tdStyle}>{fmt(num(data[iv.fc]), 0)}</td>
-                  <td style={tdStyle}>{fmt(num(data[iv.sys]), 0)}</td>
-                  <td style={tdStyle}>{fmt(num(data[iv.dia]), 0)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {notes !== '' && (
-        <div className="break-inside-avoid">
-          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '3mm' }}>
-            Observations
-          </p>
-          <div style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 8mm' }}>
-            <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line' }}>{notes}</p>
-          </div>
-        </div>
-      )}
+            ))}
+          </tbody>
+        </table>
+      </div>
     </ReportSection>
   )
 }
@@ -1387,7 +1370,14 @@ function ForcesEtAxesPage({
     if (value === null) return null
     const norm = metricNorm(m.key, value, profile)
     if (!norm?.category) return null
-    return { metric: m, value, category: norm.category, percentile: norm.percentile }
+    return {
+      metric: m,
+      value,
+      category: norm.category,
+      percentile: norm.percentile,
+      next: norm.next,
+      lowerIsBetter: norm.lowerIsBetter
+    }
   }).filter((x): x is NonNullable<typeof x> => x !== null)
 
   const forces = ranked
@@ -1399,46 +1389,68 @@ function ForcesEtAxesPage({
     .sort((a, b) => SCORE_OF[a.category] - SCORE_OF[b.category])
     .slice(0, 3)
 
+  const notes = typeof latest.data.notes === 'string' ? latest.data.notes.trim() : ''
+  const signOff = signature.trim() || `${coachName || 'Marie-Eve Bélanger'}\nKinésiologue`
+
   return (
-    <ReportSection title="Vos forces et axes de progression" sectionNumber="Section 8">
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9mm', marginTop: '2mm' }}>
-        {/* Forces */}
-        <div>
-          <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
-            <Trophy size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Vos forces
+    <ReportSection title="Vos forces et votre plan d’action" sectionNumber="Section 8">
+      {/* Forces */}
+      <div style={{ marginTop: '2mm', marginBottom: '9mm' }}>
+        <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
+          <Trophy size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Vos forces
+        </p>
+        {forces.length === 0 ? (
+          <p style={{ fontSize: '10pt', color: INK_SOFT }}>
+            Continuez vos efforts — vos forces apparaîtront à mesure que vos résultats progressent.
           </p>
-          {forces.length === 0 ? (
-            <p style={{ fontSize: '10pt', color: INK_SOFT }}>
-              Continuez vos efforts — vos forces apparaîtront à mesure que vos résultats progressent.
-            </p>
-          ) : (
-            forces.map(f => (
-              <div key={f.metric.key as string} style={{ marginBottom: '5mm' }}>
-                <div className="flex items-center justify-between">
-                  <span style={{ fontSize: '11pt', fontWeight: 600, color: MARINE }}>{f.metric.label}</span>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm' }}>
+            {forces.map(f => (
+              <div key={f.metric.key as string} style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '4mm 5mm' }}>
+                <div className="flex items-center justify-between" style={{ marginBottom: '1mm' }}>
+                  <span style={{ fontSize: '10.5pt', fontWeight: 600, color: MARINE }}>{f.metric.label}</span>
                   <CategoryPill category={f.category} />
                 </div>
-                <p style={{ fontSize: '10pt', color: INK_SOFT }}>
+                <p style={{ fontSize: '9.5pt', color: INK_SOFT }}>
                   {fmt(f.value)} {f.metric.unit}
-                  {f.percentile !== null && ` · ${Math.round(f.percentile)}ᵉ percentile`}
+                  {f.percentile !== null && ` · ${Math.round(f.percentile)}ᵉ perc.`}
                 </p>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-        {/* Axes */}
-        <div>
-          <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
-            <Target size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> À travailler
+      {/* Plan d'action — priorités numérotées avec objectif chiffré */}
+      <div>
+        <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
+          <Target size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Votre plan d’action
+        </p>
+        {axes.length === 0 ? (
+          <p style={{ fontSize: '10pt', color: INK_SOFT }}>
+            Aucun point faible marqué — beau travail ! Maintenez vos habitudes actuelles et vos résultats.
           </p>
-          {axes.length === 0 ? (
-            <p style={{ fontSize: '10pt', color: INK_SOFT }}>
-              Aucun point faible marqué — beau travail ! Maintenez vos habitudes actuelles.
-            </p>
-          ) : (
-            axes.map(a => (
-              <div key={a.metric.key as string} style={{ marginBottom: '5mm' }}>
+        ) : (
+          axes.map((a, i) => (
+            <div key={a.metric.key as string} style={{ display: 'flex', gap: '4mm', marginBottom: '5mm' }} className="break-inside-avoid">
+              <div
+                style={{
+                  flexShrink: 0,
+                  width: '8mm',
+                  height: '8mm',
+                  borderRadius: '50%',
+                  background: GOLD,
+                  color: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 700,
+                  fontSize: '11pt'
+                }}
+              >
+                {i + 1}
+              </div>
+              <div style={{ flex: 1 }}>
                 <div className="flex items-center justify-between">
                   <span style={{ fontSize: '11pt', fontWeight: 600, color: MARINE }}>{a.metric.label}</span>
                   <CategoryPill category={a.category} />
@@ -1446,26 +1458,33 @@ function ForcesEtAxesPage({
                 <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginTop: '0.5mm' }}>
                   {RECO[a.metric.key] ?? 'Discutez d’un plan ciblé avec votre kinésiologue.'}
                 </p>
+                {a.next && !a.next.isAtTop && (
+                  <p style={{ fontSize: '9.5pt', color: MARINE, marginTop: '1mm', fontWeight: 600 }}>
+                    Objectif : {a.lowerIsBetter ? '≤' : '≥'} {fmt(a.next.targetValue)} {a.metric.unit}{' '}
+                    <span style={{ color: INK_SOFT, fontWeight: 400 }}>
+                      pour atteindre « {CATEGORY_LABELS[a.next.nextCategory]} » ({a.next.delta >= 0 ? '+' : ''}
+                      {fmt(a.next.delta)} {a.metric.unit})
+                    </span>
+                  </p>
+                )}
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          ))
+        )}
       </div>
 
-      {/* Mot du kinésiologue */}
-      <div
-        style={{
-          marginTop: '14mm',
-          background: CREAM,
-          borderRadius: '4mm',
-          padding: '8mm 10mm'
-        }}
-      >
+      {/* Mot du kinésiologue — message personnalisé (notes du bilan) + signature */}
+      <div style={{ marginTop: '12mm', background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
         <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>
           Le mot de votre kinésiologue
         </p>
-        <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.5, whiteSpace: 'pre-line' }}>
-          {signature || `${coachName || 'Marie-Eve Bélanger'}\nKinésiologue`}
+        {notes !== '' && (
+          <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '5mm' }}>
+            {notes}
+          </p>
+        )}
+        <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: notes !== '' ? 'italic' : 'normal' }}>
+          {signOff}
         </p>
       </div>
 
