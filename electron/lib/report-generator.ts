@@ -144,7 +144,7 @@ export async function generateClientReportPdf(clientId: string): Promise<string>
     const pdfData = await win.webContents.printToPDF({
       printBackground: true,
       pageSize: 'A4',
-      margins: { top: 0.47, bottom: 0.47, left: 0, right: 0 }
+      margins: { top: 0.79, bottom: 0.79, left: 0, right: 0 } // pouces ≈ 20 mm
     })
 
     const fileName = `Bilan-${safeClientFileName(client.name)}-${todayISODate()}.pdf`

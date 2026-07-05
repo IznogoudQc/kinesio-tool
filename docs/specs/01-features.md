@@ -636,6 +636,13 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.54 — Rapport : marge du haut augmentée à 20 mm)
+
+La marge de 12 mm (v0.1.53) était trop petite (contenu trop haut). Cause probable additionnelle : `@page { margin: 0 }`
+pouvait écraser la marge printToPDF. Réglée **des deux côtés** à **20 mm** (`@page { margin: 20mm 0 }` ET
+`printToPDF margins top/bottom 0.79″`) → identique sur chaque page, quelle que soit la règle qui prime. `minHeight`
+des sections 265 → 250 mm (aire imprimable = 297 − 40 = 257 mm). Version : 0.1.53 → 0.1.54.
+
 ## ✅ Fait (v0.1.53 — Rapport : marge constante sur toutes les pages + graphiques réduits)
 
 ### Marge constante (haut/bas) sur toutes les pages

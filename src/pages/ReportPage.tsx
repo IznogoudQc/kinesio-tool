@@ -346,7 +346,7 @@ function ReportSection({
       className="report-page"
       style={{
         width: '210mm',
-        minHeight: '265mm',
+        minHeight: '250mm',
         margin: '0 auto',
         // Padding VERTICAL = 0 : la marge haut/bas vient de la page PDF (printToPDF,
         // constante sur toutes les pages). Seul le padding HORIZONTAL reste ici.
@@ -378,7 +378,7 @@ function ReportFlowSection({
   return (
     <section
       className="report-flow"
-      style={{ width: '210mm', minHeight: '265mm', margin: '0 auto', padding: '0 16mm', boxSizing: 'border-box', background: '#fff' }}
+      style={{ width: '210mm', minHeight: '250mm', margin: '0 auto', padding: '0 16mm', boxSizing: 'border-box', background: '#fff' }}
     >
       <SectionHeader title={title} sectionNumber={sectionNumber} />
       {intro && (

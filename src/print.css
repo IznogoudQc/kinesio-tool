@@ -20,9 +20,14 @@
   src: url('./assets/fonts/inter-latin.woff2') format('woff2');
 }
 
+/* Marge haut/bas de la page PDF (constante sur CHAQUE page, y compris les
+ * continuations). Gauche/droite = 0 : géré par le padding horizontal des
+ * sections (qui s'applique à toutes les pages, contrairement au padding
+ * vertical). Réglée AUSSI côté printToPDF (report-generator) pour ne dépendre
+ * ni de l'un ni de l'autre. */
 @page {
   size: A4;
-  margin: 0;
+  margin: 20mm 0;
 }
 
 @media print {
