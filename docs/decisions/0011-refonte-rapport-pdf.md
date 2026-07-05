@@ -62,6 +62,29 @@ Ajout de trois éléments prévus mais absents de la refonte initiale :
 tests). Aucune modification de `electron/lib/report-generator.ts` : le DOM enrichi est capté tel quel par
 `printToPDF`, le timing `window.__REPORT_READY__` est inchangé. Les nouveaux blocs portent `break-inside-avoid`.
 
+## Mise à jour (v0.1.43) — correctifs visuels
+
+Revue du PDF réel (11 pages) : plusieurs défauts d'affichage corrigés dans `ReportPage.tsx`.
+
+- **Frise « Vos N bilans »** (`JourneyTimeline`) : les points étaient positionnés selon la **date réelle** → avec
+  10 bilans récents + 1 ancien, les étiquettes se chevauchaient en une bouillie illisible. Passage à un **espacement
+  régulier par index** + affichage d'**une étiquette sur deux** au-delà de 8 points (premier et dernier toujours
+  visibles, ancrés start/end pour ne pas déborder).
+- **Graphiques** (`SingleLineChart` / `SingleBarChart` / `DualLineChart`) : `minTickGap={30}` sur l'axe X (recharts
+  masque les dates qui se chevauchent) ; les étiquettes de valeurs par point (qui collaient à l'axe et entre elles)
+  sont remplacées par **une seule étiquette sur le dernier point** (`EndpointValueLabel` — le plus récent, le plus
+  pertinent). Les valeurs exactes restent dans « En détail » et « Avant / après ».
+- **Pagination « En détail »** (`MetricDetailsPages`) : `perPage: 4` (fixe) laissait une carte **orpheline** en fin
+  de page quand une carte « haute » débordait. Passage à une **répartition équilibrée, max 3 cartes/page**
+  (ex. 13 métriques → 3,3,3,2,2 au lieu de 4,4,4,1).
+- **Couverture** (`CoverPage`) : le score global flottait avec un grand vide. Ajout de la légende « Condition physique
+  globale » au-dessus de l'anneau et de la **pastille de catégorie** en dessous (couleur lisible via `CategoryPill`,
+  pas de texte en couleur pâle).
+
+Vérification : la nouvelle frise a été rendue en isolation (SVG → PNG) avec les 11 dates réelles de Nicholas pour
+confirmer l'absence de chevauchement. `tsc` web + node clean, build OK. La confirmation visuelle finale se fait en
+régénérant le PDF depuis l'app (les composants recharts nécessitent le rendu Electron).
+
 ## Hors-scope (v0.1.37+)
 
 - Mode « rapport minimal » pour usage interne de Marie-Eve (sans couverture ni pages parcours).

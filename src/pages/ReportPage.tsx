@@ -276,6 +276,7 @@ export function ReportPage() {
         totalBilans={bilans.length}
         avatarUrl={avatarUrl}
         overall={latestSynth.overall.score}
+        overallCategory={latestSynth.overall.category}
       />
       <ParcoursPage client={client} bilans={bilans} chrono={chrono} syntheses={syntheses} profile={profile} />
       <SynthesePage synth={latestSynth} bilanDate={latest.date} />
@@ -337,7 +338,8 @@ function CoverPage({
   coachName,
   totalBilans,
   avatarUrl,
-  overall
+  overall,
+  overallCategory
 }: {
   client: Client
   latest: Bilan | null
@@ -345,6 +347,7 @@ function CoverPage({
   totalBilans: number
   avatarUrl: string | null
   overall: number | null
+  overallCategory?: Category | null
 }) {
   const age = computeAge(client.birthdate)
   const subtitle = [age !== null ? `${age} ans` : null, client.sex ? SEX_LABEL[client.sex] : null]
@@ -402,9 +405,17 @@ function CoverPage({
           )}
 
           {/* Score global */}
-          <div style={{ marginTop: '14mm' }}>
+          <p style={{ marginTop: '12mm', fontSize: '8.5pt', letterSpacing: '0.16em', textTransform: 'uppercase', color: GOLD }}>
+            Condition physique globale
+          </p>
+          <div style={{ marginTop: '2mm' }}>
             <ScoreRing score={overall} />
           </div>
+          {overallCategory && (
+            <div style={{ marginTop: '3mm' }}>
+              <CategoryPill category={overallCategory} />
+            </div>
+          )}
         </div>
 
         {/* Pied */}
@@ -643,14 +654,18 @@ function JourneyTimeline({
   const H = 150
   const padX = 40
   const y = 78
-  const t0 = isoToTime(chrono[0].date)
-  const t1 = isoToTime(chrono[chrono.length - 1].date)
-  const span = Math.max(1, t1 - t0)
+  // Espacement RÉGULIER (par index), pas selon la date réelle : sinon des bilans
+  // rapprochés dans le temps (ex. 10 bilans récents + 1 ancien) se chevauchent.
+  const n = chrono.length
   const pts = chrono.map((b, i) => ({
-    x: padX + ((isoToTime(b.date) - t0) / span) * (W - 2 * padX),
+    x: n <= 1 ? W / 2 : padX + (i / (n - 1)) * (W - 2 * padX),
     date: b.date,
     score: syntheses[i]?.overall.score ?? null
   }))
+  // Anti-chevauchement des dates : au-delà de 8 points, on n'affiche qu'une
+  // étiquette sur deux (le premier et le dernier restent toujours visibles).
+  const labelStep = n > 8 ? 2 : 1
+  const showLabel = (i: number) => i === 0 || i === n - 1 || i % labelStep === 0
 
   return (
     <div>
@@ -671,9 +686,16 @@ function JourneyTimeline({
           return (
             <g key={i}>
               <circle cx={p.x} cy={y} r={isLast ? 11 : 8} fill={isLast ? GOLD : '#fff'} stroke={isLast ? GOLD : MARINE} strokeWidth={3} />
-              <text x={p.x} y={y + 32} textAnchor="middle" style={{ fontSize: '17px', fill: INK_SOFT }}>
-                {formatBilanMonth(p.date)}
-              </text>
+              {showLabel(i) && (
+                <text
+                  x={p.x}
+                  y={y + 32}
+                  textAnchor={i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'}
+                  style={{ fontSize: '17px', fill: INK_SOFT }}
+                >
+                  {formatBilanMonth(p.date)}
+                </text>
+              )}
               {isLast && p.score !== null && (
                 <>
                   <circle cx={p.x} cy={y - 40} r={20} fill={GOLD} />
@@ -872,6 +894,34 @@ function ChartCard({ title, children }: { title: string; children: React.ReactEl
   )
 }
 
+/** Étiquette de valeur affichée UNIQUEMENT sur le dernier point (le plus récent)
+ *  — évite le chevauchement des labels quand il y a beaucoup de bilans. Recharts
+ *  clone cet élément en injectant x / y / value / index. */
+function EndpointValueLabel({
+  x,
+  y,
+  value,
+  index,
+  lastIdx,
+  dy = -8
+}: {
+  x?: number
+  y?: number
+  value?: number | string
+  index?: number
+  lastIdx: number
+  dy?: number
+}) {
+  if (index !== lastIdx) return null
+  const v = num(value)
+  if (v === null) return null
+  return (
+    <text x={x} y={(y ?? 0) + dy} textAnchor="middle" style={{ fontSize: 10, fontWeight: 600, fill: MARINE }}>
+      {fmt(v)}
+    </text>
+  )
+}
+
 function SingleLineChart({
   data,
   color,
@@ -883,11 +933,12 @@ function SingleLineChart({
   scoreAxis?: boolean
 }) {
   return (
-    <LineChart data={data} margin={{ top: 18, right: 16, bottom: 4, left: -8 }}>
+    <LineChart data={data} margin={{ top: 18, right: 20, bottom: 4, left: -8 }}>
       <CartesianGrid stroke={GRID} vertical={false} />
       <XAxis
         dataKey="label"
         interval="preserveStartEnd"
+        minTickGap={30}
         tickMargin={6}
         tick={{ fill: AXIS, fontSize: 10 }}
         stroke={GRID}
@@ -900,7 +951,7 @@ function SingleLineChart({
         ticks={scoreAxis ? [0, 1, 2, 3, 4, 5] : undefined}
       />
       <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2.5} dot={{ r: 3.5, fill: color }} isAnimationActive={false} connectNulls>
-        <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: INK_SOFT }} formatter={(v: unknown) => fmt(num(v))} />
+        <LabelList content={<EndpointValueLabel lastIdx={data.length - 1} />} />
       </Line>
     </LineChart>
   )
@@ -908,18 +959,19 @@ function SingleLineChart({
 
 function SingleBarChart({ data }: { data: ChartPoint[] }) {
   return (
-    <BarChart data={data} margin={{ top: 18, right: 16, bottom: 4, left: -8 }}>
+    <BarChart data={data} margin={{ top: 18, right: 20, bottom: 4, left: -8 }}>
       <CartesianGrid stroke={GRID} vertical={false} />
       <XAxis
         dataKey="label"
         interval="preserveStartEnd"
+        minTickGap={30}
         tickMargin={6}
         tick={{ fill: AXIS, fontSize: 10 }}
         stroke={GRID}
       />
       <YAxis tick={{ fill: AXIS, fontSize: 10 }} stroke={GRID} width={40} domain={[0, 5]} ticks={[0, 1, 2, 3, 4, 5]} />
       <Bar dataKey="value" fill={GOLD_SOFT} radius={[2, 2, 0, 0]} barSize={26} isAnimationActive={false}>
-        <LabelList dataKey="value" position="top" style={{ fontSize: 9, fill: INK_SOFT }} formatter={(v: unknown) => fmt(num(v))} />
+        <LabelList content={<EndpointValueLabel lastIdx={data.length - 1} dy={-4} />} />
       </Bar>
     </BarChart>
   )
@@ -940,6 +992,7 @@ function DualLineChart({
       <XAxis
         dataKey="label"
         interval="preserveStartEnd"
+        minTickGap={30}
         tickMargin={6}
         tick={{ fill: AXIS, fontSize: 10 }}
         stroke={GRID}
@@ -964,9 +1017,20 @@ function MetricDetailsPages({
 }) {
   // Métriques renseignées dans le dernier bilan.
   const present = METRICS.filter(m => num(latest.data[m.key]) !== null)
-  const perPage = 4
+  // Pagination équilibrée : max 3 cartes/page (une carte « haute » — sparkline +
+  // objectif + phrase — tient à 3 par page A4). On répartit uniformément pour
+  // éviter une dernière page avec une seule carte orpheline (ex. 13 → 3,3,3,2,2).
+  const MAX_PER_PAGE = 3
+  const pageCount = Math.max(1, Math.ceil(present.length / MAX_PER_PAGE))
+  const base = Math.floor(present.length / pageCount)
+  const extra = present.length % pageCount
   const pages: MetricDef[][] = []
-  for (let i = 0; i < present.length; i += perPage) pages.push(present.slice(i, i + perPage))
+  let cursor = 0
+  for (let p = 0; p < pageCount; p++) {
+    const size = base + (p < extra ? 1 : 0)
+    pages.push(present.slice(cursor, cursor + size))
+    cursor += size
+  }
   // Bilans du plus récent au plus ancien — 4 derniers pour la sparkline.
   const recent = bilans.slice(0, 4)
 

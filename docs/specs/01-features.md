@@ -636,6 +636,24 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.43 — Rapport PDF : correctifs visuels)
+
+### Objectif : corriger les défauts d'affichage repérés sur un rapport réel (11 pages)
+Revue visuelle du PDF de Nicholas → 4 correctifs dans `ReportPage.tsx` (voir ADR 0011, mise à jour) :
+
+- **Frise des bilans** : espacement régulier par index (au lieu de la date réelle qui écrasait les points récents) +
+  une étiquette sur deux au-delà de 8 bilans. Fini le chevauchement des dates.
+- **Graphiques** : `minTickGap` sur l'axe X + étiquette de valeur uniquement sur le dernier point
+  (`EndpointValueLabel`) — plus de labels qui se superposent à l'axe et entre eux.
+- **Pages « En détail »** : pagination équilibrée (max 3 cartes/page, réparties uniformément) — fini la carte
+  orpheline sur une page quasi vide.
+- **Couverture** : légende « Condition physique globale » + pastille de catégorie sous l'anneau de score (équilibre le
+  grand vide du bas).
+
+### Vérifs
+- Frise rendue en isolation (SVG→PNG, 11 dates réelles) pour confirmer l'absence de chevauchement. `tsc` web + node
+  clean ; build OK ; suite **137/137 pass**. Version : 0.1.42 → 0.1.43.
+
 ## ✅ Fait (v0.1.42 — Formulaire de saisie : mode guidé (stepper) + garde-fou champs manquants)
 
 ### Objectif : une saisie moins intimidante sans dégrader le mode rapide
