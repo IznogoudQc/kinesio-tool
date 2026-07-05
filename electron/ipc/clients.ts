@@ -19,6 +19,7 @@ const NutritionActivity = z
   .union([z.enum(['sedentaire', 'leger', 'modere', 'actif', 'tres_actif']), z.null()])
   .optional()
 const BodyFatTarget = z.union([z.number().min(3).max(60), z.null()]).optional()
+const RateKgPerWeek = z.union([z.number().min(0.1).max(2), z.null()]).optional()
 
 const CreateClientSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(200).trim(),
@@ -38,7 +39,8 @@ const UpdateClientSchema = z.object({
   unitWeight: UnitWeight,
   nutritionEnabled: z.boolean().optional(),
   nutritionTargetBodyFat: BodyFatTarget,
-  nutritionActivityLevel: NutritionActivity
+  nutritionActivityLevel: NutritionActivity,
+  nutritionRateKgPerWeek: RateKgPerWeek
 })
 
 const ClientId = z.string().uuid()

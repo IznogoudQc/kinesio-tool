@@ -31,7 +31,7 @@ import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { classifyBloodPressure } from '../lib/norms/clinical'
 import { computeSynthesis, type BilanProfile, type CompositeScore } from '../lib/norms/scoring'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
-import { bodyFatGoal, estimateMacros } from '../lib/nutrition'
+import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { kgToLb } from '../lib/units'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
@@ -524,10 +524,21 @@ function ScoreRing({ score }: { score: number | null }) {
 }
 
 // ── Section 1 — Vue d'ensemble (score + composites + parcours) ────────────────
+/** Date d'échéance estimée = date du bilan + `weeks` semaines, formatée « mois
+ *  année » (fr-CA). Construite en composantes locales pour éviter tout décalage
+ *  de fuseau horaire. `null` si la date de départ est invalide. */
+function estimatedGoalDate(startIso: string, weeks: number): string | null {
+  const [y, m, d] = startIso.split('-').map(Number)
+  if (!y || !m || !d) return null
+  const date = new Date(y, m - 1, d)
+  date.setDate(date.getDate() + Math.round(weeks * 7))
+  return date.toLocaleDateString('fr-CA', { month: 'long', year: 'numeric' })
+}
+
 /** Encadré « Votre objectif » en tête de la Vue d'ensemble. Toujours affiche le
  *  texte libre s'il existe ; si le module nutrition est activé pour le client et
  *  que le % de gras + poids sont disponibles, ajoute la cible chiffrée (livres à
- *  perdre, poids visé) et des repères nutritionnels indicatifs. */
+ *  perdre, poids visé), l'échéance estimée et des repères nutritionnels. */
 function ObjectifBlock({
   objectif,
   client,
@@ -546,6 +557,7 @@ function ObjectifBlock({
     (typeof latest.data.pourcentage_gras === 'number' ? latest.data.pourcentage_gras : null)
   const target = client.nutritionEnabled ? client.nutritionTargetBodyFat : null
   const goal = bodyFatGoal(weightKg, bodyFatPct, target)
+  const rate = client.nutritionEnabled ? client.nutritionRateKgPerWeek ?? DEFAULT_RATE_KG_PER_WEEK : null
   const macros =
     goal && client.nutritionEnabled && client.nutritionActivityLevel
       ? estimateMacros({
@@ -554,7 +566,8 @@ function ObjectifBlock({
           age: profile.age,
           sex: profile.sex,
           activity: client.nutritionActivityLevel,
-          goalKg: goal.goalKg
+          goalKg: goal.goalKg,
+          dailyDeficitKcal: dailyDeficitForRate(rate)
         })
       : null
 
@@ -563,6 +576,14 @@ function ObjectifBlock({
   const unit = client.unitWeight
   const w = (kg: number) => `${Math.round(unit === 'lb' ? kgToLb(kg) : kg)} ${unit === 'lb' ? 'lb' : 'kg'}`
   const atGoal = goal !== null && goal.toLoseKg <= 0.3
+  const weeks = goal ? weeksToGoal(goal.toLoseKg, rate) : null
+  const goalDate = weeks !== null ? estimatedGoalDate(latest.date, weeks) : null
+  const rateDisplay =
+    rate === null
+      ? ''
+      : unit === 'lb'
+        ? `${kgToLb(rate).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} lb/sem`
+        : `${rate.toLocaleString('fr-CA')} kg/sem`
 
   return (
     <div
@@ -592,11 +613,25 @@ function ObjectifBlock({
               🎉&nbsp;Objectif de composition atteint — on maintient&nbsp;!
             </p>
           ) : (
-            <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '4mm', lineHeight: 1.5 }}>
-              Pour l'atteindre&nbsp;: viser une perte d'environ{' '}
-              <span style={{ fontSize: '14pt', fontWeight: 700, color: MARINE }}>{w(goal.toLoseKg)}</span> (poids visé&nbsp;:{' '}
-              <strong style={{ color: MARINE }}>{w(goal.goalKg)}</strong>, en préservant la masse musculaire).
-            </p>
+            <>
+              <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '4mm', lineHeight: 1.5 }}>
+                Pour l'atteindre&nbsp;: viser une perte d'environ{' '}
+                <span style={{ fontSize: '14pt', fontWeight: 700, color: MARINE }}>{w(goal.toLoseKg)}</span> (poids visé&nbsp;:{' '}
+                <strong style={{ color: MARINE }}>{w(goal.goalKg)}</strong>, en préservant la masse musculaire).
+              </p>
+              {weeks !== null && (
+                <p style={{ fontSize: '10pt', color: INK_SOFT, marginTop: '2.5mm', lineHeight: 1.5 }}>
+                  Au rythme de <strong style={{ color: MARINE }}>{rateDisplay}</strong>&nbsp;: environ{' '}
+                  <strong style={{ color: MARINE }}>{Math.round(weeks)} semaines</strong> (~{Math.round(weeks / 4.33)}&nbsp;mois)
+                  {goalDate !== null && (
+                    <>
+                      {' '}· échéance estimée <strong style={{ color: MARINE }}>{goalDate}</strong>
+                    </>
+                  )}
+                  .
+                </p>
+              )}
+            </>
           )}
 
           {macros !== null && !atGoal && (

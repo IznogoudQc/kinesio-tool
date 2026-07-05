@@ -64,6 +64,13 @@
       "when": 1783270337085,
       "tag": "0008_great_sleepwalker",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1783271075395,
+      "tag": "0009_abandoned_enchantress",
+      "breakpoints": true
     }
   ]
 }

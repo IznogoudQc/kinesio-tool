@@ -636,6 +636,19 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.62 — Rythme de perte paramétrable + échéance estimée)
+
+Le module nutrition (v0.1.61) gagne un **rythme de perte** choisi par client (Lent 0,25 · Modéré 0,5 · Soutenu 0,75 ·
+Rapide 1,0 kg/sem), qui pilote **deux choses à la fois** :
+
+- **L'échéance estimée** dans le rapport : « Au rythme de X/sem : environ N semaines (~M mois) · échéance estimée
+  <mois année> » (date = bilan + N×7 jours, en composantes locales).
+- **Le déficit calorique des macros** : 1 kg de gras ≈ 7700 kcal → déficit/jour = rythme × 1100, appliqué au TDEE
+  (jamais sous le BMR). Les macros deviennent cohérentes avec le rythme choisi.
+
+Colonne `nutrition_rate_kg_per_week` (migration `0009`), sélecteur dans le dossier client (défaut Modéré). Moteur :
+`dailyDeficitForRate`, `weeksToGoal`, `estimateMacros({ dailyDeficitKcal })` (6 tests de plus). Version : 0.1.61 → 0.1.62.
+
 ## ✅ Fait (v0.1.61 — Objectif chiffré & module nutrition, opt-in par client)
 
 Extension de l'objectif texte (v0.1.60) vers un **objectif chiffré** activable par client. Voir

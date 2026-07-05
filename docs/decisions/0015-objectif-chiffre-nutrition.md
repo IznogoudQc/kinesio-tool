@@ -53,6 +53,12 @@ d'activité ». Validation front (% entre 3 et 60) + zod IPC (`min(3).max(60)`).
 
 - **+** Objectif motivant et concret ; le rapport relie mesures et intention du client.
 - **+** Rétro-compatible : colonnes à défaut/nullable, module off par défaut, rendu conditionnel.
-- **−** Les macros restent une estimation générique (pas de préférences alimentaires, pas de rythme paramétrable) — assumé,
-  avertissement à l'appui. Rythme/déficit paramétrables = évolution possible si Marie-Eve le demande.
 - **−** Le calcul dépend d'un % de gras fiable (plis cutanés) ; sans lui, le bloc chiffré ne s'affiche pas.
+
+## Mise à jour v0.1.62 — rythme de perte paramétrable
+
+Ajout d'une 4ᵉ colonne `nutrition_rate_kg_per_week` (migration `0009`) + sélecteur dans le dossier (Lent/Modéré/Soutenu/
+Rapide, défaut Modéré 0,5 kg/sem). Le rythme pilote **deux** sorties d'un même réglage :
+- **échéance estimée** dans le rapport (`weeksToGoal`, date = bilan + semaines) ;
+- **déficit calorique des macros** (`dailyDeficitForRate` = rythme × 7700 ÷ 7), remplaçant le −20 % fixe quand un rythme
+  est défini. `estimateMacros` accepte désormais `dailyDeficitKcal` (défaut −20 % si absent → rétro-compatible).

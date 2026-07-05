@@ -5,7 +5,14 @@ import { clientsService } from '../../services/clients'
 import { reportsService } from '../../services/reports'
 import { ClientAvatar } from '../../components/ClientAvatar'
 import { AvatarCropper } from '../../components/AvatarCropper'
-import { ACTIVITY_LABELS, ACTIVITY_ORDER, type ActivityLevel } from '../../lib/nutrition'
+import {
+  ACTIVITY_LABELS,
+  ACTIVITY_ORDER,
+  RATE_PRESETS,
+  DEFAULT_RATE_KG_PER_WEEK,
+  type ActivityLevel
+} from '../../lib/nutrition'
+import { kgToLb } from '../../lib/units'
 
 /** Convertit un Blob en string base64 (sans le prefix data:...) — pour traverser contextBridge. */
 async function blobToBase64(blob: Blob): Promise<string> {
@@ -343,6 +350,9 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
     client.nutritionTargetBodyFat != null ? String(client.nutritionTargetBodyFat) : ''
   )
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>(client.nutritionActivityLevel ?? '')
+  const [rateKgPerWeek, setRateKgPerWeek] = useState<number>(
+    client.nutritionRateKgPerWeek ?? DEFAULT_RATE_KG_PER_WEEK
+  )
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [avatarBusy, setAvatarBusy] = useState(false)
@@ -434,7 +444,8 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
         unitWeight,
         nutritionEnabled,
         nutritionTargetBodyFat: nutritionEnabled ? targetPct : null,
-        nutritionActivityLevel: nutritionEnabled && activityLevel !== '' ? activityLevel : null
+        nutritionActivityLevel: nutritionEnabled && activityLevel !== '' ? activityLevel : null,
+        nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null
       })
       onSaved(updated)
     } catch (err) {
@@ -678,6 +689,22 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
                       ))}
                     </select>
                     <p className="text-marine/40 text-xs mt-1">Sert à l'estimation calorique pour les macros.</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-marine mb-1">Rythme de perte visé</label>
+                    <select
+                      value={String(rateKgPerWeek)}
+                      onChange={e => setRateKgPerWeek(Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+                    >
+                      {RATE_PRESETS.map(r => (
+                        <option key={r.kgPerWeek} value={String(r.kgPerWeek)}>
+                          {r.kgPerWeek.toLocaleString('fr-CA')} kg/sem (≈ {kgToLb(r.kgPerWeek).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} lb) — {r.intensity}
+                          {r.kgPerWeek === DEFAULT_RATE_KG_PER_WEEK ? ' · recommandé' : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-marine/40 text-xs mt-1">Détermine l'échéance estimée et l'ampleur du déficit calorique.</p>
                   </div>
                 </div>
               )}

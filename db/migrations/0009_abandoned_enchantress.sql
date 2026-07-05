@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `nutrition_rate_kg_per_week` real;

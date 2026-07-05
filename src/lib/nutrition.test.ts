@@ -16,7 +16,7 @@
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { bodyFatGoal, mifflinBmr, estimateMacros } from './nutrition.ts'
+import { bodyFatGoal, mifflinBmr, estimateMacros, dailyDeficitForRate, weeksToGoal } from './nutrition.ts'
 
 const close = (a: number, b: number, eps = 0.15) => Math.abs(a - b) <= eps
 
@@ -95,4 +95,55 @@ test('estimateMacros — cible kcal jamais sous le BMR', () => {
 test('estimateMacros — activité/données manquantes → null', () => {
   assert.equal(estimateMacros({ weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: null }), null)
   assert.equal(estimateMacros({ weightKg: null, heightCm: 176, age: 48, sex: 'M', activity: 'modere' }), null)
+})
+
+test('dailyDeficitForRate — 0.5 kg/sem → 550 kcal/j', () => {
+  // 0.5 × 7700 / 7 = 550
+  assert.equal(dailyDeficitForRate(0.5), 550)
+  assert.equal(dailyDeficitForRate(1.0), 1100)
+})
+
+test('dailyDeficitForRate — rythme absent/invalide → null', () => {
+  assert.equal(dailyDeficitForRate(null), null)
+  assert.equal(dailyDeficitForRate(0), null)
+  assert.equal(dailyDeficitForRate(-0.5), null)
+})
+
+test('weeksToGoal — 17.8 kg à 0.5 kg/sem → 35.6 semaines', () => {
+  assert.ok(close(weeksToGoal(17.8, 0.5)!, 35.6, 0.05))
+})
+
+test('weeksToGoal — rien à perdre / rythme nul → null', () => {
+  assert.equal(weeksToGoal(0, 0.5), null)
+  assert.equal(weeksToGoal(17.8, 0), null)
+  assert.equal(weeksToGoal(null, 0.5), null)
+})
+
+test('estimateMacros — déficit selon le rythme (0.5 kg/sem = −550)', () => {
+  const m = estimateMacros({
+    weightKg: 99.8,
+    heightCm: 176,
+    age: 48,
+    sex: 'M',
+    activity: 'modere',
+    goalKg: 82.0,
+    dailyDeficitKcal: 550
+  })
+  assert.ok(m !== null)
+  // TDEE 2888 − 550 = 2338
+  assert.equal(m!.targetKcal, 2338)
+  assert.equal(m!.proteinG, 164)
+})
+
+test('estimateMacros — déficit rapide clampé au BMR', () => {
+  // Déficit énorme → targetKcal ne descend jamais sous le BMR.
+  const m = estimateMacros({
+    weightKg: 99.8,
+    heightCm: 176,
+    age: 48,
+    sex: 'M',
+    activity: 'modere',
+    dailyDeficitKcal: 5000
+  })
+  assert.ok(m !== null && m!.targetKcal === m!.bmr)
 })

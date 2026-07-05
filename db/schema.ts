@@ -27,6 +27,9 @@ export const clients = sqliteTable('clients', {
   nutritionActivityLevel: text('nutrition_activity_level', {
     enum: ['sedentaire', 'leger', 'modere', 'actif', 'tres_actif']
   }),
+  // Rythme de perte visé (kg/semaine) — pilote l'échéance estimée ET le déficit
+  // calorique des macros (1 kg gras ≈ 7700 kcal). `null` = rythme par défaut.
+  nutritionRateKgPerWeek: real('nutrition_rate_kg_per_week'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

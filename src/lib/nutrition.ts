@@ -35,9 +35,43 @@ export const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
 
 export const ACTIVITY_ORDER: ActivityLevel[] = ['sedentaire', 'leger', 'modere', 'actif', 'tres_actif']
 
-/** Déficit calorique appliqué pour la perte de gras (20 % sous le TDEE) — modéré
- *  et soutenable. On ne descend jamais sous le BMR (garde-fou de sécurité). */
+/** Déficit calorique par défaut (20 % sous le TDEE) — utilisé quand aucun rythme
+ *  de perte n'est fourni. On ne descend jamais sous le BMR (garde-fou sécurité). */
 const FAT_LOSS_DEFICIT = 0.2
+
+/** Énergie d'un kg de masse grasse (kcal) — base du calcul déficit ↔ rythme. */
+const KCAL_PER_KG_FAT = 7700
+
+/** Rythmes de perte proposés (kg/semaine), du plus lent au plus rapide. */
+export interface RatePreset {
+  kgPerWeek: number
+  intensity: string
+}
+export const RATE_PRESETS: RatePreset[] = [
+  { kgPerWeek: 0.25, intensity: 'Lent' },
+  { kgPerWeek: 0.5, intensity: 'Modéré' },
+  { kgPerWeek: 0.75, intensity: 'Soutenu' },
+  { kgPerWeek: 1.0, intensity: 'Rapide' }
+]
+/** Rythme par défaut appliqué à l'activation du module (modéré, soutenable). */
+export const DEFAULT_RATE_KG_PER_WEEK = 0.5
+
+/** Déficit calorique quotidien correspondant à un rythme hebdomadaire donné. */
+export function dailyDeficitForRate(rateKgPerWeek: number | null | undefined): number | null {
+  if (!Number.isFinite(rateKgPerWeek ?? NaN) || (rateKgPerWeek as number) <= 0) return null
+  return Math.round(((rateKgPerWeek as number) * KCAL_PER_KG_FAT) / 7)
+}
+
+/** Nombre de semaines estimé pour perdre `toLoseKg` au rythme donné (kg/sem).
+ *  `null` si les données sont absentes ou s'il n'y a rien à perdre. */
+export function weeksToGoal(
+  toLoseKg: number | null | undefined,
+  rateKgPerWeek: number | null | undefined
+): number | null {
+  if (!Number.isFinite(toLoseKg ?? NaN) || !Number.isFinite(rateKgPerWeek ?? NaN)) return null
+  if ((toLoseKg as number) <= 0 || (rateKgPerWeek as number) <= 0) return null
+  return (toLoseKg as number) / (rateKgPerWeek as number)
+}
 
 /** Protéines visées par kg de poids-cible — haut de fourchette pour préserver la
  *  masse maigre en déficit (1,6-2,2 g/kg selon la littérature). */
@@ -128,14 +162,20 @@ export function estimateMacros(params: {
   sex: 'M' | 'F' | null | undefined
   activity: ActivityLevel | null | undefined
   goalKg?: number | null
+  /** Déficit calorique quotidien visé (kcal). Si absent, on applique −20 % du TDEE. */
+  dailyDeficitKcal?: number | null
 }): MacroEstimate | null {
-  const { weightKg, heightCm, age, sex, activity, goalKg } = params
+  const { weightKg, heightCm, age, sex, activity, goalKg, dailyDeficitKcal } = params
   const bmr = mifflinBmr({ weightKg, heightCm, age, sex })
   if (bmr === null || !activity || !(activity in ACTIVITY_FACTORS)) return null
 
   const tdee = Math.round(bmr * ACTIVITY_FACTORS[activity])
-  // Déficit modéré, jamais sous le BMR.
-  const targetKcal = Math.max(bmr, Math.round(tdee * (1 - FAT_LOSS_DEFICIT)))
+  // Déficit selon le rythme choisi, sinon défaut −20 %. Jamais sous le BMR.
+  const deficitTarget =
+    Number.isFinite(dailyDeficitKcal ?? NaN) && (dailyDeficitKcal as number) > 0
+      ? Math.round(tdee - (dailyDeficitKcal as number))
+      : Math.round(tdee * (1 - FAT_LOSS_DEFICIT))
+  const targetKcal = Math.max(bmr, deficitTarget)
 
   const proteinBaseKg = Number.isFinite(goalKg ?? NaN) ? (goalKg as number) : (weightKg as number)
   const proteinG = Math.round(proteinBaseKg * PROTEIN_G_PER_KG)

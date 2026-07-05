@@ -26,6 +26,7 @@ export const clientsService = {
       nutritionEnabled?: boolean
       nutritionTargetBodyFat?: number | null
       nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
+      nutritionRateKgPerWeek?: number | null
     }
   ): Promise<Client> {
     return window.api.clients.update(id, data)

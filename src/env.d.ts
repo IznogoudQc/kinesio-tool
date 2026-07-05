@@ -25,6 +25,8 @@ interface Client {
   /** Niveau d'activité pour l'estimation calorique. `null` si non défini.
    *  Union alignée sur `ActivityLevel` de src/lib/nutrition.ts. */
   nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
+  /** Rythme de perte visé (kg/semaine) — échéance estimée + déficit des macros. `null` = défaut. */
+  nutritionRateKgPerWeek: number | null
   createdAt: string
   updatedAt: string
 }
@@ -261,6 +263,7 @@ interface Window {
           nutritionEnabled?: boolean
           nutritionTargetBodyFat?: number | null
           nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
+          nutritionRateKgPerWeek?: number | null
         }
       ): Promise<Client>
       delete(id: string): Promise<void>
