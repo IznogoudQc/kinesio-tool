@@ -124,8 +124,16 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
   },
   {
     id: 'notes',
-    title: 'Notes et observations',
-    fields: [{ key: 'notes', label: 'Observations / conseils', type: 'textarea' }]
+    title: 'Objectif, notes et observations',
+    fields: [
+      {
+        key: 'objectif',
+        label: 'Objectif du client',
+        type: 'textarea',
+        hint: 'Dans les mots du client — apparaît en tête du rapport (ex. « perdre 10 kg », « courir un 10 km »)'
+      },
+      { key: 'notes', label: 'Observations / conseils', type: 'textarea' }
+    ]
   }
 ]
 

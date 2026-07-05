@@ -540,6 +540,7 @@ function OverviewSection({
   const single = bilans.length < 2
   const oldest = chrono[0]
   const latest = chrono[chrono.length - 1]
+  const objectif = typeof latest.data.objectif === 'string' ? latest.data.objectif.trim() : ''
 
   // `keys` = les sous-tests qui composent chaque score (alignés sur `computeSynthesis`).
   const cards: { title: string; score: CompositeScore; keys: (keyof BilanData)[] }[] = [
@@ -587,6 +588,20 @@ function OverviewSection({
       intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 1 à 5 — plus il est élevé, meilleure est votre santé physique globale."
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '9mm' }}>
+      {/* Objectif du client — donne du sens aux scores qui suivent. */}
+      {objectif !== '' && (
+        <div
+          className="break-inside-avoid"
+          style={{ background: CREAM, borderRadius: '4mm', borderLeft: `2mm solid ${GOLD}`, padding: '6mm 8mm' }}
+        >
+          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '2.5mm' }}>
+            Votre objectif
+          </p>
+          <p style={{ fontSize: '13pt', lineHeight: 1.5, color: MARINE, fontStyle: 'italic' }}>
+            «&nbsp;{objectif}&nbsp;»
+          </p>
+        </div>
+      )}
       {/* Score + 4 composites */}
       <div className="break-inside-avoid" style={{ display: 'flex', gap: '9mm', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flexShrink: 0, textAlign: 'center' }}>

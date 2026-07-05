@@ -95,6 +95,9 @@ interface BilanData {
   score_global?: number
   /** Observations / conseils libres saisis par Marie-Eve (uniquement saisie manuelle). */
   notes?: string
+  /** Objectif du client dans ses mots (ex. « perdre 10 kg », « courir un 10 km »).
+   *  Affiché en tête de la Vue d'ensemble du rapport pour donner du sens aux scores. */
+  objectif?: string
 }
 
 interface ExtractedBilan {

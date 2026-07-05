@@ -187,12 +187,15 @@ export function BilanForm({
             ))}
           </select>
         ) : isTextarea ? (
-          <textarea
-            value={(raw as string | undefined) ?? ''}
-            onChange={e => onDataChange?.(setField(data, def.key, e.target.value))}
-            rows={4}
-            className={inputClass}
-          />
+          <>
+            <textarea
+              value={(raw as string | undefined) ?? ''}
+              onChange={e => onDataChange?.(setField(data, def.key, e.target.value))}
+              rows={4}
+              className={inputClass}
+            />
+            {def.hint && <p className={`text-xs mt-1 ${isLight ? 'text-marine/45' : 'text-cream/45'}`}>{def.hint}</p>}
+          </>
         ) : isText ? (
           <input
             type="text"

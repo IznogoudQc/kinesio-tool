@@ -67,7 +67,8 @@ const BilanDataSchema = z
     indice_sante_dos: bounded('indice_sante_dos'),
     score_musculo_global: bounded('score_musculo_global'),
     score_global: bounded('score_global'),
-    notes: z.string().max(5000).optional()
+    notes: z.string().max(5000).optional(),
+    objectif: z.string().max(2000).optional()
   })
   .strip()
 

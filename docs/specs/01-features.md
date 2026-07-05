@@ -636,6 +636,20 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.60 — Section « Objectif du client »)
+
+Nouveau champ `objectif` (texte libre, dans les mots du client) saisi au bilan, à côté des observations. Il apparaît en
+**encadré « Votre objectif »** en tête de la Section 1 (Vue d'ensemble) du rapport — bandeau doré, citation en italique —
+juste avant les scores, pour leur donner du sens (un score se lit différemment selon ce que le client visait).
+
+- **Portée : par bilan** (comme `notes`) → l'objectif peut évoluer d'un bilan à l'autre ; le rapport lit celui du bilan
+  le plus récent. **Aucune migration** (stocké dans le JSON `data`).
+- Saisie : groupe « Objectif, notes et observations » du formulaire (textarea + hint d'exemple). Rendu conditionnel dans
+  le rapport (masqué si vide). Validation IPC `z.string().max(2000).optional()`.
+
+Fichiers : `src/env.d.ts` (type), `electron/ipc/bilans.ts` (schéma), `src/pages/client/bilanFields.ts` +
+`BilanForm.tsx` (saisie + hint textarea), `src/pages/ReportPage.tsx` (encadré). Version : 0.1.59 → 0.1.60.
+
 ## ✅ Fait (v0.1.59 — Espace constant avant « Ce que ça veut dire »)
 
 Le bloc d'interprétation « Ce que ça veut dire pour vous » n'avait **aucune marge haute propre** : il dépendait uniquement
