@@ -97,7 +97,7 @@ export interface BilanSynthesis {
   aerobic: CompositeScore
   /** Indice santé du dos : flexion tronc + endurance dos + redressements. */
   backHealth: CompositeScore
-  /** Aptitude musculosquelettique globale : 6 tests musculo. */
+  /** Force musculaire : 4 tests de force/puissance (pompes, redressements, saut, puissance). */
   musculoGlobal: CompositeScore
   /** Score global = moyenne pondérée 25/25/25/25 de composition, aérobie, dos, musculo. */
   overall: CompositeScore
@@ -109,11 +109,9 @@ export function computeSynthesis(data: BilanData, profile: BilanProfile): BilanS
   const bodyFat = composite(data, ['pourcentage_gras'], profile)
   const aerobic = composite(data, ['vo2max'], profile)
   const backHealth = composite(data, ['flexion_tronc_cm', 'endurance_dos_sec', 'situps'], profile)
-  const musculoGlobal = composite(
-    data,
-    ['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts', 'flexion_tronc_cm', 'endurance_dos_sec'],
-    profile
-  )
+  // Force musculaire : uniquement les tests de force/puissance (la flexibilité et
+  // l'endurance du dos vivent dans `backHealth`, plus dans « Force »).
+  const musculoGlobal = composite(data, ['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'], profile)
   const overallScore = avg([composition.score, aerobic.score, backHealth.score, musculoGlobal.score])
   const overall: CompositeScore = { score: overallScore, category: scoreToCategory(overallScore) }
   return { composition, bodyFat, aerobic, backHealth, musculoGlobal, overall }

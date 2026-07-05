@@ -541,11 +541,12 @@ function OverviewSection({
   const oldest = chrono[0]
   const latest = chrono[chrono.length - 1]
 
-  const cards: { title: string; score: CompositeScore }[] = [
-    { title: 'Composition corporelle', score: synth.composition },
-    { title: 'Cœur et endurance', score: synth.aerobic },
-    { title: 'Force musculaire', score: synth.musculoGlobal },
-    { title: 'Dos et souplesse', score: synth.backHealth }
+  // `keys` = les sous-tests qui composent chaque score (alignés sur `computeSynthesis`).
+  const cards: { title: string; score: CompositeScore; keys: (keyof BilanData)[] }[] = [
+    { title: 'Composition corporelle', score: synth.composition, keys: ['imc', 'tour_taille_cm'] },
+    { title: 'Cœur et endurance', score: synth.aerobic, keys: ['vo2max'] },
+    { title: 'Force musculaire', score: synth.musculoGlobal, keys: ['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'] },
+    { title: 'Dos et souplesse', score: synth.backHealth, keys: ['flexion_tronc_cm', 'endurance_dos_sec', 'situps'] }
   ]
 
   const hero = useMemo(() => {
@@ -581,7 +582,7 @@ function OverviewSection({
     <ReportFlowSection
       title="Votre bilan en un coup d'œil"
       sectionNumber="Section 1"
-      intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 0 à 5 — plus il est élevé, meilleure est votre santé physique globale."
+      intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 1 à 5 — plus il est élevé, meilleure est votre santé physique globale."
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '9mm' }}>
       {/* Score + 4 composites */}
@@ -610,6 +611,7 @@ function OverviewSection({
                 )}
               </div>
               <ScoreBar score={c.score.score} />
+              <CompositeBreakdown keys={c.keys} latest={latest} profile={profile} />
             </div>
           ))}
         </div>
@@ -736,6 +738,44 @@ function JourneyTimeline({ chrono, syntheses }: { chrono: Bilan[]; syntheses: Re
           )
         })}
       </svg>
+    </div>
+  )
+}
+
+/** Libellés courts pour le détail des sous-scores (cartes de la vue d'ensemble). */
+const SHORT_LABEL: Partial<Record<keyof BilanData, string>> = {
+  imc: 'IMC',
+  tour_taille_cm: 'Tour de taille',
+  vo2max: 'VO2max',
+  pushups: 'Pompes',
+  situps: 'Redressements',
+  saut_vertical_cm: 'Saut vertical',
+  puissance_jambes_watts: 'Puissance des jambes',
+  flexion_tronc_cm: 'Flexion du tronc',
+  endurance_dos_sec: 'Endurance du dos'
+}
+
+/** Détail des sous-tests d'un score composite (le « pourquoi » du chiffre) :
+ *  chaque test avec sa cote colorée. Rendu sous la carte du score. */
+function CompositeBreakdown({ keys, latest, profile }: { keys: (keyof BilanData)[]; latest: Bilan; profile: BilanProfile }) {
+  const rows = keys
+    .map(k => {
+      const v = num(latest.data[k])
+      if (v === null) return null
+      const cat = metricNorm(k, v, profile)?.category
+      return cat ? { key: k, label: SHORT_LABEL[k] ?? METRIC_BY_KEY[k]?.label ?? String(k), cat } : null
+    })
+    .filter((r): r is { key: keyof BilanData; label: string; cat: Category } => r !== null)
+  if (rows.length === 0) return null
+  return (
+    <div style={{ marginTop: '3mm', paddingTop: '2.5mm', borderTop: `1px solid ${GRID}` }}>
+      {rows.map(r => (
+        <div key={r.key as string} style={{ display: 'flex', alignItems: 'center', gap: '1.5mm', fontSize: '8pt', marginBottom: '1mm' }}>
+          <span style={{ width: '2mm', height: '2mm', borderRadius: '50%', background: CAT_BG[r.cat], display: 'inline-block', flexShrink: 0 }} />
+          <span style={{ color: INK_SOFT }}>{r.label}</span>
+          <span style={{ marginLeft: 'auto', color: MARINE, fontWeight: 600 }}>{CATEGORY_LABELS[r.cat]}</span>
+        </div>
+      ))}
     </div>
   )
 }

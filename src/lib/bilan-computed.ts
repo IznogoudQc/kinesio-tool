@@ -251,14 +251,8 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
   const bodyFat = compose(['pourcentage_gras'])
   const aerobic = compose(['vo2max'])
   const backHealth = compose(['flexion_tronc_cm', 'endurance_dos_sec', 'situps'])
-  const musculoGlobal = compose([
-    'pushups',
-    'situps',
-    'saut_vertical_cm',
-    'puissance_jambes_watts',
-    'flexion_tronc_cm',
-    'endurance_dos_sec'
-  ])
+  // Force musculaire : tests de force/puissance seulement (flexibilité + dos → backHealth).
+  const musculoGlobal = compose(['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'])
   const overallScore = avg([composition.score, aerobic.score, backHealth.score, musculoGlobal.score])
   const overall: CompositeScore = { score: overallScore, category: scoreToCategory(overallScore) }
 

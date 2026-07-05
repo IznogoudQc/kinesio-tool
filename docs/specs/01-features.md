@@ -636,6 +636,33 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.56 — Scores composites : échelle 1-5, « Force » réalignée, détail des sous-scores)
+
+Marie-Eve trouvait « Force musculaire 3,8/5 » surprenant (pompes/redressements Excellents). Deux causes corrigées :
+
+### Échelle 1-5 (Excellent = 5)
+`calc.ts` : `CATEGORY_TO_SCORE` passe de 0,5-4,5 (CSEP) à **1-5** (À améliorer = 1 … Excellent = 5). Un client
+« tout Excellent » obtient donc **5/5** (au lieu de 4,5). `scoreToCategory` re-borné à 1,5 / 2,5 / 3,5 / 4,5. Affecte
+les deux systèmes de score (`scoring.ts` → rapport, `bilan-computed.ts` → dashboard) — un seul barème partagé.
+
+### « Force musculaire » réalignée
+Le composite `musculoGlobal` incluait 6 tests (dont **flexion du tronc** = souplesse et **endurance du dos**), qui
+sont aussi dans « Dos et souplesse » → chevauchement + label trompeur. Réduit aux **4 vrais tests de force**
+(pompes, redressements, saut, puissance), dans `scoring.ts` ET `bilan-computed.ts`. Pour Nicholas : Force passe de
+**3,8 (Très bien) → 4,5 (Excellent)**.
+
+### Détail des sous-scores (« pourquoi »)
+Sous chaque carte de la vue d'ensemble, `CompositeBreakdown` liste les sous-tests avec leur cote colorée (ex. sous
+« Force musculaire » : Pompes Excellent · Redressements Excellent · Saut Très bien · Puissance Très bien) — on voit
+d'où vient le chiffre.
+
+### Nouveaux scores Nicholas
+Composition 2,0 Acceptable · Cœur 5,0 Excellent · Force 4,5 Excellent · Dos 4,3 Très bien · **Global 4,0 Très bien**.
+
+### Vérifs
+- Tests scoring/bilan-computed mis à jour (échelle 1-5, plages recalculées). Suite **138/138 pass** ; `tsc` web + node ;
+  build ; lint baseline. Version : 0.1.55 → 0.1.56.
+
 ## ✅ Fait (v0.1.55 — Rapport : espace sous les graphiques)
 
 Les graphiques et l'encart « Ce que ça veut dire » (deux cartes crème) se touchaient presque. `BigChartCard`

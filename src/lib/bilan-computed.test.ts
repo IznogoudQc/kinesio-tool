@@ -87,27 +87,27 @@ test('Nicholas — puissance Sayers = 5380 W', () => {
 test('Nicholas — score aérobie EXCELLENT (VO2max 49 chez M 40-49)', () => {
   const r = computeBilan(RAW, NICHOLAS)
   // M 40-49 (calibré v0.1.18) : p10=23, p25=30, p50=35, p75=43, p90=50
-  // 49 ≥ p75 (43) → EXCELLENT → score 4.5
+  // 49 ≥ p75 (43) → EXCELLENT → score 5 (échelle 1-5)
   assert.equal(r.aerobic.category, 'EXCELLENT')
-  assert.equal(r.aerobic.score, 4.5)
+  assert.equal(r.aerobic.score, 5)
 })
 
 test('Nicholas — score composition ACCEPTABLE (IMC obèse + %gras élevé + tour taille)', () => {
   const r = computeBilan(RAW, NICHOLAS)
-  // IMC 32.2 (lowerIsBetter, p10=30) → > p10 → A_AMELIORER → 0.5
-  // % gras 30.2 (M 40-49 : p10=35, p25=30) → entre p25 (30) et p10 (35) → ACCEPTABLE → 1.5
-  // tour taille 95 H (lowerIsBetter, p10=102, p25=94) → entre p25 et p10 → ACCEPTABLE → 1.5
-  // Moyenne (0.5 + 1.5 + 1.5)/3 = 1.17 → ACCEPTABLE
+  // IMC 32.2 (lowerIsBetter, p10=30) → > p10 → A_AMELIORER → 1
+  // % gras 30.2 (M 40-49 : p10=35, p25=30) → entre p25 (30) et p10 (35) → ACCEPTABLE → 2
+  // tour taille 95 H (lowerIsBetter, p10=102, p25=94) → entre p25 et p10 → ACCEPTABLE → 2
+  // Moyenne (1 + 2 + 2)/3 = 1.67 → ACCEPTABLE
   assert.equal(r.composition.category, 'ACCEPTABLE')
-  assert.ok(r.composition.score !== null && r.composition.score > 1 && r.composition.score < 2)
+  assert.ok(r.composition.score !== null && r.composition.score > 1.5 && r.composition.score < 2.5)
 })
 
-test('Nicholas — score global calculé (composition + aérobie)', () => {
+test('Nicholas — score global calculé', () => {
   const r = computeBilan(RAW, NICHOLAS)
-  // composition ~1.17, aerobic 4.5 ; musculo/dos null (verticalJump/legPower hors ACSM)
-  // overall = avg(composition, aerobic) = (1.17 + 4.5)/2 = 2.83
+  // composition ≈ 1.67, aerobic 5 ; force musculaire (saut EXCELLENT + puissance EXCELLENT) = 5 ; dos null.
+  // overall = avg(1.67, 5, 5) ≈ 3.89 (échelle 1-5)
   assert.ok(r.overall.score !== null, 'overall score doit être calculable')
-  assert.ok(r.overall.score! > 2.0 && r.overall.score! < 3.5, `overall ${r.overall.score} hors plage attendue [2.0, 3.5]`)
+  assert.ok(r.overall.score! > 3.0 && r.overall.score! < 4.5, `overall ${r.overall.score} hors plage attendue [3.0, 4.5]`)
 })
 
 test('Profil incomplet (sex null) → scores null', () => {
