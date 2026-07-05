@@ -359,6 +359,12 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
     String(client.nutritionProteinPerLbLean ?? DEFAULT_PROTEIN_PER_LB_LEAN)
   )
   const [fatMaxG, setFatMaxG] = useState<string>(String(client.nutritionFatMaxG ?? DEFAULT_FAT_MAX_G))
+  const [caloriesMode, setCaloriesMode] = useState<'auto' | 'manual'>(
+    client.nutritionTargetKcal != null ? 'manual' : 'auto'
+  )
+  const [manualKcal, setManualKcal] = useState<string>(
+    client.nutritionTargetKcal != null ? String(client.nutritionTargetKcal) : ''
+  )
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [avatarBusy, setAvatarBusy] = useState(false)
@@ -449,6 +455,16 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
       setError('Le plafond de lipides doit être compris entre 20 et 200 g.')
       return
     }
+    const kcalVal =
+      nutritionEnabled && caloriesMode === 'manual' && manualKcal.trim() !== '' ? Number(manualKcal) : null
+    if (kcalVal !== null && (!Number.isFinite(kcalVal) || kcalVal < 800 || kcalVal > 6000)) {
+      setError('Les calories manuelles doivent être comprises entre 800 et 6000.')
+      return
+    }
+    if (nutritionEnabled && caloriesMode === 'manual' && manualKcal.trim() === '') {
+      setError('Indiquez les calories cibles, ou choisissez « Automatique ».')
+      return
+    }
     try {
       setSaving(true)
       const updated = await clientsService.update(client.id, {
@@ -463,7 +479,8 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
         nutritionActivityLevel: nutritionEnabled && activityLevel !== '' ? activityLevel : null,
         nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null,
         nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
-        nutritionFatMaxG: nutritionEnabled ? fatVal : null
+        nutritionFatMaxG: nutritionEnabled ? fatVal : null,
+        nutritionTargetKcal: kcalVal
       })
       onSaved(updated)
     } catch (err) {
@@ -727,6 +744,45 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
 
                   <div className="rounded-md border border-cream-dark bg-white/60 p-3">
                     <p className="text-sm font-medium text-marine mb-2">Formule des macros</p>
+                    <div className="flex items-start gap-2 mb-2 text-marine text-sm">
+                      <span className="w-20 pt-1.5">Calories</span>
+                      <div className="flex flex-col gap-1.5">
+                        <div className="flex items-center gap-4">
+                          {([
+                            { value: 'auto', label: 'Automatique' },
+                            { value: 'manual', label: 'Manuel' }
+                          ] as const).map(opt => (
+                            <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
+                              <input
+                                type="radio"
+                                name="calories-mode"
+                                checked={caloriesMode === opt.value}
+                                onChange={() => setCaloriesMode(opt.value)}
+                                className="accent-gold"
+                              />
+                              {opt.label}
+                            </label>
+                          ))}
+                        </div>
+                        {caloriesMode === 'manual' ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={800}
+                              max={6000}
+                              step={50}
+                              value={manualKcal}
+                              onChange={e => setManualKcal(e.target.value)}
+                              placeholder="2000"
+                              className="w-24 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+                            />
+                            <span className="text-marine/60">kcal / jour</span>
+                          </div>
+                        ) : (
+                          <span className="text-marine/50 text-xs">Calculées à partir du métabolisme et du rythme.</span>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex items-center gap-2 mb-2 text-marine text-sm">
                       <span className="w-20">Protéines</span>
                       <input

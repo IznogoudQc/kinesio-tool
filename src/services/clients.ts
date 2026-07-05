@@ -29,6 +29,7 @@ export const clientsService = {
       nutritionRateKgPerWeek?: number | null
       nutritionProteinPerLbLean?: number | null
       nutritionFatMaxG?: number | null
+      nutritionTargetKcal?: number | null
     }
   ): Promise<Client> {
     return window.api.clients.update(id, data)

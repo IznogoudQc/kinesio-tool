@@ -636,6 +636,20 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.67 — Poids en double unité + calories manuelles)
+
+Deux ajustements demandés par Marie :
+
+- **Poids en double unité** : partout où un poids apparaît dans le rapport, on affiche l'unité préférée du client **et
+  l'autre entre parenthèses** (helper `dualWeight`, ex. « 199 lb (90 kg) »). Couvre l'encadré objectif (perte, poids visé),
+  « Poids optimal max », et le **graphique « Poids »** (converti + retitré « Poids (lb) » selon l'unité). `weightUnit`
+  circule via `shared` jusqu'aux sections.
+- **Calories manuelles ou automatiques** : dans la formule des macros, choix **Automatique** (calcul métabolisme − déficit,
+  comme avant) ou **Manuel** (Marie fixe les kcal). Colonne `nutrition_target_kcal` (migration `0011`, `null` = auto).
+  `estimateMacros` accepte `targetKcalOverride`.
+
+Version : 0.1.66 → 0.1.67.
+
 ## ✅ Fait (v0.1.66 — Formule des macros visible et modifiable par client)
 
 La formule des macros était figée dans le code. Marie peut désormais la **voir et la changer** (dossier client →

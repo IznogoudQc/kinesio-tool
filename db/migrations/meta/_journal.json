@@ -78,6 +78,13 @@
       "when": 1783279126969,
       "tag": "0010_little_baron_strucker",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1783280394585,
+      "tag": "0011_material_devos",
+      "breakpoints": true
     }
   ]
 }

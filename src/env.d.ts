@@ -31,6 +31,8 @@ interface Client {
   nutritionProteinPerLbLean: number | null
   /** Formule des macros : plafond de lipides en g. `null` = 60. */
   nutritionFatMaxG: number | null
+  /** Calories cibles fixées manuellement (kcal). `null` = calcul automatique. */
+  nutritionTargetKcal: number | null
   createdAt: string
   updatedAt: string
 }
@@ -270,6 +272,7 @@ interface Window {
           nutritionRateKgPerWeek?: number | null
           nutritionProteinPerLbLean?: number | null
           nutritionFatMaxG?: number | null
+          nutritionTargetKcal?: number | null
         }
       ): Promise<Client>
       delete(id: string): Promise<void>

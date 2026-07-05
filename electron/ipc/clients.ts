@@ -22,6 +22,7 @@ const BodyFatTarget = z.union([z.number().min(3).max(60), z.null()]).optional()
 const RateKgPerWeek = z.union([z.number().min(0.1).max(2), z.null()]).optional()
 const ProteinPerLbLean = z.union([z.number().min(0.3).max(2.5), z.null()]).optional()
 const FatMaxG = z.union([z.number().min(20).max(200), z.null()]).optional()
+const TargetKcal = z.union([z.number().min(800).max(6000), z.null()]).optional()
 
 const CreateClientSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(200).trim(),
@@ -44,7 +45,8 @@ const UpdateClientSchema = z.object({
   nutritionActivityLevel: NutritionActivity,
   nutritionRateKgPerWeek: RateKgPerWeek,
   nutritionProteinPerLbLean: ProteinPerLbLean,
-  nutritionFatMaxG: FatMaxG
+  nutritionFatMaxG: FatMaxG,
+  nutritionTargetKcal: TargetKcal
 })
 
 const ClientId = z.string().uuid()

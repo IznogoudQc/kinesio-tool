@@ -144,6 +144,24 @@ test('estimateMacros — déficit selon le rythme (0.5 kg/sem = −550)', () => 
   assert.equal(m!.carbsG, 296)
 })
 
+test('estimateMacros — calories manuelles (override) priment sur le calcul auto', () => {
+  const m = estimateMacros({
+    weightKg: 99.8,
+    heightCm: 176,
+    age: 48,
+    sex: 'M',
+    activity: 'modere',
+    leanKg: 69.66,
+    dailyDeficitKcal: 550,
+    targetKcalOverride: 2000
+  })
+  assert.ok(m !== null)
+  assert.equal(m!.targetKcal, 2000) // ignore le déficit auto
+  assert.equal(m!.proteinG, 154) // protéines inchangées (masse maigre)
+  assert.equal(m!.fatG, 60)
+  assert.equal(m!.carbsG, Math.max(0, Math.round((2000 - 154 * 4 - 60 * 9) / 4))) // 211
+})
+
 test('estimateMacros — déficit rapide clampé au BMR', () => {
   // Déficit énorme → targetKcal ne descend jamais sous le BMR.
   const m = estimateMacros({

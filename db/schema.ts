@@ -34,6 +34,8 @@ export const clients = sqliteTable('clients', {
   // (protéines 1 g/lb de masse maigre, lipides plafond 60 g, glucides = reste).
   nutritionProteinPerLbLean: real('nutrition_protein_per_lb_lean'),
   nutritionFatMaxG: real('nutrition_fat_max_g'),
+  // Calories cibles fixées manuellement (kcal). `null` = calcul automatique.
+  nutritionTargetKcal: real('nutrition_target_kcal'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

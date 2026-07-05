@@ -308,7 +308,7 @@ export function ReportPage() {
     )
   }
 
-  const shared = { latest, bilans, chrono, syntheses, profile }
+  const shared = { latest, bilans, chrono, syntheses, profile, weightUnit: client.unitWeight }
 
   return (
     <article className="report-body" style={{ color: MARINE, background: '#fff' }}>
@@ -525,6 +525,15 @@ function ScoreRing({ score }: { score: number | null }) {
 }
 
 // ── Section 1 — Vue d'ensemble (score + composites + parcours) ────────────────
+/** Formate un poids (stocké en kg) en montrant les DEUX unités : l'unité préférée
+ *  du client d'abord, l'autre entre parenthèses. Ex. lb → « 199 lb (90 kg) ». */
+function dualWeight(kg: number | null, unit: 'kg' | 'lb'): string {
+  if (kg === null) return '—'
+  const lb = Math.round(kgToLb(kg))
+  const k = Math.round(kg)
+  return unit === 'lb' ? `${lb} lb (${k} kg)` : `${k} kg (${lb} lb)`
+}
+
 /** Date d'échéance estimée = date du bilan + `weeks` semaines, formatée « mois
  *  année » (fr-CA). Construite en composantes locales pour éviter tout décalage
  *  de fuseau horaire. `null` si la date de départ est invalide. */
@@ -572,14 +581,15 @@ function ObjectifBlock({
           leanKg: goal.leanKg,
           dailyDeficitKcal: dailyDeficitForRate(rate),
           proteinPerLbLean: client.nutritionProteinPerLbLean,
-          fatMaxG: client.nutritionFatMaxG
+          fatMaxG: client.nutritionFatMaxG,
+          targetKcalOverride: client.nutritionTargetKcal
         })
       : null
 
   if (objectif === '' && goal === null) return null
 
   const unit = client.unitWeight
-  const w = (kg: number) => `${Math.round(unit === 'lb' ? kgToLb(kg) : kg)} ${unit === 'lb' ? 'lb' : 'kg'}`
+  const w = (kg: number) => dualWeight(kg, unit)
   const atGoal = goal !== null && goal.toLoseKg <= 0.3
   const weeks = goal ? weeksToGoal(goal.toLoseKg, rate) : null
   const goalDate = weeks !== null ? estimatedGoalDate(latest.date, weeks) : null
@@ -1097,6 +1107,7 @@ interface DomainProps {
   chrono: Bilan[]
   syntheses: ReturnType<typeof computeSynthesis>[]
   profile: BilanProfile
+  weightUnit: 'kg' | 'lb'
 }
 
 /** Corps commun d'une section domaine : intro, extras, résultats, graphiques, interprétation. */
@@ -1114,7 +1125,8 @@ function DomainSection({
   latest,
   bilans,
   chrono,
-  profile
+  profile,
+  weightUnit
 }: DomainProps & {
   title: string
   sectionNumber: string
@@ -1130,19 +1142,24 @@ function DomainSection({
   const recent = bilans.slice(0, 4)
   const presentDetails = detailKeys.map(k => METRIC_BY_KEY[k]).filter((m): m is MetricDef => !!m && num(latest.data[m.key]) !== null)
 
-  // Graphiques : on ne garde que ceux qui ont ≥ 2 points de données.
+  // Graphiques : on ne garde que ceux qui ont ≥ 2 points de données. Le graphique
+  // de poids est converti dans l'unité du client (kg stocké → lb affiché).
   const chartData = charts
     .map(c => {
       if (c.kind === 'line') {
-        const data = chrono.map(b => ({ label: formatBilanMonth(b.date), value: num(b.data[c.key]) }))
+        const toLb = c.key === 'poids_kg' && weightUnit === 'lb'
+        const data = chrono.map(b => {
+          const v = num(b.data[c.key])
+          return { label: formatBilanMonth(b.date), value: toLb && v !== null ? Math.round(kgToLb(v)) : v }
+        })
         const count = data.filter(p => p.value !== null).length
-        return count >= 2 ? { cfg: c, data } : null
+        return count >= 2 ? { cfg: c, data, title: toLb ? 'Poids (lb)' : c.title } : null
       }
       const data = chrono.map(b => ({ label: formatBilanMonth(b.date), a: num(b.data[c.a]), b: num(b.data[c.b]) }))
       const count = data.filter(p => p.a !== null || p.b !== null).length
-      return count >= 2 ? { cfg: c, data } : null
+      return count >= 2 ? { cfg: c, data, title: c.title } : null
     })
-    .filter(Boolean) as ({ cfg: Extract<ChartConfig, { kind: 'line' }>; data: ChartPoint[] } | { cfg: Extract<ChartConfig, { kind: 'dual' }>; data: { label: string; a: number | null; b: number | null }[] })[]
+    .filter(Boolean) as ({ cfg: Extract<ChartConfig, { kind: 'line' }>; data: ChartPoint[]; title: string } | { cfg: Extract<ChartConfig, { kind: 'dual' }>; data: { label: string; a: number | null; b: number | null }[]; title: string })[]
 
   const interp = domainInterpretation({ domainWord, composite, detailKeys, heroKey, chrono, latest, profile })
 
@@ -1167,7 +1184,7 @@ function DomainSection({
         <div style={{ marginTop: '2mm' }}>
           <BlockTitle>Évolution dans le temps</BlockTitle>
           {chartData.map((c, i) => (
-            <BigChartCard key={i} title={c.cfg.title}>
+            <BigChartCard key={i} title={c.title}>
               {c.cfg.kind === 'line' ? (
                 <SingleLineChart data={c.data as ChartPoint[]} color={c.cfg.color} scoreAxis={c.cfg.scoreAxis} />
               ) : (
@@ -1255,7 +1272,7 @@ function domainInterpretation({
 }
 
 // Composition — extras (chiffres clés + plis cutanés).
-function CompositionExtras({ latest, computed }: { latest: Bilan; computed: BilanComputed }) {
+function CompositionExtras({ latest, computed, weightUnit }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb' }) {
   const d = latest.data as Record<string, unknown>
   const plis = [
     { label: 'Triceps', key: 'pli_triceps' },
@@ -1273,7 +1290,7 @@ function CompositionExtras({ latest, computed }: { latest: Bilan; computed: Bila
     { label: 'IMC', value: computed.imc === null ? '—' : `${fmt(computed.imc)} kg/m²` },
     { label: 'Tour de taille', value: num(d.tour_taille_cm) === null ? '—' : `${fmt(num(d.tour_taille_cm))} cm` },
     { label: 'Ratio taille / hanche', value: computed.ratioTailleHanche === null ? '—' : fmt(computed.ratioTailleHanche, 2) },
-    { label: 'Poids optimal max', value: computed.poidsOptimalMaxKg === null ? '—' : `${fmt(computed.poidsOptimalMaxKg)} kg`, hint: 'Poids pour un IMC de 25' },
+    { label: 'Poids optimal max', value: dualWeight(computed.poidsOptimalMaxKg, weightUnit), hint: 'Poids pour un IMC de 25' },
     { label: '% de gras', value: computed.pourcentageGrasDurnin === null ? '—' : `${fmt(computed.pourcentageGrasDurnin)} %`, hint: 'Méthode Durnin-Womersley (4 plis)' },
     { label: 'Somme des 4 plis', value: sommePlis === null ? '—' : `${fmt(sommePlis)} mm` }
   ]
@@ -1434,7 +1451,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
         { kind: 'line', key: 'imc', title: 'IMC (kg/m²)', color: MARINE },
         { kind: 'line', key: 'tour_taille_cm', title: 'Tour de taille (cm)', color: GOLD }
       ]}
-      topExtra={<CompositionExtras latest={props.latest} computed={computed} />}
+      topExtra={<CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} />}
     />
   )
 }

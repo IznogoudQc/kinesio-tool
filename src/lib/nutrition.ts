@@ -176,8 +176,11 @@ export function estimateMacros(params: {
   proteinPerLbLean?: number | null
   /** Plafond de lipides en g (défaut 60). */
   fatMaxG?: number | null
+  /** Calories cibles fixées manuellement (kcal). Si absent, calcul automatique
+   *  (TDEE − déficit). Permet à Marie de fixer les calories elle-même. */
+  targetKcalOverride?: number | null
 }): MacroEstimate | null {
-  const { weightKg, heightCm, age, sex, activity, leanKg, dailyDeficitKcal, proteinPerLbLean, fatMaxG } = params
+  const { weightKg, heightCm, age, sex, activity, leanKg, dailyDeficitKcal, proteinPerLbLean, fatMaxG, targetKcalOverride } = params
   const bmr = mifflinBmr({ weightKg, heightCm, age, sex })
   if (bmr === null || !activity || !(activity in ACTIVITY_FACTORS)) return null
   if (!Number.isFinite(leanKg ?? NaN) || (leanKg as number) <= 0) return null
@@ -188,7 +191,11 @@ export function estimateMacros(params: {
     Number.isFinite(dailyDeficitKcal ?? NaN) && (dailyDeficitKcal as number) > 0
       ? Math.round(tdee - (dailyDeficitKcal as number))
       : Math.round(tdee * (1 - FAT_LOSS_DEFICIT))
-  const targetKcal = Math.max(bmr, deficitTarget)
+  // Calories cibles : valeur manuelle si fournie, sinon calcul auto (jamais sous le BMR).
+  const targetKcal =
+    Number.isFinite(targetKcalOverride ?? NaN) && (targetKcalOverride as number) > 0
+      ? Math.round(targetKcalOverride as number)
+      : Math.max(bmr, deficitTarget)
 
   const proteinPerLb =
     Number.isFinite(proteinPerLbLean ?? NaN) && (proteinPerLbLean as number) > 0
