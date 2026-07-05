@@ -636,6 +636,19 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.63 — « Âge en forme » + trajectoire projetée)
+
+Deux repères visuels ajoutés au rapport (voir `docs/decisions/0016-age-en-forme-et-trajectoire.md`).
+
+- **Âge en forme** (`src/lib/fitness-age.ts`, 7 tests) : le VO2max traduit en âge physiologique via une courbe de
+  référence VO2max→âge **dédiée, lissée, monotone** (PAS les tables de catégorisation, non monotones car recalibrées).
+  Bannière en Vue d'ensemble avec l'écart à l'âge réel (« 28 ans de moins que votre âge réel »). Masqué si pas de VO2max.
+- **Trajectoire projetée** (`WeightProjectionChart`) : dans l'encadré « Votre objectif », courbe de poids réelle (pleine)
+  prolongée en pointillé jusqu'au poids-cible, à l'échéance estimée. Affiché seulement si le module objectif est actif et
+  qu'il reste du poids à perdre. Poids dans l'unité du client.
+
+Version : 0.1.62 → 0.1.63.
+
 ## ✅ Fait (v0.1.62 — Rythme de perte paramétrable + échéance estimée)
 
 Le module nutrition (v0.1.61) gagne un **rythme de perte** choisi par client (Lent 0,25 · Modéré 0,5 · Soutenu 0,75 ·

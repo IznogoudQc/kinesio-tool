@@ -32,6 +32,7 @@ import { classifyBloodPressure } from '../lib/norms/clinical'
 import { computeSynthesis, type BilanProfile, type CompositeScore } from '../lib/norms/scoring'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
+import { fitnessAge } from '../lib/fitness-age'
 import { kgToLb } from '../lib/units'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
@@ -543,11 +544,13 @@ function ObjectifBlock({
   objectif,
   client,
   latest,
+  chrono,
   profile
 }: {
   objectif: string
   client: Client
   latest: Bilan
+  chrono: Bilan[]
   profile: BilanProfile
 }) {
   const computed = computeBilan(latest.data, profile)
@@ -585,7 +588,29 @@ function ObjectifBlock({
         ? `${kgToLb(rate).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} lb/sem`
         : `${rate.toLocaleString('fr-CA')} kg/sem`
 
+  // Trajectoire projetée du poids : historique réel (plein) + segment pointillé
+  // du poids actuel vers le poids-cible, à l'échéance estimée.
+  const toUnit = (kg: number) => Math.round((unit === 'lb' ? kgToLb(kg) : kg) * 10) / 10
+  const weightHistory =
+    goal !== null && !atGoal
+      ? chrono
+          .map(b => ({ label: formatBilanMonth(b.date), kg: num(b.data.poids_kg) }))
+          .filter((h): h is { label: string; kg: number } => h.kg !== null)
+      : []
+  const projectionData =
+    goal !== null && !atGoal && weightHistory.length >= 1
+      ? [
+          ...weightHistory.map((h, i) => ({
+            label: h.label,
+            actual: toUnit(h.kg),
+            projected: i === weightHistory.length - 1 ? toUnit(h.kg) : null
+          })),
+          { label: goalDate ?? 'Objectif', actual: null as number | null, projected: toUnit(goal.goalKg) }
+        ]
+      : null
+
   return (
+    <>
     <div
       className="break-inside-avoid"
       style={{ background: CREAM, borderRadius: '4mm', borderLeft: `2mm solid ${GOLD}`, padding: '6mm 8mm' }}
@@ -654,6 +679,36 @@ function ObjectifBlock({
         </div>
       )}
     </div>
+
+    {projectionData !== null && (
+      <BigChartCard title={`Trajectoire vers votre objectif (poids en ${unit === 'lb' ? 'lb' : 'kg'})`}>
+        <WeightProjectionChart data={projectionData} />
+      </BigChartCard>
+    )}
+    </>
+  )
+}
+
+/** Graphique de trajectoire : ligne pleine (poids réel) + ligne pointillée
+ *  (projection vers le poids-cible à l'échéance estimée). */
+function WeightProjectionChart({
+  data
+}: {
+  data: { label: string; actual: number | null; projected: number | null }[]
+}) {
+  return (
+    <LineChart data={data} margin={{ top: 18, right: 40, bottom: 4, left: -6 }}>
+      <CartesianGrid stroke={GRID} vertical={false} />
+      <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={20} tickMargin={6} tick={{ fill: AXIS, fontSize: 11 }} stroke={GRID} />
+      <YAxis tick={{ fill: AXIS, fontSize: 11 }} stroke={GRID} width={42} domain={['auto', 'auto']} />
+      <Legend wrapperStyle={{ fontSize: 10.5 }} />
+      <Line type="monotone" dataKey="actual" name="Parcours réel" stroke={GOLD} strokeWidth={2.5} dot={{ r: 3.5, fill: GOLD }} isAnimationActive={false} connectNulls>
+        <LabelList content={<EndpointValueLabel lastIdx={data.length - 2} />} />
+      </Line>
+      <Line type="monotone" dataKey="projected" name="Trajectoire visée" stroke={MARINE} strokeWidth={2.5} strokeDasharray="5 4" dot={{ r: 3.5, fill: MARINE }} isAnimationActive={false} connectNulls>
+        <LabelList content={<EndpointValueLabel lastIdx={data.length - 1} />} />
+      </Line>
+    </LineChart>
   )
 }
 
@@ -702,6 +757,21 @@ function OverviewSection({
   const latest = chrono[chrono.length - 1]
   const objectif = typeof latest.data.objectif === 'string' ? latest.data.objectif.trim() : ''
 
+  const fitAge = fitnessAge(num(latest.data.vo2max), profile.sex)
+  let fitAgeText = fitAge !== null
+    ? `Votre capacité cardiovasculaire (VO2max) équivaut à celle d'une personne de ${fitAge} ans.`
+    : ''
+  if (fitAge !== null && profile.age !== null) {
+    const d = profile.age - fitAge
+    if (d > 0) {
+      fitAgeText = `Votre capacité cardiovasculaire (VO2max) équivaut à celle d'une personne de ${fitAge} ans — soit ${d} an${d > 1 ? 's' : ''} de moins que votre âge réel (${profile.age} ans). Un excellent signe pour votre santé et votre longévité !`
+    } else if (d < 0) {
+      fitAgeText = `Votre capacité cardiovasculaire (VO2max) équivaut à celle d'une personne de ${fitAge} ans — soit ${-d} an${-d > 1 ? 's' : ''} de plus que votre âge réel (${profile.age} ans). Améliorer votre endurance est un levier puissant pour rajeunir ce chiffre.`
+    } else {
+      fitAgeText = `Votre capacité cardiovasculaire (VO2max) correspond exactement à votre âge réel (${profile.age} ans).`
+    }
+  }
+
   // `keys` = les sous-tests qui composent chaque score (alignés sur `computeSynthesis`).
   const cards: { title: string; score: CompositeScore; keys: (keyof BilanData)[] }[] = [
     { title: 'Composition corporelle', score: synth.composition, keys: ['imc', 'tour_taille_cm'] },
@@ -749,7 +819,27 @@ function OverviewSection({
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '9mm' }}>
       {/* Objectif du client — texte libre + (si activé) cible chiffrée & nutrition. */}
-      <ObjectifBlock objectif={objectif} client={client} latest={latest} profile={profile} />
+      <ObjectifBlock objectif={objectif} client={client} latest={latest} chrono={chrono} profile={profile} />
+
+      {/* Âge en forme — VO2max traduit en âge physiologique. */}
+      {fitAge !== null && (
+        <div
+          className="break-inside-avoid"
+          style={{ display: 'flex', alignItems: 'center', gap: '7mm', background: CREAM, borderRadius: '4mm', padding: '6mm 8mm' }}
+        >
+          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+            <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, fontWeight: 700, marginBottom: '1mm' }}>
+              Âge en forme
+            </p>
+            <p className="report-display" style={{ fontSize: '34pt', fontWeight: 700, color: MARINE, lineHeight: 1 }}>
+              {fitAge}
+              <span style={{ fontSize: '13pt', color: INK_SOFT, fontWeight: 500 }}>&nbsp;ans</span>
+            </p>
+          </div>
+          <p style={{ fontSize: '11pt', color: '#3a3f52', lineHeight: 1.55 }}>{fitAgeText}</p>
+        </div>
+      )}
+
       {/* Score + 4 composites */}
       <div className="break-inside-avoid" style={{ display: 'flex', gap: '9mm', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flexShrink: 0, textAlign: 'center' }}>
