@@ -636,6 +636,14 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.65 — Graphique saut/puissance : double axe Y)
+
+Le graphique « Saut vertical & puissance » superposait deux séries d'échelles incompatibles sur un seul axe Y : la
+puissance (~5000 W) écrasait le saut (~48 cm) à plat sur le zéro — évolution du saut invisible. Correctif : option
+`dualAxis` sur les graphiques doubles → **un axe Y par série** (saut à gauche en doré, puissance à droite en marine,
+chacun avec sa propre échelle et sa couleur). Le graphique « Pompes & redressements » (mêmes unités) garde un axe unique.
+Version : 0.1.64 → 0.1.65.
+
 ## ✅ Fait (v0.1.64 — Vue d'ensemble : fin de la page blanche)
 
 La Vue d'ensemble (Section 1) laissait une grande zone blanche : titre + intro sur la page 1, puis tout le contenu

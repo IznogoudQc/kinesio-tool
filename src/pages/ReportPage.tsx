@@ -1087,7 +1087,7 @@ function ColorLegend() {
 // ── Sections par domaine ─────────────────────────────────────────────────────
 type ChartConfig =
   | { kind: 'line'; key: keyof BilanData; title: string; color: string; scoreAxis?: boolean }
-  | { kind: 'dual'; a: keyof BilanData; b: keyof BilanData; title: string; nameA: string; nameB: string }
+  | { kind: 'dual'; a: keyof BilanData; b: keyof BilanData; title: string; nameA: string; nameB: string; dualAxis?: boolean }
 
 interface DomainProps {
   latest: Bilan
@@ -1169,7 +1169,7 @@ function DomainSection({
               {c.cfg.kind === 'line' ? (
                 <SingleLineChart data={c.data as ChartPoint[]} color={c.cfg.color} scoreAxis={c.cfg.scoreAxis} />
               ) : (
-                <DualLineChart data={c.data as { label: string; a: number | null; b: number | null }[]} nameA={c.cfg.nameA} nameB={c.cfg.nameB} />
+                <DualLineChart data={c.data as { label: string; a: number | null; b: number | null }[]} nameA={c.cfg.nameA} nameB={c.cfg.nameB} dualAxis={c.cfg.dualAxis} />
               )}
             </BigChartCard>
           ))}
@@ -1470,7 +1470,7 @@ function ForceSection(props: DomainProps) {
       composite={computeSynthesis(props.latest.data, props.profile).musculoGlobal}
       charts={[
         { kind: 'dual', a: 'pushups', b: 'situps', title: 'Pompes & redressements (reps)', nameA: 'Pompes', nameB: 'Redressements' },
-        { kind: 'dual', a: 'saut_vertical_cm', b: 'puissance_jambes_watts', title: 'Saut vertical & puissance', nameA: 'Saut (cm)', nameB: 'Puissance (W)' }
+        { kind: 'dual', a: 'saut_vertical_cm', b: 'puissance_jambes_watts', title: 'Saut vertical & puissance', nameA: 'Saut (cm)', nameB: 'Puissance (W)', dualAxis: true }
       ]}
     />
   )
@@ -1554,7 +1554,33 @@ function SingleLineChart({ data, color, scoreAxis = false }: { data: ChartPoint[
   )
 }
 
-function DualLineChart({ data, nameA, nameB }: { data: { label: string; a: number | null; b: number | null }[]; nameA: string; nameB: string }) {
+function DualLineChart({
+  data,
+  nameA,
+  nameB,
+  dualAxis = false
+}: {
+  data: { label: string; a: number | null; b: number | null }[]
+  nameA: string
+  nameB: string
+  dualAxis?: boolean
+}) {
+  // `dualAxis` : deux séries d'unités/échelles très différentes (ex. saut en cm
+  // vs puissance en W) → un axe Y par série, sinon la petite série est écrasée à
+  // plat sur le zéro. Axes colorés pour associer chaque courbe à son échelle.
+  if (dualAxis) {
+    return (
+      <LineChart data={data} margin={{ top: 8, right: 6, bottom: 4, left: -6 }}>
+        <CartesianGrid stroke={GRID} vertical={false} />
+        <XAxis dataKey="label" interval="preserveStartEnd" minTickGap={34} tickMargin={6} tick={{ fill: AXIS, fontSize: 11 }} stroke={GRID} />
+        <YAxis yAxisId="left" tick={{ fill: GOLD, fontSize: 11 }} stroke={GRID} width={42} domain={['auto', 'auto']} />
+        <YAxis yAxisId="right" orientation="right" tick={{ fill: MARINE, fontSize: 11 }} stroke={GRID} width={48} domain={['auto', 'auto']} />
+        <Legend wrapperStyle={{ fontSize: 10.5 }} />
+        <Line yAxisId="left" type="monotone" dataKey="a" name={nameA} stroke={GOLD} strokeWidth={2.5} dot={{ r: 3, fill: GOLD }} isAnimationActive={false} connectNulls />
+        <Line yAxisId="right" type="monotone" dataKey="b" name={nameB} stroke={MARINE} strokeWidth={2.5} dot={{ r: 3, fill: MARINE }} isAnimationActive={false} connectNulls />
+      </LineChart>
+    )
+  }
   return (
     <LineChart data={data} margin={{ top: 8, right: 34, bottom: 4, left: -6 }}>
       <CartesianGrid stroke={GRID} vertical={false} />
