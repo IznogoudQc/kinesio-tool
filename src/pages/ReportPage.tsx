@@ -147,6 +147,37 @@ function isoToTime(iso: string): number {
 function yearsBetween(a: string, b: string): number {
   return Math.abs(isoToTime(b) - isoToTime(a)) / (365.25 * 864e5)
 }
+/** Format compact d'un seuil : entier si rond, sinon 1 décimale. */
+function fmtThreshold(n: number): string {
+  return fmt(n, Number.isInteger(n) ? 0 : 1)
+}
+/** Teinte translucide d'une couleur hex (pour surligner la cellule du client). */
+function tint(hex: string, alpha: number): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+/** Plage numérique d'une catégorie pour un test donné (barème de référence). */
+function categoryRange(p: { p10: number; p25: number; p50: number; p75: number }, lowerIsBetter: boolean, cat: Category): string {
+  const f = fmtThreshold
+  if (!lowerIsBetter) {
+    switch (cat) {
+      case 'A_AMELIORER': return `< ${f(p.p10)}`
+      case 'ACCEPTABLE': return `${f(p.p10)}–${f(p.p25)}`
+      case 'BIEN': return `${f(p.p25)}–${f(p.p50)}`
+      case 'TRES_BIEN': return `${f(p.p50)}–${f(p.p75)}`
+      case 'EXCELLENT': return `≥ ${f(p.p75)}`
+    }
+  }
+  switch (cat) {
+    case 'A_AMELIORER': return `≥ ${f(p.p10)}`
+    case 'ACCEPTABLE': return `${f(p.p25)}–${f(p.p10)}`
+    case 'BIEN': return `${f(p.p50)}–${f(p.p25)}`
+    case 'TRES_BIEN': return `${f(p.p75)}–${f(p.p50)}`
+    case 'EXCELLENT': return `< ${f(p.p75)}`
+  }
+}
 
 /** Catégorisation complète d'une métrique du bilan, si elle a un barème. */
 interface MetricNorm {
@@ -550,8 +581,9 @@ function OverviewSection({
       sectionNumber="Section 1"
       intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 0 à 5 — plus il est élevé, meilleure est votre santé physique globale."
     >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '9mm' }}>
       {/* Score + 4 composites */}
-      <div className="break-inside-avoid" style={{ display: 'flex', gap: '9mm', alignItems: 'center', marginBottom: '9mm', flexWrap: 'wrap' }}>
+      <div className="break-inside-avoid" style={{ display: 'flex', gap: '9mm', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flexShrink: 0, textAlign: 'center' }}>
           <ScoreRing score={synth.overall.score} />
           {synth.overall.category && (
@@ -593,7 +625,7 @@ function OverviewSection({
       ) : (
         <>
           {hero && (
-            <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', marginBottom: '8mm', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8mm' }}>
+            <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8mm' }}>
               <div>
                 <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD }}>Votre plus belle progression</p>
                 <p className="report-display" style={{ fontSize: '18pt', fontWeight: 600, color: MARINE, marginTop: '1mm' }}>{hero.label}</p>
@@ -612,7 +644,7 @@ function OverviewSection({
             <JourneyTimeline chrono={chrono} syntheses={syntheses} />
           </div>
           {beforeAfter.length > 0 && (
-            <div className="break-inside-avoid" style={{ marginTop: '9mm' }}>
+            <div className="break-inside-avoid">
               <BlockTitle>Avant / après</BlockTitle>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5pt' }}>
                 <thead>
@@ -648,6 +680,7 @@ function OverviewSection({
       )}
       <div className="break-inside-avoid">
         <ColorLegend />
+      </div>
       </div>
     </ReportFlowSection>
   )
@@ -735,7 +768,7 @@ function CategoryPill({ category, label }: { category: Category; label?: string 
 function ColorLegend() {
   const cats: Category[] = ['A_AMELIORER', 'ACCEPTABLE', 'BIEN', 'TRES_BIEN', 'EXCELLENT']
   return (
-    <div style={{ marginTop: '9mm', paddingTop: '5mm', borderTop: `1px solid ${GRID}` }}>
+    <div style={{ paddingTop: '5mm', borderTop: `1px solid ${GRID}` }}>
       <p style={{ fontSize: '8pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: INK_SOFT, marginBottom: '2.5mm' }}>
         Comment lire les couleurs
       </p>
@@ -827,6 +860,8 @@ function DomainSection({
         </div>
       )}
 
+      <NormReferenceTable metrics={presentDetails} latest={latest} profile={profile} />
+
       {bottomExtra}
 
       {chartData.length > 0 && (
@@ -845,7 +880,7 @@ function DomainSection({
       )}
 
       {interp && (
-        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', marginTop: '8mm' }}>
+        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm' }}>
           <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '3mm' }}>
             Ce que ça veut dire pour vous
           </p>
@@ -1291,6 +1326,79 @@ function MetricBlock({ metric, latest, recent, profile }: { metric: MetricDef; l
         </p>
       )}
       {blurb && <p style={{ fontSize: '9pt', color: INK_SOFT, marginTop: '2mm' }}>{blurb}</p>}
+    </div>
+  )
+}
+
+/** Table de barème de référence ACSM : pour chaque test de la section, la plage
+ *  numérique de chaque catégorie (À améliorer → Excellent) pour l'âge/sexe du
+ *  client. La cellule de la catégorie actuelle du client est surlignée. */
+function NormReferenceTable({ metrics, latest, profile }: { metrics: MetricDef[]; latest: Bilan; profile: BilanProfile }) {
+  const cats: Category[] = ['A_AMELIORER', 'ACCEPTABLE', 'BIEN', 'TRES_BIEN', 'EXCELLENT']
+  const rows = metrics
+    .map(m => {
+      const value = num(latest.data[m.key])
+      const norm = value !== null ? metricNorm(m.key, value, profile) : null
+      if (!norm?.percentiles) return null
+      return { metric: m, percentiles: norm.percentiles, lowerIsBetter: norm.lowerIsBetter, current: norm.category }
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null)
+  if (rows.length === 0) return null
+
+  const age = profile.age
+  const bracket = age !== null ? `${profile.sex === 'M' ? 'H' : 'F'} ${Math.floor(age / 10) * 10}-${Math.floor(age / 10) * 10 + 9} ans` : ''
+  const th: React.CSSProperties = { padding: '2.5mm 2mm', fontSize: '8pt', textTransform: 'uppercase', letterSpacing: '0.03em', color: INK_SOFT, textAlign: 'right', fontWeight: 700 }
+
+  return (
+    <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
+      <BlockTitle>Barème de référence — ACSM{bracket ? ` · ${bracket}` : ''}</BlockTitle>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5pt' }}>
+          <thead>
+            <tr style={{ borderBottom: `1.5px solid ${GRID}` }}>
+              <th style={{ ...th, textAlign: 'left' }}>Test</th>
+              {cats.map(c => (
+                <th key={c} style={th}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '1mm' }}>
+                    <span style={{ width: '2.5mm', height: '2.5mm', borderRadius: '0.5mm', background: CAT_BG[c], display: 'inline-block' }} />
+                    {CATEGORY_LABELS[c]}
+                  </span>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.metric.key as string} style={{ borderBottom: `1px solid ${GRID}` }}>
+                <td style={{ padding: '2.5mm 2mm', color: MARINE, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {r.metric.label} <span style={{ color: AXIS, fontWeight: 400 }}>({r.metric.unit})</span>
+                </td>
+                {cats.map(c => {
+                  const isCurrent = r.current === c
+                  return (
+                    <td
+                      key={c}
+                      style={{
+                        padding: '2.5mm 2mm',
+                        textAlign: 'right',
+                        color: MARINE,
+                        fontWeight: isCurrent ? 700 : 400,
+                        background: isCurrent ? tint(CAT_BG[c], 0.28) : 'transparent',
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      {categoryRange(r.percentiles, r.lowerIsBetter, c)}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p style={{ fontSize: '8pt', color: AXIS, marginTop: '2mm' }}>
+        Cellule surlignée = votre niveau actuel. Source : ACSM Guidelines, 11ᵉ édition.
+      </p>
     </div>
   )
 }

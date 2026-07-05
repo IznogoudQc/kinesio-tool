@@ -636,6 +636,23 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.52 — Rapport : marge du haut (fix définitif) + barèmes ACSM)
+
+### Marge du haut — fix définitif (flex gap)
+La réduction du padding (v0.1.51) ne suffisait pas : des blocs avec `marginTop` (Avant/après, légende,
+interprétation) « fuyaient » en haut des pages de continuation, s'ajoutant au padding. Passage de la vue d'ensemble
+et des sections domaine à une disposition **`flex` column + `gap`** : `gap` ne se rend pas aux sauts de page, donc
+plus d'espace parasite en haut. Les `marginTop` fautifs sont retirés.
+
+### Barèmes de référence ACSM (demande Marie-Eve)
+Nouveau composant `NormReferenceTable` dans chaque section domaine, après « Vos résultats » : un tableau montrant, pour
+chaque test, la **plage numérique de chaque catégorie** (À améliorer → Excellent) pour l'âge et le sexe du client —
+comme le tableau musculo du logiciel Physitest. La **cellule de la catégorie actuelle** du client est surlignée dans
+sa couleur. Dérivé des percentiles ACSM (`categoryRange` : gère `lowerIsBetter`). Ex. Nicholas VO2max 57,6 → cellule
+« Excellent (≥ 43) » ; % gras 23,1 → « Très bien (20–25) ».
+
+Suite 138/138 ; `tsc` web + node ; build OK ; lint baseline (18). Version : 0.1.51 → 0.1.52.
+
 ## ✅ Fait (v0.1.51 — Rapport : marge du haut réduite)
 
 Marie-Eve : marge du haut trop grande sur toutes les pages. Cause : `@page` margin à 0 (printToPDF `marginType:none`),
