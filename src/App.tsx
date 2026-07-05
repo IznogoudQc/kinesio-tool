@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { HashRouter, Navigate, Outlet, Route, Routes, useMatch, useSearchParams } from 'react-router-dom'
+import { createHashRouter, Navigate, Outlet, RouterProvider, useMatch, useSearchParams } from 'react-router-dom'
 import { Sidebar } from './components/Sidebar'
 import { Header } from './components/Header'
 import { ClientsPage } from './pages/ClientsPage'
@@ -65,34 +65,47 @@ function AppShell() {
   )
 }
 
+// Data router (`createHashRouter`) plutôt que `<HashRouter><Routes>` : requis pour
+// `useBlocker` (garde « modifications non enregistrées », cf. MesuresTab).
+const router = createHashRouter([
+  // Route dédiée à la génération du PDF — layout autonome, sans le shell de l'app.
+  { path: '/report/:id', element: <ReportPage /> },
+  {
+    element: <AppShell />,
+    children: [
+      { index: true, element: <Navigate to="/clients" replace /> },
+      { path: '/clients', element: <ClientsPage /> },
+      { path: '/settings', element: <SettingsPage /> },
+      {
+        path: '/clients/:id',
+        element: <ClientDetailLayout />,
+        children: [
+          { index: true, element: <Navigate to="dashboard" replace /> },
+          {
+            path: 'dashboard',
+            element: <DashboardLayout />,
+            children: [
+              { index: true, element: <MesuresOverview /> },
+              { path: 'mesures', element: <MesuresOverview /> },
+              { path: 'bilan', element: <BilanOverview /> }
+            ]
+          },
+          { path: 'bilans', element: <BilansTab /> },
+          { path: 'bilans/:bilanId', element: <BilanDetailTab /> },
+          { path: 'mesures', element: <MesuresTab /> },
+          { path: 'notes', element: <PlaceholderTab title="Notes" /> },
+          { path: 'historique', element: <PlaceholderTab title="Historique" /> }
+        ]
+      },
+      { path: '*', element: <Navigate to="/clients" replace /> }
+    ]
+  }
+])
+
 export function App() {
   return (
     <UpdateProvider>
-      <HashRouter>
-        <Routes>
-          {/* Route dédiée à la génération du PDF — layout autonome, sans le shell de l'app. */}
-          <Route path="/report/:id" element={<ReportPage />} />
-          <Route element={<AppShell />}>
-            <Route index element={<Navigate to="/clients" replace />} />
-            <Route path="/clients" element={<ClientsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/clients/:id" element={<ClientDetailLayout />}>
-              <Route index element={<Navigate to="dashboard" replace />} />
-              <Route path="dashboard" element={<DashboardLayout />}>
-                <Route index element={<MesuresOverview />} />
-                <Route path="mesures" element={<MesuresOverview />} />
-                <Route path="bilan" element={<BilanOverview />} />
-              </Route>
-              <Route path="bilans" element={<BilansTab />} />
-              <Route path="bilans/:bilanId" element={<BilanDetailTab />} />
-              <Route path="mesures" element={<MesuresTab />} />
-              <Route path="notes" element={<PlaceholderTab title="Notes" />} />
-              <Route path="historique" element={<PlaceholderTab title="Historique" />} />
-            </Route>
-            <Route path="*" element={<Navigate to="/clients" replace />} />
-          </Route>
-        </Routes>
-      </HashRouter>
+      <RouterProvider router={router} />
       <UpdateToast />
     </UpdateProvider>
   )

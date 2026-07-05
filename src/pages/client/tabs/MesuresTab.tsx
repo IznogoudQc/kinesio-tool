@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useBlocker, useNavigate } from 'react-router-dom'
 import { ArrowUpCircle, Calculator, Eye, Loader2, PencilLine, PersonStanding, Ruler, Save, Trash2, UserCog, X } from 'lucide-react'
 import bodyMale from '@/assets/body-male.png'
 import bodyFemale from '@/assets/body-female.png'
@@ -79,6 +79,12 @@ export function MesuresTab() {
   const client = useClient()
   const [view, setView] = useState<'circ' | 'plis'>('circ')
   const [toast, setToast] = useState<string | null>(null)
+  // Saisie non enregistrée dans l'un ou l'autre panneau → on bloque la navigation
+  // sortante (changement d'onglet, retour, autre client) pour éviter la perte.
+  const [circDirty, setCircDirty] = useState(false)
+  const [plisDirty, setPlisDirty] = useState(false)
+  const dirty = circDirty || plisDirty
+  const blocker = useBlocker(dirty)
 
   useEffect(() => {
     if (!toast) return
@@ -101,15 +107,43 @@ export function MesuresTab() {
           NE PAS perdre la saisie en cours quand on bascule d'un sous-onglet à
           l'autre. Démonter/remonter réinitialiserait l'état local du formulaire. */}
       <div className={view === 'circ' ? '' : 'hidden'}>
-        <CirconferencesPanel client={client} notify={setToast} />
+        <CirconferencesPanel client={client} notify={setToast} onDirtyChange={setCircDirty} />
       </div>
       <div className={view === 'plis' ? '' : 'hidden'}>
-        <PlisPanel client={client} notify={setToast} />
+        <PlisPanel client={client} notify={setToast} onDirtyChange={setPlisDirty} />
       </div>
 
       {toast && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
           {toast}
+        </div>
+      )}
+
+      {blocker.state === 'blocked' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
+          <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark p-6">
+            <h2 className="text-marine font-semibold text-xl mb-2">Modifications non enregistrées</h2>
+            <p className="text-marine/60 text-base mb-5">
+              Vous avez des mesures saisies mais non enregistrées. Si vous quittez, elles seront perdues.
+            </p>
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => blocker.reset?.()}
+                autoFocus
+                className="px-4 py-2 text-marine/70 hover:text-marine border border-cream-dark rounded-md text-base transition-colors"
+              >
+                Rester sur la page
+              </button>
+              <button
+                type="button"
+                onClick={() => blocker.proceed?.()}
+                className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md text-base hover:bg-red-700 transition-colors"
+              >
+                Quitter sans enregistrer
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -338,7 +372,15 @@ function cleanIpcError(err: unknown, fallback: string): string {
 // ════════════════════════════════════════════════════════════════════════════════
 //  Sous-onglet : Circonférences
 // ════════════════════════════════════════════════════════════════════════════════
-function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: string) => void }) {
+function CirconferencesPanel({
+  client,
+  notify,
+  onDirtyChange
+}: {
+  client: Client
+  notify: (m: string) => void
+  onDirtyChange: (dirty: boolean) => void
+}) {
   const unitLength = client.unitLength ?? 'cm'
   const unitWeight = client.unitWeight ?? 'kg'
   const lenLabel = lengthUnitLabel(unitLength)
@@ -463,6 +505,13 @@ function CirconferencesPanel({ client, notify }: { client: Client; notify: (m: s
   }
 
   const hasAny = poids !== undefined || CIRC_ALL.some(c => form[c.key] !== undefined)
+
+  // « Dirty » = nouvelle saisie non enregistrée (on n'alerte pas en mode édition
+  // d'une ligne existante, dont les valeurs sont déjà en base).
+  const dirty = !editId && hasAny
+  useEffect(() => {
+    onDirtyChange(dirty)
+  }, [dirty, onDirtyChange])
 
   async function save() {
     if (!hasAny) return
@@ -958,7 +1007,15 @@ function CircDetailModal({ row, client, onClose }: { row: MesureCirconferences; 
 // ════════════════════════════════════════════════════════════════════════════════
 //  Sous-onglet : Plis cutanés
 // ════════════════════════════════════════════════════════════════════════════════
-function PlisPanel({ client, notify }: { client: Client; notify: (m: string) => void }) {
+function PlisPanel({
+  client,
+  notify,
+  onDirtyChange
+}: {
+  client: Client
+  notify: (m: string) => void
+  onDirtyChange: (dirty: boolean) => void
+}) {
   const navigate = useNavigate()
   const [list, setList] = useState<MesurePlisCutanes[]>([])
   const [loading, setLoading] = useState(true)
@@ -971,6 +1028,12 @@ function PlisPanel({ client, notify }: { client: Client; notify: (m: string) => 
   const [deleting, setDeleting] = useState<MesurePlisCutanes | null>(null)
 
   const profileComplete = Boolean(client.birthdate && client.sex)
+
+  // « Dirty » = nouveaux plis saisis non enregistrés (hors mode édition).
+  const plisDirty = !editId && PLIS_FIELDS.some(f => typeof form[f.key] === 'number')
+  useEffect(() => {
+    onDirtyChange(plisDirty)
+  }, [plisDirty, onDirtyChange])
 
   const reload = useCallback(async () => {
     setLoading(true)

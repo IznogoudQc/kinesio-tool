@@ -636,6 +636,15 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.72 — Mesures : avertissement « modifications non enregistrées »)
+
+Complément à v0.1.71 : quand on **quitte** l'onglet Mesures (autre onglet, retour, autre client) avec une saisie non
+enregistrée, un dialogue **« Modifications non enregistrées »** propose de rester ou de quitter sans enregistrer. Voir
+`docs/decisions/0017`. A nécessité de migrer le routeur vers un **data router** (`createHashRouter` + `RouterProvider`)
+pour activer `useBlocker` — migration contenue à `App.tsx`, tous les autres composants restent compatibles. Le « dirty »
+= nouvelle saisie non enregistrée (pas en mode édition). Ne couvre pas la fermeture de l'app (choix assumé, Electron).
+Version : 0.1.71 → 0.1.72.
+
 ## 🐛 Corrigé (v0.1.71 — Mesures : saisie perdue au changement de sous-onglet)
 
 Basculer entre **Circonférences** et **Plis cutanés** sans enregistrer effaçait la saisie en cours : `MesuresTab` montait
