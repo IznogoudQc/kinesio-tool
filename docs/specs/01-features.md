@@ -636,6 +636,13 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.58 — Avant / après : toutes les métriques)
+
+Le tableau « Avant / après » (vue d'ensemble) était limité aux **6 premières** métriques (`.slice(0, 6)`) ET n'affichait
+que celles présentes dans les **deux** bilans — d'où l'absence des pompes (8ᵉ dans l'ordre) et d'autres. Désormais il
+liste **toutes** les métriques renseignées dans le bilan **actuel** ; si la valeur de départ manque (bilan initial
+partiel), la colonne « avant » et l'évolution affichent « — ». Version : 0.1.57 → 0.1.58.
+
 ## ✅ Fait (v0.1.57 — Bug barre de couleur : marqueur dans le bon segment)
 
 Marie-Eve : « des fois la barre ne fonctionne pas » — la pastille dit « Bien » mais le marqueur ▲ est dans

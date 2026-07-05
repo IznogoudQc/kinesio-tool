@@ -565,15 +565,17 @@ function OverviewSection({
 
   const beforeAfter = useMemo(() => {
     if (single) return []
-    const rows: { label: string; unit: string; from: number; to: number; lower: boolean }[] = []
+    // Toutes les métriques renseignées dans le bilan actuel (pas de limite). La
+    // valeur « avant » peut manquer (bilan de départ partiel) → affichée « — ».
+    const rows: { label: string; unit: string; from: number | null; to: number; lower: boolean }[] = []
     for (const m of METRICS) {
-      const from = num(oldest.data[m.key])
       const to = num(latest.data[m.key])
-      if (from === null || to === null) continue
+      if (to === null) continue
+      const from = num(oldest.data[m.key])
       const lower = metricNorm(m.key, to, profile)?.lowerIsBetter ?? false
       rows.push({ label: m.label, unit: m.unit, from, to, lower })
     }
-    return rows.slice(0, 6)
+    return rows
   }, [single, oldest, latest, profile])
 
   const years = single ? 0 : yearsBetween(oldest.date, latest.date)
@@ -661,17 +663,17 @@ function OverviewSection({
                 </thead>
                 <tbody>
                   {beforeAfter.map(r => {
-                    const delta = r.to - r.from
-                    const improved = r.lower ? delta < 0 : delta > 0
-                    const pct = r.from !== 0 ? Math.round((delta / Math.abs(r.from)) * 100) : 0
-                    const arrow = delta < 0 ? '▼' : delta > 0 ? '▲' : '='
+                    const delta = r.from !== null ? r.to - r.from : null
+                    const improved = delta !== null && (r.lower ? delta < 0 : delta > 0)
+                    const pct = delta !== null && r.from !== null && r.from !== 0 ? Math.round((delta / Math.abs(r.from)) * 100) : 0
+                    const arrow = delta === null ? '' : delta < 0 ? '▼' : delta > 0 ? '▲' : '='
                     return (
                       <tr key={r.label} style={{ borderTop: `1px solid ${GRID}` }}>
                         <td style={{ padding: '2.4mm 0', color: MARINE }}>{r.label}</td>
-                        <td style={{ textAlign: 'right', color: INK_SOFT }}>{fmt(r.from)} {r.unit}</td>
+                        <td style={{ textAlign: 'right', color: INK_SOFT }}>{r.from === null ? '—' : `${fmt(r.from)} ${r.unit}`}</td>
                         <td style={{ textAlign: 'right', color: MARINE, fontWeight: 600 }}>{fmt(r.to)} {r.unit}</td>
-                        <td style={{ textAlign: 'right', fontWeight: 600, color: delta === 0 ? INK_SOFT : improved ? '#2f7d32' : '#c0392b' }}>
-                          {arrow} {delta > 0 ? '+' : ''}{fmt(delta)} {r.unit} ({pct > 0 ? '+' : ''}{pct} %)
+                        <td style={{ textAlign: 'right', fontWeight: 600, color: delta === null || delta === 0 ? INK_SOFT : improved ? '#2f7d32' : '#c0392b' }}>
+                          {delta === null ? '—' : `${arrow} ${delta > 0 ? '+' : ''}${fmt(delta)} ${r.unit} (${pct > 0 ? '+' : ''}${pct} %)`}
                         </td>
                       </tr>
                     )
