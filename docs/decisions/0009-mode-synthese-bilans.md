@@ -70,9 +70,23 @@ Aucun changement : `activeBilan` et `previousActiveBilan` deviennent des bilans 
 - **ProgressionChart** : reçoit `activeBilanId = 'synthesis'` quand actif — aucun point n'est mis en évidence sur la timeline. Voulu (la synthèse n'a pas de point unique sur la frise).
 - **Deltas ▲▼ champ par champ** : un même affichage de delta peut mélanger des comparaisons venant de bilans différents (VO2max actuel sept 2025 vs précédent oct 2024 = delta sur 11 mois ; IMC actuel janv 2025 vs précédent juin 2023 = delta sur 19 mois). C'est la nature même de la synthèse — à expliquer dans les tooltips d'origine en v0.1.33.
 
+## Mise à jour (v0.1.40) — dette « tooltips d'origine » résolue pour les hero stats
+
+`fieldOriginDates` est désormais exposé dans l'UI, **uniquement en mode Synthèse** :
+
+- Les 4 `StatCardXL` du dashboard (VO2max, IMC, % gras, tour de taille) reçoivent une prop optionnelle
+  `originDate?: string`. Quand elle est présente, la card affiche un rappel discret « du 12 sept 2025 » sous la
+  valeur, avec un `title=` natif explicitant « valeur la plus récente disponible … mesurée le … ».
+- `DashboardTab` ne passe `originDate` que si `isSynthesisMode` — en mode « bilan précis », la date serait redondante
+  avec l'en-tête, donc rien n'est affiché.
+- **`CompositeMiniCard` volontairement exclu** : un score composite agrège plusieurs champs de dates hétérogènes ;
+  afficher une date unique serait trompeur. `BilanForm` en lecture seule (40 champs) est également laissé de côté pour
+  ne pas alourdir. La dette est donc résolue là où elle comptait le plus (les indicateurs mis en avant).
+- Couvert par un test dans `synthesisBilan.test.ts` (chaque champ pointe le bon bilan quand les dates diffèrent).
+
 ## Limitations connues / à surveiller
 
-- **Pas de tooltips d'origine en v0.1.32** : `fieldOriginDates` est calculé mais pas exposé au UI. Si Marie-Eve trouve la synthèse opaque (« d'où vient cette valeur ? »), tooltip à brancher.
+- **Tooltips d'origine limités aux hero stats** (v0.1.40) : `fieldOriginDates` n'est exposé que sur les 4 `StatCardXL`. Les composites et le formulaire lecture seule ne l'affichent pas (choix, voir ci-dessus).
 - **Composants downstream ne savent pas qu'ils affichent du virtuel** : `<StatCardXL>` ne sait pas si son `value` vient de sept 2025 ou janv 2025. Pas grave actuellement parce que la sémantique reste « dernière valeur connue » — mais à garder en tête si on rajoute des comparaisons croisées.
 
 ## Si on revient en arrière

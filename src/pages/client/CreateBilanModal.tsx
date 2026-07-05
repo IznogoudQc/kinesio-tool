@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowUpCircle, Loader2, PencilLine } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, ArrowRight, ArrowUpCircle, Check, Loader2, PencilLine } from 'lucide-react'
 import { bilansService } from '../../services/bilans'
 import { settingsService } from '../../services/settings'
 import { BilanForm, deriveBilanFields } from './BilanForm'
 import { computeAge, type NormsType } from '../../lib/norms'
-import { formatBilanDate } from './bilanFields'
+import { BILAN_FIELD_GROUPS, formatBilanDate } from './bilanFields'
+import { missingImportantFields, type ImportantField } from './bilan-required-fields'
 
 interface CreateBilanModalProps {
   client: Client
@@ -67,6 +68,12 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
   const [norms, setNorms] = useState<NormsType>('acsm')
   const [previous, setPrevious] = useState<Bilan | null>(null)
   const [showPrefillModal, setShowPrefillModal] = useState(false)
+  // Mode de saisie : 'scroll' = formulaire complet (défaut, rapide) ;
+  // 'guided' = une section à la fois avec un stepper (moins intimidant).
+  const [mode, setMode] = useState<'scroll' | 'guided'>('scroll')
+  const [stepIndex, setStepIndex] = useState(0)
+  // Récapitulatif des champs importants manquants, affiché avant la sauvegarde.
+  const [pendingMissing, setPendingMissing] = useState<ImportantField[] | null>(null)
 
   useEffect(() => {
     settingsService.getCategorizationNorms().then(setNorms).catch(() => undefined)
@@ -108,14 +115,11 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
     setShowPrefillModal(false)
   }
 
-  async function handleSave(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      setError('La date du bilan est requise.')
-      return
-    }
+  // Sauvegarde effective (après validation date + éventuel passage par le
+  // récapitulatif des champs manquants).
+  async function persist() {
     setSaving(true)
+    setError(null)
     try {
       const finalData = deriveBilanFields(data, age, client.sex)
       const created = await bilansService.create(client.id, {
@@ -132,6 +136,23 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
     }
   }
 
+  function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      setError('La date du bilan est requise.')
+      return
+    }
+    // Garde-fou doux : si des mesures importantes manquent, on propose un
+    // récapitulatif (« Enregistrer quand même » / « Compléter ») — jamais bloquant.
+    const missing = missingImportantFields(data)
+    if (missing.length > 0) {
+      setPendingMissing(missing)
+      return
+    }
+    void persist()
+  }
+
   const showPrefillBanner = previous && prefillAvailable.length > 0
 
   return (
@@ -139,14 +160,38 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
       <div className="bg-cream rounded-lg shadow-2xl w-full max-w-4xl border border-cream-dark my-6">
         <form onSubmit={handleSave}>
           <div className="px-6 py-5 border-b border-cream-dark flex items-center gap-3">
-            <PencilLine size={20} className="text-gold-dark" />
-            <div>
+            <PencilLine size={20} className="text-gold-dark shrink-0" />
+            <div className="flex-1 min-w-0">
               <h2 className="text-marine font-semibold text-xl">Saisie manuelle d'un bilan</h2>
               <p className="text-marine/55 text-sm">
                 {client.name} — seule la date est requise. Tous les autres champs sont optionnels.
               </p>
             </div>
+            {/* Bascule mode de saisie */}
+            <div className="flex rounded-md border border-cream-dark overflow-hidden shrink-0 text-sm">
+              <button
+                type="button"
+                onClick={() => setMode('scroll')}
+                className={`px-3 py-1.5 transition-colors ${mode === 'scroll' ? 'bg-gold text-marine font-semibold' : 'bg-white/60 text-marine/60 hover:text-marine'}`}
+              >
+                Tout afficher
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('guided'); setStepIndex(0) }}
+                className={`px-3 py-1.5 transition-colors ${mode === 'guided' ? 'bg-gold text-marine font-semibold' : 'bg-white/60 text-marine/60 hover:text-marine'}`}
+              >
+                Guidé
+              </button>
+            </div>
           </div>
+
+          {mode === 'guided' && (
+            <StepperHeader
+              stepIndex={stepIndex}
+              titles={BILAN_FIELD_GROUPS.map(g => g.title)}
+            />
+          )}
 
           {error && (
             <div className="mx-6 mt-4 text-red-700 text-base bg-red-50 border border-red-200 rounded-md px-4 py-3">
@@ -183,6 +228,8 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
               norms={norms}
               showSynthesis
               previousData={previous?.data}
+              visibleSectionIds={mode === 'guided' ? [BILAN_FIELD_GROUPS[stepIndex].id] : undefined}
+              collapsible={mode === 'guided' ? false : undefined}
             />
           </div>
 
@@ -191,18 +238,40 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
               type="button"
               onClick={onCancel}
               disabled={saving}
-              className="px-4 py-2 text-marine/70 hover:text-marine border border-cream-dark rounded-md text-base transition-colors"
+              className="px-4 py-2 text-marine/70 hover:text-marine border border-cream-dark rounded-md text-base transition-colors mr-auto"
             >
               Annuler
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving && <Loader2 size={15} className="animate-spin" />}
-              {saving ? 'Enregistrement…' : 'Enregistrer'}
-            </button>
+
+            {mode === 'guided' && stepIndex > 0 && (
+              <button
+                type="button"
+                onClick={() => setStepIndex(i => Math.max(0, i - 1))}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-marine border border-cream-dark rounded-md text-base hover:bg-white transition-colors"
+              >
+                <ArrowLeft size={15} /> Précédent
+              </button>
+            )}
+
+            {mode === 'guided' && stepIndex < BILAN_FIELD_GROUPS.length - 1 ? (
+              <button
+                type="button"
+                onClick={() => setStepIndex(i => Math.min(BILAN_FIELD_GROUPS.length - 1, i + 1))}
+                className="inline-flex items-center gap-1.5 px-5 py-2 bg-marine text-cream font-semibold rounded-md text-base hover:bg-marine-light transition-colors"
+              >
+                Section suivante <ArrowRight size={15} />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving && <Loader2 size={15} className="animate-spin" />}
+                {saving ? 'Enregistrement…' : mode === 'guided' ? 'Vérifier & enregistrer' : 'Enregistrer'}
+              </button>
+            )}
           </div>
         </form>
       </div>
@@ -215,6 +284,91 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
           onConfirm={applyPrefill}
         />
       )}
+
+      {pendingMissing && (
+        <MissingFieldsDialog
+          missing={pendingMissing}
+          guided={mode === 'guided'}
+          onComplete={() => {
+            setPendingMissing(null)
+            if (mode === 'guided') setStepIndex(0)
+          }}
+          onSaveAnyway={() => {
+            setPendingMissing(null)
+            void persist()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+/** Barre de progression du mode guidé : « Section N / M » + le titre courant. */
+function StepperHeader({ stepIndex, titles }: { stepIndex: number; titles: string[] }) {
+  const total = titles.length
+  const pct = Math.round(((stepIndex + 1) / total) * 100)
+  return (
+    <div className="px-6 pt-4">
+      <div className="flex items-center justify-between mb-1.5">
+        <p className="text-marine font-medium text-sm">
+          Étape {stepIndex + 1} / {total} — {titles[stepIndex]}
+        </p>
+        <p className="text-marine/50 text-xs">{pct} %</p>
+      </div>
+      <div className="h-1.5 bg-cream-dark/50 rounded-full overflow-hidden">
+        <div className="h-full bg-gold transition-all duration-300" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+interface MissingFieldsDialogProps {
+  missing: ImportantField[]
+  guided: boolean
+  onComplete: () => void
+  onSaveAnyway: () => void
+}
+
+/** Récapitulatif non bloquant des mesures importantes manquantes. */
+function MissingFieldsDialog({ missing, guided, onComplete, onSaveAnyway }: MissingFieldsDialogProps) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/50 backdrop-blur-sm p-6">
+      <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark">
+        <div className="px-6 py-5 border-b border-cream-dark flex items-center gap-3">
+          <AlertTriangle size={20} className="text-amber-500 shrink-0" />
+          <h3 className="text-marine font-semibold text-lg">Quelques mesures manquent</h3>
+        </div>
+        <div className="px-6 py-4">
+          <p className="text-marine/70 text-sm mb-3">
+            Ces mesures importantes ne sont pas renseignées. Vous pouvez compléter le bilan ou l'enregistrer
+            tel quel — rien n'est perdu.
+          </p>
+          <ul className="space-y-1">
+            {missing.map(f => (
+              <li key={f.key as string} className="flex items-center gap-2 text-marine text-base">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+                {f.label}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="px-6 py-4 border-t border-cream-dark flex items-center justify-end gap-3">
+          <button
+            type="button"
+            onClick={onComplete}
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-marine border border-cream-dark rounded-md text-base hover:bg-white transition-colors"
+          >
+            {guided ? 'Compléter' : 'Revenir au formulaire'}
+          </button>
+          <button
+            type="button"
+            onClick={onSaveAnyway}
+            className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors"
+          >
+            <Check size={15} /> Enregistrer quand même
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

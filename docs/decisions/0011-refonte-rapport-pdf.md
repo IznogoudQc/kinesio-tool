@@ -45,6 +45,23 @@ La section 6 affiche des recommandations courtes **codées en dur** par métriqu
 - La frise et le tableau avant/après nécessitent ≥ 2 bilans ; à 1 seul bilan, la section Parcours affiche un message « Premier bilan ».
 - Le format est figé en A4 portrait, palette imprimable (pas de fond marine plein).
 
+## Mise à jour (v0.1.39) — sections récupération, notes, protocole
+
+Ajout de trois éléments prévus mais absents de la refonte initiale :
+
+- **Ligne « Estimé via … »** sous le VO2max dans les pages détaillées (Section 5) : rappelle le protocole utilisé et
+  son paramètre brut (Bruce → durée `mm:ss`, Cooper → distance, Léger → palier). Repli sur `test_aerobie` (label texte
+  des imports .docx). Helper pur `aerobicProtocolLabel` dans `src/lib/report-helpers.ts`.
+- **Nouvelle Section 6 « Récupération & observations »** : tableau 1/3/5 min × (FC, PA systolique, PA diastolique)
+  construit depuis les champs `recup_*` du dernier bilan, **rendu seulement si** au moins une valeur est présente
+  (`hasRecoveryData`). Suivi du bloc **Observations** (`data.notes`, `white-space: pre-line`), rendu seulement si non
+  vide. Si ni récupération ni notes → la page entière n'est pas générée.
+- **Forces & axes** passe en Section 7.
+
+`hasRecoveryData` + `aerobicProtocolLabel` sont des fonctions pures testées (`src/lib/report-helpers.test.ts`, 5
+tests). Aucune modification de `electron/lib/report-generator.ts` : le DOM enrichi est capté tel quel par
+`printToPDF`, le timing `window.__REPORT_READY__` est inchangé. Les nouveaux blocs portent `break-inside-avoid`.
+
 ## Hors-scope (v0.1.37+)
 
 - Mode « rapport minimal » pour usage interne de Marie-Eve (sans couverture ni pages parcours).

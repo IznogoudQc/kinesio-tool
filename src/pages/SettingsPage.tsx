@@ -3,6 +3,7 @@ import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge } from 'lu
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { settingsService } from '../services/settings'
+import { cpaflaHasTables } from '../lib/norms/cpafla'
 import mEvePhoto from '../assets/mEve.png'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -379,6 +380,8 @@ function NormsCard() {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<SaveStatus>('idle')
   const [error, setError] = useState<string | null>(null)
+  // Vrai dès que des tables CPAFLA sont réellement encodées (cf. cpafla.ts).
+  const cpaflaReady = cpaflaHasTables()
 
   useEffect(() => {
     settingsService
@@ -443,7 +446,9 @@ function NormsCard() {
                 className="mt-1 w-4 h-4 accent-gold cursor-pointer"
               />
               <div>
-                <p className="text-marine font-medium text-base">CPAFLA (à venir)</p>
+                <p className="text-marine font-medium text-base">
+                  CPAFLA {cpaflaReady ? '' : '(tables en attente)'}
+                </p>
                 <p className="text-marine/55 text-sm">
                   Société canadienne de physiologie de l'exercice — Canadian Physical Activity, Fitness
                   and Lifestyle Approach.
@@ -452,9 +457,11 @@ function NormsCard() {
             </label>
           </div>
 
-          {value === 'cpafla' && (
+          {value === 'cpafla' && !cpaflaReady && (
             <div className="bg-cream/60 border border-cream-dark rounded-md px-4 py-3 text-marine/70 text-sm">
-              Les tables CPAFLA seront ajoutées dans une future version. ACSM est utilisé en attendant.
+              L'intégration CPAFLA est prête, mais les barèmes officiels (CSEP-PATH) ne sont pas encore
+              encodés — ils nécessitent la source publiée. En attendant, les tests non couverts s'affichent
+              sans catégorie (« — »). Restez sur ACSM pour une catégorisation complète.
             </div>
           )}
 

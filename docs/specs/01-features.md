@@ -636,6 +636,139 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.42 — Formulaire de saisie : mode guidé (stepper) + garde-fou champs manquants)
+
+### Objectif : une saisie moins intimidante sans dégrader le mode rapide
+Le formulaire (~40 champs, 6 sections) gagne un mode « Guidé » optionnel (une section à la fois) et un rappel doux
+des mesures importantes manquantes avant la sauvegarde. Le mode « Tout afficher » reste le défaut et strictement
+inchangé. Voir ADR 0014.
+
+### `BilanForm`
+- Nouvelle prop `visibleSectionIds?: string[]` : rend uniquement ces sections (absente = toutes, comportement
+  d'origine). Le mode guidé passe une seule section + `collapsible={false}` (section dépliée).
+
+### `CreateBilanModal`
+- Bascule « Tout afficher » / « Guidé » dans l'en-tête. Mode guidé : `StepperHeader` (barre de progression
+  « Étape N / M — Titre » + %), Précédent / Section suivante, dernière étape → « Vérifier & enregistrer ».
+  Synthèse sticky visible dans les deux modes.
+- **Garde-fou (les deux modes)** : `missingImportantFields(data)` → `MissingFieldsDialog` non bloquant
+  (« Compléter » / « Enregistrer quand même ») si taille, poids, tour de taille, VO2max, PA ou push-ups/situps
+  manquent. `0` = renseigné ; `NaN`/`''` = manquant.
+
+### Module — `src/pages/client/bilan-required-fields.ts`
+`IMPORTANT_BILAN_FIELDS` + `missingImportantFields` (pur). Test : `bilan-required-fields.test.ts` (5 tests).
+
+### Vérifs
+- Suite complète **137/137 pass** ; `tsc` web + node clean ; build OK ; lint baseline inchangée.
+  Version : 0.1.41 → 0.1.42.
+
+## ✅ Fait (v0.1.41 — CPAFLA : ossature + rapport PDF débranché d'ACSM figé)
+
+### Objectif : préparer l'intégration CPAFLA sans inventer de valeurs cliniques
+Les seuils exacts CPAFLA vivent dans le CSEP-PATH Toolkit (sous droits d'auteur) — non reproductibles depuis les
+sources publiques. Plutôt que fabriquer des barèmes (risque clinique), on livre **toute l'ossature** ; les valeurs
+seront encodées quand Marie-Eve fournira la source. Voir ADR 0013.
+
+### `src/lib/norms/cpafla.ts` — scaffold complet
+- Structure identique à `acsm.ts` : `pct()` exporté, `TABLES: Record<TestKey, Ranges | null>` (tout `null`),
+  `getCpaflaRange` opérationnel dès remplissage. Convention de conversion catégories CPAFLA → percentiles documentée
+  (ADR 0006 : Acceptable→p10, Bien→p25, Très bien→p50, Excellent→p75, p90=2·p75−p50 ; lowerIsBetter décroissant).
+- Helper `cpaflaHasTables()` : pilote le messaging Paramètres (pas de statut codé en dur).
+- `bodyFat` (CPAFLA cote la somme des plis, pas le %) et `vo2max` (mCAFT) laissés `null` et documentés.
+
+### Correction — rapport PDF figé sur ACSM
+`ReportPage.tsx` forçait `norms: 'acsm'` : activer CPAFLA ne changeait pas le rapport. Il lit désormais
+`settingsService.getCategorizationNorms()` (repli `'acsm'`). `deriveBilanFields` reste sur ACSM (stabilité des
+scores **stockés**) ; seul l'affichage suit la norme active.
+
+### Paramètres
+Radio CPAFLA sélectionnable, libellé « CPAFLA (tables en attente) », message honnête tant que `cpaflaHasTables()`
+est faux (tests non couverts → « — », rester sur ACSM pour une catégorisation complète).
+
+### Vérifs
+- `norms.test.ts` : CPAFLA → `null` partout + `cpaflaHasTables() === false`. Suite complète **122/122 pass**.
+  `tsc` web + node clean ; build OK. Version : 0.1.40 → 0.1.41.
+
+## ✅ Fait (v0.1.40 — Tooltips d'origine des valeurs en mode Synthèse)
+
+### Objectif : lever l'opacité de la synthèse (« d'où vient cette valeur ? »)
+En mode Synthèse, chaque hero stat peut venir d'un bilan différent. `fieldOriginDates` (calculé depuis v0.1.32 par
+`buildSynthesisBilan` mais jamais affiché — dette ADR 0009) est maintenant exposé.
+
+### UI — `StatCardXL`
+- Nouvelle prop optionnelle `originDate?: string` → rappel discret « du 12 sept 2025 » sous la valeur + `title=` natif
+  explicatif. `DashboardTab` ne la passe **que si `isSynthesisMode`**, pour les 4 cards (VO2max, IMC, % gras, tour de
+  taille) depuis `synthesisResult.fieldOriginDates`.
+- `CompositeMiniCard` volontairement exclu (agrège des dates hétérogènes → une date unique serait trompeuse).
+
+### Vérifs
+- Test ajouté à `src/lib/synthesisBilan.test.ts` (chaque champ pointe le bon bilan quand les dates diffèrent) → 8/8.
+  Suite complète **122/122 pass**. `tsc` web + node clean ; build OK. Version : 0.1.39 → 0.1.40.
+
+## ✅ Fait (v0.1.39 — Rapport PDF enrichi : récupération, notes, protocole)
+
+### Objectif : intégrer au rapport les sections saisies mais jamais rendues
+Le rapport PDF (refonte v0.1.36) ignorait la récupération post-effort, les notes de la kinésiologue et le protocole
+aérobie utilisé. Ces trois éléments sont désormais affichés dans `ReportPage.tsx`.
+
+### Helpers purs — `src/lib/report-helpers.ts`
+- `hasRecoveryData(data)` : vrai si au moins un champ `recup_*` est un nombre fini.
+- `aerobicProtocolLabel(data, formatMmSs)` : « Tapis roulant de Bruce — 13:30 » / « Test de Cooper (12 min) — 2400 m »
+  / « Test de Léger (navette 20 m) — palier 8 », repli sur `test_aerobie` (imports .docx) puis `null`.
+- Testés : `src/lib/report-helpers.test.ts` (5 tests).
+
+### `ReportPage.tsx`
+- **Ligne protocole** sous le VO2max des pages détaillées (« Estimé via … »).
+- **Section 6 « Récupération & observations »** : tableau 1/3/5 min × (FC / PA sys / PA dia), rendu seulement si
+  données présentes ; bloc **Observations** (`data.notes`, `pre-line`) rendu seulement si non vide. Ni l'un ni l'autre
+  → page non générée. Blocs `break-inside-avoid`.
+- **Forces & axes** renumérotée Section 7.
+- `report-generator.ts` inchangé (DOM capté tel quel par `printToPDF`, timing `__REPORT_READY__` intact).
+
+### Note — Bruce-FRIEND abandonné
+Le chantier « équation Bruce-FRIEND » (matcher le VO2max ≈49 du logiciel actuel) a été **abandonné** après recherche :
+aucune équation Bruce-FRIEND temporelle publiée n'existe (le registre FRIEND ne publie qu'une équation démographique
+de référence, indépendante de la durée du test). Sans données de calibration du logiciel de Marie-Eve, on conserve
+Foster/Pollock. Voir daily-note 2026-07-04.
+
+### Vérifs
+- `node --test src/lib/report-helpers.test.ts` → 5/5 ; suite complète **121/121 pass**.
+- `tsc` web + node clean ; `npm run build` OK. Version `package.json` : 0.1.38 → 0.1.39.
+
+## ✅ Fait (v0.1.38 — Validation de plausibilité à la saisie)
+
+### Objectif : signaler les valeurs douteuses sans jamais bloquer Marie-Eve
+Le formulaire de bilan acceptait n'importe quel nombre (VO2max négatif, taille de 300 cm). Chaque champ numérique
+a désormais des bornes **souples** (avertissement amber « Valeur inhabituelle — vérifiez (habituellement X à Y) »)
+et des bornes **dures** (bordure rouge « Valeur impossible » + rejet zod à l'IPC). La saisie n'est jamais bloquée
+côté formulaire — seul le physiquement impossible est refusé à la sauvegarde.
+
+### Module — `src/lib/bilan-bounds.ts`
+- `BILAN_FIELD_BOUNDS` : bornes par champ (`hardMin`/`hardMax`/`softMin`/`softMax`). Bornes dures volontairement
+  généreuses — ne doivent jamais rejeter une donnée réelle (imports .docx historiques inclus).
+- `validateBilanField(key, value)` → `{ level: 'ok' | 'warn' | 'error', message? }`. Champ absent de la table →
+  jamais borné (ex. `puissance_jambes_watts`, qui dépasse 6000 W chez certains clients).
+- `flexion_tronc_cm` (sit-and-reach) : le négatif est légitime → bornes −15…60 (soft) / −30…80 (dur).
+- Module sans dépendance au type ambiant `BilanData` → partagé avec le main process (ajouté à `tsconfig.node.json`,
+  même pattern que `body-fat-calculator.ts`).
+
+### UI
+- `BilanForm.renderField` (champs numériques génériques) : bordure `!border-amber-400` / `!border-red-500` + message
+  sous le champ selon le niveau. Jamais de blocage du `onChange`.
+- `AerobicSection` : mêmes indicateurs sur FC repos, PA systolique/diastolique, distance Cooper, palier Léger
+  (inputs rendus hors du `renderField` générique).
+
+### IPC — `electron/ipc/bilans.ts`
+- Helper `bounded(key)` : construit `z.number().finite().min(hardMin).max(hardMax).optional()` depuis
+  `BILAN_FIELD_BOUNDS`. Remplace `numberOrUndef` sur tous les champs du `BilanDataSchema` (un champ sans borne
+  reste simplement `finite`). S'applique à `bilans:create`, `bilans:update` et `bilans:import`.
+
+### Vérifs
+- `node --test src/lib/bilan-bounds.test.ts` → 7/7 pass, dont le cas Nicholas Jean complet (aucune valeur réelle
+  rejetée ni signalée). Suite complète : **116/116 pass**.
+- `tsc` web + node clean ; `npm run build` OK ; `npm run lint` baseline préexistante inchangée.
+- Version `package.json` : 0.1.37 → 0.1.38.
+
 ## ✅ Fait (v0.1.37 — Corrections du rapport PDF)
 
 5 correctifs sur le rapport PDF (v0.1.36) : couverture avec avatar carré (visage) au lieu du plein corps ; `break-inside: avoid` sur chaque bloc métrique (plus de blocs coupés entre pages) ; barèmes cliniques PA systolique/diastolique + FC repos ajoutés (`src/lib/norms/clinical.ts`, branchés via `getRange`) → PA et FC affichent leur `CategoryRangeBar` ; phrases explicatives par catégorie (lookup `EXPLANATION_BY_CATEGORY`) ; axes de graphes recalibrés (`interval="preserveStartEnd"`, ticks de score forcés à 0-5).

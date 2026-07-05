@@ -346,6 +346,7 @@ export function DashboardTab() {
         age={age}
         sex={client.sex}
         norms={norms}
+        originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.vo2max : undefined}
       />
       <StatCardXL
         label="IMC"
@@ -355,6 +356,7 @@ export function DashboardTab() {
         age={age}
         sex={client.sex}
         norms={norms}
+        originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.imc : undefined}
       />
       <StatCardXL
         label="% de gras"
@@ -364,6 +366,7 @@ export function DashboardTab() {
         age={age}
         sex={client.sex}
         norms={norms}
+        originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.pourcentage_gras : undefined}
       />
       <StatCardXL
         label="Tour de taille"
@@ -373,6 +376,7 @@ export function DashboardTab() {
         age={age}
         sex={client.sex}
         norms={norms}
+        originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.tour_taille_cm : undefined}
       />
     </section>
   )

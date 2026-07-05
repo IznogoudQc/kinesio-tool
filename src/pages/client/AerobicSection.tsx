@@ -10,6 +10,7 @@ import {
   type AerobicTestType
 } from '../../lib/vo2max-calculator'
 import { computeMet } from '../../lib/norms/calc'
+import { validateBilanField, type BoundResult } from '../../lib/bilan-bounds'
 import { CategoryBadge } from '../../components/CategoryBadge'
 import { PercentileIndicator } from '../../components/PercentileIndicator'
 import type { Category, NormsType } from '../../lib/norms'
@@ -157,6 +158,21 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
   const vo2maxCategory =
     readOnly && categorize && typeof displayedVo2max === 'number' ? categorize('vo2max', displayedVo2max) : null
 
+  // Plausibilité des saisies numériques de la section (mêmes bornes que BilanForm).
+  const boundOf = (key: string, value: number | undefined): BoundResult | null =>
+    readOnly ? null : validateBilanField(key, value)
+  const boundBorder = (b: BoundResult | null): string =>
+    b?.level === 'error' ? ' !border-red-500' : b?.level === 'warn' ? ' !border-amber-400' : ''
+  const boundMsg = (b: BoundResult | null) =>
+    b?.message ? (
+      <p className={`text-xs mt-1 ${b.level === 'error' ? 'text-red-500' : 'text-amber-600'}`}>{b.message}</p>
+    ) : null
+  const cooperBound = boundOf('cooper_distance_m', data.cooper_distance_m)
+  const legerBound = boundOf('leger_palier', data.leger_palier)
+  const fcReposBound = boundOf('fc_repos', data.fc_repos)
+  const paSysBound = boundOf('pa_systolique', data.pa_systolique)
+  const paDiaBound = boundOf('pa_diastolique', data.pa_diastolique)
+
   return (
     <div className="space-y-4">
       {/* Sélecteur de protocole */}
@@ -218,15 +234,18 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
                 {data.cooper_distance_m ?? <span className="opacity-40">—</span>}
               </p>
             ) : (
-              <input
-                type="number"
-                step="any"
-                value={data.cooper_distance_m ?? ''}
-                onChange={e =>
-                  setCooperDistance(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
-                }
-                className={inputClass}
-              />
+              <>
+                <input
+                  type="number"
+                  step="any"
+                  value={data.cooper_distance_m ?? ''}
+                  onChange={e =>
+                    setCooperDistance(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
+                  }
+                  className={`${inputClass}${boundBorder(cooperBound)}`}
+                />
+                {boundMsg(cooperBound)}
+              </>
             )}
           </div>
         )}
@@ -239,15 +258,18 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
                 {data.leger_palier ?? <span className="opacity-40">—</span>}
               </p>
             ) : (
-              <input
-                type="number"
-                step="1"
-                min={1}
-                max={21}
-                value={data.leger_palier ?? ''}
-                onChange={e => setLegerPalier(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)}
-                className={inputClass}
-              />
+              <>
+                <input
+                  type="number"
+                  step="1"
+                  min={1}
+                  max={21}
+                  value={data.leger_palier ?? ''}
+                  onChange={e => setLegerPalier(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)}
+                  className={`${inputClass}${boundBorder(legerBound)}`}
+                />
+                {boundMsg(legerBound)}
+              </>
             )}
             {age === null && !readOnly && (
               <p className="text-xs text-red-500 mt-1">Date de naissance requise pour le calcul Léger.</p>
@@ -391,15 +413,18 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
               {data.fc_repos === undefined ? <span className="opacity-40">—</span> : data.fc_repos}
             </p>
           ) : (
-            <input
-              type="number"
-              step="any"
-              value={data.fc_repos ?? ''}
-              onChange={e =>
-                setNumberField('fc_repos', Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
-              }
-              className={inputClass}
-            />
+            <>
+              <input
+                type="number"
+                step="any"
+                value={data.fc_repos ?? ''}
+                onChange={e =>
+                  setNumberField('fc_repos', Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
+                }
+                className={`${inputClass}${boundBorder(fcReposBound)}`}
+              />
+              {boundMsg(fcReposBound)}
+            </>
           )}
         </div>
 
@@ -434,18 +459,21 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
               {data.pa_systolique === undefined ? <span className="opacity-40">—</span> : data.pa_systolique}
             </p>
           ) : (
-            <input
-              type="number"
-              step="any"
-              value={data.pa_systolique ?? ''}
-              onChange={e =>
-                setNumberField(
-                  'pa_systolique',
-                  Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber
-                )
-              }
-              className={inputClass}
-            />
+            <>
+              <input
+                type="number"
+                step="any"
+                value={data.pa_systolique ?? ''}
+                onChange={e =>
+                  setNumberField(
+                    'pa_systolique',
+                    Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber
+                  )
+                }
+                className={`${inputClass}${boundBorder(paSysBound)}`}
+              />
+              {boundMsg(paSysBound)}
+            </>
           )}
         </div>
 
@@ -458,18 +486,21 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
               {data.pa_diastolique === undefined ? <span className="opacity-40">—</span> : data.pa_diastolique}
             </p>
           ) : (
-            <input
-              type="number"
-              step="any"
-              value={data.pa_diastolique ?? ''}
-              onChange={e =>
-                setNumberField(
-                  'pa_diastolique',
-                  Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber
-                )
-              }
-              className={inputClass}
-            />
+            <>
+              <input
+                type="number"
+                step="any"
+                value={data.pa_diastolique ?? ''}
+                onChange={e =>
+                  setNumberField(
+                    'pa_diastolique',
+                    Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber
+                  )
+                }
+                className={`${inputClass}${boundBorder(paDiaBound)}`}
+              />
+              {boundMsg(paDiaBound)}
+            </>
           )}
         </div>
       </div>

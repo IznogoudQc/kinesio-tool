@@ -26,10 +26,13 @@ import {
   getNormPercentiles,
   getPercentile,
   type Category,
+  type NormsType,
   type TestKey
 } from '../lib/norms'
 import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { computeSynthesis, type BilanProfile, type CompositeScore } from '../lib/norms/scoring'
+import { formatMmSs } from '../lib/vo2max-calculator'
+import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
 import logo from '../assets/logo.png'
 import bodyMale from '../assets/body-male.png'
 import bodyFemale from '../assets/body-female.png'
@@ -167,6 +170,7 @@ export function ReportPage() {
   const [coachName, setCoachName] = useState('')
   const [signature, setSignature] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [norms, setNorms] = useState<NormsType>('acsm')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -179,10 +183,11 @@ export function ReportPage() {
         return
       }
       try {
-        const [all, bs, profile] = await Promise.all([
+        const [all, bs, profile, activeNorms] = await Promise.all([
           clientsService.list(),
           bilansService.getBilansForClient(id),
-          settingsService.getProfile()
+          settingsService.getProfile(),
+          settingsService.getCategorizationNorms().catch(() => 'acsm' as NormsType)
         ])
         if (cancelled) return
         const found = all.find(c => c.id === id) ?? null
@@ -194,6 +199,7 @@ export function ReportPage() {
         setBilans(bs)
         setCoachName(profile.name)
         setSignature(profile.signature)
+        setNorms(activeNorms)
         // Couverture : avatar carré (focus visage) — pas la version plein corps.
         const avatarFile = found.avatarFilename
         if (avatarFile) {
@@ -233,8 +239,8 @@ export function ReportPage() {
   }, [loading])
 
   const profile = useMemo<BilanProfile>(
-    () => ({ age: computeAge(client?.birthdate), sex: client?.sex ?? null, norms: 'acsm' }),
-    [client]
+    () => ({ age: computeAge(client?.birthdate), sex: client?.sex ?? null, norms }),
+    [client, norms]
   )
   // Du plus ancien au plus récent.
   const chrono = useMemo(() => [...bilans].reverse(), [bilans])
@@ -275,6 +281,7 @@ export function ReportPage() {
       <SynthesePage synth={latestSynth} bilanDate={latest.date} />
       <ProgressionChartsPage chrono={chrono} syntheses={syntheses} />
       <MetricDetailsPages latest={latest} bilans={bilans} profile={profile} />
+      <RecuperationEtNotesPage latest={latest} />
       <ForcesEtAxesPage latest={latest} profile={profile} coachName={coachName} signature={signature} />
     </article>
   )
@@ -996,6 +1003,8 @@ function MetricBlock({
   const value = num(latest.data[metric.key])
   if (value === null) return null
   const norm = metricNorm(metric.key, value, profile)
+  // Pour le VO2max : rappel du protocole utilisé et de son paramètre brut.
+  const protocol = metric.key === 'vo2max' ? aerobicProtocolLabel(latest.data as Record<string, unknown>, formatMmSs) : null
   const spark = recent
     .slice()
     .reverse()
@@ -1025,6 +1034,7 @@ function MetricBlock({
           {norm?.percentile !== null && norm?.percentile !== undefined && (
             <p style={{ fontSize: '9pt', color: INK_SOFT }}>{Math.round(norm.percentile)}ᵉ percentile</p>
           )}
+          {protocol && <p style={{ fontSize: '8.5pt', color: AXIS, marginTop: '0.5mm' }}>Estimé via {protocol}</p>}
         </div>
         {spark.length >= 2 && (
           <div style={{ flexShrink: 0 }}>
@@ -1090,7 +1100,79 @@ function MiniSpark({ values }: { values: number[] }) {
   )
 }
 
-// ── Section 6 — Forces & axes de progression ─────────────────────────────────
+// ── Section 6 — Récupération post-effort & observations ──────────────────────
+/** Rendue seulement si des données de récupération OU des notes sont présentes.
+ *  Si les deux sont absentes, retourne `null` (aucune page ajoutée au PDF). */
+function RecuperationEtNotesPage({ latest }: { latest: Bilan }) {
+  const data = latest.data as Record<string, unknown>
+  const showRecovery = hasRecoveryData(data)
+  const notes = typeof data.notes === 'string' ? data.notes.trim() : ''
+  if (!showRecovery && notes === '') return null
+
+  const intervals = [
+    { label: '1 min', sys: 'recup_1min_pa_sys', dia: 'recup_1min_pa_dia', fc: 'recup_1min_fc' },
+    { label: '3 min', sys: 'recup_3min_pa_sys', dia: 'recup_3min_pa_dia', fc: 'recup_3min_fc' },
+    { label: '5 min', sys: 'recup_5min_pa_sys', dia: 'recup_5min_pa_dia', fc: 'recup_5min_fc' }
+  ]
+  const thStyle: React.CSSProperties = {
+    textAlign: 'right',
+    padding: '2.5mm 3mm',
+    fontSize: '8.5pt',
+    textTransform: 'uppercase',
+    letterSpacing: '0.04em',
+    color: INK_SOFT
+  }
+  const tdStyle: React.CSSProperties = { textAlign: 'right', padding: '3mm', color: MARINE, fontWeight: 600 }
+
+  return (
+    <ReportSection title="Récupération & observations" sectionNumber="Section 6">
+      {showRecovery && (
+        <div className="break-inside-avoid" style={{ marginBottom: notes ? '12mm' : 0 }}>
+          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '3mm' }}>
+            Récupération post-effort
+          </p>
+          <p style={{ fontSize: '10pt', color: INK_SOFT, marginBottom: '4mm', maxWidth: '150mm' }}>
+            Le retour de la fréquence cardiaque et de la pression artérielle vers les valeurs de repos après l’effort
+            est un indicateur de la santé cardiovasculaire.
+          </p>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11pt' }}>
+            <thead>
+              <tr style={{ borderBottom: `1.5px solid ${GRID}` }}>
+                <th style={{ ...thStyle, textAlign: 'left' }}>Après l’effort</th>
+                <th style={thStyle}>FC (bpm)</th>
+                <th style={thStyle}>PA systolique (mmHg)</th>
+                <th style={thStyle}>PA diastolique (mmHg)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {intervals.map(iv => (
+                <tr key={iv.label} style={{ borderBottom: `1px solid ${GRID}` }}>
+                  <td style={{ padding: '3mm', color: MARINE, fontWeight: 600 }}>{iv.label}</td>
+                  <td style={tdStyle}>{fmt(num(data[iv.fc]), 0)}</td>
+                  <td style={tdStyle}>{fmt(num(data[iv.sys]), 0)}</td>
+                  <td style={tdStyle}>{fmt(num(data[iv.dia]), 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {notes !== '' && (
+        <div className="break-inside-avoid">
+          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '3mm' }}>
+            Observations
+          </p>
+          <div style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 8mm' }}>
+            <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line' }}>{notes}</p>
+          </div>
+        </div>
+      )}
+    </ReportSection>
+  )
+}
+
+// ── Section 7 — Forces & axes de progression ─────────────────────────────────
 function ForcesEtAxesPage({
   latest,
   profile,
@@ -1127,7 +1209,7 @@ function ForcesEtAxesPage({
     .slice(0, 3)
 
   return (
-    <ReportSection title="Vos forces et axes de progression" sectionNumber="Section 6">
+    <ReportSection title="Vos forces et axes de progression" sectionNumber="Section 7">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9mm', marginTop: '2mm' }}>
         {/* Forces */}
         <div>

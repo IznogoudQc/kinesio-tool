@@ -11,6 +11,7 @@ import {
 } from '../../../lib/norms'
 import { CategoryRangeBar } from '../../../components/CategoryRangeBar'
 import { MetricSelectable } from '../../../components/MetricSelectable'
+import { formatBilanDate } from '../bilanFields'
 
 interface StatCardXLProps {
   label: string
@@ -22,6 +23,9 @@ interface StatCardXLProps {
   age?: number | null
   sex?: 'F' | 'M' | null
   norms?: NormsType
+  /** En mode Synthèse : date ISO du bilan d'où provient cette valeur (chaque
+   *  champ peut venir d'un bilan différent). Affiche un rappel « du … ». */
+  originDate?: string
 }
 
 function suffixe(p: number): string {
@@ -35,7 +39,8 @@ export function StatCardXL({
   test,
   age,
   sex,
-  norms = 'acsm'
+  norms = 'acsm',
+  originDate
 }: StatCardXLProps) {
   const hasValue = typeof value === 'number' && !Number.isNaN(value)
 
@@ -89,6 +94,12 @@ export function StatCardXL({
         </span>
         {hasValue && unit && <span className="text-marine/45 text-base font-medium">{unit}</span>}
       </div>
+
+      {hasValue && originDate && (
+        <p className="text-marine/40 text-[10px] mt-1" title={`Valeur la plus récente disponible pour ${label}, mesurée le ${formatBilanDate(originDate)}.`}>
+          du {formatBilanDate(originDate)}
+        </p>
+      )}
 
       {percentile !== null && (
         <div className="flex items-center gap-2 mt-2 text-xs">

@@ -92,6 +92,20 @@ test('buildPreviousSynthesisBilan : 2e valeur rencontrée par champ', () => {
   assert.equal(r.data.pushups, undefined)
 })
 
+test('fieldOriginDates : chaque champ pointe le bon bilan quand ils diffèrent (tooltip UI)', () => {
+  // Cas réaliste : bilans .docx partiels, chaque métrique vient d'une date différente.
+  const bilans = [
+    fakeBilan('2025-09-04', { vo2max: 49 }),           // aérobie récent
+    fakeBilan('2025-03-01', { tour_taille_cm: 102 }),  // circonférence intermédiaire
+    fakeBilan('2024-06-10', { imc: 31, pourcentage_gras: 28 }) // composition ancienne
+  ]
+  const r = buildSynthesisBilan(bilans)
+  assert.equal(r.fieldOriginDates.vo2max, '2025-09-04')
+  assert.equal(r.fieldOriginDates.tour_taille_cm, '2025-03-01')
+  assert.equal(r.fieldOriginDates.imc, '2024-06-10')
+  assert.equal(r.fieldOriginDates.pourcentage_gras, '2024-06-10')
+})
+
 test('Liste vide → synthèse vide', () => {
   const r = buildSynthesisBilan([])
   assert.deepEqual(r.data, {})

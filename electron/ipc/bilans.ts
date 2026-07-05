@@ -7,56 +7,66 @@ import { getDb } from '../../db/client'
 import { bilans, clients } from '../../db/schema'
 import { parseBilanDocx } from '../lib/bilan-parser'
 import { convertDocToDocx } from '../lib/doc-converter'
+import { BILAN_FIELD_BOUNDS } from '../../src/lib/bilan-bounds'
 
-const numberOrUndef = z.number().finite().optional()
+// Champ numérique optionnel, contraint aux bornes DURES de plausibilité du
+// champ (src/lib/bilan-bounds.ts). Un champ sans bornes reste juste `finite`.
+// Les bornes souples ne sont PAS appliquées ici — elles n'avertissent qu'en UI.
+function bounded(key: string) {
+  const b = BILAN_FIELD_BOUNDS[key]
+  let s = z.number().finite()
+  if (b?.hardMin !== undefined) s = s.min(b.hardMin, `${key} : valeur impossible (min ${b.hardMin})`)
+  if (b?.hardMax !== undefined) s = s.max(b.hardMax, `${key} : valeur impossible (max ${b.hardMax})`)
+  return s.optional()
+}
 
 // Mirrors BilanData from electron/lib/bilan-parser.ts — kept here as the IPC
 // boundary validator so anything coming from the renderer is sanitized.
 const BilanDataSchema = z
   .object({
-    taille_cm: numberOrUndef,
-    poids_kg: numberOrUndef,
-    imc: numberOrUndef,
-    tour_taille_cm: numberOrUndef,
-    tour_hanche_cm: numberOrUndef,
-    pli_triceps: numberOrUndef,
-    pli_biceps: numberOrUndef,
-    pli_sous_scap: numberOrUndef,
-    pli_iliaque: numberOrUndef,
-    pli_mollet: numberOrUndef,
-    pli_cuisse: numberOrUndef,
-    pourcentage_gras: numberOrUndef,
-    vo2max: numberOrUndef,
+    taille_cm: bounded('taille_cm'),
+    poids_kg: bounded('poids_kg'),
+    imc: bounded('imc'),
+    tour_taille_cm: bounded('tour_taille_cm'),
+    tour_hanche_cm: bounded('tour_hanche_cm'),
+    pli_triceps: bounded('pli_triceps'),
+    pli_biceps: bounded('pli_biceps'),
+    pli_sous_scap: bounded('pli_sous_scap'),
+    pli_iliaque: bounded('pli_iliaque'),
+    pli_mollet: bounded('pli_mollet'),
+    pli_cuisse: bounded('pli_cuisse'),
+    pourcentage_gras: bounded('pourcentage_gras'),
+    vo2max: bounded('vo2max'),
     test_aerobie: z.string().max(200).optional(),
     aerobie_test_type: z.enum(['bruce', 'cooper', 'leger', 'manual']).optional(),
-    bruce_duration_sec: numberOrUndef,
-    cooper_distance_m: numberOrUndef,
-    leger_palier: numberOrUndef,
-    met_equivalent: numberOrUndef,
-    fc_repos: numberOrUndef,
-    fc_max_predite: numberOrUndef,
-    pa_systolique: numberOrUndef,
-    pa_diastolique: numberOrUndef,
-    recup_1min_pa_sys: numberOrUndef,
-    recup_1min_pa_dia: numberOrUndef,
-    recup_1min_fc: numberOrUndef,
-    recup_3min_pa_sys: numberOrUndef,
-    recup_3min_pa_dia: numberOrUndef,
-    recup_3min_fc: numberOrUndef,
-    recup_5min_pa_sys: numberOrUndef,
-    recup_5min_pa_dia: numberOrUndef,
-    recup_5min_fc: numberOrUndef,
-    pushups: numberOrUndef,
-    situps: numberOrUndef,
-    saut_vertical_cm: numberOrUndef,
-    puissance_jambes_watts: numberOrUndef,
+    bruce_duration_sec: bounded('bruce_duration_sec'),
+    cooper_distance_m: bounded('cooper_distance_m'),
+    leger_palier: bounded('leger_palier'),
+    met_equivalent: bounded('met_equivalent'),
+    fc_repos: bounded('fc_repos'),
+    fc_max_predite: bounded('fc_max_predite'),
+    pa_systolique: bounded('pa_systolique'),
+    pa_diastolique: bounded('pa_diastolique'),
+    recup_1min_pa_sys: bounded('recup_1min_pa_sys'),
+    recup_1min_pa_dia: bounded('recup_1min_pa_dia'),
+    recup_1min_fc: bounded('recup_1min_fc'),
+    recup_3min_pa_sys: bounded('recup_3min_pa_sys'),
+    recup_3min_pa_dia: bounded('recup_3min_pa_dia'),
+    recup_3min_fc: bounded('recup_3min_fc'),
+    recup_5min_pa_sys: bounded('recup_5min_pa_sys'),
+    recup_5min_pa_dia: bounded('recup_5min_pa_dia'),
+    recup_5min_fc: bounded('recup_5min_fc'),
+    pushups: bounded('pushups'),
+    situps: bounded('situps'),
+    saut_vertical_cm: bounded('saut_vertical_cm'),
+    puissance_jambes_watts: bounded('puissance_jambes_watts'),
     puissance_calculated_auto: z.boolean().optional(),
-    flexion_tronc_cm: numberOrUndef,
-    endurance_dos_sec: numberOrUndef,
-    score_composition: numberOrUndef,
-    indice_sante_dos: numberOrUndef,
-    score_musculo_global: numberOrUndef,
-    score_global: numberOrUndef,
+    flexion_tronc_cm: bounded('flexion_tronc_cm'),
+    endurance_dos_sec: bounded('endurance_dos_sec'),
+    score_composition: bounded('score_composition'),
+    indice_sante_dos: bounded('indice_sante_dos'),
+    score_musculo_global: bounded('score_musculo_global'),
+    score_global: bounded('score_global'),
     notes: z.string().max(5000).optional()
   })
   .strip()

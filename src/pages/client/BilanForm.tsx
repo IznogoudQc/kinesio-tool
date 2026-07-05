@@ -8,6 +8,7 @@ import type { Category, NormsType } from '../../lib/norms'
 import { computeAge } from '../../lib/norms'
 import { computeBilan, mergeComputedIntoBilan, type BilanProfile } from '../../lib/bilan-computed'
 import { BILAN_TO_TEST_KEY } from '../../lib/norms/bilan-keys'
+import { validateBilanField } from '../../lib/bilan-bounds'
 import { AerobicSection } from './AerobicSection'
 
 interface BilanFormProps {
@@ -30,6 +31,9 @@ interface BilanFormProps {
   previousData?: BilanData
   /** Force le mode collapsible (par défaut : oui en édition, non en lecture). */
   collapsible?: boolean
+  /** Si fourni, ne rend QUE ces sections (par id). Absent = toutes les sections
+   *  (comportement par défaut). Utilisé par le mode guidé (stepper) de la saisie. */
+  visibleSectionIds?: string[]
 }
 
 function setField(data: BilanData, key: keyof BilanData, value: number | string | undefined): BilanData {
@@ -63,7 +67,8 @@ export function BilanForm({
   norms = 'acsm',
   showSynthesis = false,
   previousData,
-  collapsible
+  collapsible,
+  visibleSectionIds
 }: BilanFormProps) {
   const isLight = variant === 'light'
   const labelClass = isLight ? 'text-marine/60' : 'text-cream/55'
@@ -122,6 +127,11 @@ export function BilanForm({
     const showBadge = readOnly && categorize && numericValue !== null
     const testKey = BILAN_TO_TEST_KEY[def.key]
     const showPercentile = testKey !== undefined && numericValue !== null && age !== null && sex !== null
+    // Plausibilité : uniquement sur les champs numériques saisis par l'utilisateur.
+    const isNumberInput = !isText && !isSelect && !isTextarea && !isComputed
+    const bound = !readOnly && isNumberInput ? validateBilanField(def.key, numericValue) : null
+    const boundBorder =
+      bound?.level === 'error' ? ' !border-red-500' : bound?.level === 'warn' ? ' !border-amber-400' : ''
 
     const fullWidth = isTextarea ? 'col-span-2 md:col-span-3' : ''
 
@@ -191,17 +201,24 @@ export function BilanForm({
             className={inputClass}
           />
         ) : (
-          <input
-            type="number"
-            step="any"
-            value={raw === undefined ? '' : (raw as number)}
-            onChange={e =>
-              onDataChange?.(
-                setField(data, def.key, Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
-              )
-            }
-            className={inputClass}
-          />
+          <>
+            <input
+              type="number"
+              step="any"
+              value={raw === undefined ? '' : (raw as number)}
+              onChange={e =>
+                onDataChange?.(
+                  setField(data, def.key, Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
+                )
+              }
+              className={`${inputClass}${boundBorder}`}
+            />
+            {bound?.message && (
+              <p className={`text-xs mt-1 ${bound.level === 'error' ? 'text-red-500' : 'text-amber-600'}`}>
+                {bound.message}
+              </p>
+            )}
+          </>
         )}
         {showPercentile && testKey && (
           <PercentileIndicator
@@ -320,7 +337,10 @@ export function BilanForm({
         )}
       </div>
 
-      {BILAN_FIELD_GROUPS.map(renderSection)}
+      {(visibleSectionIds
+        ? BILAN_FIELD_GROUPS.filter(g => visibleSectionIds.includes(g.id))
+        : BILAN_FIELD_GROUPS
+      ).map(renderSection)}
     </div>
   )
 }

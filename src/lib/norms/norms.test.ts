@@ -15,7 +15,7 @@ import { test } from 'node:test'
 // que Node `--test` exige des chemins explicites en `.ts` alors que tsc/vite
 // n'aiment pas ces extensions dans le code applicatif.
 import { getAcsmRange } from './acsm.ts'
-import { getCpaflaRange } from './cpafla.ts'
+import { getCpaflaRange, cpaflaHasTables } from './cpafla.ts'
 import type { Category, NormPercentiles, NormsType, TestKey } from './types.ts'
 
 function computeAge(birthdate: string | null, refDate: Date = new Date()): number | null {
@@ -193,9 +193,16 @@ test('Puissance jambes — Nicholas 5380 W H 48 ans → percentile ~77', () => {
   assert.ok(p !== null && p >= 70 && p <= 85, `attendu 70-85, reçu ${p}`)
 })
 
-test('CPAFLA — placeholder, retourne null pour tout', () => {
+test('CPAFLA — ossature prête, tables non encore encodées → null partout', () => {
+  // Tant que les barèmes officiels CSEP-PATH ne sont pas encodés (cf. ADR 0013),
+  // getCpaflaRange retourne null et la catégorisation retombe sur « — ».
+  assert.equal(getCpaflaRange('pushups', 35, 'M'), null)
+  assert.equal(getCpaflaRange('situps', 35, 'F'), null)
+  assert.equal(getCpaflaRange('trunkFlexion', 35, 'M'), null)
+  assert.equal(getCpaflaRange('legPower', 35, 'M'), null)
   assert.equal(getCategorization('vo2max', 49, 35, 'M', 'cpafla'), null)
   assert.equal(getCategorization('bodyFat', 12, 35, 'F', 'cpafla'), null)
+  assert.equal(cpaflaHasTables(), false)
 })
 
 test('Valeur invalide → null', () => {
