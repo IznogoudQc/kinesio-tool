@@ -636,6 +636,15 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.59 — Espace constant avant « Ce que ça veut dire »)
+
+Le bloc d'interprétation « Ce que ça veut dire pour vous » n'avait **aucune marge haute propre** : il dépendait uniquement
+du `marginBottom` de la dernière carte-graphique au-dessus. Quand il suivait directement le tableau/`bottomExtra` (section
+sans graphique) ou après une coupure de page (où la marge basse est absorbée par la pagination), l'espace tombait à ~0 →
+le bloc paraissait **collé** au graphique. Correctif : `marginTop: 12mm` explicite sur le bloc d'interprétation. Les marges
+verticales fusionnant (max, pas somme), l'espace reste ~12 mm après un graphique et est **garanti** même sans graphique.
+Version : 0.1.58 → 0.1.59.
+
 ## ✅ Fait (v0.1.58 — Avant / après : toutes les métriques)
 
 Le tableau « Avant / après » (vue d'ensemble) était limité aux **6 premières** métriques (`.slice(0, 6)`) ET n'affichait

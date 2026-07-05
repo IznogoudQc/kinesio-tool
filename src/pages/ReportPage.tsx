@@ -924,7 +924,7 @@ function DomainSection({
       )}
 
       {interp && (
-        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm' }}>
+        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', marginTop: '12mm' }}>
           <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '3mm' }}>
             Ce que ça veut dire pour vous
           </p>
