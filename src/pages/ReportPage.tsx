@@ -31,6 +31,7 @@ import {
 } from '../lib/norms'
 import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { computeSynthesis, type BilanProfile, type CompositeScore } from '../lib/norms/scoring'
+import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
 import logo from '../assets/logo.png'
@@ -258,6 +259,7 @@ export function ReportPage() {
 
   const latest = bilans[0] ?? null
   const latestSynth = latest ? computeSynthesis(latest.data, profile) : null
+  const latestComputed = latest ? computeBilan(latest.data, profile) : null
 
   if (!latest || !latestSynth) {
     return (
@@ -280,6 +282,7 @@ export function ReportPage() {
       />
       <ParcoursPage client={client} bilans={bilans} chrono={chrono} syntheses={syntheses} profile={profile} />
       <SynthesePage synth={latestSynth} bilanDate={latest.date} />
+      {latestComputed && <CompositionPage latest={latest} computed={latestComputed} />}
       <ProgressionChartsPage chrono={chrono} syntheses={syntheses} />
       <MetricDetailsPages latest={latest} bilans={bilans} profile={profile} />
       <RecuperationEtNotesPage latest={latest} />
@@ -823,7 +826,131 @@ function CategoryPill({ category }: { category: Category }) {
   )
 }
 
-// ── Section 4 — Graphiques de progression ────────────────────────────────────
+// ── Section 4 — Composition corporelle & zones d'entraînement ────────────────
+function CompositionPage({ latest, computed }: { latest: Bilan; computed: BilanComputed }) {
+  const d = latest.data as Record<string, unknown>
+  const plis: { label: string; key: string }[] = [
+    { label: 'Triceps', key: 'pli_triceps' },
+    { label: 'Biceps', key: 'pli_biceps' },
+    { label: 'Sous-scapulaire', key: 'pli_sous_scap' },
+    { label: 'Crête iliaque', key: 'pli_iliaque' },
+    { label: 'Mollet', key: 'pli_mollet' },
+    { label: 'Cuisse', key: 'pli_cuisse' }
+  ]
+  const plisPresents = plis.map(p => ({ ...p, value: num(d[p.key]) })).filter(p => p.value !== null)
+  const durnin4 = ['pli_triceps', 'pli_biceps', 'pli_sous_scap', 'pli_iliaque'].map(k => num(d[k]))
+  const sommePlis = durnin4.every(v => v !== null) ? (durnin4 as number[]).reduce((a, b) => a + b, 0) : null
+
+  const stats: { label: string; value: string; hint?: string }[] = [
+    { label: 'IMC', value: computed.imc === null ? '—' : `${fmt(computed.imc)} kg/m²` },
+    { label: 'Tour de taille', value: num(d.tour_taille_cm) === null ? '—' : `${fmt(num(d.tour_taille_cm))} cm` },
+    {
+      label: 'Ratio taille / hanche',
+      value: computed.ratioTailleHanche === null ? '—' : fmt(computed.ratioTailleHanche, 2)
+    },
+    {
+      label: 'Poids optimal max',
+      value: computed.poidsOptimalMaxKg === null ? '—' : `${fmt(computed.poidsOptimalMaxKg)} kg`,
+      hint: 'Poids pour un IMC de 25'
+    },
+    {
+      label: '% de gras',
+      value: computed.pourcentageGrasDurnin === null ? '—' : `${fmt(computed.pourcentageGrasDurnin)} %`,
+      hint: 'Méthode Durnin-Womersley (4 plis)'
+    },
+    { label: 'Somme des 4 plis', value: sommePlis === null ? '—' : `${fmt(sommePlis)} mm` }
+  ]
+
+  const zones = computed.fcZones
+  const zoneRows = zones
+    ? [
+        { pct: '60 %', bpm: zones.z60, libelle: 'Échauffement' },
+        { pct: '65 %', bpm: zones.z65, libelle: 'Endurance de base' },
+        { pct: '70 %', bpm: zones.z70, libelle: 'Endurance' },
+        { pct: '75 %', bpm: zones.z75, libelle: 'Aérobie' },
+        { pct: '80 %', bpm: zones.z80, libelle: 'Seuil' },
+        { pct: '85 %', bpm: zones.z85, libelle: 'Anaérobie' },
+        { pct: '90 %', bpm: zones.z90, libelle: 'VO2max' }
+      ]
+    : []
+
+  return (
+    <ReportSection title="Composition corporelle" sectionNumber="Section 4">
+      <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '-4mm', marginBottom: '8mm' }}>
+        Vos mesures anthropométriques au {formatBilanDate(latest.date)}.
+      </p>
+
+      {/* Chiffres clés */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm', marginBottom: '10mm' }}>
+        {stats.map(s => (
+          <div key={s.label} style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}>
+            <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT }}>
+              {s.label}
+            </p>
+            <p className="report-display" style={{ fontSize: '20pt', fontWeight: 700, color: MARINE, marginTop: '1mm' }}>
+              {s.value}
+            </p>
+            {s.hint && <p style={{ fontSize: '8pt', color: AXIS, marginTop: '0.5mm' }}>{s.hint}</p>}
+          </div>
+        ))}
+      </div>
+
+      {/* Détail des plis cutanés */}
+      {plisPresents.length > 0 && (
+        <div className="break-inside-avoid" style={{ marginBottom: '10mm' }}>
+          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '3mm' }}>
+            Plis cutanés (mm)
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4mm' }}>
+            {plisPresents.map(p => (
+              <div
+                key={p.key}
+                style={{ background: CREAM, borderRadius: '2mm', padding: '3mm 5mm', minWidth: '30mm' }}
+              >
+                <span style={{ fontSize: '9pt', color: INK_SOFT }}>{p.label} </span>
+                <span style={{ fontSize: '11pt', fontWeight: 600, color: MARINE }}>{fmt(p.value)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Zones d'entraînement cardiaque */}
+      {zoneRows.length > 0 && (
+        <div className="break-inside-avoid">
+          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '2mm' }}>
+            Zones d'entraînement cardiaque
+          </p>
+          <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '4mm' }}>
+            Fréquences cibles selon votre FC maximale prédite
+            {computed.fcMaxPredite !== null ? ` (${computed.fcMaxPredite} bpm, formule de Tanaka)` : ''}. Pour développer
+            l'endurance, visez 60-75 % ; au-delà de 80 %, l'effort devient intense.
+          </p>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10.5pt' }}>
+            <thead>
+              <tr style={{ borderBottom: `1.5px solid ${GRID}`, color: INK_SOFT, fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                <th style={{ textAlign: 'left', padding: '2.5mm 3mm' }}>% FC max</th>
+                <th style={{ textAlign: 'left', padding: '2.5mm 3mm' }}>Zone</th>
+                <th style={{ textAlign: 'right', padding: '2.5mm 3mm' }}>Fréquence cible</th>
+              </tr>
+            </thead>
+            <tbody>
+              {zoneRows.map(z => (
+                <tr key={z.pct} style={{ borderBottom: `1px solid ${GRID}` }}>
+                  <td style={{ padding: '2.6mm 3mm', color: MARINE, fontWeight: 600 }}>{z.pct}</td>
+                  <td style={{ padding: '2.6mm 3mm', color: INK_SOFT }}>{z.libelle}</td>
+                  <td style={{ textAlign: 'right', padding: '2.6mm 3mm', color: MARINE, fontWeight: 600 }}>{z.bpm} bpm</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </ReportSection>
+  )
+}
+
+// ── Section 5 — Graphiques de progression ────────────────────────────────────
 interface ChartPoint {
   label: string
   value: number | null
@@ -845,7 +972,7 @@ function ProgressionChartsPage({
 
   return (
     <>
-      <ReportSection title="Votre progression" sectionNumber="Section 4 · 1/2">
+      <ReportSection title="Votre progression" sectionNumber="Section 5 · 1/2">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8mm' }}>
           <ChartCard title="VO2max (ml/kg/min)">
             <SingleLineChart data={series('vo2max')} color={GOLD} />
@@ -861,7 +988,7 @@ function ProgressionChartsPage({
           </ChartCard>
         </div>
       </ReportSection>
-      <ReportSection title="Votre progression" sectionNumber="Section 4 · 2/2">
+      <ReportSection title="Votre progression" sectionNumber="Section 5 · 2/2">
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8mm' }}>
           <ChartCard title="Score musculosquelettique (/ 5)">
             <SingleBarChart data={scoreSeries(s => s.musculoGlobal)} />
@@ -1040,7 +1167,7 @@ function MetricDetailsPages({
         <ReportSection
           key={pi}
           title="En détail"
-          sectionNumber={`Section 5 · ${pi + 1}/${pages.length}`}
+          sectionNumber={`Section 6 · ${pi + 1}/${pages.length}`}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '6mm' }}>
             {page.map(m => (
@@ -1189,7 +1316,7 @@ function RecuperationEtNotesPage({ latest }: { latest: Bilan }) {
   const tdStyle: React.CSSProperties = { textAlign: 'right', padding: '3mm', color: MARINE, fontWeight: 600 }
 
   return (
-    <ReportSection title="Récupération & observations" sectionNumber="Section 6">
+    <ReportSection title="Récupération & observations" sectionNumber="Section 7">
       {showRecovery && (
         <div className="break-inside-avoid" style={{ marginBottom: notes ? '12mm' : 0 }}>
           <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, marginBottom: '3mm' }}>
@@ -1273,7 +1400,7 @@ function ForcesEtAxesPage({
     .slice(0, 3)
 
   return (
-    <ReportSection title="Vos forces et axes de progression" sectionNumber="Section 7">
+    <ReportSection title="Vos forces et axes de progression" sectionNumber="Section 8">
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '9mm', marginTop: '2mm' }}>
         {/* Forces */}
         <div>

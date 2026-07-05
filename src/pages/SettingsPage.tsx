@@ -3,7 +3,6 @@ import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge } from 'lu
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { settingsService } from '../services/settings'
-import { cpaflaHasTables } from '../lib/norms/cpafla'
 import mEvePhoto from '../assets/mEve.png'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -376,36 +375,17 @@ function SmtpCard() {
 }
 
 function NormsCard() {
-  const [value, setValue] = useState<'acsm' | 'cpafla'>('acsm')
-  const [loading, setLoading] = useState(true)
-  const [status, setStatus] = useState<SaveStatus>('idle')
-  const [error, setError] = useState<string | null>(null)
-  // Vrai dès que des tables CPAFLA sont réellement encodées (cf. cpafla.ts).
-  const cpaflaReady = cpaflaHasTables()
-
+  // Une seule norme exposée pour l'instant : ACSM (voir daily-note 2026-07-04 —
+  // CPAFLA retiré de l'UI en attendant une source de tables). On normalise
+  // défensivement toute valeur stockée vers 'acsm' pour rester cohérent.
   useEffect(() => {
     settingsService
       .getCategorizationNorms()
       .then(v => {
-        setValue(v)
-        setLoading(false)
+        if (v !== 'acsm') settingsService.setCategorizationNorms('acsm').catch(() => undefined)
       })
-      .catch(() => setLoading(false))
+      .catch(() => undefined)
   }, [])
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setStatus('saving')
-    setError(null)
-    try {
-      await settingsService.setCategorizationNorms(value)
-      setStatus('saved')
-      setTimeout(() => setStatus(s => (s === 'saved' ? 'idle' : s)), 2500)
-    } catch (err) {
-      setStatus('error')
-      setError(err instanceof Error ? err.message : 'Erreur lors de l\'enregistrement')
-    }
-  }
 
   return (
     <Card
@@ -413,64 +393,13 @@ function NormsCard() {
       icon={Gauge}
       description="Tables utilisées pour situer un résultat (À améliorer → Excellent) selon l'âge et le sexe."
     >
-      {loading ? (
-        <p className="text-marine/45 text-base">Chargement…</p>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2.5">
-            <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md border border-cream-dark hover:border-gold/50 transition-colors">
-              <input
-                type="radio"
-                name="norms"
-                value="acsm"
-                checked={value === 'acsm'}
-                onChange={() => setValue('acsm')}
-                className="mt-1 w-4 h-4 accent-gold cursor-pointer"
-              />
-              <div>
-                <p className="text-marine font-medium text-base">ACSM</p>
-                <p className="text-marine/55 text-sm">
-                  American College of Sports Medicine — 11e édition (2021). Tables par âge et sexe pour
-                  VO2max, % de gras, push-ups, redressements, flexion du tronc, IMC, tour de taille.
-                </p>
-              </div>
-            </label>
-
-            <label className="flex items-start gap-3 cursor-pointer p-3 rounded-md border border-cream-dark hover:border-gold/50 transition-colors">
-              <input
-                type="radio"
-                name="norms"
-                value="cpafla"
-                checked={value === 'cpafla'}
-                onChange={() => setValue('cpafla')}
-                className="mt-1 w-4 h-4 accent-gold cursor-pointer"
-              />
-              <div>
-                <p className="text-marine font-medium text-base">
-                  CPAFLA {cpaflaReady ? '' : '(tables en attente)'}
-                </p>
-                <p className="text-marine/55 text-sm">
-                  Société canadienne de physiologie de l'exercice — Canadian Physical Activity, Fitness
-                  and Lifestyle Approach.
-                </p>
-              </div>
-            </label>
-          </div>
-
-          {value === 'cpafla' && !cpaflaReady && (
-            <div className="bg-cream/60 border border-cream-dark rounded-md px-4 py-3 text-marine/70 text-sm">
-              L'intégration CPAFLA est prête, mais les barèmes officiels (CSEP-PATH) ne sont pas encore
-              encodés — ils nécessitent la source publiée. En attendant, les tests non couverts s'affichent
-              sans catégorie (« — »). Restez sur ACSM pour une catégorisation complète.
-            </div>
-          )}
-
-          <div className="flex items-center gap-4 pt-1">
-            <SaveButton status={status} />
-            <StatusInline status={status} error={error} />
-          </div>
-        </form>
-      )}
+      <div className="p-3 rounded-md border border-gold/40 bg-gold/5">
+        <p className="text-marine font-medium text-base">ACSM — 11ᵉ édition (2021)</p>
+        <p className="text-marine/55 text-sm mt-0.5">
+          American College of Sports Medicine. Tables par âge et sexe pour VO2max, % de gras, push-ups,
+          redressements, flexion du tronc, IMC, tour de taille, saut vertical, puissance et endurance du dos.
+        </p>
+      </div>
     </Card>
   )
 }

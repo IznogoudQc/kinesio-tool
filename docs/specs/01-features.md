@@ -636,6 +636,31 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.44 — Rapport : section Composition corporelle + retrait CPAFLA de l'UI)
+
+### Retrait de CPAFLA de l'interface (retour 100 % ACSM)
+Décision (Marie-Eve) : les tables CPAFLA ne sont pas accessibles gratuitement (manuel CSEP-PATH payant) et le
+logiciel actuel n'est pas sous la main pour en extraire les seuils. On retire donc l'option CPAFLA de l'UI et on reste
+sur **ACSM** (déjà encodé, gratuit, largement reconnu).
+- `SettingsPage` : la carte « Normes de catégorisation » n'affiche plus qu'ACSM (bloc informatif, plus de choix). Toute
+  valeur `categorization_norms` stockée est normalisée vers `'acsm'` au chargement (défensif).
+- Le plumbing interne reste (`cpafla.ts` scaffold, `NormsType`, routage) pour un retour facile si la source arrive un
+  jour — invisible pour l'utilisatrice. Le rapport PDF lit toujours la norme active (donc ACSM).
+
+### Nouvelle section « Composition corporelle » (Section 4 du rapport)
+Inspirée du rapport du logiciel actuel (Physitest Canadien), en réutilisant les valeurs déjà calculées par
+`computeBilan` :
+- **Chiffres clés** : IMC, tour de taille, ratio taille/hanche, poids optimal max (IMC 25), % de gras
+  (Durnin-Womersley), somme des 4 plis.
+- **Détail des plis cutanés** (mm) présents.
+- **Zones d'entraînement cardiaque** : table 60-90 % de la FC max prédite (Tanaka), avec libellés (Échauffement →
+  VO2max) — rendue seulement si l'âge permet le calcul.
+- Sections suivantes renumérotées (Progression 5, En détail 6, Récupération 7, Forces 8).
+
+### Vérifs
+- `computeBilan` (Nicholas) alimente bien la section (IMC 29,6 · poids opt. 77,4 · % gras 23,1 · zones FC 104-157).
+- Suite **137/137 pass** ; `tsc` web + node clean ; build OK. Version : 0.1.43 → 0.1.44.
+
 ## ✅ Fait (v0.1.43 — Rapport PDF : correctifs visuels)
 
 ### Objectif : corriger les défauts d'affichage repérés sur un rapport réel (11 pages)
