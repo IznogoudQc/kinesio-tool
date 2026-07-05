@@ -62,3 +62,16 @@ Rapide, défaut Modéré 0,5 kg/sem). Le rythme pilote **deux** sorties d'un mê
 - **échéance estimée** dans le rapport (`weeksToGoal`, date = bilan + semaines) ;
 - **déficit calorique des macros** (`dailyDeficitForRate` = rythme × 7700 ÷ 7), remplaçant le −20 % fixe quand un rythme
   est défini. `estimateMacros` accepte désormais `dailyDeficitKcal` (défaut −20 % si absent → rétro-compatible).
+
+## Mise à jour v0.1.66 — formule des macros visible et modifiable
+
+À la demande de Marie : la **formule des macros** est affichée et **modifiable par client** (dossier → Modifier), au lieu
+d'être figée. Nouvelle formule (paramètres modifiables) :
+- **protéines** = `nutritionProteinPerLbLean` g par **livre de masse maigre** (défaut 1) — remplace l'ancien 2 g/kg de
+  poids-cible ;
+- **lipides** = plafond `nutritionFatMaxG` g (défaut 60) — remplace l'ancien 25 % des kcal ;
+- **glucides** = le reste des calories cibles (inchangé dans le principe).
+
+Colonnes `nutrition_protein_per_lb_lean` + `nutrition_fat_max_g` (migration `0010`, nullable → défauts). `estimateMacros`
+prend `leanKg` (masse maigre, fournie par `bodyFatgoal.leanKg`), `proteinPerLbLean`, `fatMaxG`. Les calories cibles
+restent issues du métabolisme (Mifflin-St Jeor) moins le déficit du rythme.

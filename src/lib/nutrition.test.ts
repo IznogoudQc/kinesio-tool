@@ -17,6 +17,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { bodyFatGoal, mifflinBmr, estimateMacros, dailyDeficitForRate, weeksToGoal } from './nutrition.ts'
+import { kgToLb } from './units.ts'
 
 const close = (a: number, b: number, eps = 0.15) => Math.abs(a - b) <= eps
 
@@ -62,39 +63,45 @@ test('mifflinBmr — sexe/données manquantes → null', () => {
   assert.equal(mifflinBmr({ weightKg: null, heightCm: 176, age: 48, sex: 'M' }), null)
 })
 
-test('estimateMacros — Nicholas activité modérée, cible 82 kg', () => {
+test('estimateMacros — Nicholas : protéines = masse maigre (lb) × 1, lipides 60', () => {
+  // masse maigre 69.66 kg → 153.6 lb × 1 g/lb → 154 g protéines ; lipides plafond 60 ;
+  // TDEE 2888, défaut −20 % → 2310 kcal ; glucides = (2310 − 616 − 540)/4 = 289.
+  const m = estimateMacros({ weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: 'modere', leanKg: 69.66 })
+  assert.ok(m !== null)
+  assert.equal(m!.bmr, 1863)
+  assert.equal(m!.tdee, 2888)
+  assert.equal(m!.targetKcal, 2310)
+  assert.equal(m!.proteinG, 154)
+  assert.equal(m!.fatG, 60)
+  assert.equal(m!.carbsG, 289)
+})
+
+test('estimateMacros — formule personnalisée (1.2 g/lb, gras max 50)', () => {
   const m = estimateMacros({
     weightKg: 99.8,
     heightCm: 176,
     age: 48,
     sex: 'M',
     activity: 'modere',
-    goalKg: 82.0
+    leanKg: 69.66,
+    proteinPerLbLean: 1.2,
+    fatMaxG: 50
   })
   assert.ok(m !== null)
-  assert.equal(m!.bmr, 1863)
-  assert.equal(m!.tdee, 2888)
-  assert.equal(m!.targetKcal, 2310)
-  assert.equal(m!.proteinG, 164)
-  assert.equal(m!.fatG, 64)
-  assert.equal(m!.carbsG, 270)
-})
-
-test('estimateMacros — sans goalKg utilise le poids actuel pour les protéines', () => {
-  const m = estimateMacros({ weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: 'modere' })
-  assert.ok(m !== null)
-  assert.equal(m!.proteinG, Math.round(99.8 * 2.0)) // 200
+  assert.equal(m!.proteinG, Math.round(kgToLb(69.66) * 1.2)) // 184
+  assert.equal(m!.fatG, 50)
 })
 
 test('estimateMacros — cible kcal jamais sous le BMR', () => {
   // Sédentaire : TDEE 1863×1.2 = 2236 ; 0.8× = 1789 < BMR 1863 → clampé au BMR.
-  const m = estimateMacros({ weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: 'sedentaire' })
+  const m = estimateMacros({ weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: 'sedentaire', leanKg: 69.66 })
   assert.ok(m !== null && m!.targetKcal >= m!.bmr)
 })
 
-test('estimateMacros — activité/données manquantes → null', () => {
-  assert.equal(estimateMacros({ weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: null }), null)
-  assert.equal(estimateMacros({ weightKg: null, heightCm: 176, age: 48, sex: 'M', activity: 'modere' }), null)
+test('estimateMacros — activité/masse maigre/données manquantes → null', () => {
+  assert.equal(estimateMacros({ weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: null, leanKg: 69.66 }), null)
+  assert.equal(estimateMacros({ weightKg: null, heightCm: 176, age: 48, sex: 'M', activity: 'modere', leanKg: 69.66 }), null)
+  assert.equal(estimateMacros({ weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: 'modere', leanKg: null }), null)
 })
 
 test('dailyDeficitForRate — 0.5 kg/sem → 550 kcal/j', () => {
@@ -126,13 +133,15 @@ test('estimateMacros — déficit selon le rythme (0.5 kg/sem = −550)', () => 
     age: 48,
     sex: 'M',
     activity: 'modere',
-    goalKg: 82.0,
+    leanKg: 69.66,
     dailyDeficitKcal: 550
   })
   assert.ok(m !== null)
-  // TDEE 2888 − 550 = 2338
+  // TDEE 2888 − 550 = 2338 ; glucides = (2338 − 616 − 540)/4 = 296.
   assert.equal(m!.targetKcal, 2338)
-  assert.equal(m!.proteinG, 164)
+  assert.equal(m!.proteinG, 154)
+  assert.equal(m!.fatG, 60)
+  assert.equal(m!.carbsG, 296)
 })
 
 test('estimateMacros — déficit rapide clampé au BMR', () => {
@@ -143,6 +152,7 @@ test('estimateMacros — déficit rapide clampé au BMR', () => {
     age: 48,
     sex: 'M',
     activity: 'modere',
+    leanKg: 69.66,
     dailyDeficitKcal: 5000
   })
   assert.ok(m !== null && m!.targetKcal === m!.bmr)

@@ -569,8 +569,10 @@ function ObjectifBlock({
           age: profile.age,
           sex: profile.sex,
           activity: client.nutritionActivityLevel,
-          goalKg: goal.goalKg,
-          dailyDeficitKcal: dailyDeficitForRate(rate)
+          leanKg: goal.leanKg,
+          dailyDeficitKcal: dailyDeficitForRate(rate),
+          proteinPerLbLean: client.nutritionProteinPerLbLean,
+          fatMaxG: client.nutritionFatMaxG
         })
       : null
 

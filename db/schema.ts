@@ -30,6 +30,10 @@ export const clients = sqliteTable('clients', {
   // Rythme de perte visé (kg/semaine) — pilote l'échéance estimée ET le déficit
   // calorique des macros (1 kg gras ≈ 7700 kcal). `null` = rythme par défaut.
   nutritionRateKgPerWeek: real('nutrition_rate_kg_per_week'),
+  // Formule des macros, modifiable par Marie. `null` = valeurs par défaut
+  // (protéines 1 g/lb de masse maigre, lipides plafond 60 g, glucides = reste).
+  nutritionProteinPerLbLean: real('nutrition_protein_per_lb_lean'),
+  nutritionFatMaxG: real('nutrition_fat_max_g'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

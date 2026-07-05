@@ -27,6 +27,10 @@ interface Client {
   nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
   /** Rythme de perte visé (kg/semaine) — échéance estimée + déficit des macros. `null` = défaut. */
   nutritionRateKgPerWeek: number | null
+  /** Formule des macros (modifiable) : g de protéines par lb de masse maigre. `null` = 1. */
+  nutritionProteinPerLbLean: number | null
+  /** Formule des macros : plafond de lipides en g. `null` = 60. */
+  nutritionFatMaxG: number | null
   createdAt: string
   updatedAt: string
 }
@@ -264,6 +268,8 @@ interface Window {
           nutritionTargetBodyFat?: number | null
           nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
           nutritionRateKgPerWeek?: number | null
+          nutritionProteinPerLbLean?: number | null
+          nutritionFatMaxG?: number | null
         }
       ): Promise<Client>
       delete(id: string): Promise<void>

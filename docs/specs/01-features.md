@@ -636,6 +636,20 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.66 — Formule des macros visible et modifiable par client)
+
+La formule des macros était figée dans le code. Marie peut désormais la **voir et la changer** (dossier client →
+Modifier → section nutrition). Voir `docs/decisions/0015` (mise à jour). Nouvelle formule :
+
+- **Protéines** = _n_ g par **livre de masse maigre** (défaut **1**) — au lieu de 2 g/kg de poids-cible.
+- **Lipides** = plafond de _m_ g (défaut **60**) — au lieu de 25 % des calories.
+- **Glucides** = le reste des calories cibles.
+
+Les deux nombres (protéines/lb, plafond lipides) sont éditables et affichés en clair. Colonnes
+`nutrition_protein_per_lb_lean` + `nutrition_fat_max_g` (migration `0010`, défauts si vides). `estimateMacros` prend la
+masse maigre (`bodyFatGoal.leanKg`) + les 2 paramètres. Cas Nicholas : masse maigre 153 lb → 154 g prot, 60 g lip,
+~289 g gluc. Version : 0.1.65 → 0.1.66.
+
 ## ✅ Fait (v0.1.65 — Graphique saut/puissance : double axe Y)
 
 Le graphique « Saut vertical & puissance » superposait deux séries d'échelles incompatibles sur un seul axe Y : la

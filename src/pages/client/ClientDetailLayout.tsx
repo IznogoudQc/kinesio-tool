@@ -10,6 +10,8 @@ import {
   ACTIVITY_ORDER,
   RATE_PRESETS,
   DEFAULT_RATE_KG_PER_WEEK,
+  DEFAULT_PROTEIN_PER_LB_LEAN,
+  DEFAULT_FAT_MAX_G,
   type ActivityLevel
 } from '../../lib/nutrition'
 import { kgToLb } from '../../lib/units'
@@ -353,6 +355,10 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
   const [rateKgPerWeek, setRateKgPerWeek] = useState<number>(
     client.nutritionRateKgPerWeek ?? DEFAULT_RATE_KG_PER_WEEK
   )
+  const [proteinPerLb, setProteinPerLb] = useState<string>(
+    String(client.nutritionProteinPerLbLean ?? DEFAULT_PROTEIN_PER_LB_LEAN)
+  )
+  const [fatMaxG, setFatMaxG] = useState<string>(String(client.nutritionFatMaxG ?? DEFAULT_FAT_MAX_G))
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [avatarBusy, setAvatarBusy] = useState(false)
@@ -433,6 +439,16 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
       setError('Le % de gras visé doit être compris entre 3 et 60.')
       return
     }
+    const proteinVal = proteinPerLb.trim() !== '' ? Number(proteinPerLb) : null
+    const fatVal = fatMaxG.trim() !== '' ? Number(fatMaxG) : null
+    if (nutritionEnabled && proteinVal !== null && (!Number.isFinite(proteinVal) || proteinVal < 0.3 || proteinVal > 2.5)) {
+      setError('Les protéines (g/lb de masse maigre) doivent être comprises entre 0,3 et 2,5.')
+      return
+    }
+    if (nutritionEnabled && fatVal !== null && (!Number.isFinite(fatVal) || fatVal < 20 || fatVal > 200)) {
+      setError('Le plafond de lipides doit être compris entre 20 et 200 g.')
+      return
+    }
     try {
       setSaving(true)
       const updated = await clientsService.update(client.id, {
@@ -445,7 +461,9 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
         nutritionEnabled,
         nutritionTargetBodyFat: nutritionEnabled ? targetPct : null,
         nutritionActivityLevel: nutritionEnabled && activityLevel !== '' ? activityLevel : null,
-        nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null
+        nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null,
+        nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
+        nutritionFatMaxG: nutritionEnabled ? fatVal : null
       })
       onSaved(updated)
     } catch (err) {
@@ -705,6 +723,44 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
                       ))}
                     </select>
                     <p className="text-marine/40 text-xs mt-1">Détermine l'échéance estimée et l'ampleur du déficit calorique.</p>
+                  </div>
+
+                  <div className="rounded-md border border-cream-dark bg-white/60 p-3">
+                    <p className="text-sm font-medium text-marine mb-2">Formule des macros</p>
+                    <div className="flex items-center gap-2 mb-2 text-marine text-sm">
+                      <span className="w-20">Protéines</span>
+                      <input
+                        type="number"
+                        min={0.3}
+                        max={2.5}
+                        step={0.1}
+                        value={proteinPerLb}
+                        onChange={e => setProteinPerLb(e.target.value)}
+                        className="w-20 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+                      />
+                      <span className="text-marine/60">g par lb de masse maigre</span>
+                    </div>
+                    <div className="flex items-center gap-2 mb-2 text-marine text-sm">
+                      <span className="w-20">Lipides</span>
+                      <span className="text-marine/60">max</span>
+                      <input
+                        type="number"
+                        min={20}
+                        max={200}
+                        step={5}
+                        value={fatMaxG}
+                        onChange={e => setFatMaxG(e.target.value)}
+                        className="w-20 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+                      />
+                      <span className="text-marine/60">g</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-marine text-sm">
+                      <span className="w-20">Glucides</span>
+                      <span className="text-marine/60">le reste des calories cibles</span>
+                    </div>
+                    <p className="text-marine/40 text-xs mt-2">
+                      Les calories cibles viennent du métabolisme (Mifflin-St Jeor) moins le déficit du rythme choisi.
+                    </p>
                   </div>
                 </div>
               )}

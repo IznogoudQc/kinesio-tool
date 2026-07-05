@@ -71,6 +71,13 @@
       "when": 1783271075395,
       "tag": "0009_abandoned_enchantress",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1783279126969,
+      "tag": "0010_little_baron_strucker",
+      "breakpoints": true
     }
   ]
 }

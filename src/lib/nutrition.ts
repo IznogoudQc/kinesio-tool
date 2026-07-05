@@ -16,6 +16,10 @@
 
 export type ActivityLevel = 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif'
 
+/** Facteur kg → lb (identique à src/lib/units.ts, inliné pour garder ce module
+ *  autonome — pas d'import de valeur, exécutable tel quel par `node --test`). */
+const KG_TO_LB = 2.2046226218
+
 /** Multiplicateurs de dépense énergétique (BMR → TDEE) — valeurs Harris/Mifflin usuelles. */
 export const ACTIVITY_FACTORS: Record<ActivityLevel, number> = {
   sedentaire: 1.2,
@@ -73,12 +77,12 @@ export function weeksToGoal(
   return (toLoseKg as number) / (rateKgPerWeek as number)
 }
 
-/** Protéines visées par kg de poids-cible — haut de fourchette pour préserver la
- *  masse maigre en déficit (1,6-2,2 g/kg selon la littérature). */
-const PROTEIN_G_PER_KG = 2.0
-
-/** Part des lipides dans l'apport calorique cible (santé hormonale minimale). */
-const FAT_KCAL_RATIO = 0.25
+/** Formule des macros — paramètres par défaut, modifiables par client :
+ *  - protéines : 1 g par livre de masse maigre (préserve le muscle en déficit) ;
+ *  - lipides : plafond de 60 g ;
+ *  - glucides : le reste des calories cibles. */
+export const DEFAULT_PROTEIN_PER_LB_LEAN = 1.0
+export const DEFAULT_FAT_MAX_G = 60
 
 export interface BodyFatGoal {
   /** Poids à atteindre (kg) pour le % de gras visé, masse maigre constante. */
@@ -151,8 +155,11 @@ export interface MacroEstimate {
 }
 
 /**
- * Estimation calorique + macros pour une perte de gras. `goalKg` (optionnel) sert
- * de base au calcul des protéines ; sinon on utilise le poids actuel.
+ * Estimation calorique + macros pour une perte de gras. Formule (paramétrable) :
+ *  - protéines = `proteinPerLbLean` g × masse maigre (en livres) ;
+ *  - lipides = plafond `fatMaxG` g ;
+ *  - glucides = le reste des calories cibles.
+ * Nécessite `leanKg` (masse maigre) pour les protéines.
  * ⚠️ Indicatif — accompagner d'un avertissement (champ de pratique).
  */
 export function estimateMacros(params: {
@@ -161,13 +168,19 @@ export function estimateMacros(params: {
   age: number | null | undefined
   sex: 'M' | 'F' | null | undefined
   activity: ActivityLevel | null | undefined
-  goalKg?: number | null
+  /** Masse maigre (kg) — base du calcul des protéines. */
+  leanKg: number | null | undefined
   /** Déficit calorique quotidien visé (kcal). Si absent, on applique −20 % du TDEE. */
   dailyDeficitKcal?: number | null
+  /** g de protéines par livre de masse maigre (défaut 1). */
+  proteinPerLbLean?: number | null
+  /** Plafond de lipides en g (défaut 60). */
+  fatMaxG?: number | null
 }): MacroEstimate | null {
-  const { weightKg, heightCm, age, sex, activity, goalKg, dailyDeficitKcal } = params
+  const { weightKg, heightCm, age, sex, activity, leanKg, dailyDeficitKcal, proteinPerLbLean, fatMaxG } = params
   const bmr = mifflinBmr({ weightKg, heightCm, age, sex })
   if (bmr === null || !activity || !(activity in ACTIVITY_FACTORS)) return null
+  if (!Number.isFinite(leanKg ?? NaN) || (leanKg as number) <= 0) return null
 
   const tdee = Math.round(bmr * ACTIVITY_FACTORS[activity])
   // Déficit selon le rythme choisi, sinon défaut −20 %. Jamais sous le BMR.
@@ -177,11 +190,16 @@ export function estimateMacros(params: {
       : Math.round(tdee * (1 - FAT_LOSS_DEFICIT))
   const targetKcal = Math.max(bmr, deficitTarget)
 
-  const proteinBaseKg = Number.isFinite(goalKg ?? NaN) ? (goalKg as number) : (weightKg as number)
-  const proteinG = Math.round(proteinBaseKg * PROTEIN_G_PER_KG)
-  const fatG = Math.round((targetKcal * FAT_KCAL_RATIO) / 9)
-  const carbsKcal = targetKcal - proteinG * 4 - fatG * 9
-  const carbsG = Math.max(0, Math.round(carbsKcal / 4))
+  const proteinPerLb =
+    Number.isFinite(proteinPerLbLean ?? NaN) && (proteinPerLbLean as number) > 0
+      ? (proteinPerLbLean as number)
+      : DEFAULT_PROTEIN_PER_LB_LEAN
+  const fatCap =
+    Number.isFinite(fatMaxG ?? NaN) && (fatMaxG as number) > 0 ? (fatMaxG as number) : DEFAULT_FAT_MAX_G
+
+  const proteinG = Math.round((leanKg as number) * KG_TO_LB * proteinPerLb)
+  const fatG = Math.round(fatCap)
+  const carbsG = Math.max(0, Math.round((targetKcal - proteinG * 4 - fatG * 9) / 4))
 
   return { bmr, tdee, targetKcal, proteinG, carbsG, fatG }
 }
