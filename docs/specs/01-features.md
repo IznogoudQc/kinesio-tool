@@ -636,6 +636,13 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## 🐛 Corrigé (v0.1.71 — Mesures : saisie perdue au changement de sous-onglet)
+
+Basculer entre **Circonférences** et **Plis cutanés** sans enregistrer effaçait la saisie en cours : `MesuresTab` montait
+un seul panneau à la fois, donc l'autre était démonté (état local du formulaire réinitialisé). Correctif : les **deux
+panneaux restent montés**, l'inactif est simplement masqué (`hidden`) → React conserve l'état et la saisie survit au
+changement d'onglet (dans les deux sens). Version : 0.1.70 → 0.1.71.
+
 ## ✅ Fait (v0.1.70 — « Nouveau client » : barre de boutons fixe)
 
 Cohérence avec v0.1.69 : la vue « Nouveau client » (page pleine, déjà défilable via `<main overflow-auto>`) reçoit une

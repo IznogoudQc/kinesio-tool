@@ -97,11 +97,15 @@ export function MesuresTab() {
         </SubTabButton>
       </div>
 
-      {view === 'circ' ? (
+      {/* Les DEUX panneaux restent montés (l'inactif masqué via `hidden`) afin de
+          NE PAS perdre la saisie en cours quand on bascule d'un sous-onglet à
+          l'autre. Démonter/remonter réinitialiserait l'état local du formulaire. */}
+      <div className={view === 'circ' ? '' : 'hidden'}>
         <CirconferencesPanel client={client} notify={setToast} />
-      ) : (
+      </div>
+      <div className={view === 'plis' ? '' : 'hidden'}>
         <PlisPanel client={client} notify={setToast} />
-      )}
+      </div>
 
       {toast && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
