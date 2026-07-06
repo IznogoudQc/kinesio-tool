@@ -636,6 +636,11 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## 🐛 Corrigé (v0.1.76 — Onglet Notes cliquable)
+
+L'onglet Notes (v0.1.75) était fonctionnel mais son bouton dans la barre d'onglets restait `enabled: false` (grisé,
+non cliquable) — reliquat du placeholder. Passé à `enabled: true` dans `ClientDetailLayout`. Version : 0.1.75 → 0.1.76.
+
 ## ✅ Fait (v0.1.75 — Onglet Notes : journal clinique par client)
 
 L'onglet Notes (placeholder) devient un vrai **journal de notes datées**, **privé** (jamais dans le rapport). Voir
