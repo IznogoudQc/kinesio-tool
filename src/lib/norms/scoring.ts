@@ -89,7 +89,9 @@ function composite(
 }
 
 export interface BilanSynthesis {
-  /** Composition corporelle : IMC + tour de taille. */
+  /** Composition corporelle : IMC + % gras + tour de taille. Doit rester
+   *  identique à `computeBilan` (bilan-computed.ts) pour que le rapport PDF et
+   *  le Dashboard affichent le même score. */
   composition: CompositeScore
   /** % gras corporel seul. */
   bodyFat: CompositeScore
@@ -105,7 +107,7 @@ export interface BilanSynthesis {
 
 /** Calcule les 5 + 1 scores synthèse à partir d'un BilanData et du profil client. */
 export function computeSynthesis(data: BilanData, profile: BilanProfile): BilanSynthesis {
-  const composition = composite(data, ['imc', 'tour_taille_cm'], profile)
+  const composition = composite(data, ['imc', 'pourcentage_gras', 'tour_taille_cm'], profile)
   const bodyFat = composite(data, ['pourcentage_gras'], profile)
   const aerobic = composite(data, ['vo2max'], profile)
   const backHealth = composite(data, ['flexion_tronc_cm', 'endurance_dos_sec', 'situps'], profile)

@@ -30,6 +30,7 @@ import {
 import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { classifyBloodPressure } from '../lib/norms/clinical'
 import { computeSynthesis, type BilanProfile, type CompositeScore } from '../lib/norms/scoring'
+import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { fitnessAge } from '../lib/fitness-age'
@@ -297,7 +298,21 @@ export function ReportPage() {
     return <div className="report-body p-10 text-base" style={{ color: '#b91c1c' }}>{error ?? 'Client introuvable.'}</div>
   }
 
-  const latest = bilans[0] ?? null
+  // « Bilan courant » = SYNTHÈSE (dernière valeur non-null de chaque champ sur
+  // tous les bilans) — identique au mode par défaut du Dashboard, pour que le
+  // score global et les composites du PDF correspondent exactement à l'écran.
+  // La progression (frise, avant/après) utilise `chrono` = les vrais bilans.
+  const synthResult = bilans.length ? buildSynthesisBilan(bilans) : null
+  const latest: Bilan | null = synthResult
+    ? {
+        id: 'synthesis',
+        clientId: client.id,
+        date: synthResult.latestContributionDate ?? bilans[0].date,
+        data: synthResult.data,
+        source: 'manuel',
+        createdAt: bilans[0].createdAt
+      }
+    : null
   const latestSynth = latest ? computeSynthesis(latest.data, profile) : null
   const latestComputed = latest ? computeBilan(latest.data, profile) : null
 
@@ -750,7 +765,8 @@ function OverviewSection({
   chrono,
   syntheses,
   profile,
-  synth
+  synth,
+  latest
 }: {
   client: Client
   bilans: Bilan[]
@@ -758,10 +774,12 @@ function OverviewSection({
   syntheses: ReturnType<typeof computeSynthesis>[]
   profile: BilanProfile
   synth: ReturnType<typeof computeSynthesis>
+  /** Bilan « courant » = synthèse (mêmes valeurs que le Dashboard). */
+  latest: Bilan
 }) {
   const single = bilans.length < 2
   const oldest = chrono[0]
-  const latest = chrono[chrono.length - 1]
+  // `latest` = synthèse (valeurs courantes) ; `oldest` = 1er vrai bilan (avant/après).
   const objectif = typeof latest.data.objectif === 'string' ? latest.data.objectif.trim() : ''
 
   const fitAge = fitnessAge(num(latest.data.vo2max), profile.sex)
@@ -781,7 +799,7 @@ function OverviewSection({
 
   // `keys` = les sous-tests qui composent chaque score (alignés sur `computeSynthesis`).
   const cards: { title: string; score: CompositeScore; keys: (keyof BilanData)[] }[] = [
-    { title: 'Composition corporelle', score: synth.composition, keys: ['imc', 'tour_taille_cm'] },
+    { title: 'Composition corporelle', score: synth.composition, keys: ['imc', 'pourcentage_gras', 'tour_taille_cm'] },
     { title: 'Cœur et endurance', score: synth.aerobic, keys: ['vo2max'] },
     { title: 'Force musculaire', score: synth.musculoGlobal, keys: ['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'] },
     { title: 'Dos et souplesse', score: synth.backHealth, keys: ['flexion_tronc_cm', 'endurance_dos_sec', 'situps'] }

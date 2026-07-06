@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🐛 Corrigé (v0.1.79 — Score global du PDF ≠ Dashboard)
+
+Le score global (et les composites) du rapport PDF ne correspondait pas au Dashboard. **Deux causes** :
+
+1. **Définition de « Composition » divergente** : `computeSynthesis` (PDF) = IMC + tour de taille, alors que
+   `computeBilan` (Dashboard) = IMC + **% gras** + tour de taille. → `computeSynthesis.composition` aligné (ajout de
+   `pourcentage_gras`). Les deux fonctions donnent maintenant des scores identiques. Carte « Composition » du rapport
+   montre les 3 sous-tests.
+2. **Données différentes** : le PDF calculait sur le dernier bilan seul (`bilans[0]`), le Dashboard sur la **Synthèse**
+   (dernière valeur non-null de chaque champ, tous bilans). → le rapport construit désormais le même bilan synthèse
+   (`buildSynthesisBilan`) comme donnée courante ; la progression (frise, avant/après) reste sur les vrais bilans.
+
+Résultat : le score et les composites du PDF correspondent au Dashboard. Version : 0.1.78 → 0.1.79.
+
 ## ✅ Fait (v0.1.78 — Exporter les barèmes (PDF) + nom par défaut corrigé)
 
 - **Exporter les barèmes** : bouton dans Paramètres → Normes de catégorisation. Génère un PDF de référence (barèmes de
