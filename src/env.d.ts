@@ -245,6 +245,20 @@ interface PlisInput {
   notes?: string
 }
 
+/** Note clinique libre sur un client — journal daté, privé (jamais dans le rapport). */
+interface ClientNote {
+  id: string
+  clientId: string
+  date: string
+  content: string
+  createdAt: string
+  updatedAt: string
+}
+interface ClientNoteInput {
+  date?: string
+  content: string
+}
+
 interface Window {
   api: {
     clients: {
@@ -302,6 +316,12 @@ interface Window {
         update(id: string, data: PlisInput): Promise<MesurePlisCutanes>
         delete(id: string): Promise<void>
       }
+    }
+    notes: {
+      list(clientId: string): Promise<ClientNote[]>
+      create(clientId: string, data: ClientNoteInput): Promise<ClientNote>
+      update(id: string, data: ClientNoteInput): Promise<ClientNote>
+      delete(id: string): Promise<void>
     }
     settings: {
       getProfile(): Promise<ProfileSettings>

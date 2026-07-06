@@ -112,3 +112,18 @@ export const mesuresPlisCutanes = sqliteTable('mesures_plis_cutanes', {
 
 export type MesurePlisCutanes = typeof mesuresPlisCutanes.$inferSelect
 export type NewMesurePlisCutanes = typeof mesuresPlisCutanes.$inferInsert
+
+// Notes cliniques libres de Marie sur un client — journal daté, PRIVÉ (jamais
+// exposé dans le rapport envoyé au client). Voir docs/decisions/0019.
+export const clientNotes = sqliteTable('client_notes', {
+  id: text('id').primaryKey(),
+  clientId: text('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  // Date de la note (ISO AAAA-MM-JJ) — souvent la date de séance.
+  date: text('date').notNull(),
+  content: text('content').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull()
+})
+
+export type ClientNote = typeof clientNotes.$inferSelect
+export type NewClientNote = typeof clientNotes.$inferInsert

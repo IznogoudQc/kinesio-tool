@@ -61,6 +61,12 @@ contextBridge.exposeInMainWorld('api', {
         ipcRenderer.invoke('mesures:plis:delete', id)
     }
   },
+  notes: {
+    list: (clientId: string) => ipcRenderer.invoke('notes:list', clientId),
+    create: (clientId: string, data: unknown) => ipcRenderer.invoke('notes:create', clientId, data),
+    update: (id: string, data: unknown) => ipcRenderer.invoke('notes:update', id, data),
+    delete: (id: string) => ipcRenderer.invoke('notes:delete', id)
+  },
   settings: {
     getProfile: () =>
       ipcRenderer.invoke('settings:profile:get'),

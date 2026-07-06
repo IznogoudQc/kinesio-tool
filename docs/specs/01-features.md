@@ -636,6 +636,13 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.75 — Onglet Notes : journal clinique par client)
+
+L'onglet Notes (placeholder) devient un vrai **journal de notes datées**, **privé** (jamais dans le rapport). Voir
+`docs/decisions/0019`. Table `client_notes` (migration `0012`), IPC `notes:*` + service, UI `NotesTab` : formulaire
+(date + texte) pour ajouter/modifier, liste antéchronologique avec Modifier/Supprimer, garde « note non enregistrée »
+(`useBlocker`). Version : 0.1.74 → 0.1.75.
+
 ## ✅ Fait (v0.1.74 — Conseils IA : analyse « forces & à travailler » en 1 clic)
 
 Le Mode conseils IA ne demande plus de **cocher des métriques**. Un bouton **« Analyser avec l'IA »** (à côté du bloc

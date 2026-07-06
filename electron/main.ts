@@ -4,6 +4,7 @@ import { registerClientsHandlers } from './ipc/clients'
 import { registerSettingsHandlers } from './ipc/settings'
 import { registerBilansHandlers } from './ipc/bilans'
 import { registerMesuresHandlers } from './ipc/mesures'
+import { registerNotesHandlers } from './ipc/notes'
 import { registerReportsHandlers } from './ipc/reports'
 import { registerAIHandlers } from './ipc/ai'
 import { initDb } from '../db/client'
@@ -88,6 +89,7 @@ app.whenReady().then(() => {
   registerSettingsHandlers()
   registerBilansHandlers()
   registerMesuresHandlers()
+  registerNotesHandlers()
   registerReportsHandlers()
   registerAIHandlers()
   createWindow()
