@@ -13,7 +13,6 @@ import { BilansTab } from './pages/client/tabs/BilansTab'
 import { BilanDetailTab } from './pages/client/tabs/BilanDetailTab'
 import { MesuresTab } from './pages/client/tabs/MesuresTab'
 import { NotesTab } from './pages/client/tabs/NotesTab'
-import { PlaceholderTab } from './pages/client/tabs/PlaceholderTab'
 import { UpdateProvider } from './contexts/UpdateContext'
 import { UpdateToast } from './components/UpdateToast'
 
@@ -94,8 +93,7 @@ const router = createHashRouter([
           { path: 'bilans', element: <BilansTab /> },
           { path: 'bilans/:bilanId', element: <BilanDetailTab /> },
           { path: 'mesures', element: <MesuresTab /> },
-          { path: 'notes', element: <NotesTab /> },
-          { path: 'historique', element: <PlaceholderTab title="Historique" /> }
+          { path: 'notes', element: <NotesTab /> }
         ]
       },
       { path: '*', element: <Navigate to="/clients" replace /> }

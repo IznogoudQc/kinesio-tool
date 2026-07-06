@@ -636,6 +636,12 @@ Les bilans .docx historiques sont **partiels** par nature : un bilan a souvent V
 - Suite tests : **104/104 pass** (97 + 7 nouveaux pour synthesis)
 - Version `package.json` : 0.1.31 → 0.1.32
 
+## ✅ Fait (v0.1.77 — Retrait de l'onglet Historique)
+
+L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des historiques déjà présents dans Bilans /
+Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
+Version : 0.1.76 → 0.1.77.
+
 ## 🐛 Corrigé (v0.1.76 — Onglet Notes cliquable)
 
 L'onglet Notes (v0.1.75) était fonctionnel mais son bouton dans la barre d'onglets restait `enabled: false` (grisé,

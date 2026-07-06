@@ -46,8 +46,7 @@ const TABS: TabDef[] = [
   { to: 'dashboard', label: 'Dashboard', enabled: true },
   { to: 'bilans', label: 'Bilans', enabled: true },
   { to: 'mesures', label: 'Mesures', enabled: true },
-  { to: 'notes', label: 'Notes', enabled: true },
-  { to: 'historique', label: 'Historique', enabled: false }
+  { to: 'notes', label: 'Notes', enabled: true }
 ]
 
 /** Contexte exposé par `<ClientDetailLayout>` à toutes ses sous-routes (et
