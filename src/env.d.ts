@@ -339,6 +339,8 @@ interface Window {
     reports: {
       /** Génère le rapport PDF d'un client (route React `/report/:id`) — retourne le chemin du PDF. */
       generatePdf(clientId: string): Promise<string>
+      /** Génère le PDF « Barèmes de référence » (route `/baremes`) — retourne le chemin du PDF. */
+      generateBaremes(): Promise<string>
       /** Ouvre un fichier local avec l'application par défaut du système. */
       openPath(filePath: string): Promise<void>
       /** Génère le rapport PDF, l'attache et l'envoie au client par courriel, puis supprime le fichier temp. */

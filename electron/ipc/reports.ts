@@ -7,6 +7,7 @@ import { eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { bilans, clients, mesuresCirconferences, mesuresPlisCutanes } from '../../db/schema'
 import {
+  generateBaremesPdf,
   generateClientReportPdf,
   loadClientBundle,
   safeClientFileName,
@@ -117,6 +118,11 @@ export function registerReportsHandlers(): void {
   ipcMain.handle('reports:generate-pdf', async (_e, clientId: unknown) => {
     const id = ClientIdSchema.parse(clientId)
     return generateClientReportPdf(id)
+  })
+
+  // Génère le PDF « Barèmes de référence » (aucun paramètre — lit le code).
+  ipcMain.handle('reports:generate-baremes', async () => {
+    return generateBaremesPdf()
   })
 
   // Ouvre un fichier local avec l'application par défaut du système.

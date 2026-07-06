@@ -5,6 +5,7 @@ import { Header } from './components/Header'
 import { ClientsPage } from './pages/ClientsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ReportPage } from './pages/ReportPage'
+import { BaremesPage } from './pages/BaremesPage'
 import { ClientDetailLayout } from './pages/client/ClientDetailLayout'
 import { DashboardLayout } from './pages/client/dashboard/DashboardLayout'
 import { MesuresOverview } from './pages/client/dashboard/MesuresOverview'
@@ -68,8 +69,9 @@ function AppShell() {
 // Data router (`createHashRouter`) plutôt que `<HashRouter><Routes>` : requis pour
 // `useBlocker` (garde « modifications non enregistrées », cf. MesuresTab).
 const router = createHashRouter([
-  // Route dédiée à la génération du PDF — layout autonome, sans le shell de l'app.
+  // Routes dédiées à la génération PDF — layout autonome, sans le shell de l'app.
   { path: '/report/:id', element: <ReportPage /> },
+  { path: '/baremes', element: <BaremesPage /> },
   {
     element: <AppShell />,
     children: [

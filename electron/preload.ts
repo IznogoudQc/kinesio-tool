@@ -94,6 +94,8 @@ contextBridge.exposeInMainWorld('api', {
   reports: {
     generatePdf: (clientId: string) =>
       ipcRenderer.invoke('reports:generate-pdf', clientId),
+    generateBaremes: () =>
+      ipcRenderer.invoke('reports:generate-baremes'),
     openPath: (filePath: string) =>
       ipcRenderer.invoke('reports:open-path', filePath),
     sendEmail: (data: { clientId: string; subject: string; body: string }) =>

@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.78 — Exporter les barèmes (PDF) + nom par défaut corrigé)
+
+- **Exporter les barèmes** : bouton dans Paramètres → Normes de catégorisation. Génère un PDF de référence (barèmes de
+  catégorisation par âge/sexe, seuils cliniques, risque OMS, formules, composites, nutrition, sources) via la route
+  autonome `/baremes` (`BaremesPage`) + `printToPDF` (report-generator `generateBaremesPdf`). Les tableaux sont lus depuis
+  `ACSM_TABLES` (exporté d'`acsm.ts`) → **toujours synchro avec le code**. IPC `reports:generate-baremes` + service.
+- **Nom par défaut** : `DEFAULT_PROFILE` corrigé de « Marie-Eve Bélanger » (placeholder) → « Marie-Eve Riendeau ».
+
+Version : 0.1.77 → 0.1.78.
+
 ## 🐛 Corrigé (v0.1.76 — Onglet Notes cliquable)
 
 L'onglet Notes (v0.1.75) était fonctionnel mais son bouton dans la barre d'onglets restait `enabled: false` (grisé,

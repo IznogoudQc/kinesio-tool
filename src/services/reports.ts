@@ -9,6 +9,11 @@ export const reportsService = {
     return window.api.reports.generatePdf(clientId)
   },
 
+  /** Génère le PDF « Barèmes de référence » et retourne le chemin du fichier. */
+  async generateBaremesPdf(): Promise<string> {
+    return window.api.reports.generateBaremes()
+  },
+
   /** Ouvre un PDF (ou tout autre fichier) avec l'application par défaut du système. */
   async openPdf(filePath: string): Promise<void> {
     return window.api.reports.openPath(filePath)

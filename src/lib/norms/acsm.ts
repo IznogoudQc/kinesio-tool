@@ -201,6 +201,10 @@ const TABLES: Record<TestKey, Ranges | null> = {
   restingHeartRate: null
 }
 
+/** Toutes les plages ACSM par test — exposé pour le document de référence des
+ *  barèmes (page `/baremes`), qui reste ainsi toujours synchro avec ces tables. */
+export const ACSM_TABLES: Record<TestKey, Ranges | null> = TABLES
+
 export function getAcsmRange(test: TestKey, age: number, sex: 'F' | 'M'): NormRange | null {
   const ranges = TABLES[test]
   if (!ranges) return null

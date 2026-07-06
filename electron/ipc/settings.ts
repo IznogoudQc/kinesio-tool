@@ -40,8 +40,8 @@ const EmailTemplateSchema = z.object({
 })
 
 const DEFAULT_PROFILE = {
-  name: 'Marie-Eve Bélanger',
-  signature: 'Marie-Eve Bélanger\nKinésiologue'
+  name: 'Marie-Eve Riendeau',
+  signature: 'Marie-Eve Riendeau\nKinésiologue'
 }
 
 const DEFAULT_TEMPLATE = {

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge } from 'lucide-react'
+import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown } from 'lucide-react'
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { settingsService } from '../services/settings'
+import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
@@ -400,7 +401,46 @@ function NormsCard() {
           redressements, flexion du tronc, IMC, tour de taille, saut vertical, puissance et endurance du dos.
         </p>
       </div>
+      <ExportBaremes />
     </Card>
+  )
+}
+
+/** Bouton « Exporter les barèmes » — génère un PDF de référence (barèmes +
+ *  formules, lus depuis le code) et l'ouvre. */
+function ExportBaremes() {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleExport() {
+    setBusy(true)
+    setError(null)
+    try {
+      const path = await reportsService.generateBaremesPdf()
+      await reportsService.openPdf(path)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur lors de l'export.")
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mt-4">
+      <button
+        type="button"
+        onClick={handleExport}
+        disabled={busy}
+        className="inline-flex items-center gap-2 px-4 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+      >
+        {busy ? <Loader2 size={16} className="animate-spin" /> : <FileDown size={16} />}
+        {busy ? 'Génération…' : 'Exporter les barèmes (PDF)'}
+      </button>
+      <p className="text-marine/45 text-sm mt-1.5">
+        Document de référence à valider ou imprimer — barèmes de catégorisation, seuils cliniques et formules de calcul.
+      </p>
+      {error && <p className="text-red-600 text-sm mt-1.5">{error}</p>}
+    </div>
   )
 }
 
