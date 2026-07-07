@@ -39,8 +39,6 @@ import { dualWeight, estimatedGoalDate } from '../lib/objectif-format'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
 import logo from '../assets/logo.png'
-import bodyMale from '../assets/body-male.png'
-import bodyFemale from '../assets/body-female.png'
 import '../print.css'
 
 // ── Palette imprimable ───────────────────────────────────────────────────────
@@ -472,26 +470,26 @@ function CoverPage({
         </div>
 
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <div
-            style={{
-              width: '62mm',
-              height: '62mm',
-              borderRadius: '50%',
-              background: CREAM,
-              border: `2px solid ${GOLD_SOFT}`,
-              overflow: 'hidden',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            {avatarUrl ? (
+          {/* Photo du client uniquement — pas de silhouette générique en repli
+              (on n'affiche rien sans vraie photo). */}
+          {avatarUrl && (
+            <div
+              style={{
+                width: '62mm',
+                height: '62mm',
+                borderRadius: '50%',
+                background: CREAM,
+                border: `2px solid ${GOLD_SOFT}`,
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
               <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : client.sex ? (
-              <img src={client.sex === 'M' ? bodyMale : bodyFemale} alt="" style={{ width: '78%', height: '78%', objectFit: 'contain' }} />
-            ) : null}
-          </div>
-          <h1 className="report-display" style={{ fontWeight: 600, fontSize: '40pt', color: MARINE, marginTop: '9mm', textAlign: 'center', lineHeight: 1.05 }}>
+            </div>
+          )}
+          <h1 className="report-display" style={{ fontWeight: 600, fontSize: '40pt', color: MARINE, marginTop: avatarUrl ? '9mm' : '0', textAlign: 'center', lineHeight: 1.05 }}>
             {client.name}
           </h1>
           {subtitle && <p style={{ fontSize: '12pt', color: INK_SOFT, marginTop: '2mm' }}>{subtitle}</p>}

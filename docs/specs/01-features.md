@@ -642,6 +642,12 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.80 — PDF : pas de silhouette générique sans photo)
+
+Sur la couverture du rapport, la silhouette générique (homme/femme) était affichée en repli quand le client n'avait pas
+de photo. Désormais : **sans vraie photo, on n'affiche rien** (ni cercle ni silhouette) — le nom remonte proprement. Le
+cercle photo n'apparaît que si un avatar réel existe. Imports `body-male/female` retirés. Version : 0.1.79 → 0.1.80.
+
 ## 🐛 Corrigé (v0.1.79 — Score global du PDF ≠ Dashboard)
 
 Le score global (et les composites) du rapport PDF ne correspondait pas au Dashboard. **Deux causes** :
