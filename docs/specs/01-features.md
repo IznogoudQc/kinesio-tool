@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.82 — Animations douces du Dashboard)
+
+Touches d'animation pour rendre le Dashboard plus vivant (uniquement l'app interactive — le PDF reste statique) :
+
+- **Anneau de score** qui se remplit + **chiffre du score global** qui compte de 0 (`ScoreDonut`).
+- **Grands chiffres** des hero stats (VO2max, IMC…) et **scores composites** qui comptent de 0 (`StatCardXL`,
+  `CompositeMiniCard`) — hook réutilisable `useCountUp` (easeOutCubic, s'anime aussi au changement de bilan).
+- **Apparition en cascade** (fondu + légère montée) des sections du Dashboard (`.dash-rise`, délais échelonnés).
+- Respecte `prefers-reduced-motion` (tout devient instantané). Version : 0.1.81 → 0.1.82.
+
 ## 🐛 Corrigé (v0.1.81 — PDF : score composition ≠ Dashboard (suite))
 
 Après v0.1.79, il restait un écart sur « Composition » (Dashboard 3.0 vs PDF 2.7) tirant le global (4.2 vs 4.1). Cause :

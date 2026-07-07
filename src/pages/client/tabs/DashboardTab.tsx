@@ -310,7 +310,7 @@ export function DashboardTab() {
 
   // ── Hero : score donut + 5 composites ──────────────────────────────────────
   const Hero = (
-    <section className="bg-white border border-cream-dark/30 rounded-xl p-6 shadow-sm">
+    <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-6 shadow-sm">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         <div className="lg:col-span-4 flex justify-center">
           <ScoreDonut
@@ -357,7 +357,7 @@ export function DashboardTab() {
 
   // ── Stats XL ──────────────────────────────────────────────────────────────
   const StatsRow = (
-    <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <section className="dash-rise grid grid-cols-2 lg:grid-cols-4 gap-4" style={{ animationDelay: '80ms' }}>
       <StatCardXL
         label="VO2max"
         value={activeData.vo2max}
@@ -489,7 +489,7 @@ export function DashboardTab() {
       {StatsRow}
 
       {(fitAge !== null || objectif !== null) && (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <section className="dash-rise grid grid-cols-1 md:grid-cols-2 gap-4" style={{ animationDelay: '160ms' }}>
           {fitAge !== null && <FitnessAgeCard fitAge={fitAge} age={age} />}
           {objectif !== null && <ObjectifCard objectif={objectif} unit={client.unitWeight ?? 'kg'} />}
         </section>
@@ -541,7 +541,7 @@ export function DashboardTab() {
         </>
       )}
 
-      <section className="space-y-3">
+      <section className="dash-rise space-y-3" style={{ animationDelay: '240ms' }}>
         <div className="flex items-center justify-between gap-3 flex-wrap">
           <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold">Analyse du bilan</p>
           {!printMode && <AIAnalysisPanel sex={client.sex} age={age} metrics={aiMetrics} />}

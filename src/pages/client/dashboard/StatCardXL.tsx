@@ -12,6 +12,7 @@ import {
 import { CategoryRangeBar } from '../../../components/CategoryRangeBar'
 import { MetricSelectable } from '../../../components/MetricSelectable'
 import { formatBilanDate } from '../bilanFields'
+import { useCountUp } from '../../../lib/useCountUp'
 
 interface StatCardXLProps {
   label: string
@@ -43,6 +44,7 @@ export function StatCardXL({
   originDate
 }: StatCardXLProps) {
   const hasValue = typeof value === 'number' && !Number.isNaN(value)
+  const animValue = useCountUp(hasValue ? (value as number) : null)
 
   const percentile =
     test && hasValue && typeof age === 'number' && sex
@@ -89,8 +91,8 @@ export function StatCardXL({
       <p className="text-marine/55 text-xs uppercase tracking-wide font-medium">{label}</p>
 
       <div className="flex items-baseline gap-1.5 mt-1">
-        <span className="text-marine text-5xl font-bold leading-none">
-          {hasValue ? (value as number).toLocaleString('fr-CA', { maximumFractionDigits: 1 }) : <span className="text-marine/25">—</span>}
+        <span className="text-marine text-5xl font-bold leading-none tabular-nums">
+          {hasValue ? (animValue ?? (value as number)).toLocaleString('fr-CA', { maximumFractionDigits: 1 }) : <span className="text-marine/25">—</span>}
         </span>
         {hasValue && unit && <span className="text-marine/45 text-base font-medium">{unit}</span>}
       </div>

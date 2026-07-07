@@ -1,4 +1,5 @@
 import { CATEGORY_COLORS, CATEGORY_LABELS, type Category } from '../../../lib/norms'
+import { useCountUp } from '../../../lib/useCountUp'
 
 interface ScoreDonutProps {
   /** Score 0-5 (CSEP). `null` = pas de donnée → donut grisé. */
@@ -25,7 +26,10 @@ export function ScoreDonut({ score, category, label, previousScore, size = 200 }
   const stroke = 14
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
-  const ratio = score === null ? 0 : Math.max(0, Math.min(1, score / 5))
+  // Le score s'anime de 0 → valeur (anneau + chiffre) au montage / changement.
+  const animScore = useCountUp(score)
+  const shown = animScore ?? 0
+  const ratio = score === null ? 0 : Math.max(0, Math.min(1, shown / 5))
   const dash = ratio * circumference
   const color = category ? ARC_COLORS[category] : '#94a3b8'
   const delta = score !== null && typeof previousScore === 'number' ? score - previousScore : null
@@ -53,13 +57,13 @@ export function ScoreDonut({ score, category, label, previousScore, size = 200 }
               strokeDasharray={`${dash} ${circumference}`}
               strokeLinecap="round"
               transform={`rotate(-90 ${size / 2} ${size / 2})`}
-              style={{ transition: 'stroke-dasharray 600ms ease-out, stroke 300ms ease-out' }}
+              style={{ transition: 'stroke 300ms ease-out' }}
             />
           )}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <div className="text-marine text-5xl font-bold leading-none">
-            {score === null ? <span className="text-marine/30">—</span> : score.toFixed(1)}
+          <div className="text-marine text-5xl font-bold leading-none tabular-nums">
+            {score === null ? <span className="text-marine/30">—</span> : shown.toFixed(1)}
           </div>
           <div className="text-marine/45 text-xs mt-1.5 uppercase tracking-wide">/ 5</div>
         </div>
