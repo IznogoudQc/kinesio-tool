@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🐛 Corrigé (v0.1.81 — PDF : score composition ≠ Dashboard (suite))
+
+Après v0.1.79, il restait un écart sur « Composition » (Dashboard 3.0 vs PDF 2.7) tirant le global (4.2 vs 4.1). Cause :
+le Dashboard score via `computeBilan` (qui **recalcule l'IMC** depuis taille+poids), le PDF via `computeSynthesis` (IMC
+**stocké**) — sur une synthèse mêlant taille/poids/IMC de bilans différents, l'IMC diffère → catégorie → composition.
+Correctif : le rapport utilise désormais **`computeBilan` partout** (couverture, composites, sections, frise) — exactement
+la même fonction que le Dashboard, sur les mêmes données. `computeSynthesis` n'est plus utilisé dans le rapport.
+Version : 0.1.80 → 0.1.81.
+
 ## ✅ Fait (v0.1.80 — PDF : pas de silhouette générique sans photo)
 
 Sur la couverture du rapport, la silhouette générique (homme/femme) était affichée en repli quand le client n'avait pas

@@ -29,7 +29,7 @@ import {
 } from '../lib/norms'
 import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { classifyBloodPressure } from '../lib/norms/clinical'
-import { computeSynthesis, type BilanProfile, type CompositeScore } from '../lib/norms/scoring'
+import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
@@ -287,7 +287,7 @@ export function ReportPage() {
   )
   // Du plus ancien au plus récent.
   const chrono = useMemo(() => [...bilans].reverse(), [bilans])
-  const syntheses = useMemo(() => chrono.map(b => computeSynthesis(b.data, profile)), [chrono, profile])
+  const syntheses = useMemo(() => chrono.map(b => computeBilan(b.data, profile)), [chrono, profile])
 
   if (loading) {
     return <div className="report-body p-10 text-base" style={{ color: MARINE }}>Préparation du rapport…</div>
@@ -311,10 +311,9 @@ export function ReportPage() {
         createdAt: bilans[0].createdAt
       }
     : null
-  const latestSynth = latest ? computeSynthesis(latest.data, profile) : null
   const latestComputed = latest ? computeBilan(latest.data, profile) : null
 
-  if (!latest || !latestSynth || !latestComputed) {
+  if (!latest || !latestComputed) {
     return (
       <article className="report-body" style={{ color: MARINE, background: '#fff' }}>
         <CoverPage client={client} latest={null} coachName={coachName} totalBilans={0} avatarUrl={avatarUrl} overall={null} />
@@ -332,10 +331,10 @@ export function ReportPage() {
         coachName={coachName}
         totalBilans={bilans.length}
         avatarUrl={avatarUrl}
-        overall={latestSynth.overall.score}
-        overallCategory={latestSynth.overall.category}
+        overall={latestComputed.overall.score}
+        overallCategory={latestComputed.overall.category}
       />
-      <OverviewSection client={client} synth={latestSynth} {...shared} />
+      <OverviewSection client={client} synth={latestComputed} {...shared} />
       <CompositionSection {...shared} computed={latestComputed} />
       <CardioSection {...shared} computed={latestComputed} />
       <ForceSection {...shared} />
@@ -769,9 +768,9 @@ function OverviewSection({
   client: Client
   bilans: Bilan[]
   chrono: Bilan[]
-  syntheses: ReturnType<typeof computeSynthesis>[]
+  syntheses: BilanComputed[]
   profile: BilanProfile
-  synth: ReturnType<typeof computeSynthesis>
+  synth: BilanComputed
   /** Bilan « courant » = synthèse (mêmes valeurs que le Dashboard). */
   latest: Bilan
 }) {
@@ -969,7 +968,7 @@ function OverviewSection({
 }
 
 /** Frise horizontale : 1 point par bilan, espacement régulier. */
-function JourneyTimeline({ chrono, syntheses }: { chrono: Bilan[]; syntheses: ReturnType<typeof computeSynthesis>[] }) {
+function JourneyTimeline({ chrono, syntheses }: { chrono: Bilan[]; syntheses: BilanComputed[] }) {
   const W = 1000
   const H = 150
   const padX = 40
@@ -1116,7 +1115,7 @@ interface DomainProps {
   latest: Bilan
   bilans: Bilan[]
   chrono: Bilan[]
-  syntheses: ReturnType<typeof computeSynthesis>[]
+  syntheses: BilanComputed[]
   profile: BilanProfile
   weightUnit: 'kg' | 'lb'
 }
@@ -1455,7 +1454,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
       intro="La composition corporelle décrit la répartition entre la masse grasse et la masse maigre de votre corps. Un excès de gras, surtout à la taille, augmente le risque de maladies cardiovasculaires et de diabète. On l'évalue par l'IMC, le tour de taille et le pourcentage de gras estimé à partir des plis cutanés."
       detailKeys={['imc', 'tour_taille_cm', 'pourcentage_gras']}
       heroKey="pourcentage_gras"
-      composite={computeSynthesis(props.latest.data, props.profile).composition}
+      composite={computeBilan(props.latest.data, props.profile).composition}
       charts={[
         { kind: 'line', key: 'pourcentage_gras', title: '% de gras corporel', color: MARINE },
         { kind: 'line', key: 'poids_kg', title: 'Poids (kg)', color: GOLD },
@@ -1477,7 +1476,7 @@ function CardioSection({ computed, ...props }: DomainProps & { computed: BilanCo
       intro="Votre capacité cardiovasculaire reflète l'efficacité de votre cœur, de vos poumons et de vos muscles à utiliser l'oxygène pendant l'effort. C'est l'un des meilleurs prédicteurs de santé et de longévité. On la mesure par le VO2max, complété par votre tension et votre fréquence cardiaque au repos."
       detailKeys={['vo2max', 'fc_repos', 'pa_systolique', 'pa_diastolique']}
       heroKey="vo2max"
-      composite={computeSynthesis(props.latest.data, props.profile).aerobic}
+      composite={computeBilan(props.latest.data, props.profile).aerobic}
       charts={[
         { kind: 'line', key: 'vo2max', title: 'VO2max (ml/kg/min)', color: GOLD },
         { kind: 'line', key: 'fc_repos', title: 'Fréquence cardiaque au repos (bpm)', color: MARINE }
@@ -1497,7 +1496,7 @@ function ForceSection(props: DomainProps) {
       intro="La force et l'endurance musculaires vous permettent de bouger, de porter et de rester autonome avec l'âge. On les évalue par des tests d'extension des bras, de redressements assis, de saut vertical et de puissance des jambes."
       detailKeys={['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts']}
       heroKey="pushups"
-      composite={computeSynthesis(props.latest.data, props.profile).musculoGlobal}
+      composite={computeBilan(props.latest.data, props.profile).musculoGlobal}
       charts={[
         { kind: 'dual', a: 'pushups', b: 'situps', title: 'Pompes & redressements (reps)', nameA: 'Pompes', nameB: 'Redressements' },
         { kind: 'dual', a: 'saut_vertical_cm', b: 'puissance_jambes_watts', title: 'Saut vertical & puissance', nameA: 'Saut (cm)', nameB: 'Puissance (W)', dualAxis: true }
@@ -1516,7 +1515,7 @@ function DosSection(props: DomainProps) {
       intro="Un dos endurant et souple protège contre les douleurs lombaires, l'une des causes les plus fréquentes d'arrêt de travail. On mesure la souplesse par la flexion du tronc et l'endurance des muscles qui soutiennent la colonne."
       detailKeys={['flexion_tronc_cm', 'endurance_dos_sec']}
       heroKey="endurance_dos_sec"
-      composite={computeSynthesis(props.latest.data, props.profile).backHealth}
+      composite={computeBilan(props.latest.data, props.profile).backHealth}
       charts={[
         { kind: 'line', key: 'endurance_dos_sec', title: 'Endurance du dos (secondes)', color: GOLD },
         { kind: 'line', key: 'flexion_tronc_cm', title: 'Flexion du tronc (cm)', color: MARINE }
