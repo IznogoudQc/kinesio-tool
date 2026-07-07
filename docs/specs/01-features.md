@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.83 — Célébrer les victoires (Dashboard))
+
+Quand un client progresse, le Dashboard le souligne (uniquement l'app — jamais le PDF) :
+
+- **Bannière « Belle progression ! »** au-dessus du bilan, listant jusqu'à 5 victoires détectées :
+  montée de catégorie d'un domaine (ex. *Composition : Bien → Très bien*), **score global en hausse**,
+  **record personnel** sur une métrique (VO2max, pompes, redressements, saut, % gras, IMC, tour de taille —
+  meilleure valeur stricte de l'historique), **objectif de composition atteint**.
+- **Petite pluie de confettis** à l'ouverture quand il y a au moins une victoire — une seule fois par bilan
+  et par session (pas de répétition en naviguant), sans dépendance externe (canvas), et **désactivée si
+  `prefers-reduced-motion`**.
+- Détection pure et testée (`src/lib/dashboard-wins.ts`, 5 tests). Version : 0.1.82 → 0.1.83.
+
 ## ✅ Fait (v0.1.82 — Animations douces du Dashboard)
 
 Touches d'animation pour rendre le Dashboard plus vivant (uniquement l'app interactive — le PDF reste statique) :

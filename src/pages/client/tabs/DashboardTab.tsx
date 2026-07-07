@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Calculator, FileText, FileUp, Info, Mail, Ruler } from 'lucide-react'
+import { Calculator, FileText, FileUp, Info, Mail, PartyPopper, Ruler } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
 import { ClientAvatar } from '../../../components/ClientAvatar'
 import { bilansService } from '../../../services/bilans'
@@ -32,6 +32,8 @@ import { TrainingZones } from '../dashboard/TrainingZones'
 import { StrengthsAndWeaknesses } from '../dashboard/StrengthsAndWeaknesses'
 import { BilanSelectorPills } from '../dashboard/BilanSelectorPills'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../../../lib/synthesisBilan'
+import { detectWins } from '../../../lib/dashboard-wins'
+import { Confetti } from '../../../components/Confetti'
 
 function formatNumber(n: number | null | undefined): string {
   if (typeof n !== 'number' || Number.isNaN(n)) return '—'
@@ -241,6 +243,16 @@ export function DashboardTab() {
   )
   const objectif = buildObjectif(client, activeData, computed, age, (activeBilan ?? latest)!.date)
   const aiMetrics = gatherBilanMetrics(activeData, age, client.sex, norms)
+  // Victoires à célébrer (Dashboard uniquement — jamais dans le PDF).
+  const wins = printMode
+    ? []
+    : detectWins({
+        computed,
+        previous: previousComputed,
+        bilans: bilans ?? [],
+        currentData: activeData,
+        objectifAtGoal: objectif?.atGoal
+      })
   // Vrai si Marie-Eve regarde un bilan ANCIEN spécifique (pas la synthèse,
   // pas le plus récent). Sert au bandeau gold « vous consultez un bilan ancien ».
   const isViewingOlder =
@@ -483,6 +495,31 @@ export function DashboardTab() {
             Revenir à la synthèse
           </button>
         </div>
+      )}
+
+      {wins.length > 0 && (
+        <>
+          <Confetti token={`${client.id}:${(activeBilan ?? latest)!.id}`} />
+          <section
+            className="dash-rise rounded-xl border border-green-500/30 bg-gradient-to-br from-green-50 to-gold/10 p-5 shadow-sm"
+            aria-label="Vos progrès"
+          >
+            <div className="flex items-center gap-2 mb-2.5">
+              <PartyPopper size={20} className="text-green-600 shrink-0" />
+              <h3 className="text-marine font-bold text-base">Belle progression !</h3>
+            </div>
+            <ul className="space-y-1.5">
+              {wins.map((w, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-marine/85">
+                  <span aria-hidden="true" className="shrink-0">
+                    {w.icon}
+                  </span>
+                  <span>{w.text}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
       )}
 
       {Hero}
