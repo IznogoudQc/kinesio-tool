@@ -178,11 +178,13 @@ export function DashboardTab() {
     return idx >= 0 ? bilans[idx + 1] ?? null : null
   }, [bilans, isSynthesisMode, previousSynthesisResult, activeBilan, client.id])
 
-  // Bilan de référence des « hero stats » (anneau, mini-cartes, cartes XL).
+  // Bilan de référence UNIQUE pour tout le Dashboard : anneau, mini-cartes,
+  // cartes XL, graphique de progression et profil musculo. Un seul sélecteur en
+  // haut, plutôt qu'un par carte.
   // 'prev' = bilan précédent (défaut) · 'none' = aucune comparaison · sinon un id.
-  const [heroCompareId, setHeroCompareId] = useState<string>('prev')
+  const [compareId, setCompareId] = useState<string>('prev')
   useEffect(() => {
-    setHeroCompareId('prev')
+    setCompareId('prev')
   }, [activeBilan?.id])
 
   if (loading) {
@@ -245,22 +247,21 @@ export function DashboardTab() {
   const computed = computeBilan(activeData, profile)
   const previousComputed = previousData ? computeBilan(previousData, profile) : undefined
 
-  // Référence choisie pour les hero stats. Indépendante des victoires (toujours
-  // mesurées vs le bilan précédent) et du radar musculo (qui a son propre choix).
-  const heroCompareBilan =
-    heroCompareId === 'none'
+  // Le bilan de référence choisi en haut. Les victoires restent volontairement
+  // mesurées vs le bilan précédent (sinon les confettis dépendraient du filtre).
+  const compareBilan =
+    compareId === 'none'
       ? null
-      : heroCompareId === 'prev'
+      : compareId === 'prev'
         ? previousActiveBilan
-        : bilans?.find(b => b.id === heroCompareId) ?? null
-  const heroCompareData = heroCompareBilan?.data
-  const heroCompareComputed = heroCompareData ? computeBilan(heroCompareData, profile) : undefined
-  const heroCompareLabel =
-    heroCompareBilan === null
-      ? null
-      : heroCompareId === 'prev'
-        ? 'bilan précédent'
-        : `bilan du ${formatBilanDate(heroCompareBilan.date)}`
+        : bilans?.find(b => b.id === compareId) ?? null
+  const compareData = compareBilan?.data
+  const compareComputed = compareData ? computeBilan(compareData, profile) : undefined
+  // « bilan précédent » se lit bien dans une phrase ; « 10 juin 2024 » dans une étiquette.
+  const compareLabel =
+    compareBilan === null ? null : compareId === 'prev' ? 'bilan précédent' : `bilan du ${formatBilanDate(compareBilan.date)}`
+  const compareShortLabel =
+    compareBilan === null ? null : compareId === 'prev' ? 'Bilan précédent' : formatBilanDate(compareBilan.date)
 
   // Miroir du rapport : âge en forme (VO2max → âge) + objectif chiffré (si module activé).
   const fitAge = fitnessAge(
@@ -365,33 +366,12 @@ export function DashboardTab() {
   // ── Hero : score donut + 5 composites ──────────────────────────────────────
   const Hero = (
     <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-6 shadow-sm">
-      {!printMode && (previousActiveBilan !== null || compareOptions.length > 0) && (
-        <div className="flex items-center justify-end mb-4">
-          <label className="flex items-center gap-1.5 text-xs text-marine/55">
-            <span>Comparer à</span>
-            <select
-              value={heroCompareId}
-              onChange={e => setHeroCompareId(e.target.value)}
-              className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
-              title="Bilan de référence pour les écarts ▲▼ du score, des composites et des grandes cartes"
-            >
-              {previousActiveBilan !== null && <option value="prev">Bilan précédent</option>}
-              {compareOptions.map(o => (
-                <option key={o.id} value={o.id}>
-                  {formatBilanDate(o.date)}
-                </option>
-              ))}
-              <option value="none">Aucune comparaison</option>
-            </select>
-          </label>
-        </div>
-      )}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         <div className="lg:col-span-4 flex justify-center">
           <ScoreDonut
             score={computed.overall.score}
             category={computed.overall.category}
-            previousScore={heroCompareComputed?.overall.score ?? null}
+            previousScore={compareComputed?.overall.score ?? null}
             label="Santé et condition physique globale"
           />
         </div>
@@ -400,30 +380,30 @@ export function DashboardTab() {
             title="Composition"
             subtitle="IMC + %gras + taille"
             current={computed.composition}
-            previous={heroCompareComputed?.composition}
+            previous={compareComputed?.composition}
           />
           <CompositeMiniCard
             title="% gras corporel"
             current={computed.bodyFat}
-            previous={heroCompareComputed?.bodyFat}
+            previous={compareComputed?.bodyFat}
           />
           <CompositeMiniCard
             title="Aérobie"
             subtitle="VO2max"
             current={computed.aerobic}
-            previous={heroCompareComputed?.aerobic}
+            previous={compareComputed?.aerobic}
           />
           <CompositeMiniCard
             title="Indice du dos"
             subtitle="Flex + endur + situps"
             current={computed.backHealth}
-            previous={heroCompareComputed?.backHealth}
+            previous={compareComputed?.backHealth}
           />
           <CompositeMiniCard
             title="Musculo global"
             subtitle="6 tests"
             current={computed.musculoGlobal}
-            previous={heroCompareComputed?.musculoGlobal}
+            previous={compareComputed?.musculoGlobal}
           />
         </div>
       </div>
@@ -442,9 +422,9 @@ export function DashboardTab() {
         sex={client.sex}
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.vo2max : undefined}
-        previousValue={heroCompareData?.vo2max}
+        previousValue={compareData?.vo2max}
         history={historyOf('vo2max')}
-        compareLabel={heroCompareLabel}
+        compareLabel={compareLabel}
       />
       <StatCardXL
         label="IMC"
@@ -455,10 +435,10 @@ export function DashboardTab() {
         sex={client.sex}
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.imc : undefined}
-        previousValue={heroCompareData?.imc}
+        previousValue={compareData?.imc}
         history={historyOf('imc')}
         lowerIsBetter
-        compareLabel={heroCompareLabel}
+        compareLabel={compareLabel}
       />
       <StatCardXL
         label="% de gras"
@@ -469,10 +449,10 @@ export function DashboardTab() {
         sex={client.sex}
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.pourcentage_gras : undefined}
-        previousValue={heroCompareData?.pourcentage_gras}
+        previousValue={compareData?.pourcentage_gras}
         history={historyOf('pourcentage_gras')}
         lowerIsBetter
-        compareLabel={heroCompareLabel}
+        compareLabel={compareLabel}
       />
       <StatCardXL
         label="Tour de taille"
@@ -483,10 +463,10 @@ export function DashboardTab() {
         sex={client.sex}
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.tour_taille_cm : undefined}
-        previousValue={heroCompareData?.tour_taille_cm}
+        previousValue={compareData?.tour_taille_cm}
         history={historyOf('tour_taille_cm')}
         lowerIsBetter
-        compareLabel={heroCompareLabel}
+        compareLabel={compareLabel}
       />
     </section>
   )
@@ -551,12 +531,35 @@ export function DashboardTab() {
       {Header}
 
       {count >= 1 && (
-        <BilanSelectorPills
-          bilans={bilans!}
-          selectedId={isSynthesisMode ? null : activeBilan!.id}
-          onSelect={id => setSelectedBilanId(id ?? 'synthesis')}
-          synthesisLatestDate={synthesisResult?.latestContributionDate}
-        />
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="min-w-0 flex-1">
+            <BilanSelectorPills
+              bilans={bilans!}
+              selectedId={isSynthesisMode ? null : activeBilan!.id}
+              onSelect={id => setSelectedBilanId(id ?? 'synthesis')}
+              synthesisLatestDate={synthesisResult?.latestContributionDate}
+            />
+          </div>
+          {!printMode && (previousActiveBilan !== null || compareOptions.length > 0) && (
+            <label className="flex items-center gap-1.5 text-xs text-marine/55 shrink-0">
+              <span>Comparer à</span>
+              <select
+                value={compareId}
+                onChange={e => setCompareId(e.target.value)}
+                className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
+                title="Bilan de référence pour tous les écarts ▲▼ du tableau de bord"
+              >
+                {previousActiveBilan !== null && <option value="prev">Bilan précédent</option>}
+                {compareOptions.map(o => (
+                  <option key={o.id} value={o.id}>
+                    {formatBilanDate(o.date)}
+                  </option>
+                ))}
+                <option value="none">Aucune comparaison</option>
+              </select>
+            </label>
+          )}
+        </div>
       )}
 
       {isViewingOlder && (
@@ -625,15 +628,16 @@ export function DashboardTab() {
               activeBilanId={activeBilan!.id}
               bodyFatTarget={objectif && !objectif.atGoal ? objectif.target : null}
               bodyFatGoalLabel={objectif?.goalDate ?? null}
+              compareBilan={compareBilan}
+              compareLabel={compareShortLabel}
             />
             <MusculoRadar
               current={activeData}
-              previous={previousData}
+              compare={compareData}
+              compareLabel={compareLabel}
               age={age}
               sex={client.sex}
               norms={norms}
-              currentId={(activeBilan ?? latest)!.id}
-              compareOptions={compareOptions}
             />
           </div>
           <div className="lg:col-span-4 space-y-5">
@@ -645,13 +649,8 @@ export function DashboardTab() {
         <>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <div className="lg:col-span-8 space-y-5">
-              <MusculoRadar
-                current={activeData}
-                previous={undefined}
-                age={age}
-                sex={client.sex}
-                norms={norms}
-              />
+              {/* Un seul bilan : aucune comparaison possible. */}
+              <MusculoRadar current={activeData} age={age} sex={client.sex} norms={norms} />
             </div>
             <div className="lg:col-span-4 space-y-5">
               {MesuresPanel}

@@ -10,27 +10,19 @@ import {
   type NormsType,
   type TestKey
 } from '../../../lib/norms'
-import { formatBilanDate } from '../bilanFields'
 import { CategoryBadge } from '../../../components/CategoryBadge'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
 import { MetricSelectable } from '../../../components/MetricSelectable'
 
-export interface CompareOption {
-  id: string
-  date: string
-  data: BilanData
-}
-
 interface MusculoRadarProps {
   current: BilanData
-  previous?: BilanData
   age: number | null
   sex: 'F' | 'M' | null
   norms: NormsType
-  /** Bilans que Marie-Eve peut choisir comme point de comparaison (hors bilan affiché). */
-  compareOptions?: CompareOption[]
-  /** Id du bilan affiché — remet la comparaison sur « précédent » quand il change. */
-  currentId?: string
+  /** Bilan de référence, choisi par le sélecteur global du Dashboard. */
+  compare?: BilanData
+  /** Nom du bilan comparé (« bilan précédent », « bilan du 4 sept. 2025 »). */
+  compareLabel?: string | null
 }
 
 interface Axis {
@@ -85,38 +77,17 @@ function catFor(value: number | null, axis: Axis, age: number | null, sex: 'F' |
 
 export function MusculoRadar({
   current,
-  previous,
   age,
   sex,
   norms,
-  compareOptions = [],
-  currentId
+  compare: compareData,
+  compareLabel = null
 }: MusculoRadarProps) {
   const [view, setView] = useState<ViewMode>(() => loadView())
-  // 'prev' = bilan précédent (défaut) · 'none' = aucune comparaison · sinon l'id d'un bilan.
-  const [compareId, setCompareId] = useState<string>('prev')
 
   useEffect(() => {
     if (typeof window !== 'undefined') window.localStorage.setItem(VIEW_STORAGE_KEY, view)
   }, [view])
-
-  useEffect(() => {
-    setCompareId('prev')
-  }, [currentId])
-
-  const compareData: BilanData | undefined =
-    compareId === 'none'
-      ? undefined
-      : compareId === 'prev'
-        ? previous
-        : compareOptions.find(o => o.id === compareId)?.data
-
-  const compareLabel =
-    compareId === 'none'
-      ? null
-      : compareId === 'prev'
-        ? 'bilan précédent'
-        : `bilan du ${formatBilanDate(compareOptions.find(o => o.id === compareId)?.date ?? '')}`
 
   const rows = useMemo(
     () =>
@@ -136,7 +107,6 @@ export function MusculoRadar({
   )
 
   const anyData = rows.some(r => r.value !== null)
-  const canCompare = previous !== undefined || compareOptions.length > 0
 
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
@@ -147,36 +117,15 @@ export function MusculoRadar({
             Profil musculosquelettique
           </h3>
         </div>
-        <div className="flex items-center gap-2">
-          {anyData && canCompare && (
-            <label className="flex items-center gap-1.5 text-xs text-marine/55">
-              <span className="hidden sm:inline">Comparer à</span>
-              <select
-                value={compareId}
-                onChange={e => setCompareId(e.target.value)}
-                className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
-                title="Choisir le bilan de comparaison"
-              >
-                {previous && <option value="prev">Bilan précédent</option>}
-                {compareOptions.map(o => (
-                  <option key={o.id} value={o.id}>
-                    {formatBilanDate(o.date)}
-                  </option>
-                ))}
-                <option value="none">Aucune comparaison</option>
-              </select>
-            </label>
-          )}
-          <button
-            type="button"
-            onClick={() => setView(v => (v === 'bars' ? 'radar' : 'bars'))}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine transition-colors"
-            title={view === 'bars' ? 'Basculer en vue radar' : 'Basculer en vue barres'}
-          >
-            {view === 'bars' ? <RadarIcon size={13} /> : <BarChart3 size={13} />}
-            {view === 'bars' ? 'Vue radar' : 'Vue barres'}
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setView(v => (v === 'bars' ? 'radar' : 'bars'))}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine transition-colors"
+          title={view === 'bars' ? 'Basculer en vue radar' : 'Basculer en vue barres'}
+        >
+          {view === 'bars' ? <RadarIcon size={13} /> : <BarChart3 size={13} />}
+          {view === 'bars' ? 'Vue radar' : 'Vue barres'}
+        </button>
       </div>
 
       {!anyData ? (

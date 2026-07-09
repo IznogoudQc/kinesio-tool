@@ -642,6 +642,18 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.89 — Un seul « Comparer à » pour tout le Dashboard)
+
+Les v0.1.84 → v0.1.86 avaient abouti à **trois** sélecteurs « Comparer à » (Hero, progression, musculo).
+C'était redondant et permettait des états incohérents (Hero comparé à juin 2024, radar au bilan précédent).
+
+- **Un seul sélecteur**, à droite de la frise des bilans en haut du Dashboard. Il pilote l'anneau de score,
+  les 5 mini-cartes composites, les 4 cartes XL, la ligne de référence du graphique de progression et le
+  profil musculosquelettique (radar + barres).
+- Options inchangées : *Bilan précédent* (défaut), la date de n'importe quel bilan, *Aucune comparaison*.
+- L'état est remonté dans `DashboardTab` ; `MusculoRadar` et `ProgressionChart` deviennent pilotés par
+  props (plus d'état interne de comparaison). Version : 0.1.88 → 0.1.89.
+
 ## 🐛 Corrigé (v0.1.88 — Réimporter un bilan corrigé ne mettait rien à jour)
 
 **Symptôme** : Marie corrige une valeur dans son .docx (saut vertical 43 → 48 cm), réimporte le fichier,

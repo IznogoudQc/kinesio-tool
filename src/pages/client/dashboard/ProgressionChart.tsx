@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -10,7 +10,7 @@ import {
   YAxis
 } from 'recharts'
 import { TrendingUp } from 'lucide-react'
-import { formatBilanDate, formatBilanMonth } from '../bilanFields'
+import { formatBilanMonth } from '../bilanFields'
 import { getPopulationAverage } from '../../../lib/norms'
 import { computeBilan, type BilanProfile } from '../../../lib/bilan-computed'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
@@ -47,6 +47,10 @@ interface ProgressionChartProps {
   bodyFatTarget?: number | null
   /** Libellé de l'échéance (ex. « mars 2027 ») — point final de la projection. */
   bodyFatGoalLabel?: string | null
+  /** Bilan de référence, choisi par le sélecteur global du Dashboard. */
+  compareBilan?: Bilan | null
+  /** Nom court du bilan comparé, pour l'étiquette de la ligne (« 10 juin 2024 »). */
+  compareLabel?: string | null
 }
 
 export function ProgressionChart({
@@ -54,16 +58,11 @@ export function ProgressionChart({
   profile,
   activeBilanId,
   bodyFatTarget,
-  bodyFatGoalLabel
+  bodyFatGoalLabel,
+  compareBilan,
+  compareLabel
 }: ProgressionChartProps) {
   const [metric, setMetric] = useState<MetricKey>('vo2max')
-  // Bilan servant de référence (ligne pointillée + écart chiffré). 'none' = aucun.
-  const [compareId, setCompareId] = useState<string>('none')
-
-  // Le bilan mis en évidence quitte la liste des références : on repart de zéro.
-  useEffect(() => {
-    setCompareId('none')
-  }, [activeBilanId])
 
   const data = useMemo(() => {
     const chrono = [...bilans].reverse()
@@ -74,16 +73,6 @@ export function ProgressionChart({
     }))
   }, [bilans, metric, profile, activeBilanId])
 
-  // Bilans proposés comme référence (tous sauf celui mis en évidence).
-  const compareOptions = useMemo(
-    () =>
-      [...bilans]
-        .filter(b => b.id !== activeBilanId)
-        .sort((a, b) => b.date.localeCompare(a.date)),
-    [bilans, activeBilanId]
-  )
-
-  const compareBilan = compareOptions.find(b => b.id === compareId) ?? null
   const compareValue = compareBilan ? metricValue(compareBilan, metric, profile) : null
 
   // Valeur « courante » pour l'écart : le bilan mis en évidence, sinon le plus récent.
@@ -147,43 +136,26 @@ export function ProgressionChart({
         </div>
       </div>
 
-      {compareOptions.length > 0 && (
+      {compareBilan && (
         <div className="flex items-center gap-2 flex-wrap mb-3 text-xs">
-          <label className="flex items-center gap-1.5 text-marine/55">
-            <span>Comparer à</span>
-            <select
-              value={compareId}
-              onChange={e => setCompareId(e.target.value)}
-              className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
-              title="Afficher un bilan de référence sur le graphique"
-            >
-              <option value="none">Aucun bilan de référence</option>
-              {compareOptions.map(b => (
-                <option key={b.id} value={b.id}>
-                  {formatBilanDate(b.date)}
-                </option>
-              ))}
-            </select>
-          </label>
-          {compareBilan &&
-            (compareValue === null ? (
-              <span className="text-marine/40">
-                Pas de {current.label.toLowerCase()} mesuré sur ce bilan.
+          {compareValue === null ? (
+            <span className="text-marine/40">
+              Pas de {current.label.toLowerCase()} mesuré sur le {compareLabel ?? 'bilan de référence'}.
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-marine/55">
+              <span>
+                Référence ({compareLabel}) : {compareValue.toFixed(1)} {current.unit}
               </span>
-            ) : (
-              <span className="flex items-center gap-1.5 text-marine/55">
-                <span>
-                  Référence : {compareValue.toFixed(1)} {current.unit}
-                </span>
-                <span className="text-marine/25">·</span>
-                <DeltaIndicator
-                  current={currentValue}
-                  previous={compareValue}
-                  unit={current.unit}
-                  lowerIsBetter={current.lowerIsBetter}
-                />
-              </span>
-            ))}
+              <span className="text-marine/25">·</span>
+              <DeltaIndicator
+                current={currentValue}
+                previous={compareValue}
+                unit={current.unit}
+                lowerIsBetter={current.lowerIsBetter}
+              />
+            </span>
+          )}
         </div>
       )}
 
@@ -228,7 +200,7 @@ export function ProgressionChart({
                 strokeDasharray="6 3"
                 strokeOpacity={0.55}
                 label={{
-                  value: formatBilanDate(compareBilan.date),
+                  value: compareLabel ?? 'Référence',
                   fill: '#0a1c5e',
                   fontSize: 11,
                   position: 'insideTopLeft'
