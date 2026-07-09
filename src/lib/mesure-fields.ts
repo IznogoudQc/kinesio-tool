@@ -42,16 +42,25 @@ export function visibleMesureFields(enabled: MesureFieldKey[] | null): MesureFie
 }
 
 /**
- * Répartit les champs visibles en lignes `[gauche, droite]`. Un champ sans
- * partenaire reste seul sur sa ligne (colonne de gauche), pour que masquer
- * « Mollet G » ne décale pas toute la colonne de droite.
+ * Lignes `[gauche, droite]` du formulaire.
+ *
+ * L'appariement est **figé par le catalogue** : chaque mesure garde la ligne qui
+ * correspond à sa position sur le corps (le cou est en haut, les mollets en bas).
+ * Masquer « Cou » laisse donc sa place vide — « Biceps G » ne remonte pas.
+ *
+ * Seule exception : une ligne dont les deux côtés sont masqués disparaît, sinon
+ * le formulaire garderait un trou béant.
  */
-export function mesureRows(fields: MesureField[]): [MesureField | null, MesureField | null][] {
-  const left = fields.filter(f => f.side === 'left')
-  const right = fields.filter(f => f.side === 'right')
+export function mesureRows(enabled: MesureFieldKey[] | null): [MesureField | null, MesureField | null][] {
+  const visible = new Set(visibleMesureFields(enabled).map(f => f.key))
+  const left = MESURE_FIELDS.filter(f => f.side === 'left')
+  const right = MESURE_FIELDS.filter(f => f.side === 'right')
+
   const rows: [MesureField | null, MesureField | null][] = []
   for (let i = 0; i < Math.max(left.length, right.length); i++) {
-    rows.push([left[i] ?? null, right[i] ?? null])
+    const l = left[i] && visible.has(left[i].key) ? left[i] : null
+    const r = right[i] && visible.has(right[i].key) ? right[i] : null
+    if (l || r) rows.push([l, r])
   }
   return rows
 }

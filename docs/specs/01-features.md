@@ -642,6 +642,18 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🐛 Corrigé (v0.1.92 — Mesures masquées : les autres ne doivent pas bouger)
+
+En v0.1.91, masquer « Cou » faisait remonter « Biceps G » à sa place. Or **la position des cartes est
+anatomique** : elles encadrent la silhouette au niveau du corps qu'elles mesurent. Un décalage rendait la
+lecture fausse.
+
+`mesureRows` apparie désormais les cartes **selon le catalogue, pas selon ce qui est visible** : chaque mesure
+garde sa ligne. Masquer « Cou » laisse sa place vide, l'épaule reste en face, et « Biceps G » ne bouge pas.
+Seule une ligne dont **les deux** côtés sont masqués disparaît (sinon le formulaire garderait un trou béant).
+
+Couvert par 4 tests supplémentaires. Version : 0.1.91 → 0.1.92.
+
 ## ✅ Fait (v0.1.91 — Mesures : choisir les circonférences saisies)
 
 Le formulaire imposait les 12 circonférences. Marie-Eve choisit maintenant celles qu'elle prend.

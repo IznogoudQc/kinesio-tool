@@ -11,8 +11,7 @@ import {
   ALL_MESURE_FIELD_KEYS,
   MESURE_FIELDS,
   REQUIRED_MESURE_FIELD_KEYS,
-  mesureRows,
-  visibleMesureFields
+  mesureRows
 } from '../../../lib/mesure-fields'
 import { calculateAge, calculateBodyFat } from '../../../lib/body-fat-calculator'
 import {
@@ -468,10 +467,9 @@ function CirconferencesPanel({
     abdomen: true
   }
 
-  // Lignes du formulaire : une paire gauche/droite chacune. Recalculées quand
-  // Marie-Eve change sa sélection — la silhouette s'étire sur autant de lignes.
-  const visibleFields = visibleMesureFields(mesureFields)
-  const fieldRows = mesureRows(visibleFields)
+  // Lignes du formulaire. Chaque mesure garde sa ligne anatomique : masquer
+  // « Cou » laisse sa place vide plutôt que d'y faire remonter « Biceps G ».
+  const fieldRows = mesureRows(mesureFields)
 
   // Une carte de saisie pour une circonférence (toutes en `lenLabel`).
   const circCard = (key: CircKey, label: string) => {
