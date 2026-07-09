@@ -10,9 +10,16 @@ import {
   type NormsType,
   type TestKey
 } from '../../../lib/norms'
+import { formatBilanDate } from '../bilanFields'
 import { CategoryBadge } from '../../../components/CategoryBadge'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
 import { MetricSelectable } from '../../../components/MetricSelectable'
+
+export interface CompareOption {
+  id: string
+  date: string
+  data: BilanData
+}
 
 interface MusculoRadarProps {
   current: BilanData
@@ -20,6 +27,10 @@ interface MusculoRadarProps {
   age: number | null
   sex: 'F' | 'M' | null
   norms: NormsType
+  /** Bilans que Marie-Eve peut choisir comme point de comparaison (hors bilan affiché). */
+  compareOptions?: CompareOption[]
+  /** Id du bilan affiché — remet la comparaison sur « précédent » quand il change. */
+  currentId?: string
 }
 
 interface Axis {
@@ -72,31 +83,60 @@ function catFor(value: number | null, axis: Axis, age: number | null, sex: 'F' |
   return getCategorization(axis.test, value, age, sex, norms)
 }
 
-export function MusculoRadar({ current, previous, age, sex, norms }: MusculoRadarProps) {
+export function MusculoRadar({
+  current,
+  previous,
+  age,
+  sex,
+  norms,
+  compareOptions = [],
+  currentId
+}: MusculoRadarProps) {
   const [view, setView] = useState<ViewMode>(() => loadView())
+  // 'prev' = bilan précédent (défaut) · 'none' = aucune comparaison · sinon l'id d'un bilan.
+  const [compareId, setCompareId] = useState<string>('prev')
 
   useEffect(() => {
     if (typeof window !== 'undefined') window.localStorage.setItem(VIEW_STORAGE_KEY, view)
   }, [view])
 
+  useEffect(() => {
+    setCompareId('prev')
+  }, [currentId])
+
+  const compareData: BilanData | undefined =
+    compareId === 'none'
+      ? undefined
+      : compareId === 'prev'
+        ? previous
+        : compareOptions.find(o => o.id === compareId)?.data
+
+  const compareLabel =
+    compareId === 'none'
+      ? null
+      : compareId === 'prev'
+        ? 'bilan précédent'
+        : `bilan du ${formatBilanDate(compareOptions.find(o => o.id === compareId)?.date ?? '')}`
+
   const rows = useMemo(
     () =>
       AXES.map(axis => {
         const value = valueFor(current, axis)
-        const previousValue = previous ? valueFor(previous, axis) : null
+        const previousValue = compareData ? valueFor(compareData, axis) : null
         return {
           axis,
           value,
           previousValue,
           percentile: pctFor(current, axis, age, sex, norms),
-          previousPercentile: previous ? pctFor(previous, axis, age, sex, norms) : null,
+          previousPercentile: compareData ? pctFor(compareData, axis, age, sex, norms) : null,
           category: catFor(value, axis, age, sex, norms)
         }
       }),
-    [current, previous, age, sex, norms]
+    [current, compareData, age, sex, norms]
   )
 
   const anyData = rows.some(r => r.value !== null)
+  const canCompare = previous !== undefined || compareOptions.length > 0
 
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
@@ -107,15 +147,36 @@ export function MusculoRadar({ current, previous, age, sex, norms }: MusculoRada
             Profil musculosquelettique
           </h3>
         </div>
-        <button
-          type="button"
-          onClick={() => setView(v => (v === 'bars' ? 'radar' : 'bars'))}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine transition-colors"
-          title={view === 'bars' ? 'Basculer en vue radar' : 'Basculer en vue barres'}
-        >
-          {view === 'bars' ? <RadarIcon size={13} /> : <BarChart3 size={13} />}
-          {view === 'bars' ? 'Vue radar' : 'Vue barres'}
-        </button>
+        <div className="flex items-center gap-2">
+          {anyData && canCompare && (
+            <label className="flex items-center gap-1.5 text-xs text-marine/55">
+              <span className="hidden sm:inline">Comparer à</span>
+              <select
+                value={compareId}
+                onChange={e => setCompareId(e.target.value)}
+                className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
+                title="Choisir le bilan de comparaison"
+              >
+                {previous && <option value="prev">Bilan précédent</option>}
+                {compareOptions.map(o => (
+                  <option key={o.id} value={o.id}>
+                    {formatBilanDate(o.date)}
+                  </option>
+                ))}
+                <option value="none">Aucune comparaison</option>
+              </select>
+            </label>
+          )}
+          <button
+            type="button"
+            onClick={() => setView(v => (v === 'bars' ? 'radar' : 'bars'))}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine transition-colors"
+            title={view === 'bars' ? 'Basculer en vue radar' : 'Basculer en vue barres'}
+          >
+            {view === 'bars' ? <RadarIcon size={13} /> : <BarChart3 size={13} />}
+            {view === 'bars' ? 'Vue radar' : 'Vue barres'}
+          </button>
+        </div>
       </div>
 
       {!anyData ? (
@@ -123,9 +184,9 @@ export function MusculoRadar({ current, previous, age, sex, norms }: MusculoRada
           Aucune donnée musculosquelettique catégorisable dans ce bilan.
         </p>
       ) : view === 'bars' ? (
-        <BarsView rows={rows} />
+        <BarsView rows={rows} compareLabel={compareLabel} />
       ) : (
-        <RadarView rows={rows} previous={previous} />
+        <RadarView rows={rows} compare={compareData} compareLabel={compareLabel} />
       )}
     </div>
   )
@@ -140,13 +201,18 @@ interface Row {
   category: Category | null
 }
 
-function BarsView({ rows }: { rows: Row[] }) {
+function BarsView({ rows, compareLabel }: { rows: Row[]; compareLabel: string | null }) {
   return (
-    <div className="space-y-2.5">
-      {rows.map(r => (
-        <BarRow key={r.axis.key} row={r} />
-      ))}
-    </div>
+    <>
+      {compareLabel && (
+        <p className="text-marine/45 text-xs mb-3">Les écarts (▲ ▼) sont calculés vs le {compareLabel}.</p>
+      )}
+      <div className="space-y-2.5">
+        {rows.map(r => (
+          <BarRow key={r.axis.key} row={r} />
+        ))}
+      </div>
+    </>
   )
 }
 
@@ -204,7 +270,15 @@ function BarRow({ row }: { row: Row }) {
   )
 }
 
-function RadarView({ rows, previous }: { rows: Row[]; previous?: BilanData }) {
+function RadarView({
+  rows,
+  compare,
+  compareLabel
+}: {
+  rows: Row[]
+  compare?: BilanData
+  compareLabel: string | null
+}) {
   const data = rows.map(r => ({
     axis: r.axis.label,
     current: r.percentile ?? 0,
@@ -214,7 +288,8 @@ function RadarView({ rows, previous }: { rows: Row[]; previous?: BilanData }) {
   return (
     <>
       <p className="text-marine/45 text-xs mb-3">
-        Percentiles 0-100 par axe — comparaison ce bilan vs précédent
+        Percentiles 0-100 par axe
+        {compareLabel ? ` — comparaison ce bilan vs le ${compareLabel}` : ''}
       </p>
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
@@ -227,9 +302,9 @@ function RadarView({ rows, previous }: { rows: Row[]; previous?: BilanData }) {
               tick={{ fill: 'rgba(10, 28, 94, 0.35)', fontSize: 10 }}
               tickCount={5}
             />
-            {previous && (
+            {compare && (
               <Radar
-                name="Précédent"
+                name={compareLabel ? compareLabel.replace(/^bilan /, 'Bilan ') : 'Précédent'}
                 dataKey="previous"
                 stroke="#d4a574"
                 strokeDasharray="4 3"

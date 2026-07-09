@@ -642,6 +642,17 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.84 — Profil musculosquelettique : choisir le bilan de comparaison)
+
+La carte « Profil musculosquelettique » ne comparait qu'au **bilan précédent**. Marie-Eve peut maintenant
+choisir **n'importe quel bilan** comme point de comparaison :
+
+- Nouvelle liste déroulante **« Comparer à »** dans l'entête : *Bilan précédent* (défaut), la **date de chaque
+  autre bilan**, ou *Aucune comparaison*.
+- Le choix pilote **les deux vues** : le tracé pointillé du radar **et** les écarts (▲ ▼) de la vue barres.
+- Sous-titre et légende indiquent explicitement le bilan comparé (« vs le bilan du 4 sept. 2025 »).
+- La sélection revient sur *Bilan précédent* quand on change de bilan affiché. Version : 0.1.83 → 0.1.84.
+
 ## ✅ Fait (v0.1.83 — Célébrer les victoires (Dashboard))
 
 Quand un client progresse, le Dashboard le souligne (uniquement l'app — jamais le PDF) :

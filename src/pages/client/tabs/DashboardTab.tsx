@@ -243,6 +243,13 @@ export function DashboardTab() {
   )
   const objectif = buildObjectif(client, activeData, computed, age, (activeBilan ?? latest)!.date)
   const aiMetrics = gatherBilanMetrics(activeData, age, client.sex, norms)
+  // Bilans proposés comme point de comparaison du radar musculo. On retire celui
+  // affiché et le précédent (déjà couvert par l'option « Bilan précédent »).
+  const musculoCompareOptions = (bilans ?? [])
+    .filter(b => b.id !== (activeBilan ?? latest)!.id && b.id !== previousActiveBilan?.id)
+    .slice()
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map(b => ({ id: b.id, date: b.date, data: b.data }))
   // Victoires à célébrer (Dashboard uniquement — jamais dans le PDF).
   const wins = printMode
     ? []
@@ -548,6 +555,8 @@ export function DashboardTab() {
               age={age}
               sex={client.sex}
               norms={norms}
+              currentId={(activeBilan ?? latest)!.id}
+              compareOptions={musculoCompareOptions}
             />
           </div>
           <div className="lg:col-span-4 space-y-5">
