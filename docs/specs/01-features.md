@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.91 — Mesures : choisir les circonférences saisies)
+
+Le formulaire imposait les 12 circonférences. Marie-Eve choisit maintenant celles qu'elle prend.
+
+- Bouton **« Choisir les mesures »** dans l'entête du formulaire → modale avec une case par circonférence,
+  plus *Tout cocher* / *Tout décocher*.
+- **Taille et hanche sont verrouillées** : elles pilotent le ratio Taille/Hanche et sa barre de risque OMS.
+- **Réglage global** (la pratique de Marie-Eve, pas un réglage par client), persisté dans `settings`
+  sous la clé `mesures.fields`. Jamais enregistré → les 12 mesures s'affichent, comme avant.
+- **Aucune donnée n'est supprimée** : les colonnes existent toujours en base, et une mesure masquée
+  reste visible dans l'historique, le détail et le rapport. Réactiver la case la fait réapparaître.
+- La grille du formulaire devient dynamique : la silhouette s'étire sur le bon nombre de lignes, et
+  masquer « Mollet G » sans « Mollet D » ne décale pas la colonne de droite.
+- Logique pure et testée (`src/lib/mesure-fields.ts`, 7 tests). Version : 0.1.90 → 0.1.91.
+
 ## ✅ Fait (v0.1.90 — Progression : toutes les mesures traçables)
 
 Le graphique n'offrait que 4 courbes (VO2max, % gras, IMC, score global). Il en offre maintenant **17**,

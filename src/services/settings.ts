@@ -41,5 +41,14 @@ export const settingsService = {
 
   async setCategorizationNorms(value: 'acsm' | 'cpafla'): Promise<void> {
     return window.api.settings.setCategorizationNorms(value)
+  },
+
+  /** `null` : Marie-Eve n'a jamais choisi → toutes les circonférences sont saisies. */
+  async getMesureFields(): Promise<MesureFieldKey[] | null> {
+    return window.api.settings.getMesureFields()
+  },
+
+  async setMesureFields(value: MesureFieldKey[]): Promise<void> {
+    return window.api.settings.setMesureFields(value)
   }
 }

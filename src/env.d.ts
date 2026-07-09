@@ -54,6 +54,21 @@ interface EmailTemplate {
   body: string
 }
 
+/** Circonférences saisissables — catalogue et ordre dans `src/lib/mesure-fields.ts`. */
+type MesureFieldKey =
+  | 'cou'
+  | 'epaule'
+  | 'bicepsG'
+  | 'bicepsD'
+  | 'poitrine'
+  | 'taille'
+  | 'abdomen'
+  | 'hanche'
+  | 'cuisseG'
+  | 'cuisseD'
+  | 'molletG'
+  | 'molletD'
+
 interface BilanData {
   taille_cm?: number
   poids_kg?: number
@@ -335,6 +350,9 @@ interface Window {
       setEmailTemplate(data: EmailTemplate): Promise<void>
       getCategorizationNorms(): Promise<'acsm' | 'cpafla'>
       setCategorizationNorms(value: 'acsm' | 'cpafla'): Promise<void>
+      /** `null` = réglage jamais enregistré → afficher toutes les circonférences. */
+      getMesureFields(): Promise<MesureFieldKey[] | null>
+      setMesureFields(value: MesureFieldKey[]): Promise<void>
     }
     reports: {
       /** Génère le rapport PDF d'un client (route React `/report/:id`) — retourne le chemin du PDF. */

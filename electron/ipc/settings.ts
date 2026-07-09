@@ -14,11 +14,31 @@ const KEYS = {
   profileSignature: 'profile.signature',
   smtp: 'smtp.config',
   emailTemplate: 'email.template',
-  categorizationNorms: 'categorization_norms'
+  categorizationNorms: 'categorization_norms',
+  mesureFields: 'mesures.fields'
 } as const
 
 const CategorizationNormsSchema = z.enum(['acsm', 'cpafla'])
 const DEFAULT_CATEGORIZATION_NORMS = 'acsm' as const
+
+// Circonférences que Marie-Eve choisit de saisir. Absence de réglage → l'UI les
+// affiche toutes. Masquer un champ n'efface aucune donnée déjà en base.
+const MesureFieldsSchema = z.array(
+  z.enum([
+    'cou',
+    'epaule',
+    'bicepsG',
+    'bicepsD',
+    'poitrine',
+    'taille',
+    'abdomen',
+    'hanche',
+    'cuisseG',
+    'cuisseD',
+    'molletG',
+    'molletD'
+  ])
+)
 
 const ProfileSchema = z.object({
   name: z.string().max(200).trim(),
@@ -158,6 +178,22 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:norms:set', async (_e, value: unknown) => {
     const validated = CategorizationNormsSchema.parse(value)
     await writeKey(KEYS.categorizationNorms, validated)
+  })
+
+  ipcMain.handle('settings:mesureFields:get', async () => {
+    const raw = await readKey(KEYS.mesureFields)
+    if (!raw) return null
+    try {
+      const parsed = MesureFieldsSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : null
+    } catch {
+      return null
+    }
+  })
+
+  ipcMain.handle('settings:mesureFields:set', async (_e, value: unknown) => {
+    const validated = MesureFieldsSchema.parse(value)
+    await writeKey(KEYS.mesureFields, JSON.stringify(validated))
   })
 }
 

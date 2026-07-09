@@ -1,11 +1,19 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useBlocker, useNavigate } from 'react-router-dom'
-import { ArrowUpCircle, Calculator, Eye, Loader2, PencilLine, PersonStanding, Ruler, Save, Trash2, UserCog, X } from 'lucide-react'
+import { ArrowUpCircle, Calculator, Eye, Loader2, PencilLine, PersonStanding, Ruler, Save, SlidersHorizontal, Trash2, UserCog, X } from 'lucide-react'
 import bodyMale from '@/assets/body-male.png'
 import bodyFemale from '@/assets/body-female.png'
 import { useClient } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { mesuresService } from '../../../services/mesures'
+import { settingsService } from '../../../services/settings'
+import {
+  ALL_MESURE_FIELD_KEYS,
+  MESURE_FIELDS,
+  REQUIRED_MESURE_FIELD_KEYS,
+  mesureRows,
+  visibleMesureFields
+} from '../../../lib/mesure-fields'
 import { calculateAge, calculateBodyFat } from '../../../lib/body-fat-calculator'
 import {
   cmToLengthInput,
@@ -389,6 +397,10 @@ function CirconferencesPanel({
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState<CircForm>({})
+  // Circonférences que Marie-Eve saisit. `null` = jamais choisi → toutes.
+  // Réglage global (sa pratique), pas par client.
+  const [mesureFields, setMesureFields] = useState<MesureFieldKey[] | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
   // `poids` est exprimé dans l'unité préférée du client (kg ou lb) — converti en kg à l'enregistrement.
   const [poids, setPoids] = useState<number | undefined>(undefined)
   // Date de la session de mesure (ISO `AAAA-MM-JJ`). Éditable pour permettre
@@ -399,6 +411,10 @@ function CirconferencesPanel({
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<MesureCirconferences | null>(null)
   const [viewing, setViewing] = useState<MesureCirconferences | null>(null)
+
+  useEffect(() => {
+    settingsService.getMesureFields().then(setMesureFields).catch(() => undefined)
+  }, [])
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -451,6 +467,11 @@ function CirconferencesPanel({
     hanche: true,
     abdomen: true
   }
+
+  // Lignes du formulaire : une paire gauche/droite chacune. Recalculées quand
+  // Marie-Eve change sa sélection — la silhouette s'étire sur autant de lignes.
+  const visibleFields = visibleMesureFields(mesureFields)
+  const fieldRows = mesureRows(visibleFields)
 
   // Une carte de saisie pour une circonférence (toutes en `lenLabel`).
   const circCard = (key: CircKey, label: string) => {
@@ -599,58 +620,62 @@ function CirconferencesPanel({
           <h2 className="text-marine font-semibold text-lg">
             {editId ? `Modifier les circonférences du ${formatBilanDate(list.find(r => r.id === editId)?.date ?? date)}` : 'Nouvelle prise de mesures'}
           </h2>
-          {editId && (
-            <button type="button" onClick={resetForm} className="text-marine/50 hover:text-marine text-sm underline">
-              Annuler la modification
+          <div className="flex items-center gap-3">
+            {editId && (
+              <button type="button" onClick={resetForm} className="text-marine/50 hover:text-marine text-sm underline">
+                Annuler la modification
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine transition-colors"
+              title="Choisir les circonférences que vous prenez"
+            >
+              <SlidersHorizontal size={13} />
+              Choisir les mesures
             </button>
-          )}
+          </div>
         </div>
 
         <DateField value={date} onChange={setDate} />
 
         {/*
-          Disposition : grille 7 lignes × 3 colonnes, toutes de largeur égale.
-          ─ colonne 2, lignes 1-6 : silhouette (placée explicitement).
-          ─ colonnes 1 & 3, lignes 1-6 : les 12 circonférences, gauche / droite.
-          ─ ligne 7, colonne 2 : Poids — une seule colonne de large, donc exactement
-            la même largeur visuelle que les cartes de circonférences.
-          Les cartes de gauche se placent en auto-flow (col 1) ; celles de droite
-          sont forcées en col 3 via `col-start-3`.
+          Disposition : grille 3 colonnes de largeur égale, N+1 lignes.
+          ─ colonne 2, lignes 1..N : silhouette (étirée sur toutes les rangées).
+          ─ colonnes 1 & 3 : les circonférences visibles, gauche / droite.
+          ─ ligne N+1, colonne 2 : Poids — une seule colonne de large, donc
+            exactement la même largeur visuelle que les cartes de mesure.
+          Chaque carte pose sa ligne explicitement (`gridRow`) : si Marie-Eve
+          masque « Mollet G » sans « Mollet D », la colonne de droite ne remonte
+          pas d'un cran.
           `minmax(0,1fr)` sur chaque colonne : empêche l'image de la silhouette
           (intrinsèquement large) d'élargir la colonne 2 au-delà de sa fraction.
         */}
         <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 max-w-5xl mx-auto items-start">
-          {/* Silhouette — colonne centrale, lignes 1 à 6 (étirée sur toute la hauteur des 6 rangées) */}
-          <div className="row-span-6 row-start-1 col-start-2 self-stretch flex items-center justify-center min-h-[320px]">
+          <div
+            className="col-start-2 self-stretch flex items-center justify-center min-h-[320px]"
+            style={{ gridRow: `1 / span ${Math.max(fieldRows.length, 1)}` }}
+          >
             <Silhouette client={client} />
           </div>
 
-          {/* Ligne 1 */}
-          {circCard('cou', 'Cou')}
-          <div className="col-start-3">{circCard('epaule', 'Épaule')}</div>
+          {fieldRows.map(([left, right], i) => (
+            <Fragment key={left?.key ?? right?.key ?? i}>
+              {left && (
+                <div className="col-start-1" style={{ gridRow: i + 1 }}>
+                  {circCard(left.key, left.label)}
+                </div>
+              )}
+              {right && (
+                <div className="col-start-3" style={{ gridRow: i + 1 }}>
+                  {circCard(right.key, right.label)}
+                </div>
+              )}
+            </Fragment>
+          ))}
 
-          {/* Ligne 2 */}
-          {circCard('bicepsG', 'Biceps G')}
-          <div className="col-start-3">{circCard('bicepsD', 'Biceps D')}</div>
-
-          {/* Ligne 3 */}
-          {circCard('poitrine', 'Poitrine')}
-          <div className="col-start-3">{circCard('taille', 'Taille')}</div>
-
-          {/* Ligne 4 */}
-          {circCard('abdomen', 'Abdomen')}
-          <div className="col-start-3">{circCard('hanche', 'Hanche')}</div>
-
-          {/* Ligne 5 */}
-          {circCard('cuisseG', 'Cuisse G')}
-          <div className="col-start-3">{circCard('cuisseD', 'Cuisse D')}</div>
-
-          {/* Ligne 6 */}
-          {circCard('molletG', 'Mollet G')}
-          <div className="col-start-3">{circCard('molletD', 'Mollet D')}</div>
-
-          {/* Ligne 7 : Poids — colonne centrale uniquement (même largeur que les autres cartes) */}
-          <div className="col-start-2 row-start-7">
+          <div className="col-start-2" style={{ gridRow: fieldRows.length + 1 }}>
             <MeasureField
               label="Poids"
               unit={wLabel}
@@ -828,6 +853,133 @@ function CirconferencesPanel({
           }}
         />
       )}
+
+      {pickerOpen && (
+        <MesureFieldsPicker
+          current={mesureFields}
+          onCancel={() => setPickerOpen(false)}
+          onSave={async next => {
+            await settingsService.setMesureFields(next)
+            setMesureFields(next)
+            setPickerOpen(false)
+            notify('Mesures à saisir mises à jour')
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+/** Choix des circonférences saisies. Réglage global (la pratique de Marie-Eve),
+ *  pas par client. Masquer une mesure n'efface aucune donnée déjà enregistrée. */
+function MesureFieldsPicker({
+  current,
+  onCancel,
+  onSave
+}: {
+  current: MesureFieldKey[] | null
+  onCancel: () => void
+  onSave: (next: MesureFieldKey[]) => Promise<void>
+}) {
+  const [selected, setSelected] = useState<Set<MesureFieldKey>>(
+    () => new Set(current ?? ALL_MESURE_FIELD_KEYS)
+  )
+  const [saving, setSaving] = useState(false)
+
+  const toggle = (key: MesureFieldKey): void => {
+    if (REQUIRED_MESURE_FIELD_KEYS.includes(key)) return
+    setSelected(s => {
+      const next = new Set(s)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 bg-marine/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col">
+        <div className="px-6 pt-6">
+          <h3 className="text-marine font-bold text-lg">Choisir les mesures</h3>
+          <p className="text-marine/55 text-sm mt-1">
+            Décochez les circonférences que vous ne prenez pas — elles disparaîtront du formulaire.
+            <span className="block mt-1 text-marine/45">
+              Aucune donnée déjà enregistrée n’est supprimée : les anciennes mesures restent visibles dans
+              l’historique et le rapport.
+            </span>
+          </p>
+        </div>
+
+        <div className="px-6 py-4 overflow-y-auto">
+          <div className="flex items-center gap-3 mb-3">
+            <button
+              type="button"
+              onClick={() => setSelected(new Set(ALL_MESURE_FIELD_KEYS))}
+              className="text-gold-dark hover:text-marine text-sm underline"
+            >
+              Tout cocher
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelected(new Set(REQUIRED_MESURE_FIELD_KEYS))}
+              className="text-gold-dark hover:text-marine text-sm underline"
+            >
+              Tout décocher
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            {MESURE_FIELDS.map(f => {
+              const required = REQUIRED_MESURE_FIELD_KEYS.includes(f.key)
+              return (
+                <label
+                  key={f.key}
+                  className={`flex items-center gap-2.5 rounded-md px-2.5 py-2 text-base ${
+                    required ? 'text-marine/45 cursor-not-allowed' : 'text-marine hover:bg-cream/60 cursor-pointer'
+                  }`}
+                  title={required ? 'Nécessaire au calcul du ratio Taille / Hanche' : undefined}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(f.key)}
+                    disabled={required}
+                    onChange={() => toggle(f.key)}
+                    className="w-4 h-4 accent-gold-dark"
+                  />
+                  <span>{f.label}</span>
+                  {required && <span className="text-marine/35 text-xs">(requis)</span>}
+                </label>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 px-6 pb-6 pt-2 border-t border-cream-dark/40">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 text-marine/60 hover:text-marine font-medium text-base"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true)
+              try {
+                // Ordre du catalogue, pas ordre de clic.
+                await onSave(ALL_MESURE_FIELD_KEYS.filter(k => selected.has(k)))
+              } finally {
+                setSaving(false)
+              }
+            }}
+            className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50"
+          >
+            Enregistrer
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
