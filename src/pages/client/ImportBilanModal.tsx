@@ -73,8 +73,8 @@ export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved
           </p>
           <ul className="space-y-1.5 text-marine text-base mb-6">
             <li><span className="font-semibold text-green-700">{summary.imported}</span> importé{summary.imported > 1 ? 's' : ''}</li>
-            <li><span className="font-semibold text-gold-dark">{summary.updated}</span> mis à jour <span className="text-marine/45 text-sm">(version plus complète)</span></li>
-            <li><span className="font-semibold text-marine/50">{summary.skipped}</span> ignoré{summary.skipped > 1 ? 's' : ''} <span className="text-marine/45 text-sm">(déjà présent{summary.skipped > 1 ? 's' : ''})</span></li>
+            <li><span className="font-semibold text-gold-dark">{summary.updated}</span> mis à jour <span className="text-marine/45 text-sm">(valeurs corrigées ou ajoutées)</span></li>
+            <li><span className="font-semibold text-marine/50">{summary.skipped}</span> ignoré{summary.skipped > 1 ? 's' : ''} <span className="text-marine/45 text-sm">(identique{summary.skipped > 1 ? 's' : ''} à ce qui est déjà en base)</span></li>
           </ul>
           <div className="flex justify-end">
             <button

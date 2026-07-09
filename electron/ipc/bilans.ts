@@ -8,6 +8,7 @@ import { bilans, clients } from '../../db/schema'
 import { parseBilanDocx } from '../lib/bilan-parser'
 import { convertDocToDocx } from '../lib/doc-converter'
 import { BILAN_FIELD_BOUNDS } from '../../src/lib/bilan-bounds'
+import { mergeBilanData } from '../../src/lib/bilan-merge'
 
 // Champ numérique optionnel, contraint aux bornes DURES de plausibilité du
 // champ (src/lib/bilan-bounds.ts). Un champ sans bornes reste juste `finite`.
@@ -197,8 +198,10 @@ export function registerBilansHandlers(): void {
 
   // Import par lot avec déduplication sur (client_id, date) :
   //  - pas d'existant → INSERT
-  //  - existant moins complet que le nouveau → UPDATE (on garde le plus riche)
-  //  - sinon → on ignore silencieusement
+  //  - existant → FUSION : le .docx fait autorité sur les champs qu'il contient,
+  //    les autres gardent leur valeur en base (cf. `mergeBilanData`). Permet de
+  //    réimporter un bilan corrigé sans perdre les champs absents du fichier.
+  //  - rien n'a changé → on ignore silencieusement
   ipcMain.handle('bilans:import', (_e, payload: unknown) => {
     const { clientId, bilans: incoming } = ImportBilansSchema.parse(payload)
     assertClientExists(clientId)
@@ -227,8 +230,9 @@ export function registerBilansHandlers(): void {
         imported++
         continue
       }
-      if (countFilled(item.data) > countFilled(parseData(existing.data))) {
-        db.update(bilans).set({ data: JSON.stringify(item.data) }).where(eq(bilans.id, existing.id)).run()
+      const { data: merged, changedKeys } = mergeBilanData(parseData(existing.data), item.data)
+      if (changedKeys.length > 0) {
+        db.update(bilans).set({ data: JSON.stringify(merged) }).where(eq(bilans.id, existing.id)).run()
         updated++
       } else {
         skipped++

@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🐛 Corrigé (v0.1.88 — Réimporter un bilan corrigé ne mettait rien à jour)
+
+**Symptôme** : Marie corrige une valeur dans son .docx (saut vertical 43 → 48 cm), réimporte le fichier,
+et l'app affiche toujours 43.
+
+**Cause** : à date égale, l'import ne remplaçait le bilan existant que si le nouveau avait **plus de champs
+remplis** (`countFilled(nouveau) > countFilled(existant)`). Corriger une valeur ne change pas le nombre de
+champs remplis → la condition était fausse → le bilan était compté comme « ignoré (déjà présent) ».
+
+**Correctif** : nouvelle règle de fusion (`src/lib/bilan-merge.ts`, 7 tests) — le .docx fait autorité **sur les
+champs qu'il contient**, les champs qu'il ne contient pas gardent leur valeur en base. Une correction est donc
+appliquée, et réimporter un .docx partiel ne détruit plus rien. Le bilan n'est « ignoré » que s'il est
+strictement identique. `0` et `false` sont traités comme de vraies valeurs (pas comme « vide »).
+
+Le libellé du récapitulatif d'import est corrigé en conséquence. Version : 0.1.87 → 0.1.88.
+
 ## ✅ Fait (v0.1.87 — Signaux à surveiller + mini-courbes)
 
 Deux ajouts au Dashboard, tous deux dérivés de données déjà en base (aucune saisie de plus).
