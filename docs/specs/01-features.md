@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.86 — Hero stats : choisir le bilan de comparaison)
+
+Troisième volet (après v0.1.84 musculo et v0.1.85 progression) :
+
+- **Un seul sélecteur « Comparer à »** en haut de la carte Hero pilote **l'anneau de score**, les **5 mini-cartes
+  composites** et les **4 grandes cartes** (VO2max, IMC, % gras, tour de taille).
+- Options : *Bilan précédent* (défaut), la **date de n'importe quel bilan**, ou *Aucune comparaison*.
+- Nouveauté sur `StatCardXL` : un **écart ▲▼ vs le bilan de référence** sous le grand chiffre (il n'y avait
+  jusqu'ici que l'écart à la moyenne population, qui reste). Sens correct pour IMC, % gras et tour de taille
+  (une baisse s'affiche en vert).
+- Les **victoires** (v0.1.83) restent mesurées vs le bilan précédent, et le radar musculo garde son propre
+  sélecteur — les trois choix sont indépendants. Version : 0.1.85 → 0.1.86.
+
 ## ✅ Fait (v0.1.85 — Progression dans le temps : bilan de référence)
 
 Même logique que la carte musculo (v0.1.84), adaptée à un graphique temporel :

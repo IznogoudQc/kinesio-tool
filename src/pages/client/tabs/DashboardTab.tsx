@@ -176,6 +176,13 @@ export function DashboardTab() {
     return idx >= 0 ? bilans[idx + 1] ?? null : null
   }, [bilans, isSynthesisMode, previousSynthesisResult, activeBilan, client.id])
 
+  // Bilan de référence des « hero stats » (anneau, mini-cartes, cartes XL).
+  // 'prev' = bilan précédent (défaut) · 'none' = aucune comparaison · sinon un id.
+  const [heroCompareId, setHeroCompareId] = useState<string>('prev')
+  useEffect(() => {
+    setHeroCompareId('prev')
+  }, [activeBilan?.id])
+
   if (loading) {
     return <div className="p-8 text-marine/50 text-base">Chargement…</div>
   }
@@ -236,6 +243,23 @@ export function DashboardTab() {
   const computed = computeBilan(activeData, profile)
   const previousComputed = previousData ? computeBilan(previousData, profile) : undefined
 
+  // Référence choisie pour les hero stats. Indépendante des victoires (toujours
+  // mesurées vs le bilan précédent) et du radar musculo (qui a son propre choix).
+  const heroCompareBilan =
+    heroCompareId === 'none'
+      ? null
+      : heroCompareId === 'prev'
+        ? previousActiveBilan
+        : bilans?.find(b => b.id === heroCompareId) ?? null
+  const heroCompareData = heroCompareBilan?.data
+  const heroCompareComputed = heroCompareData ? computeBilan(heroCompareData, profile) : undefined
+  const heroCompareLabel =
+    heroCompareBilan === null
+      ? null
+      : heroCompareId === 'prev'
+        ? 'bilan précédent'
+        : `bilan du ${formatBilanDate(heroCompareBilan.date)}`
+
   // Miroir du rapport : âge en forme (VO2max → âge) + objectif chiffré (si module activé).
   const fitAge = fitnessAge(
     computed.vo2max ?? (typeof activeData.vo2max === 'number' ? activeData.vo2max : null),
@@ -243,9 +267,9 @@ export function DashboardTab() {
   )
   const objectif = buildObjectif(client, activeData, computed, age, (activeBilan ?? latest)!.date)
   const aiMetrics = gatherBilanMetrics(activeData, age, client.sex, norms)
-  // Bilans proposés comme point de comparaison du radar musculo. On retire celui
-  // affiché et le précédent (déjà couvert par l'option « Bilan précédent »).
-  const musculoCompareOptions = (bilans ?? [])
+  // Bilans proposés comme point de comparaison (hero stats + radar musculo). On
+  // retire celui affiché et le précédent (déjà couvert par « Bilan précédent »).
+  const compareOptions = (bilans ?? [])
     .filter(b => b.id !== (activeBilan ?? latest)!.id && b.id !== previousActiveBilan?.id)
     .slice()
     .sort((a, b) => b.date.localeCompare(a.date))
@@ -330,12 +354,33 @@ export function DashboardTab() {
   // ── Hero : score donut + 5 composites ──────────────────────────────────────
   const Hero = (
     <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-6 shadow-sm">
+      {!printMode && (previousActiveBilan !== null || compareOptions.length > 0) && (
+        <div className="flex items-center justify-end mb-4">
+          <label className="flex items-center gap-1.5 text-xs text-marine/55">
+            <span>Comparer à</span>
+            <select
+              value={heroCompareId}
+              onChange={e => setHeroCompareId(e.target.value)}
+              className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
+              title="Bilan de référence pour les écarts ▲▼ du score, des composites et des grandes cartes"
+            >
+              {previousActiveBilan !== null && <option value="prev">Bilan précédent</option>}
+              {compareOptions.map(o => (
+                <option key={o.id} value={o.id}>
+                  {formatBilanDate(o.date)}
+                </option>
+              ))}
+              <option value="none">Aucune comparaison</option>
+            </select>
+          </label>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
         <div className="lg:col-span-4 flex justify-center">
           <ScoreDonut
             score={computed.overall.score}
             category={computed.overall.category}
-            previousScore={previousComputed?.overall.score ?? null}
+            previousScore={heroCompareComputed?.overall.score ?? null}
             label="Santé et condition physique globale"
           />
         </div>
@@ -344,30 +389,30 @@ export function DashboardTab() {
             title="Composition"
             subtitle="IMC + %gras + taille"
             current={computed.composition}
-            previous={previousComputed?.composition}
+            previous={heroCompareComputed?.composition}
           />
           <CompositeMiniCard
             title="% gras corporel"
             current={computed.bodyFat}
-            previous={previousComputed?.bodyFat}
+            previous={heroCompareComputed?.bodyFat}
           />
           <CompositeMiniCard
             title="Aérobie"
             subtitle="VO2max"
             current={computed.aerobic}
-            previous={previousComputed?.aerobic}
+            previous={heroCompareComputed?.aerobic}
           />
           <CompositeMiniCard
             title="Indice du dos"
             subtitle="Flex + endur + situps"
             current={computed.backHealth}
-            previous={previousComputed?.backHealth}
+            previous={heroCompareComputed?.backHealth}
           />
           <CompositeMiniCard
             title="Musculo global"
             subtitle="6 tests"
             current={computed.musculoGlobal}
-            previous={previousComputed?.musculoGlobal}
+            previous={heroCompareComputed?.musculoGlobal}
           />
         </div>
       </div>
@@ -386,6 +431,8 @@ export function DashboardTab() {
         sex={client.sex}
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.vo2max : undefined}
+        previousValue={heroCompareData?.vo2max}
+        compareLabel={heroCompareLabel}
       />
       <StatCardXL
         label="IMC"
@@ -396,6 +443,9 @@ export function DashboardTab() {
         sex={client.sex}
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.imc : undefined}
+        previousValue={heroCompareData?.imc}
+        lowerIsBetter
+        compareLabel={heroCompareLabel}
       />
       <StatCardXL
         label="% de gras"
@@ -406,6 +456,9 @@ export function DashboardTab() {
         sex={client.sex}
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.pourcentage_gras : undefined}
+        previousValue={heroCompareData?.pourcentage_gras}
+        lowerIsBetter
+        compareLabel={heroCompareLabel}
       />
       <StatCardXL
         label="Tour de taille"
@@ -416,6 +469,9 @@ export function DashboardTab() {
         sex={client.sex}
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.tour_taille_cm : undefined}
+        previousValue={heroCompareData?.tour_taille_cm}
+        lowerIsBetter
+        compareLabel={heroCompareLabel}
       />
     </section>
   )
@@ -556,7 +612,7 @@ export function DashboardTab() {
               sex={client.sex}
               norms={norms}
               currentId={(activeBilan ?? latest)!.id}
-              compareOptions={musculoCompareOptions}
+              compareOptions={compareOptions}
             />
           </div>
           <div className="lg:col-span-4 space-y-5">

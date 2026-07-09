@@ -10,6 +10,7 @@ import {
   type TestKey
 } from '../../../lib/norms'
 import { CategoryRangeBar } from '../../../components/CategoryRangeBar'
+import { DeltaIndicator } from '../../../components/DeltaIndicator'
 import { MetricSelectable } from '../../../components/MetricSelectable'
 import { formatBilanDate } from '../bilanFields'
 import { useCountUp } from '../../../lib/useCountUp'
@@ -27,6 +28,12 @@ interface StatCardXLProps {
   /** En mode Synthèse : date ISO du bilan d'où provient cette valeur (chaque
    *  champ peut venir d'un bilan différent). Affiche un rappel « du … ». */
   originDate?: string
+  /** Valeur du bilan de comparaison choisi → écart ▲▼ sous le grand chiffre. */
+  previousValue?: number | undefined
+  /** % gras, IMC, tour de taille : une baisse est une amélioration. */
+  lowerIsBetter?: boolean
+  /** Nom du bilan comparé (« bilan précédent », « bilan du 4 sept. 2025 »). */
+  compareLabel?: string | null
 }
 
 function suffixe(p: number): string {
@@ -41,7 +48,10 @@ export function StatCardXL({
   age,
   sex,
   norms = 'acsm',
-  originDate
+  originDate,
+  previousValue,
+  lowerIsBetter = false,
+  compareLabel
 }: StatCardXLProps) {
   const hasValue = typeof value === 'number' && !Number.isNaN(value)
   const animValue = useCountUp(hasValue ? (value as number) : null)
@@ -101,6 +111,17 @@ export function StatCardXL({
         <p className="text-marine/40 text-[10px] mt-1" title={`Valeur la plus récente disponible pour ${label}, mesurée le ${formatBilanDate(originDate)}.`}>
           du {formatBilanDate(originDate)}
         </p>
+      )}
+
+      {hasValue && typeof previousValue === 'number' && (
+        <div className="mt-1.5" title={compareLabel ? `Écart vs le ${compareLabel}` : undefined}>
+          <DeltaIndicator
+            current={value as number}
+            previous={previousValue}
+            unit={unit}
+            lowerIsBetter={lowerIsBetter}
+          />
+        </div>
       )}
 
       {percentile !== null && (
