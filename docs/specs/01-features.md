@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.85 — Progression dans le temps : bilan de référence)
+
+Même logique que la carte musculo (v0.1.84), adaptée à un graphique temporel :
+
+- Liste déroulante **« Comparer à »** sous l'entête : *Aucun bilan de référence* (défaut) ou la **date de
+  n'importe quel bilan** (hors bilan mis en évidence).
+- Le bilan choisi devient une **ligne de référence pointillée marine** sur la courbe, étiquetée avec sa date —
+  on voit d'un coup d'œil ce qui est passé au-dessus / en dessous.
+- À côté du sélecteur : la valeur de référence et l'**écart chiffré** (▲ ▼) entre le bilan courant et elle,
+  avec le bon sens pour le % gras et l'IMC (une baisse = une amélioration).
+- Suit la métrique affichée (VO2max, % gras, IMC, score global) et se remet à zéro quand le bilan mis en
+  évidence change. Version : 0.1.84 → 0.1.85.
+
 ## ✅ Fait (v0.1.84 — Profil musculosquelettique : choisir le bilan de comparaison)
 
 La carte « Profil musculosquelettique » ne comparait qu'au **bilan précédent**. Marie-Eve peut maintenant

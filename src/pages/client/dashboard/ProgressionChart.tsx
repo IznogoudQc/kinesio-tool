@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   CartesianGrid,
   Line,
@@ -10,18 +10,33 @@ import {
   YAxis
 } from 'recharts'
 import { TrendingUp } from 'lucide-react'
-import { formatBilanMonth } from '../bilanFields'
+import { formatBilanDate, formatBilanMonth } from '../bilanFields'
 import { getPopulationAverage } from '../../../lib/norms'
 import { computeBilan, type BilanProfile } from '../../../lib/bilan-computed'
+import { DeltaIndicator } from '../../../components/DeltaIndicator'
 
 type MetricKey = 'vo2max' | 'pourcentage_gras' | 'imc' | 'overall'
 
-const METRICS: { key: MetricKey; label: string; unit: string; testKey?: 'vo2max' | 'bodyFat' | 'bmi' }[] = [
+const METRICS: {
+  key: MetricKey
+  label: string
+  unit: string
+  testKey?: 'vo2max' | 'bodyFat' | 'bmi'
+  /** % gras et IMC : une baisse est une amélioration. */
+  lowerIsBetter?: boolean
+}[] = [
   { key: 'vo2max', label: 'VO2max', unit: 'ml/kg/min', testKey: 'vo2max' },
-  { key: 'pourcentage_gras', label: '% gras', unit: '%', testKey: 'bodyFat' },
-  { key: 'imc', label: 'IMC', unit: 'kg/m²', testKey: 'bmi' },
+  { key: 'pourcentage_gras', label: '% gras', unit: '%', testKey: 'bodyFat', lowerIsBetter: true },
+  { key: 'imc', label: 'IMC', unit: 'kg/m²', testKey: 'bmi', lowerIsBetter: true },
   { key: 'overall', label: 'Score global', unit: '/ 5' }
 ]
+
+/** Valeur d'un bilan pour la métrique affichée (le score global se recalcule). */
+function metricValue(bilan: Bilan, metric: MetricKey, profile: BilanProfile): number | null {
+  if (metric === 'overall') return computeBilan(bilan.data, profile).overall.score
+  const raw = bilan.data[metric]
+  return typeof raw === 'number' ? raw : null
+}
 
 interface ProgressionChartProps {
   bilans: Bilan[]
@@ -42,20 +57,46 @@ export function ProgressionChart({
   bodyFatGoalLabel
 }: ProgressionChartProps) {
   const [metric, setMetric] = useState<MetricKey>('vo2max')
+  // Bilan servant de référence (ligne pointillée + écart chiffré). 'none' = aucun.
+  const [compareId, setCompareId] = useState<string>('none')
+
+  // Le bilan mis en évidence quitte la liste des références : on repart de zéro.
+  useEffect(() => {
+    setCompareId('none')
+  }, [activeBilanId])
 
   const data = useMemo(() => {
     const chrono = [...bilans].reverse()
-    return chrono.map(b => {
-      const label = formatBilanMonth(b.date)
-      const isActive = b.id === activeBilanId
-      if (metric === 'overall') {
-        const c = computeBilan(b.data, profile)
-        return { label, value: c.overall.score, isActive }
-      }
-      const raw = b.data[metric]
-      return { label, value: typeof raw === 'number' ? raw : null, isActive }
-    })
+    return chrono.map(b => ({
+      label: formatBilanMonth(b.date),
+      value: metricValue(b, metric, profile),
+      isActive: b.id === activeBilanId
+    }))
   }, [bilans, metric, profile, activeBilanId])
+
+  // Bilans proposés comme référence (tous sauf celui mis en évidence).
+  const compareOptions = useMemo(
+    () =>
+      [...bilans]
+        .filter(b => b.id !== activeBilanId)
+        .sort((a, b) => b.date.localeCompare(a.date)),
+    [bilans, activeBilanId]
+  )
+
+  const compareBilan = compareOptions.find(b => b.id === compareId) ?? null
+  const compareValue = compareBilan ? metricValue(compareBilan, metric, profile) : null
+
+  // Valeur « courante » pour l'écart : le bilan mis en évidence, sinon le plus récent.
+  const currentValue = useMemo(() => {
+    const active = bilans.find(b => b.id === activeBilanId)
+    if (active) return metricValue(active, metric, profile)
+    const chrono = [...bilans].reverse()
+    for (let i = chrono.length - 1; i >= 0; i--) {
+      const v = metricValue(chrono[i], metric, profile)
+      if (v !== null) return v
+    }
+    return null
+  }, [bilans, activeBilanId, metric, profile])
 
   // Trajectoire projetée : uniquement sur la courbe « % gras » quand un objectif
   // est défini. Ligne pointillée du dernier % gras réel vers la cible à l'échéance.
@@ -106,6 +147,46 @@ export function ProgressionChart({
         </div>
       </div>
 
+      {compareOptions.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap mb-3 text-xs">
+          <label className="flex items-center gap-1.5 text-marine/55">
+            <span>Comparer à</span>
+            <select
+              value={compareId}
+              onChange={e => setCompareId(e.target.value)}
+              className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
+              title="Afficher un bilan de référence sur le graphique"
+            >
+              <option value="none">Aucun bilan de référence</option>
+              {compareOptions.map(b => (
+                <option key={b.id} value={b.id}>
+                  {formatBilanDate(b.date)}
+                </option>
+              ))}
+            </select>
+          </label>
+          {compareBilan &&
+            (compareValue === null ? (
+              <span className="text-marine/40">
+                Pas de {current.label.toLowerCase()} mesuré sur ce bilan.
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-marine/55">
+                <span>
+                  Référence : {compareValue.toFixed(1)} {current.unit}
+                </span>
+                <span className="text-marine/25">·</span>
+                <DeltaIndicator
+                  current={currentValue}
+                  previous={compareValue}
+                  unit={current.unit}
+                  lowerIsBetter={current.lowerIsBetter}
+                />
+              </span>
+            ))}
+        </div>
+      )}
+
       <div className="h-56">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -8 }}>
@@ -137,6 +218,20 @@ export function ProgressionChart({
                   fill: '#64748b',
                   fontSize: 11,
                   position: 'right'
+                }}
+              />
+            )}
+            {compareBilan && compareValue !== null && (
+              <ReferenceLine
+                y={compareValue}
+                stroke="#0a1c5e"
+                strokeDasharray="6 3"
+                strokeOpacity={0.55}
+                label={{
+                  value: formatBilanDate(compareBilan.date),
+                  fill: '#0a1c5e',
+                  fontSize: 11,
+                  position: 'insideTopLeft'
                 }}
               />
             )}
