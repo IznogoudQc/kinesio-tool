@@ -11,6 +11,7 @@ import {
 } from '../../../lib/norms'
 import { CategoryRangeBar } from '../../../components/CategoryRangeBar'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
+import { Sparkline } from '../../../components/Sparkline'
 import { MetricSelectable } from '../../../components/MetricSelectable'
 import { formatBilanDate } from '../bilanFields'
 import { useCountUp } from '../../../lib/useCountUp'
@@ -34,6 +35,8 @@ interface StatCardXLProps {
   lowerIsBetter?: boolean
   /** Nom du bilan comparé (« bilan précédent », « bilan du 4 sept. 2025 »). */
   compareLabel?: string | null
+  /** Historique complet du champ, du plus ancien au plus récent → mini-courbe. */
+  history?: (number | null)[]
 }
 
 function suffixe(p: number): string {
@@ -51,10 +54,12 @@ export function StatCardXL({
   originDate,
   previousValue,
   lowerIsBetter = false,
-  compareLabel
+  compareLabel,
+  history
 }: StatCardXLProps) {
   const hasValue = typeof value === 'number' && !Number.isNaN(value)
   const animValue = useCountUp(hasValue ? (value as number) : null)
+  const sparkPoints = history?.filter(v => v !== null).length ?? 0
 
   const percentile =
     test && hasValue && typeof age === 'number' && sex
@@ -121,6 +126,15 @@ export function StatCardXL({
             unit={unit}
             lowerIsBetter={lowerIsBetter}
           />
+        </div>
+      )}
+
+      {sparkPoints >= 2 && (
+        <div
+          className="mt-2.5"
+          title={`Évolution du ${label.toLowerCase()} sur ${sparkPoints} bilans (du plus ancien au plus récent).`}
+        >
+          <Sparkline values={history as (number | null)[]} lowerIsBetter={lowerIsBetter} />
         </div>
       )}
 

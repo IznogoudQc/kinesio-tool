@@ -33,6 +33,8 @@ import { StrengthsAndWeaknesses } from '../dashboard/StrengthsAndWeaknesses'
 import { BilanSelectorPills } from '../dashboard/BilanSelectorPills'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../../../lib/synthesisBilan'
 import { detectWins } from '../../../lib/dashboard-wins'
+import { detectHealthFlags } from '../../../lib/health-flags'
+import { HealthFlags } from '../dashboard/HealthFlags'
 import { Confetti } from '../../../components/Confetti'
 
 function formatNumber(n: number | null | undefined): string {
@@ -267,6 +269,15 @@ export function DashboardTab() {
   )
   const objectif = buildObjectif(client, activeData, computed, age, (activeBilan ?? latest)!.date)
   const aiMetrics = gatherBilanMetrics(activeData, age, client.sex, norms)
+  const healthFlags = detectHealthFlags(activeData, client.sex)
+
+  // Historique d'un champ, du plus ancien au plus récent (`bilans` est antichrono)
+  // → alimente les mini-courbes des cartes XL.
+  const historyOf = (key: keyof BilanData): (number | null)[] =>
+    [...(bilans ?? [])].reverse().map(b => {
+      const v = b.data[key]
+      return typeof v === 'number' && !Number.isNaN(v) ? v : null
+    })
   // Bilans proposés comme point de comparaison (hero stats + radar musculo). On
   // retire celui affiché et le précédent (déjà couvert par « Bilan précédent »).
   const compareOptions = (bilans ?? [])
@@ -432,6 +443,7 @@ export function DashboardTab() {
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.vo2max : undefined}
         previousValue={heroCompareData?.vo2max}
+        history={historyOf('vo2max')}
         compareLabel={heroCompareLabel}
       />
       <StatCardXL
@@ -444,6 +456,7 @@ export function DashboardTab() {
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.imc : undefined}
         previousValue={heroCompareData?.imc}
+        history={historyOf('imc')}
         lowerIsBetter
         compareLabel={heroCompareLabel}
       />
@@ -457,6 +470,7 @@ export function DashboardTab() {
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.pourcentage_gras : undefined}
         previousValue={heroCompareData?.pourcentage_gras}
+        history={historyOf('pourcentage_gras')}
         lowerIsBetter
         compareLabel={heroCompareLabel}
       />
@@ -470,6 +484,7 @@ export function DashboardTab() {
         norms={norms}
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.tour_taille_cm : undefined}
         previousValue={heroCompareData?.tour_taille_cm}
+        history={historyOf('tour_taille_cm')}
         lowerIsBetter
         compareLabel={heroCompareLabel}
       />
@@ -587,6 +602,12 @@ export function DashboardTab() {
 
       {Hero}
       {StatsRow}
+
+      {healthFlags.length > 0 && (
+        <div className="dash-rise" style={{ animationDelay: '120ms' }}>
+          <HealthFlags flags={healthFlags} />
+        </div>
+      )}
 
       {(fitAge !== null || objectif !== null) && (
         <section className="dash-rise grid grid-cols-1 md:grid-cols-2 gap-4" style={{ animationDelay: '160ms' }}>

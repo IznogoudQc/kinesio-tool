@@ -642,6 +642,28 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.87 — Signaux à surveiller + mini-courbes)
+
+Deux ajouts au Dashboard, tous deux dérivés de données déjà en base (aucune saisie de plus).
+
+**🚩 Signaux à surveiller** (`src/lib/health-flags.ts`, 10 tests) — une carte qui n'apparaît que si un seuil
+**clinique absolu** est franchi. Le reste du Dashboard situe le client dans sa population (percentiles ACSM) ;
+un tour de taille de 105 cm peut être « dans la moyenne » et rester un risque. Repères :
+
+| Signal | Avertissement | Alerte |
+|---|---|---|
+| Pression artérielle | 130-139 / 85-89 mmHg | ≥ 140/90 · ≥ 180/110 (« ne pas faire d'effort maximal ») |
+| Tour de taille | > 94 cm (H) / > 80 cm (F) | > 102 cm (H) / > 88 cm (F) |
+| IMC | 25 – 29,9 · < 18,5 | ≥ 30 |
+| FC de repos | 90 – 100 bpm | > 100 bpm |
+
+Chaque signal affiche la valeur, le seuil franchi et pourquoi ça compte. Les alertes sont triées en premier.
+La carte rappelle que **ce ne sont pas des diagnostics**. Ignoré si le sexe est inconnu (tour de taille).
+
+**📉 Mini-courbes** — une sparkline SVG (sans dépendance) dans chacune des 4 cartes XL, montrant tout
+l'historique du champ. Verte si la tendance est une amélioration, rouge sinon (sens inversé pour IMC, % gras
+et tour de taille). Masquée sous 2 mesures. Version : 0.1.86 → 0.1.87.
+
 ## ✅ Fait (v0.1.86 — Hero stats : choisir le bilan de comparaison)
 
 Troisième volet (après v0.1.84 musculo et v0.1.85 progression) :
