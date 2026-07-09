@@ -642,6 +642,26 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.90 — Progression : toutes les mesures traçables)
+
+Le graphique n'offrait que 4 courbes (VO2max, % gras, IMC, score global). Il en offre maintenant **17**,
+regroupées par domaine dans une liste déroulante (4 pastilles auraient débordé) :
+
+- **Synthèse** — Score global
+- **Composition** — Poids, IMC, % de gras, Tour de taille, Tour de hanche
+- **Cardio** — VO2max, MET équivalent, FC de repos, Pression systolique, Pression diastolique
+- **Musculosquelettique** — Push-ups, Sit-ups, Saut vertical, Puissance des jambes, Flexion du tronc,
+  Endurance du dos
+
+Détails :
+
+- **Seules les mesures présentes chez le client sont proposées** — pas de courbe vide dans la liste.
+- La **ligne « moyenne population »** suit automatiquement la mesure choisie quand la norme publie des
+  percentiles (absente pour Poids, MET, Tour de hanche, PA et FC, qui n'ont pas de table ACSM).
+- Le **sens du delta** est correct partout (FC, PA, tours et IMC : une baisse est verte).
+- Nombres formatés sans décimale inutile (« 55 reps », plus « 55.0 reps ») et axe Y élargi pour les watts.
+- La projection d'objectif reste réservée à la courbe « % de gras ». Version : 0.1.89 → 0.1.90.
+
 ## ✅ Fait (v0.1.89 — Un seul « Comparer à » pour tout le Dashboard)
 
 Les v0.1.84 → v0.1.86 avaient abouti à **trois** sélecteurs « Comparer à » (Hero, progression, musculo).

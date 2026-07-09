@@ -11,31 +11,59 @@ import {
 } from 'recharts'
 import { TrendingUp } from 'lucide-react'
 import { formatBilanMonth } from '../bilanFields'
-import { getPopulationAverage } from '../../../lib/norms'
+import { getPopulationAverage, type TestKey } from '../../../lib/norms'
 import { computeBilan, type BilanProfile } from '../../../lib/bilan-computed'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
 
-type MetricKey = 'vo2max' | 'pourcentage_gras' | 'imc' | 'overall'
+/** `'overall'` est recalculé ; les autres clés sont lues telles quelles dans BilanData. */
+type MetricKey = 'overall' | keyof BilanData
 
-const METRICS: {
+type MetricGroup = 'Synthèse' | 'Composition' | 'Cardio' | 'Musculosquelettique'
+
+interface Metric {
   key: MetricKey
   label: string
   unit: string
-  testKey?: 'vo2max' | 'bodyFat' | 'bmi'
-  /** % gras et IMC : une baisse est une amélioration. */
+  group: MetricGroup
+  /** Trace la ligne « moyenne population » quand la norme publie des percentiles. */
+  testKey?: TestKey
+  /** Une baisse est une amélioration (% gras, IMC, tour de taille, FC, PA). */
   lowerIsBetter?: boolean
-}[] = [
-  { key: 'vo2max', label: 'VO2max', unit: 'ml/kg/min', testKey: 'vo2max' },
-  { key: 'pourcentage_gras', label: '% gras', unit: '%', testKey: 'bodyFat', lowerIsBetter: true },
-  { key: 'imc', label: 'IMC', unit: 'kg/m²', testKey: 'bmi', lowerIsBetter: true },
-  { key: 'overall', label: 'Score global', unit: '/ 5' }
+}
+
+const METRICS: Metric[] = [
+  { key: 'overall', label: 'Score global', unit: '/ 5', group: 'Synthèse' },
+
+  { key: 'poids_kg', label: 'Poids', unit: 'kg', group: 'Composition' },
+  { key: 'imc', label: 'IMC', unit: 'kg/m²', group: 'Composition', testKey: 'bmi', lowerIsBetter: true },
+  { key: 'pourcentage_gras', label: '% de gras', unit: '%', group: 'Composition', testKey: 'bodyFat', lowerIsBetter: true },
+  { key: 'tour_taille_cm', label: 'Tour de taille', unit: 'cm', group: 'Composition', testKey: 'waistCircumference', lowerIsBetter: true },
+  { key: 'tour_hanche_cm', label: 'Tour de hanche', unit: 'cm', group: 'Composition', lowerIsBetter: true },
+
+  { key: 'vo2max', label: 'VO2max', unit: 'ml/kg/min', group: 'Cardio', testKey: 'vo2max' },
+  { key: 'met_equivalent', label: 'MET équivalent', unit: 'MET', group: 'Cardio' },
+  { key: 'fc_repos', label: 'FC de repos', unit: 'bpm', group: 'Cardio', testKey: 'restingHeartRate', lowerIsBetter: true },
+  { key: 'pa_systolique', label: 'Pression systolique', unit: 'mmHg', group: 'Cardio', testKey: 'bloodPressureSystolic', lowerIsBetter: true },
+  { key: 'pa_diastolique', label: 'Pression diastolique', unit: 'mmHg', group: 'Cardio', testKey: 'bloodPressureDiastolic', lowerIsBetter: true },
+
+  { key: 'pushups', label: 'Push-ups', unit: 'reps', group: 'Musculosquelettique', testKey: 'pushups' },
+  { key: 'situps', label: 'Sit-ups', unit: 'reps', group: 'Musculosquelettique', testKey: 'situps' },
+  { key: 'saut_vertical_cm', label: 'Saut vertical', unit: 'cm', group: 'Musculosquelettique', testKey: 'verticalJump' },
+  { key: 'puissance_jambes_watts', label: 'Puissance des jambes', unit: 'W', group: 'Musculosquelettique', testKey: 'legPower' },
+  { key: 'flexion_tronc_cm', label: 'Flexion du tronc', unit: 'cm', group: 'Musculosquelettique', testKey: 'trunkFlexion' },
+  { key: 'endurance_dos_sec', label: 'Endurance du dos', unit: 's', group: 'Musculosquelettique', testKey: 'backEndurance' }
 ]
+
+const GROUP_ORDER: MetricGroup[] = ['Synthèse', 'Composition', 'Cardio', 'Musculosquelettique']
+
+/** Les reps/W n'ont pas de décimale utile ; l'IMC et le % de gras si. */
+const fmt = (v: number): string => v.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
 
 /** Valeur d'un bilan pour la métrique affichée (le score global se recalcule). */
 function metricValue(bilan: Bilan, metric: MetricKey, profile: BilanProfile): number | null {
   if (metric === 'overall') return computeBilan(bilan.data, profile).overall.score
   const raw = bilan.data[metric]
-  return typeof raw === 'number' ? raw : null
+  return typeof raw === 'number' && !Number.isNaN(raw) ? raw : null
 }
 
 interface ProgressionChartProps {
@@ -64,33 +92,47 @@ export function ProgressionChart({
 }: ProgressionChartProps) {
   const [metric, setMetric] = useState<MetricKey>('vo2max')
 
+  // Ne proposer que ce qui a été mesuré chez ce client — sinon la liste offre
+  // une dizaine de courbes vides.
+  const available = useMemo(
+    () =>
+      METRICS.filter(
+        m => m.key === 'overall' || bilans.some(b => typeof b.data[m.key as keyof BilanData] === 'number')
+      ),
+    [bilans]
+  )
+  // La métrique choisie peut disparaître (changement de client) → repli sur la 1re.
+  const current = available.find(m => m.key === metric) ?? available[0] ?? METRICS[0]
+
+  const metricKey = current.key
+
   const data = useMemo(() => {
     const chrono = [...bilans].reverse()
     return chrono.map(b => ({
       label: formatBilanMonth(b.date),
-      value: metricValue(b, metric, profile),
+      value: metricValue(b, metricKey, profile),
       isActive: b.id === activeBilanId
     }))
-  }, [bilans, metric, profile, activeBilanId])
+  }, [bilans, metricKey, profile, activeBilanId])
 
-  const compareValue = compareBilan ? metricValue(compareBilan, metric, profile) : null
+  const compareValue = compareBilan ? metricValue(compareBilan, metricKey, profile) : null
 
   // Valeur « courante » pour l'écart : le bilan mis en évidence, sinon le plus récent.
   const currentValue = useMemo(() => {
     const active = bilans.find(b => b.id === activeBilanId)
-    if (active) return metricValue(active, metric, profile)
+    if (active) return metricValue(active, metricKey, profile)
     const chrono = [...bilans].reverse()
     for (let i = chrono.length - 1; i >= 0; i--) {
-      const v = metricValue(chrono[i], metric, profile)
+      const v = metricValue(chrono[i], metricKey, profile)
       if (v !== null) return v
     }
     return null
-  }, [bilans, activeBilanId, metric, profile])
+  }, [bilans, activeBilanId, metricKey, profile])
 
   // Trajectoire projetée : uniquement sur la courbe « % gras » quand un objectif
   // est défini. Ligne pointillée du dernier % gras réel vers la cible à l'échéance.
   const showProjection =
-    metric === 'pourcentage_gras' && typeof bodyFatTarget === 'number' && Boolean(bodyFatGoalLabel)
+    metricKey === 'pourcentage_gras' && typeof bodyFatTarget === 'number' && Boolean(bodyFatGoalLabel)
   const chartData = useMemo(() => {
     const base = data.map(d => ({ ...d, projected: null as number | null }))
     if (!showProjection) return base
@@ -104,12 +146,9 @@ export function ProgressionChart({
 
   // Moyenne population (P50) — affichée en pointillé pour comparaison continue.
   const populationAverage = useMemo(() => {
-    const m = METRICS.find(x => x.key === metric)
-    if (!m?.testKey || profile.age === null || profile.sex === null) return null
-    return getPopulationAverage(m.testKey, profile.age, profile.sex, profile.norms)
-  }, [metric, profile])
-
-  const current = METRICS.find(m => m.key === metric)!
+    if (!current.testKey || profile.age === null || profile.sex === null) return null
+    return getPopulationAverage(current.testKey, profile.age, profile.sex, profile.norms)
+  }, [current, profile])
 
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
@@ -118,22 +157,27 @@ export function ProgressionChart({
           <TrendingUp size={16} className="text-gold-dark" />
           <h3 className="text-marine font-semibold text-sm uppercase tracking-wide">Progression dans le temps</h3>
         </div>
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {METRICS.map(m => (
-            <button
-              key={m.key}
-              type="button"
-              onClick={() => setMetric(m.key)}
-              className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
-                metric === m.key
-                  ? 'bg-marine text-cream'
-                  : 'bg-cream/60 text-marine/65 hover:bg-cream-dark hover:text-marine'
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
-        </div>
+        <label className="flex items-center gap-1.5 text-xs text-marine/55">
+          <span>Mesure</span>
+          <select
+            value={current.key as string}
+            onChange={e => setMetric(e.target.value as MetricKey)}
+            className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
+            title="Mesure tracée dans le temps — seules celles mesurées chez ce client sont proposées"
+          >
+            {GROUP_ORDER.filter(g => available.some(m => m.group === g)).map(g => (
+              <optgroup key={g} label={g}>
+                {available
+                  .filter(m => m.group === g)
+                  .map(m => (
+                    <option key={m.key as string} value={m.key as string}>
+                      {m.label}
+                    </option>
+                  ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
       </div>
 
       {compareBilan && (
@@ -145,7 +189,7 @@ export function ProgressionChart({
           ) : (
             <span className="flex items-center gap-1.5 text-marine/55">
               <span>
-                Référence ({compareLabel}) : {compareValue.toFixed(1)} {current.unit}
+                Référence ({compareLabel}) : {fmt(compareValue)} {current.unit}
               </span>
               <span className="text-marine/25">·</span>
               <DeltaIndicator
@@ -167,7 +211,7 @@ export function ProgressionChart({
             <YAxis
               tick={{ fill: 'rgba(10, 28, 94, 0.55)', fontSize: 11 }}
               stroke="rgba(10, 28, 94, 0.15)"
-              width={36}
+              width={46}
               domain={['auto', 'auto']}
             />
             <Tooltip
@@ -178,7 +222,7 @@ export function ProgressionChart({
                 color: '#0a1c5e',
                 fontSize: 13
               }}
-              formatter={(v: unknown) => [`${typeof v === 'number' ? v.toFixed(1) : v} ${current.unit}`, current.label]}
+              formatter={(v: unknown) => [`${typeof v === 'number' ? fmt(v) : v} ${current.unit}`, current.label]}
             />
             {populationAverage !== null && (
               <ReferenceLine
