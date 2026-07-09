@@ -7,6 +7,7 @@ import { registerMesuresHandlers } from './ipc/mesures'
 import { registerNotesHandlers } from './ipc/notes'
 import { registerReportsHandlers } from './ipc/reports'
 import { registerAIHandlers } from './ipc/ai'
+import { registerTransferHandlers } from './ipc/transfer'
 import { initDb } from '../db/client'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
@@ -86,6 +87,7 @@ app.whenReady().then(() => {
 
   initDb(dbPath, migrationsPath)
   registerClientsHandlers()
+  registerTransferHandlers()
   registerSettingsHandlers()
   registerBilansHandlers()
   registerMesuresHandlers()

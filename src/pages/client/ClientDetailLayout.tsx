@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate, useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, Download, ImagePlus, Mail, MoreVertical, Pencil, Trash2 } from 'lucide-react'
 import { clientsService } from '../../services/clients'
-import { reportsService } from '../../services/reports'
+import { transferService } from '../../services/transfer'
 import { ClientAvatar } from '../../components/ClientAvatar'
 import { AvatarCropper } from '../../components/AvatarCropper'
 import {
@@ -290,8 +290,8 @@ function ClientActionsMenu({ clientId, onMessage }: ClientActionsMenuProps) {
     setOpen(false)
     setBusy(true)
     try {
-      const result = await reportsService.exportClientToJson(clientId)
-      if ('filePath' in result) onMessage('Dossier client exporté')
+      const result = await transferService.exportClients([clientId])
+      if (result) onMessage('Dossier client exporté')
     } catch (err) {
       onMessage(err instanceof Error ? err.message : "Échec de l'export.")
     } finally {

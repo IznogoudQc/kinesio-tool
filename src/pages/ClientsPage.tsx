@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import { ChevronRight, Plus, Upload, User } from 'lucide-react'
+import { ChevronRight, Download, Plus, Upload, User } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { clientsService } from '../services/clients'
-import { reportsService } from '../services/reports'
+import { transferService } from '../services/transfer'
 import { ClientAvatar } from '../components/ClientAvatar'
 
 type View = 'list' | 'form'
@@ -36,7 +36,9 @@ export function ClientsPage() {
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
   const [importing, setImporting] = useState(false)
-  const [conflict, setConflict] = useState<{ filePath: string; existingName: string } | null>(null)
+  // Aperçu du fichier choisi — Marie-Eve décide ensuite « Remplacer » ou « Fusionner ».
+  const [preview, setPreview] = useState<ImportPreview | null>(null)
+  const [exportOpen, setExportOpen] = useState(false)
 
   const location = useLocation()
   const navigate = useNavigate()
@@ -125,29 +127,44 @@ export function ClientsPage() {
     }
   }
 
-  async function runImport(filePath: string, mode?: 'create' | 'merge') {
+  async function handleImportClick() {
+    try {
+      const p = await transferService.previewImport()
+      if (p) setPreview(p)
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Ce fichier n'a pas pu être lu.")
+    }
+  }
+
+  async function runImport(mode: 'replace' | 'merge') {
+    if (!preview) return
     setImporting(true)
     try {
-      const result = await reportsService.importClientFromJson(filePath, mode)
-      if (result.status === 'conflict') {
-        setConflict({ filePath, existingName: result.existingName })
-        return
-      }
-      setConflict(null)
+      const r = await transferService.importClients(preview.filePath, mode)
+      setPreview(null)
       await loadClients()
-      navigate(`/clients/${result.clientId}/dashboard`)
+      const parts: string[] = []
+      if (r.added) parts.push(`${r.added} ajouté${r.added > 1 ? 's' : ''}`)
+      if (r.updated) parts.push(`${r.updated} mis à jour`)
+      setToast(`Import terminé — ${parts.join(', ') || 'aucun changement'}.`)
     } catch (err) {
-      setConflict(null)
+      setPreview(null)
       setToast(err instanceof Error ? err.message : "Échec de l'import.")
     } finally {
       setImporting(false)
     }
   }
 
-  async function handleImportClick() {
-    const picked = await reportsService.pickImportFile()
-    if (picked.canceled) return
-    await runImport(picked.filePath)
+  async function runExport(clientIds: string[]) {
+    try {
+      const r = await transferService.exportClients(clientIds)
+      setExportOpen(false)
+      if (!r) return
+      const n = r.summary.clientCount
+      setToast(`${n} client${n > 1 ? 's' : ''} exporté${n > 1 ? 's' : ''} vers ${r.filePath}`)
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Échec de l'export.")
+    }
   }
 
   if (view === 'form') {
@@ -313,9 +330,18 @@ export function ClientsPage() {
         </span>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => setExportOpen(true)}
+            disabled={clients.length === 0}
+            title="Exporter des dossiers clients en .kinesio"
+            className="flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={16} />
+            Exporter
+          </button>
+          <button
             onClick={handleImportClick}
             disabled={importing}
-            title="Importer un dossier client exporté en .kinesio"
+            title="Importer des dossiers clients exportés en .kinesio"
             className="flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Upload size={16} />
@@ -370,53 +396,202 @@ export function ClientsPage() {
         </div>
       )}
 
-      {conflict && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
-          <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark p-6">
-            <h2 className="text-marine font-semibold text-xl mb-3">Un client porte déjà ce courriel</h2>
-            <p className="text-marine/70 text-base mb-2">
-              Le dossier importé correspond à <span className="font-semibold text-marine">{conflict.existingName}</span>, qui
-              existe déjà.
-            </p>
-            <p className="text-marine/50 text-sm mb-5">
-              « Fusionner » ajoute les bilans et mesures du fichier au dossier existant (les bilans aux mêmes dates sont
-              ignorés). « Créer un doublon » crée une nouvelle fiche distincte.
-            </p>
-            <div className="flex items-center justify-end gap-3 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setConflict(null)}
-                disabled={importing}
-                className="px-4 py-2 text-marine/65 text-base hover:text-marine transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={() => runImport(conflict.filePath, 'create')}
-                disabled={importing}
-                className="px-4 py-2 text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Créer un doublon
-              </button>
-              <button
-                type="button"
-                onClick={() => runImport(conflict.filePath, 'merge')}
-                disabled={importing}
-                className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Fusionner
-              </button>
-            </div>
-          </div>
-        </div>
+      {exportOpen && (
+        <ExportClientsModal clients={clients} onCancel={() => setExportOpen(false)} onExport={runExport} />
       )}
 
-      {toast && (
-        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
-          {toast}
-        </div>
+      {preview && (
+        <ImportPreviewModal
+          preview={preview}
+          importing={importing}
+          onCancel={() => setPreview(null)}
+          onImport={runImport}
+        />
       )}
+
+    </div>
+  )
+}
+
+/** Choix des clients à exporter. Un seul fichier `.kinesio` pour la sélection. */
+function ExportClientsModal({
+  clients,
+  onCancel,
+  onExport
+}: {
+  clients: Client[]
+  onCancel: () => void
+  onExport: (clientIds: string[]) => Promise<void>
+}) {
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [busy, setBusy] = useState(false)
+
+  const toggle = (id: string): void =>
+    setSelected(s => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
+      <div className="bg-cream rounded-lg shadow-2xl w-full max-w-lg border border-cream-dark max-h-[90vh] flex flex-col">
+        <div className="p-6 pb-3">
+          <h2 className="text-marine font-semibold text-xl">Exporter des clients</h2>
+          <p className="text-marine/55 text-sm mt-1">
+            Le fichier contiendra les clients cochés et tout ce qui leur appartient : bilans, mesures, plis, notes
+            et photos. Ni les autres clients, ni vos réglages, ni votre compte courriel.
+          </p>
+        </div>
+
+        <div className="px-6 py-2 overflow-y-auto">
+          <div className="flex items-center gap-3 mb-2">
+            <button
+              type="button"
+              onClick={() => setSelected(new Set(clients.map(c => c.id)))}
+              className="text-gold-dark hover:text-marine text-sm underline"
+            >
+              Tout cocher
+            </button>
+            <button type="button" onClick={() => setSelected(new Set())} className="text-gold-dark hover:text-marine text-sm underline">
+              Tout décocher
+            </button>
+          </div>
+          <div className="space-y-0.5">
+            {clients.map(c => (
+              <label
+                key={c.id}
+                className="flex items-center gap-3 rounded-md px-2 py-2 hover:bg-cream-dark/40 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={selected.has(c.id)}
+                  onChange={() => toggle(c.id)}
+                  className="w-4 h-4 accent-gold-dark"
+                />
+                <span className="text-marine text-base">{c.name}</span>
+                <span className="text-marine/40 text-sm truncate">{c.email}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 p-6 pt-3 border-t border-cream-dark">
+          <button type="button" onClick={onCancel} className="px-4 py-2 text-marine/65 text-base hover:text-marine">
+            Annuler
+          </button>
+          <button
+            type="button"
+            disabled={selected.size === 0 || busy}
+            onClick={async () => {
+              setBusy(true)
+              try {
+                await onExport([...selected])
+              } finally {
+                setBusy(false)
+              }
+            }}
+            className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Exporter {selected.size > 0 ? `(${selected.size})` : ''}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** Aperçu du fichier avant d'écrire quoi que ce soit, puis choix du mode. */
+function ImportPreviewModal({
+  preview,
+  importing,
+  onCancel,
+  onImport
+}: {
+  preview: ImportPreview
+  importing: boolean
+  onCancel: () => void
+  onImport: (mode: 'replace' | 'merge') => Promise<void>
+}) {
+  const { summary, plan } = preview
+  const exportedOn = new Date(summary.exportedAt).toLocaleDateString('fr-CA', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
+
+  return (
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
+      <div className="bg-cream rounded-lg shadow-2xl w-full max-w-xl border border-cream-dark max-h-[90vh] flex flex-col">
+        <div className="p-6 pb-3">
+          <h2 className="text-marine font-semibold text-xl">Importer {preview.fileName}</h2>
+          <p className="text-marine/55 text-sm mt-1">
+            Export du {exportedOn} · Kinésio Outils {summary.appVersion}
+          </p>
+        </div>
+
+        <div className="px-6 overflow-y-auto">
+          <div className="bg-white border border-cream-dark rounded-lg p-4 text-sm text-marine/80">
+            <p className="font-semibold text-marine mb-1">Le fichier contient</p>
+            <p>
+              {summary.clientCount} client{summary.clientCount > 1 ? 's' : ''} · {summary.bilanCount} bilan
+              {summary.bilanCount > 1 ? 's' : ''} · {summary.mesureCount} prise
+              {summary.mesureCount > 1 ? 's' : ''} de mesures · {summary.plisCount} plis · {summary.noteCount} note
+              {summary.noteCount > 1 ? 's' : ''} · {summary.avatarCount} photo{summary.avatarCount > 1 ? 's' : ''}
+            </p>
+            <p className="text-marine/50 mt-1.5">{summary.clientNames.join(', ')}</p>
+          </div>
+
+          <div className="mt-3 space-y-1.5 text-sm">
+            {plan.toAdd.length > 0 && (
+              <p className="text-marine/80">
+                <span className="font-semibold text-green-700">{plan.toAdd.length} nouveau
+                {plan.toAdd.length > 1 ? 'x' : ''}</span> — sera ajouté tel quel : {plan.toAdd.join(', ')}
+              </p>
+            )}
+            {plan.toUpdate.length > 0 && (
+              <p className="text-marine/80">
+                <span className="font-semibold text-gold-dark">{plan.toUpdate.length} déjà présent
+                {plan.toUpdate.length > 1 ? 's' : ''}</span> — c’est le choix ci-dessous qui décide : {plan.toUpdate.join(', ')}
+              </p>
+            )}
+          </div>
+
+          <p className="text-marine/50 text-xs mt-3">
+            Dans les deux cas, vos clients absents du fichier ne sont jamais touchés ni supprimés.
+          </p>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 p-6 pt-4 flex-wrap">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={importing}
+            className="px-4 py-2 text-marine/65 text-base hover:text-marine disabled:opacity-50"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={() => onImport('merge')}
+            disabled={importing}
+            title="Ajoute ce qui manque et met à jour ce qui a changé. Rien n’est supprimé."
+            className="px-4 py-2 text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base font-medium transition-colors disabled:opacity-50"
+          >
+            Fusionner
+          </button>
+          <button
+            type="button"
+            onClick={() => onImport('replace')}
+            disabled={importing}
+            title="Les clients du fichier repartent de zéro : leurs bilans et mesures actuels sont effacés puis remplacés."
+            className="px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50"
+          >
+            {importing ? 'Import…' : 'Remplacer'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }

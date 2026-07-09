@@ -185,6 +185,34 @@ interface SmtpTestResult {
   error?: string
 }
 
+// ── Échange de clients entre installations (voir src/lib/client-bundle.ts) ────
+interface BundleSummary {
+  clientCount: number
+  bilanCount: number
+  mesureCount: number
+  plisCount: number
+  noteCount: number
+  avatarCount: number
+  exportedAt: string
+  appVersion: string
+  clientNames: string[]
+}
+
+interface ImportPreview {
+  filePath: string
+  fileName: string
+  summary: BundleSummary
+  /** Noms des clients. `toAdd` : nouveaux. `toUpdate` : déjà présents en base. */
+  plan: { toAdd: string[]; toUpdate: string[] }
+}
+
+interface ImportResult {
+  added: number
+  updated: number
+  mode: 'replace' | 'merge'
+  summary: BundleSummary
+}
+
 // ── Mesures : circonférences corporelles ──────────────────────────────────────
 interface MesureCirconferences {
   id: string
@@ -354,6 +382,13 @@ interface Window {
       getMesureFields(): Promise<MesureFieldKey[] | null>
       setMesureFields(value: MesureFieldKey[]): Promise<void>
     }
+    transfer: {
+      /** Ouvre « Enregistrer sous ». `null` si Marie-Eve annule. */
+      exportClients(clientIds: string[]): Promise<{ filePath: string; summary: BundleSummary } | null>
+      /** Ouvre « Ouvrir un fichier », valide, mais n'écrit rien. `null` si annulé. */
+      previewImport(): Promise<ImportPreview | null>
+      importClients(filePath: string, mode: 'replace' | 'merge'): Promise<ImportResult>
+    }
     reports: {
       /** Génère le rapport PDF d'un client (route React `/report/:id`) — retourne le chemin du PDF. */
       generatePdf(clientId: string): Promise<string>
@@ -363,15 +398,6 @@ interface Window {
       openPath(filePath: string): Promise<void>
       /** Génère le rapport PDF, l'attache et l'envoie au client par courriel, puis supprime le fichier temp. */
       sendEmail(data: { clientId: string; subject: string; body: string }): Promise<{ sentTo: string }>
-      /** Exporte tout le dossier d'un client en `.kinesio` (dialog natif inclus). */
-      exportJson(clientId: string): Promise<{ filePath: string } | { canceled: true }>
-      /** Ouvre le dialog natif de sélection d'un fichier `.kinesio` à importer. */
-      pickImportFile(): Promise<{ canceled: true } | { canceled: false; filePath: string; fileName: string }>
-      /** Importe un fichier `.kinesio`. Sans `mode`, retourne `conflict` si un client a déjà ce courriel. */
-      importJson(data: {
-        filePath: string
-        mode?: 'create' | 'merge'
-      }): Promise<{ status: 'ok'; clientId: string } | { status: 'conflict'; existingName: string }>
     }
     bilans: {
       pickDocxFile(): Promise<PickedDocx>

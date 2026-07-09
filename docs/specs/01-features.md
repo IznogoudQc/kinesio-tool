@@ -642,6 +642,40 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.93 — Export / import de dossiers clients, refait)
+
+Il existait déjà un export/import `.kinesio`, mais **incomplet et non idempotent** : il n'emportait ni les
+notes ni les photos, ignorait les préférences de nutrition, et **régénérait tous les identifiants** — donc
+réimporter deux fois le même fichier dupliquait les mesures et les plis. Il est remplacé.
+
+**Export** — bouton *Exporter* sur la page Clients : Marie-Eve **coche les clients** à emporter. Un seul
+fichier `.kinesio` contient les clients cochés et **tout** ce qui leur appartient : bilans, circonférences,
+plis, notes, photos (en base64, donc pas de .zip ni de dépendance). Jamais les autres clients, jamais les
+réglages, jamais le compte courriel. Le bouton *Exporter en JSON (.kinesio)* de la fiche client passe par le
+même chemin.
+
+**Import** — bouton *Importer* : le fichier est lu et validé **sans rien écrire**, puis une fenêtre montre
+ce qu'il contient (clients, comptes, date de l'export) et ce qui va se passer : *N nouveaux* (ajoutés tels
+quels) et *M déjà présents*. Marie-Eve choisit alors :
+
+- **Fusionner** — ajoute ce qui manque, met à jour ce qui a changé. Rien n'est supprimé.
+- **Remplacer** — les clients du fichier repartent de zéro : leurs bilans et mesures actuels sont effacés,
+  puis remplacés par ceux du fichier.
+
+Dans les deux cas, **les clients absents du fichier ne sont jamais touchés**.
+
+Détails :
+
+- Un client du fichier est rapproché d'un client existant **par identifiant, puis par courriel**. Le second
+  rattrape les anciens fichiers (qui ne portaient pas d'id) et un même client créé à la main des deux côtés.
+- Les identifiants sont préservés, donc **réimporter le même fichier ne duplique rien**.
+- Les anciens fichiers `.kinesio` restent importables (conversion automatique).
+- Écriture des photos d'abord, puis **une seule transaction** : un import interrompu ne laisse pas la base
+  à moitié écrite.
+- Logique de rapprochement et d'aperçu testée (`src/lib/client-bundle.ts`, 7 tests).
+
+Version : 0.1.92 → 0.1.93.
+
 ## 🐛 Corrigé (v0.1.92 — Mesures masquées : les autres ne doivent pas bouger)
 
 En v0.1.91, masquer « Cou » faisait remonter « Biceps G » à sa place. Or **la position des cartes est

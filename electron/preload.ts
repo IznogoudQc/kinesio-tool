@@ -95,6 +95,14 @@ contextBridge.exposeInMainWorld('api', {
     setMesureFields: (value: string[]) =>
       ipcRenderer.invoke('settings:mesureFields:set', value)
   },
+  transfer: {
+    exportClients: (clientIds: string[]) =>
+      ipcRenderer.invoke('transfer:export', clientIds),
+    previewImport: () =>
+      ipcRenderer.invoke('transfer:preview'),
+    importClients: (filePath: string, mode: 'replace' | 'merge') =>
+      ipcRenderer.invoke('transfer:import', { filePath, mode })
+  },
   reports: {
     generatePdf: (clientId: string) =>
       ipcRenderer.invoke('reports:generate-pdf', clientId),
@@ -103,13 +111,7 @@ contextBridge.exposeInMainWorld('api', {
     openPath: (filePath: string) =>
       ipcRenderer.invoke('reports:open-path', filePath),
     sendEmail: (data: { clientId: string; subject: string; body: string }) =>
-      ipcRenderer.invoke('reports:send-email', data),
-    exportJson: (clientId: string) =>
-      ipcRenderer.invoke('reports:export-json', clientId),
-    pickImportFile: () =>
-      ipcRenderer.invoke('reports:pick-import-file'),
-    importJson: (data: { filePath: string; mode?: 'create' | 'merge' }) =>
-      ipcRenderer.invoke('reports:import-json', data)
+      ipcRenderer.invoke('reports:send-email', data)
   },
   bilans: {
     pickDocxFile: () =>
