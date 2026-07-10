@@ -642,6 +642,28 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🎉 v0.2.0 — Premier palier
+
+L'application couvre maintenant le cycle complet du travail de Marie-Eve : saisir ou importer un bilan,
+le lire, le comparer, le comprendre, puis le remettre au client. Point d'étape.
+
+**Retiré : les confettis.** Ajoutés en v0.1.83, ils se déclenchaient à l'ouverture d'un client ayant progressé.
+Bonne intention, mauvaise idée dans un outil clinique consulté plusieurs fois par jour, souvent devant le
+client. La **bannière « Belle progression ! »** reste : elle dit la même chose, sans interrompre.
+Le composant `Confetti` est supprimé, pas seulement débranché.
+
+Ce que la 0.1 a construit, en une phrase par domaine :
+
+- **Bilans** — import `.docx`, saisie guidée ou libre, validation de plausibilité, fusion à la réimportation.
+- **Dashboard** — score global, 5 composites, cartes XL avec mini-courbes, un seul « Comparer à » pour tout,
+  17 mesures traçables dans le temps, signaux cliniques à surveiller.
+- **Mesures** — circonférences choisies par Marie-Eve, plis cutanés, silhouette du client.
+- **Rapport** — PDF multi-pages, et un **document HTML éditorial autonome** envoyé au client : hors ligne,
+  interactif, avec plan d'action, objectif chiffré et le mot de sa kinésiologue.
+- **Données** — export / import de dossiers clients entre installations, idempotent.
+
+215 tests, zéro dépendance ajoutée pour le document client. Version : 0.1.100 → 0.2.0.
+
 ## 🐛 Corrigé (v0.1.100 — « 7.6000000000000005 sem. »)
 
 Le document client affichait la durée d'objectif brute. `weeksToGoal` est une division (6 kg ÷ 0,79 kg/sem),

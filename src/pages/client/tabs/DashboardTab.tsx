@@ -28,7 +28,6 @@ import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../../../lib/s
 import { detectWins } from '../../../lib/dashboard-wins'
 import { detectHealthFlags } from '../../../lib/health-flags'
 import { HealthFlags } from '../dashboard/HealthFlags'
-import { Confetti } from '../../../components/Confetti'
 
 function formatNumber(n: number | null | undefined): string {
   if (typeof n !== 'number' || Number.isNaN(n)) return '—'
@@ -572,28 +571,25 @@ export function DashboardTab() {
       )}
 
       {wins.length > 0 && (
-        <>
-          <Confetti token={`${client.id}:${(activeBilan ?? latest)!.id}`} />
-          <section
-            className="dash-rise rounded-xl border border-green-500/30 bg-gradient-to-br from-green-50 to-gold/10 p-5 shadow-sm"
-            aria-label="Vos progrès"
-          >
-            <div className="flex items-center gap-2 mb-2.5">
-              <PartyPopper size={20} className="text-green-600 shrink-0" />
-              <h3 className="text-marine font-bold text-base">Belle progression !</h3>
-            </div>
-            <ul className="space-y-1.5">
-              {wins.map((w, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm text-marine/85">
-                  <span aria-hidden="true" className="shrink-0">
-                    {w.icon}
-                  </span>
-                  <span>{w.text}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        </>
+        <section
+          className="dash-rise rounded-xl border border-green-500/30 bg-gradient-to-br from-green-50 to-gold/10 p-5 shadow-sm"
+          aria-label="Vos progrès"
+        >
+          <div className="flex items-center gap-2 mb-2.5">
+            <PartyPopper size={20} className="text-green-600 shrink-0" />
+            <h3 className="text-marine font-bold text-base">Belle progression !</h3>
+          </div>
+          <ul className="space-y-1.5">
+            {wins.map((w, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-marine/85">
+                <span aria-hidden="true" className="shrink-0">
+                  {w.icon}
+                </span>
+                <span>{w.text}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {Hero}
