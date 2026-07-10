@@ -10,17 +10,10 @@ import { reportsService } from '../../../services/reports'
 import { SendBilanModal } from '../SendBilanModal'
 import { formatBilanDate } from '../bilanFields'
 import { computeAge, type NormsType } from '../../../lib/norms'
-import { computeBilan, type BilanComputed, type BilanProfile } from '../../../lib/bilan-computed'
+import { computeBilan, type BilanProfile } from '../../../lib/bilan-computed'
 import { fitnessAge } from '../../../lib/fitness-age'
-import {
-  bodyFatGoal,
-  estimateMacros,
-  weeksToGoal,
-  dailyDeficitForRate,
-  weeklyLossFromDeficit,
-  DEFAULT_RATE_KG_PER_WEEK
-} from '../../../lib/nutrition'
-import { dualWeight, estimatedGoalDate } from '../../../lib/objectif-format'
+import { dualWeight } from '../../../lib/objectif-format'
+import { buildObjectif } from '../../../lib/objectif'
 import { gatherBilanMetrics } from '../../../lib/ai-metrics'
 import { AIAnalysisPanel } from '../dashboard/AIAdvicePanel'
 import { ScoreDonut } from '../dashboard/ScoreDonut'
@@ -714,41 +707,6 @@ function Toast({ message }: { message: string }) {
 // ── Objectif chiffré (miroir du rapport) ──────────────────────────────────────
 /** Construit le résumé d'objectif à partir de la config nutrition du client et du
  *  bilan actif. `null` si le module est désactivé ou le calcul impossible. */
-function buildObjectif(
-  client: Client,
-  data: BilanData,
-  computed: BilanComputed,
-  age: number | null,
-  startDateIso: string
-) {
-  if (!client.nutritionEnabled || client.nutritionTargetBodyFat == null) return null
-  const weightKg = typeof data.poids_kg === 'number' ? data.poids_kg : null
-  const bodyFatPct =
-    computed.pourcentageGrasDurnin ?? (typeof data.pourcentage_gras === 'number' ? data.pourcentage_gras : null)
-  const goal = bodyFatGoal(weightKg, bodyFatPct, client.nutritionTargetBodyFat)
-  if (!goal) return null
-  const rate = client.nutritionRateKgPerWeek ?? DEFAULT_RATE_KG_PER_WEEK
-  const macros = client.nutritionActivityLevel
-    ? estimateMacros({
-        weightKg,
-        heightCm: typeof data.taille_cm === 'number' ? data.taille_cm : null,
-        age,
-        sex: client.sex,
-        activity: client.nutritionActivityLevel,
-        leanKg: goal.leanKg,
-        dailyDeficitKcal: dailyDeficitForRate(rate),
-        proteinPerLbLean: client.nutritionProteinPerLbLean,
-        fatMaxG: client.nutritionFatMaxG,
-        targetKcalOverride: client.nutritionTargetKcal
-      })
-    : null
-  const manualKcal = client.nutritionTargetKcal
-  const effectiveRate = manualKcal != null && macros ? weeklyLossFromDeficit(macros.tdee - macros.targetKcal) : rate
-  const atGoal = goal.toLoseKg <= 0.3
-  const weeks = atGoal ? null : weeksToGoal(goal.toLoseKg, effectiveRate)
-  const goalDate = weeks != null ? estimatedGoalDate(startDateIso, weeks) : null
-  return { goal, target: client.nutritionTargetBodyFat, macros, weeks, goalDate, atGoal }
-}
 
 type ObjectifSummary = NonNullable<ReturnType<typeof buildObjectif>>
 

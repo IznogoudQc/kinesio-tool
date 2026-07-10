@@ -60,12 +60,32 @@ export async function generateInteractiveReportHtml(clientId: string): Promise<s
     }))
     .reverse()
 
+  const kinesiologist = readSetting('profile.name') ?? 'Marie-Eve Riendeau'
+
   const data = {
-    client: { name: client.name, sex: client.sex, birthdate: client.birthdate },
+    client: {
+      name: client.name,
+      sex: client.sex,
+      birthdate: client.birthdate,
+      unitWeight: client.unitWeight,
+      // Module « objectif chiffré & nutrition » — la section ne s'affiche que
+      // si Marie-Eve l'a activé pour ce client.
+      nutritionEnabled: client.nutritionEnabled,
+      nutritionTargetBodyFat: client.nutritionTargetBodyFat,
+      nutritionActivityLevel: client.nutritionActivityLevel,
+      nutritionRateKgPerWeek: client.nutritionRateKgPerWeek,
+      nutritionProteinPerLbLean: client.nutritionProteinPerLbLean,
+      nutritionFatMaxG: client.nutritionFatMaxG,
+      nutritionTargetKcal: client.nutritionTargetKcal
+    },
     avatarDataUrl: await avatarDataUrl(client.avatarFilename),
     bilans: list,
     norms: readSetting('categorization_norms') === 'cpafla' ? 'cpafla' : 'acsm',
-    kinesiologist: readSetting('profile.name') ?? 'Marie-Eve Riendeau',
+    kinesiologist,
+    // Le mot de la fin, comme dans le PDF. `data.notes` du bilan = observations
+    // que Marie-Eve destine au client (à ne pas confondre avec ses notes privées).
+    signature: readSetting('profile.signature') ?? `${kinesiologist}
+Kinésiologue`,
     generatedAt: new Date().toISOString()
   }
 

@@ -3,6 +3,7 @@ import {
   CATEGORY_LABELS,
   computeAge,
   getCategorization,
+  getNextCategoryTarget,
   getPercentile,
   type Category,
   type NormsType,
@@ -12,6 +13,10 @@ import { computeBilan, type BilanComputed, type BilanProfile, type CompositeScor
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../lib/synthesisBilan'
 import { detectWins } from '../lib/dashboard-wins'
 import { fitnessAge } from '../lib/fitness-age'
+import { buildActionPlan, formatNextTarget } from '../lib/action-plan'
+import { buildObjectif } from '../lib/objectif'
+import { dualWeight } from '../lib/objectif-format'
+import { ACTIVITY_LABELS } from '../lib/nutrition'
 import { useCountUp } from '../lib/useCountUp'
 import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
@@ -25,12 +30,27 @@ import { BilanSelectorPills } from '../pages/client/dashboard/BilanSelectorPills
  *  tout élément privé : ni notes cliniques, ni conseils IA, ni signaux
  *  cliniques à surveiller (voir ADR 0019). */
 export interface StandaloneData {
-  client: { name: string; sex: 'F' | 'M' | null; birthdate: string | null }
+  client: {
+    name: string
+    sex: 'F' | 'M' | null
+    birthdate: string | null
+    unitWeight: 'kg' | 'lb'
+    nutritionEnabled: boolean
+    nutritionTargetBodyFat: number | null
+    nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
+    nutritionRateKgPerWeek: number | null
+    nutritionProteinPerLbLean: number | null
+    nutritionFatMaxG: number | null
+    nutritionTargetKcal: number | null
+  }
   /** Photo du client en data URI, ou `null` — le fichier reste autonome. */
   avatarDataUrl: string | null
   bilans: Bilan[]
   norms: NormsType
   kinesiologist: string
+  /** Bloc de signature du PDF (« Marie-Eve Riendeau 
+ Kinésiologue »). */
+  signature: string
   generatedAt: string
 }
 
@@ -131,6 +151,8 @@ function Measure({
 
   const percentile = has && age !== null && sex ? getPercentile(test, value as number, age, sex, norms) : null
   const category: Category | null = has && age !== null && sex ? getCategorization(test, value as number, age, sex, norms) : null
+  // « +4 ml/kg/min pour atteindre Excellent » — la cible devient concrète.
+  const next = has && age !== null && sex ? getNextCategoryTarget(test, value as number, age, sex, norms) : null
 
   return (
     <div className="border-t border-marine/10 py-6">
@@ -157,6 +179,22 @@ function Measure({
         <p className="mt-3 text-sm text-marine/55">
           <span className="font-semibold text-marine">{CATEGORY_LABELS[category]}</span> — mieux que{' '}
           {Math.round(percentile)} % des personnes de votre âge et de votre sexe.
+        </p>
+      )}
+
+      {next && (
+        <p className="mt-2 text-sm text-marine/70">
+          {next.isAtTop ? (
+            <span className="font-semibold text-gold-dark">Niveau maximal atteint — l’objectif devient de le maintenir.</span>
+          ) : (
+            <>
+              <span className="font-semibold tabular-nums text-marine">
+                {next.delta >= 0 ? '+' : ''}
+                {next.delta.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} {unit}
+              </span>{' '}
+              pour atteindre « {CATEGORY_LABELS[next.nextCategory]} ».
+            </>
+          )}
         </p>
       )}
     </div>
@@ -337,6 +375,10 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   const fitAge = fitnessAge(computed.vo2max ?? (typeof activeData.vo2max === 'number' ? activeData.vo2max : null), client.sex)
 
   const wins = detectWins({ computed, previous: previousComputed, bilans, currentData: activeData })
+  const plan = buildActionPlan(activeData, profile)
+  const objectif = buildObjectif(client, activeData, computed, age, activeBilan.date)
+  // Observations que Marie-Eve destine au client (≠ ses notes cliniques privées).
+  const motDuKine = typeof activeData.notes === 'string' ? activeData.notes.trim() : ''
 
   const historyOf = (key: keyof BilanData): (number | null)[] =>
     [...bilans].reverse().map(b => {
@@ -523,6 +565,132 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
             compareBilan={compareBilan}
             compareLabel={compareShortLabel}
           />
+        </Section>
+      )}
+
+      {objectif && (
+        <Section
+          eyebrow="Votre objectif"
+          title={objectif.atGoal ? 'Vous y êtes.' : `Cap sur ${objectif.target} % de gras`}
+          lead={
+            objectif.atGoal
+              ? 'Vous avez atteint la cible de composition fixée avec votre kinésiologue. L’enjeu devient de la tenir dans le temps.'
+              : 'Une cible chiffrée, une échéance réaliste, et de quoi vous y rendre sans perdre de muscle.'
+          }
+        >
+          {!objectif.atGoal && (
+            <div className="grid gap-8 sm:grid-cols-3">
+              <div>
+                <p className="ed-eyebrow text-marine/40">À perdre</p>
+                <p className="ed-display mt-1 text-4xl tabular-nums text-marine">
+                  {dualWeight(objectif.goal.toLoseKg, client.unitWeight)}
+                </p>
+              </div>
+              {objectif.weeks !== null && (
+                <div>
+                  <p className="ed-eyebrow text-marine/40">Durée estimée</p>
+                  <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{objectif.weeks} sem.</p>
+                </div>
+              )}
+              {objectif.goalDate && (
+                <div>
+                  <p className="ed-eyebrow text-marine/40">Échéance</p>
+                  <p className="ed-display mt-1 text-4xl text-marine">{objectif.goalDate}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {objectif.macros && (
+            <div className="mt-10 border-t border-marine/10 pt-8">
+              <p className="ed-eyebrow text-marine/40">
+                Repères alimentaires
+                {client.nutritionActivityLevel ? ` · ${ACTIVITY_LABELS[client.nutritionActivityLevel]}` : ''}
+              </p>
+              <div className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-4">
+                {[
+                  { label: 'Calories', value: Math.round(objectif.macros.targetKcal), unit: 'kcal / jour' },
+                  { label: 'Protéines', value: Math.round(objectif.macros.proteinG), unit: 'g' },
+                  { label: 'Lipides', value: Math.round(objectif.macros.fatG), unit: 'g' },
+                  { label: 'Glucides', value: Math.round(objectif.macros.carbsG), unit: 'g' }
+                ].map(m => (
+                  <div key={m.label}>
+                    <p className="ed-eyebrow text-marine/40">{m.label}</p>
+                    <p className="ed-display mt-1 text-3xl tabular-nums text-marine">
+                      {m.value.toLocaleString('fr-CA')}
+                    </p>
+                    <p className="text-xs text-marine/40">{m.unit}</p>
+                  </div>
+                ))}
+              </div>
+              <p className="ed-prose mt-5 text-sm text-marine/50">
+                Ce sont des repères indicatifs, calculés à partir de votre masse maigre et de votre niveau
+                d’activité. Ils ne remplacent pas l’avis d’une nutritionniste.
+              </p>
+            </div>
+          )}
+        </Section>
+      )}
+
+      {(plan.forces.length > 0 || plan.priorities.length > 0 || motDuKine) && (
+        <Section
+          eyebrow="Et maintenant ?"
+          title="Vos forces, et par où continuer"
+          lead="Un bilan ne sert à rien s’il ne dit pas quoi faire ensuite. Voici ce sur quoi vous appuyer, et les deux ou trois choses qui feront la plus grande différence."
+          tone="white"
+        >
+          {plan.forces.length > 0 && (
+            <div className="mb-12">
+              <p className="ed-eyebrow mb-4 text-gold-dark">Vos forces</p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {plan.forces.map(f => (
+                  <div key={f.metric.key as string} className="rounded-lg border border-marine/10 p-4">
+                    <p className="text-sm font-semibold text-marine">{f.metric.label}</p>
+                    <p className="mt-1 text-sm text-marine/55">
+                      {f.value.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} {f.metric.unit} ·{' '}
+                      {CATEGORY_LABELS[f.category]}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {plan.priorities.length > 0 && (
+            <div>
+              <p className="ed-eyebrow mb-4 text-gold-dark">Vos priorités</p>
+              <ol className="space-y-8">
+                {plan.priorities.map((p, i) => (
+                  <li key={p.metric.key as string} className="flex gap-5">
+                    <span className="ed-display flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold text-lg font-bold text-marine">
+                      {i + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="ed-display text-xl text-marine">{p.metric.label}</p>
+                      <p className="ed-prose mt-1.5 text-base text-marine/65">{p.advice}</p>
+                      {formatNextTarget(p) && (
+                        <p className="mt-2 text-sm font-semibold text-marine">Objectif : {formatNextTarget(p)}</p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {plan.priorities.length === 0 && plan.forces.length > 0 && (
+            <p className="ed-prose text-base text-marine/65">
+              Aucun point faible marqué — beau travail. Maintenez vos habitudes actuelles.
+            </p>
+          )}
+
+          {motDuKine && (
+            <div className="mt-14 rounded-xl bg-cream p-8 sm:p-10">
+              <p className="ed-eyebrow text-gold-dark">Le mot de votre kinésiologue</p>
+              <p className="ed-prose mt-4 whitespace-pre-line text-base leading-relaxed text-marine">{motDuKine}</p>
+              <p className="mt-6 whitespace-pre-line text-sm italic text-marine/60">{data.signature}</p>
+            </div>
+          )}
         </Section>
       )}
 

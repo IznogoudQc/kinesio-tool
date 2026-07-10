@@ -10,13 +10,13 @@
  *  P90 sert à l'interpolation fine du percentile (≥80) et au delta vs moyenne.
  */
 
-import { getAcsmRange } from './acsm'
-import { getCpaflaRange } from './cpafla'
-import { getClinicalRange } from './clinical'
-import type { Category, NormPercentiles, NormRange, NormsType, TestKey } from './types'
+import { getAcsmRange } from './acsm.ts'
+import { getCpaflaRange } from './cpafla.ts'
+import { getClinicalRange } from './clinical.ts'
+import type { Category, NormPercentiles, NormRange, NormsType, TestKey } from './types.ts'
 
-export type { Category, NormsType, TestKey, NormRange, NormPercentiles } from './types'
-export { CATEGORY_LABELS, CATEGORY_COLORS, DEFAULT_NORMS } from './types'
+export type { Category, NormsType, TestKey, NormRange, NormPercentiles } from './types.ts'
+export { CATEGORY_LABELS, CATEGORY_COLORS, DEFAULT_NORMS } from './types.ts'
 
 function getRange(test: TestKey, age: number, sex: 'F' | 'M', norms: NormsType): NormRange | null {
   // Les seuils cliniques (PA, FC repos) priment et sont indépendants du jeu de

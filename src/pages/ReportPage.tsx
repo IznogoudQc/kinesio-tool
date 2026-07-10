@@ -31,6 +31,7 @@ import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { classifyBloodPressure } from '../lib/norms/clinical'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
+import { RECO } from '../lib/action-plan'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { fitnessAge } from '../lib/fitness-age'
@@ -106,23 +107,6 @@ const METRICS: MetricDef[] = [
 const METRIC_BY_KEY: Partial<Record<keyof BilanData, MetricDef>> = Object.fromEntries(
   METRICS.map(m => [m.key, m])
 )
-
-/** Recommandations courtes génériques, par métrique — plan d'action. */
-const RECO: Partial<Record<keyof BilanData, string>> = {
-  vo2max: 'Intégrez 2 à 3 séances de cardio par semaine (continu ou par intervalles).',
-  pourcentage_gras: 'Associez un léger déficit calorique à de la musculation pour préserver la masse maigre.',
-  imc: 'Visez une perte de poids progressive (≈ 0,5 kg/semaine) par l’alimentation et l’activité.',
-  tour_taille_cm: 'Le tour de taille répond bien au cardio régulier et à la réduction des sucres ajoutés.',
-  pushups: 'Travaillez les pompes 3×/semaine en séries courtes, en progressant graduellement.',
-  situps: 'Renforcez la sangle abdominale en alternant redressements et gainage.',
-  saut_vertical_cm: 'Ajoutez des exercices de pliométrie (sauts, fentes sautées) à votre routine.',
-  puissance_jambes_watts: 'Les squats et le travail explosif des jambes amélioreront votre puissance.',
-  flexion_tronc_cm: 'Étirez quotidiennement les ischio-jambiers et le bas du dos pour gagner en souplesse.',
-  endurance_dos_sec: 'Le gainage dorsal (Sorensen, superman) renforce l’endurance des muscles du dos.',
-  pa_systolique: 'Réduisez le sel, gérez le stress et restez actif pour faire baisser la pression.',
-  pa_diastolique: 'Activité régulière, sommeil et modération de l’alcool aident à abaisser la diastolique.',
-  fc_repos: 'Un cœur entraîné bat plus lentement au repos — le cardio régulier le renforce.'
-}
 
 /** Phrase explicative affichée sous chaque métrique, une par catégorie. */
 const EXPLANATION_BY_CATEGORY: Record<Category, string> = {

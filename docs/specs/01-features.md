@@ -642,6 +642,32 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.97 — Le document client dit enfin quoi faire)
+
+Le document interactif **diagnostiquait sans rien prescrire** : le client apprenait qu'il était au 58ᵉ
+percentile, puis refermait le fichier. Le PDF, lui, contenait un plan d'action et le mot de Marie-Eve — le
+document HTML les avait perdus. Trois ajouts.
+
+**🎯 Section de clôture « Vos forces, et par où continuer »** — jusqu'à 3 forces (Très bien / Excellent), puis
+2 à 3 **priorités numérotées** tirées des domaines les plus faibles, chacune avec sa recommandation et son
+objectif chiffré (« ≥ 25 cm pour atteindre Acceptable »). Puis **le mot du kinésiologue** (les observations du
+bilan) et sa signature.
+
+**⬆️ L'écart vers le niveau suivant** sous chaque mesure : « +4 ml/kg/min pour atteindre Excellent »,
+« −2 cm pour atteindre Bien », ou « Niveau maximal atteint » quand il n'y a plus de marche.
+
+**🥗 Objectif chiffré et macros** — si le module nutrition est activé pour ce client : la cible de % de gras,
+les livres à perdre, la durée, l'échéance, et les repères alimentaires (calories, protéines, lipides,
+glucides) avec la mention qu'ils ne remplacent pas une nutritionniste.
+
+**Dette technique remboursée au passage.** Le plan d'action vivait dans `ReportPage`, l'objectif nutrition dans
+`DashboardTab` — deux logiques enfermées dans des composants, impossibles à réutiliser et à tester. Extraites
+en `src/lib/action-plan.ts` (7 tests) et `src/lib/objectif.ts` ; `ReportPage` et `DashboardTab` les consomment
+désormais, donc le PDF, le Dashboard et le document client ne peuvent plus diverger.
+`src/lib/norms/index.ts` importait sans extension, ce qui le rendait inchargeable sous `node --test` — corrigé.
+
+Version : 0.1.96 → 0.1.97.
+
 ## 🐛 Corrigé (v0.1.96 — Choix du bilan illisible sur téléphone)
 
 Dans le document client, la frise de pastilles « Bilan affiché » est une rangée horizontale : sous 640 px elle
