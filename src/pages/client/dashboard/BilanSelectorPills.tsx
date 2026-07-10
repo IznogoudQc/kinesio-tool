@@ -92,7 +92,7 @@ export function BilanSelectorPills({
                   isSynthesisMode ? 'text-gold' : 'text-gold-dark'
                 }`}
               >
-                synthèse
+                à jour
               </span>
             </div>
             <p
@@ -100,7 +100,7 @@ export function BilanSelectorPills({
                 isSynthesisMode ? 'text-cream' : 'text-marine'
               }`}
             >
-              Synthèse
+              Dernières valeurs
             </p>
             <p
               className={`text-xs leading-tight ${
@@ -109,7 +109,7 @@ export function BilanSelectorPills({
             >
               {synthesisLatestDate
                 ? `MAJ ${formatBilanDate(synthesisLatestDate).replace(/^(\d+) /, '$1 ')}`
-                : 'Dernières valeurs'}
+                : 'de tous vos bilans'}
             </p>
           </button>
 

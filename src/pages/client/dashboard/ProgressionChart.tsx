@@ -18,7 +18,7 @@ import { DeltaIndicator } from '../../../components/DeltaIndicator'
 /** `'overall'` est recalculé ; les autres clés sont lues telles quelles dans BilanData. */
 type MetricKey = 'overall' | keyof BilanData
 
-type MetricGroup = 'Synthèse' | 'Composition' | 'Cardio' | 'Musculosquelettique'
+type MetricGroup = 'Vue d’ensemble' | 'Composition' | 'Cardio' | 'Musculosquelettique'
 
 interface Metric {
   key: MetricKey
@@ -32,7 +32,7 @@ interface Metric {
 }
 
 const METRICS: Metric[] = [
-  { key: 'overall', label: 'Score global', unit: '/ 5', group: 'Synthèse' },
+  { key: 'overall', label: 'Score global', unit: '/ 5', group: 'Vue d’ensemble' },
 
   { key: 'poids_kg', label: 'Poids', unit: 'kg', group: 'Composition' },
   { key: 'imc', label: 'IMC', unit: 'kg/m²', group: 'Composition', testKey: 'bmi', lowerIsBetter: true },
@@ -54,7 +54,7 @@ const METRICS: Metric[] = [
   { key: 'endurance_dos_sec', label: 'Endurance du dos', unit: 's', group: 'Musculosquelettique', testKey: 'backEndurance' }
 ]
 
-const GROUP_ORDER: MetricGroup[] = ['Synthèse', 'Composition', 'Cardio', 'Musculosquelettique']
+const GROUP_ORDER: MetricGroup[] = ['Vue d’ensemble', 'Composition', 'Cardio', 'Musculosquelettique']
 
 /** Les reps/W n'ont pas de décimale utile ; l'IMC et le % de gras si. */
 const fmt = (v: number): string => v.toLocaleString('fr-CA', { maximumFractionDigits: 1 })

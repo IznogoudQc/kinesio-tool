@@ -100,7 +100,7 @@ export function MesureSelectorPills({
                   isSynthesisMode ? 'text-gold' : 'text-gold-dark'
                 }`}
               >
-                synthèse
+                à jour
               </span>
             </div>
             <p
@@ -108,14 +108,14 @@ export function MesureSelectorPills({
                 isSynthesisMode ? 'text-cream' : 'text-marine'
               }`}
             >
-              Synthèse
+              Dernières valeurs
             </p>
             <p
               className={`text-xs leading-tight ${
                 isSynthesisMode ? 'text-cream/65' : 'text-marine/55'
               }`}
             >
-              {synthesisLatestDate ? `MAJ ${formatBilanDate(synthesisLatestDate)}` : 'Dernières valeurs'}
+              {synthesisLatestDate ? `MAJ ${formatBilanDate(synthesisLatestDate)}` : 'de tous vos bilans'}
             </p>
           </button>
 

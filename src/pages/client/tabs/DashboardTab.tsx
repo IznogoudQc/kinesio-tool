@@ -324,7 +324,7 @@ export function DashboardTab() {
             {isSynthesisMode ? (
               <>
                 <span className="inline-flex items-center gap-1 text-gold-dark font-medium">
-                  🔬 Synthèse — dernières valeurs disponibles
+                  🔬 Dernières valeurs disponibles
                 </span>
                 {synthesisResult?.latestContributionDate && (
                   <span>
@@ -591,7 +591,7 @@ export function DashboardTab() {
             onClick={() => setSelectedBilanId(null)}
             className="text-gold-dark hover:text-marine underline font-medium text-sm"
           >
-            Revenir à la synthèse
+            Revenir aux dernières valeurs
           </button>
         </div>
       )}

@@ -642,6 +642,23 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.4 — « Synthèse » renommé « Dernières valeurs »)
+
+Le mot « Synthèse » était du jargon : il ne disait pas ce que le mode fait. Il est renommé **« Dernières
+valeurs »** partout où il est visible (frise des bilans du Dashboard, onglet Mesures, document client),
+avec l'eyebrow **« À JOUR »**. Le sous-titre garde « MAJ {date} ».
+
+Le mécanisme est inchangé — c'est purement un renommage. Rappel de ce qu'il fait (ADR 0009, non modifiée) :
+pour **chaque mesure**, il prend la dernière valeur connue parmi tous les bilans. Indispensable parce que les
+bilans sont souvent **partiels** : sans lui, une mesure non prise le jour du dernier bilan afficherait « — »
+alors qu'elle existe dans un bilan précédent.
+
+Au passage, le groupe « Synthèse » du sélecteur de mesure du graphique de progression (qui désignait autre
+chose — le score global) devient **« Vue d'ensemble »**, pour ne pas garder deux sens du même mot.
+L'aperçu temps réel du formulaire de saisie garde « Synthèse » (concept distinct : résumé calculé en direct).
+
+Version : 0.2.3 → 0.2.4.
+
 ## ✅ Fait (v0.2.3 — Document client aux couleurs de la clinique + forêt)
 
 Le document HTML envoyé au client reprend maintenant l'identité visuelle du site de la clinique

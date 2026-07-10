@@ -514,7 +514,7 @@ export function MesuresOverview() {
           {activeView?.mode === 'synthesis' && (
             <div className="mt-2 inline-flex items-center gap-1.5 text-gold-dark text-sm">
               <Sparkles size={13} />
-              <span className="font-medium">Synthèse — dernières valeurs disponibles</span>
+              <span className="font-medium">Dernières valeurs disponibles</span>
               <span className="text-marine/55">
                 · MAJ {activeView.circDate ? formatBilanDate(activeView.circDate) : '—'}
                 {' '}· {totalSessions} mesures agrégées

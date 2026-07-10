@@ -276,7 +276,7 @@ function Hero({
       ? `Votre capacité aérobie est celle d’une personne de ${fitAge} ans — ${age - fitAge} an${age - fitAge > 1 ? 's' : ''} de moins que votre âge réel.`
       : computed.overall.category
         ? `Votre condition physique globale est jugée « ${CATEGORY_LABELS[computed.overall.category].toLowerCase()} » pour votre âge et votre sexe.`
-        : 'Voici la synthèse de vos mesures.'
+        : 'Voici le portrait de vos dernières mesures.'
 
   return (
     <header className="ed-hero relative flex min-h-[100svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
@@ -420,7 +420,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
                 onChange={e => setSelectedId(e.target.value === 'synthesis' ? null : e.target.value)}
                 className="mt-1.5 w-full rounded-md border border-cream-dark bg-white px-3 py-2.5 text-base font-medium text-marine focus:outline-none focus:ring-2 focus:ring-gold/50"
               >
-                <option value="synthesis">Synthèse — vos mesures les plus récentes</option>
+                <option value="synthesis">Dernières valeurs — tous vos bilans</option>
                 {bilans.map(b => (
                   <option key={b.id} value={b.id}>
                     {formatBilanDate(b.date)}
