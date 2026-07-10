@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🐛 Corrigé (v0.1.98 — Le « mot au client » était introuvable)
+
+Le mot du kinésiologue affiché dans le PDF et le document HTML vient du champ `notes` du bilan. Ce champ
+existait bel et bien — formulaire de bilan, section « Objectif, notes et observations » — mais s'appelait
+**« Observations / conseils »**, sans rien indiquer de sa destination. À côté, l'onglet **Notes** contient des
+notes *privées* qui ne sortent jamais. Deux champs qui se ressemblent, aucun moyen de les distinguer.
+
+Le champ est renommé **« Mot au client (observations et conseils) »** et porte désormais une indication :
+
+> Adressé au client : apparaît sous « Le mot de votre kinésiologue » dans le rapport PDF et le document
+> interactif envoyés par courriel. Vos notes privées vont dans l'onglet Notes — elles ne sortent jamais.
+
+Aucune donnée n'est touchée (la clé reste `notes`). Version : 0.1.97 → 0.1.98.
+
 ## ✅ Fait (v0.1.97 — Le document client dit enfin quoi faire)
 
 Le document interactif **diagnostiquait sans rien prescrire** : le client apprenait qu'il était au 58ᵉ

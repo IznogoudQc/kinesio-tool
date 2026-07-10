@@ -132,7 +132,12 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
         type: 'textarea',
         hint: 'Dans les mots du client — apparaît en tête du rapport (ex. « perdre 10 kg », « courir un 10 km »)'
       },
-      { key: 'notes', label: 'Observations / conseils', type: 'textarea' }
+      {
+        key: 'notes',
+        label: 'Mot au client (observations et conseils)',
+        type: 'textarea',
+        hint: 'Adressé au client : apparaît sous « Le mot de votre kinésiologue » dans le rapport PDF et le document interactif envoyés par courriel. Vos notes privées vont dans l’onglet Notes — elles ne sortent jamais.'
+      }
     ]
   }
 ]
