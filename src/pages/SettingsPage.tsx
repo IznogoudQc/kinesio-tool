@@ -514,8 +514,20 @@ function TemplateCard() {
             </ul>
           </div>
 
-          <div className="flex items-center gap-4 pt-1">
+          <div className="flex items-center gap-4 pt-1 flex-wrap">
             <SaveButton status={status} />
+            <button
+              type="button"
+              onClick={async () => {
+                const d = await settingsService.getDefaultEmailTemplate()
+                setSubject(d.subject)
+                setBody(d.body)
+              }}
+              className="text-marine/55 hover:text-marine text-sm underline"
+              title="Recharge le texte fourni avec l’application — pensez à enregistrer ensuite"
+            >
+              Rétablir le texte par défaut
+            </button>
             <StatusInline status={status} error={error} />
           </div>
         </form>

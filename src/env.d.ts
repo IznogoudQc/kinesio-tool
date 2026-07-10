@@ -376,6 +376,8 @@ interface Window {
       testSmtpConnection(): Promise<SmtpTestResult>
       getEmailTemplate(): Promise<EmailTemplate>
       setEmailTemplate(data: EmailTemplate): Promise<void>
+      /** Le modèle par défaut de l'app, sans l'enregistrer. */
+      getDefaultEmailTemplate(): Promise<EmailTemplate>
       getCategorizationNorms(): Promise<'acsm' | 'cpafla'>
       setCategorizationNorms(value: 'acsm' | 'cpafla'): Promise<void>
       /** `null` = réglage jamais enregistré → afficher toutes les circonférences. */
@@ -394,6 +396,8 @@ interface Window {
       generatePdf(clientId: string): Promise<string>
       /** Génère le PDF « Barèmes de référence » (route `/baremes`) — retourne le chemin du PDF. */
       generateBaremes(): Promise<string>
+      /** Génère le document HTML interactif du client — retourne le chemin du fichier. */
+      generateInteractiveHtml(clientId: string): Promise<string>
       /** Ouvre un fichier local avec l'application par défaut du système. */
       openPath(filePath: string): Promise<void>
       /** Génère le rapport PDF, l'attache et l'envoie au client par courriel, puis supprime le fichier temp. */

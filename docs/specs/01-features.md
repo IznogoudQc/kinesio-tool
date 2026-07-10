@@ -642,6 +642,26 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.1 — Bouton « Générer HTML » + texte du courriel)
+
+**Bouton « Générer HTML »** à côté de « Générer PDF », dans l'entête du Dashboard. Il produit exactement le
+même document que celui joint au courriel et l'ouvre dans le navigateur par défaut — Marie-Eve voit donc ce
+que verra son client, avant d'envoyer.
+
+**Texte du courriel réécrit.** Deux pièces jointes partent à chaque envoi depuis la v0.1.94, mais le corps du
+message par défaut n'en annonçait qu'une (« Vous trouverez ci-joint votre bilan »). Le nouveau texte les
+présente toutes les deux et dit quoi en faire :
+
+> 1. Le rapport PDF — la version complète, à consulter, imprimer ou conserver.
+> 2. Le document interactif (fichier .html) — ouvrez-le dans votre navigateur en double-cliquant dessus.
+>    Vous pourrez y explorer vos résultats, passer d'un bilan à l'autre et suivre votre progression dans le
+>    temps. Il fonctionne sans connexion Internet, et aucune de vos données n'est transmise : tout est
+>    contenu dans le fichier.
+
+Le modèle reste entièrement modifiable dans **Paramètres → Template d'email**, qui gagne un bouton
+**« Rétablir le texte par défaut »** — sans lui, une kinésiologue ayant déjà enregistré l'ancien texte
+n'aurait jamais vu le nouveau. Version : 0.2.0 → 0.2.1.
+
 ## 🎉 v0.2.0 — Premier palier
 
 L'application couvre maintenant le cycle complet du travail de Marie-Eve : saisir ou importer un bilan,

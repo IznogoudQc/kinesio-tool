@@ -64,11 +64,17 @@ const DEFAULT_PROFILE = {
   signature: 'Marie-Eve Riendeau\nKinésiologue'
 }
 
+// Chaque envoi porte DEUX pièces jointes (voir `reports:send-email`) : le rapport
+// PDF et le document interactif. Le texte par défaut les annonce et dit quoi en faire.
 const DEFAULT_TEMPLATE = {
   subject: 'Bilan de forme physique - {{client_name}}',
   body:
     'Bonjour {{client_name}},\n\n' +
-    'Vous trouverez ci-joint votre bilan de forme physique daté du {{date}}.\n\n' +
+    'Vous trouverez ci-joint votre bilan de forme physique daté du {{date}}, sous deux formes.\n\n' +
+    '1. Le rapport PDF — la version complète, à consulter, imprimer ou conserver.\n\n' +
+    '2. Le document interactif (fichier .html) — ouvrez-le dans votre navigateur en double-cliquant dessus. ' +
+    'Vous pourrez y explorer vos résultats, passer d\'un bilan à l\'autre et suivre votre progression dans le temps. ' +
+    'Il fonctionne sans connexion Internet, et aucune de vos données n\'est transmise : tout est contenu dans le fichier.\n\n' +
     'N\'hésitez pas à me contacter pour toute question.\n\n' +
     '{{signature}}'
 }
@@ -162,6 +168,9 @@ export function registerSettingsHandlers(): void {
       return DEFAULT_TEMPLATE
     }
   })
+
+  /** Le texte par défaut, sans l'enregistrer — sert au bouton « Rétablir ». */
+  ipcMain.handle('settings:template:default', () => DEFAULT_TEMPLATE)
 
   ipcMain.handle('settings:template:set', async (_e, data: unknown) => {
     const validated = EmailTemplateSchema.parse(data)

@@ -30,6 +30,12 @@ export function registerReportsHandlers(): void {
   })
 
   // Génère le PDF « Barèmes de référence » (aucun paramètre — lit le code).
+  // Document interactif seul — même fichier que celui joint au courriel.
+  ipcMain.handle('reports:generate-html', async (_e, clientId: unknown) => {
+    const id = ClientIdSchema.parse(clientId)
+    return generateInteractiveReportHtml(id)
+  })
+
   ipcMain.handle('reports:generate-baremes', async () => {
     return generateBaremesPdf()
   })

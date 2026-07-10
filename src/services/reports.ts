@@ -14,6 +14,11 @@ export const reportsService = {
     return window.api.reports.generateBaremes()
   },
 
+  /** Génère le document HTML interactif du client (le même que celui joint au courriel). */
+  async generateInteractiveHtml(clientId: string): Promise<string> {
+    return window.api.reports.generateInteractiveHtml(clientId)
+  },
+
   /** Ouvre un PDF (ou tout autre fichier) avec l'application par défaut du système. */
   async openPdf(filePath: string): Promise<void> {
     return window.api.reports.openPath(filePath)

@@ -86,6 +86,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('settings:template:get'),
     setEmailTemplate: (data: { subject: string; body: string }) =>
       ipcRenderer.invoke('settings:template:set', data),
+    getDefaultEmailTemplate: () =>
+      ipcRenderer.invoke('settings:template:default'),
     getCategorizationNorms: () =>
       ipcRenderer.invoke('settings:norms:get'),
     setCategorizationNorms: (value: 'acsm' | 'cpafla') =>
@@ -108,6 +110,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('reports:generate-pdf', clientId),
     generateBaremes: () =>
       ipcRenderer.invoke('reports:generate-baremes'),
+    generateInteractiveHtml: (clientId: string) =>
+      ipcRenderer.invoke('reports:generate-html', clientId),
     openPath: (filePath: string) =>
       ipcRenderer.invoke('reports:open-path', filePath),
     sendEmail: (data: { clientId: string; subject: string; body: string }) =>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Calculator, FileText, FileUp, Info, Mail, PartyPopper, Ruler } from 'lucide-react'
+import { Calculator, FileText, FileUp, Globe, Info, Mail, PartyPopper, Ruler } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
 import { ClientAvatar } from '../../../components/ClientAvatar'
 import { bilansService } from '../../../services/bilans'
@@ -53,6 +53,7 @@ export function DashboardTab() {
   const [norms, setNorms] = useState<NormsType>('acsm')
   const [showModal, setShowModal] = useState(false)
   const [generating, setGenerating] = useState(false)
+  const [generatingHtml, setGeneratingHtml] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   const setSelectedBilanId = useCallback(
@@ -209,6 +210,21 @@ export function DashboardTab() {
     }
   }
 
+  async function handleGenerateHtml() {
+    setGeneratingHtml(true)
+    try {
+      const path = await reportsService.generateInteractiveHtml(client.id)
+      // `openPath` lance le navigateur par défaut : c'est exactement ce que fera
+      // le client en ouvrant la pièce jointe.
+      await reportsService.openPdf(path)
+      setToast('Document interactif généré')
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : 'Erreur lors de la génération du document.')
+    } finally {
+      setGeneratingHtml(false)
+    }
+  }
+
   // ── État A : aucun bilan ──────────────────────────────────────────────────
   if (count === 0 || !latest) {
     return (
@@ -339,6 +355,16 @@ export function DashboardTab() {
           >
             <FileText size={15} />
             {generating ? 'Génération…' : 'Générer PDF'}
+          </button>
+          <button
+            type="button"
+            onClick={handleGenerateHtml}
+            disabled={generatingHtml}
+            title="Ouvre le document interactif dans votre navigateur — le même que celui joint au courriel"
+            className="inline-flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Globe size={15} />
+            {generatingHtml ? 'Génération…' : 'Générer HTML'}
           </button>
           <button
             type="button"

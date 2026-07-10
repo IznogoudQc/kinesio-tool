@@ -35,6 +35,11 @@ export const settingsService = {
     return window.api.settings.setEmailTemplate(data)
   },
 
+  /** Le modèle par défaut de l'app — ne l'enregistre pas. */
+  async getDefaultEmailTemplate(): Promise<EmailTemplate> {
+    return window.api.settings.getDefaultEmailTemplate()
+  },
+
   async getCategorizationNorms(): Promise<'acsm' | 'cpafla'> {
     return window.api.settings.getCategorizationNorms()
   },
