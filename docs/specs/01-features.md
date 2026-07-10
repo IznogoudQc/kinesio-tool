@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🐛 Corrigé (v0.1.100 — « 7.6000000000000005 sem. »)
+
+Le document client affichait la durée d'objectif brute. `weeksToGoal` est une division (6 kg ÷ 0,79 kg/sem),
+donc la valeur traîne un artefact binaire — et une demi-semaine n'a de toute façon aucun sens pour un client.
+
+Le Dashboard et le PDF arrondissaient déjà chacun de leur côté (`Math.round(weeks)`) ; le document, lui, avait
+été oublié. Plutôt que d'exiger de chaque appelant qu'il y pense, l'arrondi devient un helper partagé
+`formatWeeks` (`src/lib/objectif-format.ts`, 5 tests) : pas de décimale, plancher à 1 semaine, tiret si la
+valeur est absente ou non finie. La valeur exacte reste utilisée pour calculer l'échéance.
+
+`objectif-format.ts` importait `./units` sans extension, ce qui le rendait inchargeable sous `node --test` —
+corrigé, et le module est maintenant couvert.
+
+Version : 0.1.99 → 0.1.100.
+
 ## 🐛 Corrigé (v0.1.99 — Profil musculo illisible sur téléphone)
 
 Les barres du profil musculosquelettique reposaient sur des colonnes à largeur fixe (`w-28`, `w-24`, `w-20`).

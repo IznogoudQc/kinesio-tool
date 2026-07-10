@@ -15,7 +15,7 @@ import { detectWins } from '../lib/dashboard-wins'
 import { fitnessAge } from '../lib/fitness-age'
 import { buildActionPlan, formatNextTarget } from '../lib/action-plan'
 import { buildObjectif } from '../lib/objectif'
-import { dualWeight } from '../lib/objectif-format'
+import { dualWeight, formatWeeks } from '../lib/objectif-format'
 import { ACTIVITY_LABELS } from '../lib/nutrition'
 import { useCountUp } from '../lib/useCountUp'
 import { formatBilanDate } from '../pages/client/bilanFields'
@@ -589,7 +589,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
               {objectif.weeks !== null && (
                 <div>
                   <p className="ed-eyebrow text-marine/40">Durée estimée</p>
-                  <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{objectif.weeks} sem.</p>
+                  <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{formatWeeks(objectif.weeks)} sem.</p>
                 </div>
               )}
               {objectif.goalDate && (
