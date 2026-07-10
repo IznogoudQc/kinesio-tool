@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.6 — Statut coloré dans le document client)
+
+Dans le document HTML, le niveau (Excellent, Très bien, Bien, Acceptable, À améliorer) était en gris — il
+fallait lire pour savoir où on se situe. Chaque statut porte maintenant **sa couleur** (rouge → vert foncé,
+les mêmes que dans l'app), avec un **petit dégradé** dans cette teinte : la couleur seule dit le niveau d'un
+coup d'œil. Appliqué aux mesures de composition (IMC, % gras, tour de taille…) et aux 5 scores composites.
+Couleurs semantiques choisies pour rester lisibles sur le fond crème, distinctes de l'or de marque.
+Version : 0.2.5 → 0.2.6.
+
 ## 🎨 v0.2.5 — Forêt en gauche→droite sur téléphone aussi
 
 Sur téléphone, la forêt du hero occupait le bas (dégradé haut→bas). Elle reprend le **même sens gauche→droite

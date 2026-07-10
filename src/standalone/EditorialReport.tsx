@@ -176,10 +176,11 @@ function Measure({
         </div>
       )}
 
+      {category && <CategoryCue category={category} />}
+
       {category && percentile !== null && (
-        <p className="mt-3 text-sm text-marine/55">
-          <span className="font-semibold text-marine">{CATEGORY_LABELS[category]}</span> — mieux que{' '}
-          {Math.round(percentile)} % des personnes de votre âge et de votre sexe.
+        <p className="mt-1.5 text-sm text-marine/55">
+          Mieux que {Math.round(percentile)} % des personnes de votre âge et de votre sexe.
         </p>
       )}
 
@@ -198,6 +199,36 @@ function Measure({
           )}
         </p>
       )}
+    </div>
+  )
+}
+
+// ── Statut : couleur + petit dégradé ─────────────────────────────────────────
+
+// Couleur de chaque statut — reprend celles de l'app (rouge → vert foncé), en
+// versions assez soutenues pour rester lisibles sur le fond crème.
+const CAT_HEX: Record<Category, string> = {
+  A_AMELIORER: '#dc2626',
+  ACCEPTABLE: '#ea580c',
+  BIEN: '#ca8a04',
+  TRES_BIEN: '#16a34a',
+  EXCELLENT: '#15803d'
+}
+
+/** Repère de statut : petit dégradé dans la couleur de la catégorie + libellé
+ *  coloré. La couleur seule dit d'un coup d'œil où on se situe. */
+function CategoryCue({ category }: { category: Category }) {
+  const c = CAT_HEX[category]
+  return (
+    <div className="mt-3.5 flex items-center gap-2.5">
+      <span
+        aria-hidden="true"
+        className="h-2 w-16 shrink-0 rounded-full"
+        style={{ background: `linear-gradient(90deg, ${c}1f, ${c})` }}
+      />
+      <span className="text-sm font-semibold" style={{ color: c }}>
+        {CATEGORY_LABELS[category]}
+      </span>
     </div>
   )
 }
@@ -227,7 +258,16 @@ function CompositeRow({ label, subtitle, score }: { label: string; subtitle: str
           {shown === null ? '—' : shown.toFixed(1)}
           <span className="text-base text-marine/35"> / 5</span>
         </p>
-        {score.category && <p className="mt-0.5 text-sm text-marine/55">{CATEGORY_LABELS[score.category]}</p>}
+        {score.category && (
+          <p className="mt-1 flex items-center justify-end gap-2 text-sm font-semibold" style={{ color: CAT_HEX[score.category] }}>
+            <span
+              aria-hidden="true"
+              className="h-1.5 w-10 rounded-full"
+              style={{ background: `linear-gradient(90deg, ${CAT_HEX[score.category]}1f, ${CAT_HEX[score.category]})` }}
+            />
+            {CATEGORY_LABELS[score.category]}
+          </p>
+        )}
       </div>
     </div>
   )
