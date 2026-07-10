@@ -642,6 +642,30 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.95 — Le document client devient éditorial)
+
+Le document interactif de la v0.1.94 était une **copie du Dashboard de Marie-Eve** : une grille pensée pour son
+écran large, alors que le client l'ouvre sur son téléphone. Refonte complète en mise en page **éditoriale**.
+
+- **Ouverture pleine page** sur fond marine : le prénom du client, une phrase qui s'adapte aux données
+  (« Denise, vous avez progressé. » / « vous tenez le cap. » / « faisons le point. » — jamais de reproche),
+  son score en chiffre monumental, et l'âge en forme en une ligne.
+- **Colonne unique**, sections alternant crème et blanc, chacune avec son eyebrow, son titre en serif, un texte
+  qui explique la mesure en français simple, puis le graphique. Texte limité à ~65 caractères par ligne.
+- **Typographie** : Georgia en titrage, `system-ui` en texte courant. Aucune police web — elle casserait le
+  hors-ligne. Chiffres en `tabular-nums`.
+- **Or réservé à l'accent** : eyebrows, score du hero, puces des victoires, filet de l'âge en forme.
+- **Apparition au défilement** via IntersectionObserver, neutralisée si `prefers-reduced-motion`.
+- **Feuille d'impression** : hero réduit, fond clair, contrôles masqués.
+- Les percentiles sont reformulés pour un lecteur non technique : « mieux que 58 % des personnes de votre âge
+  et de votre sexe » plutôt que « 58e percentile ».
+
+Corrigé au passage : la frise des bilans faisait **déborder la page latéralement sur téléphone** ; elle défile
+maintenant d'elle-même, et le document verrouille le débordement horizontal.
+
+Toujours zéro élément privé (notes cliniques, IA, signaux) et toujours un seul fichier autonome de ~700 Ko.
+Version : 0.1.94 → 0.1.95.
+
 ## ✅ Fait (v0.1.94 — Document interactif envoyé au client)
 
 Chaque courriel de bilan porte maintenant **deux pièces jointes** : le rapport PDF, et un

@@ -31,8 +31,9 @@ async function avatarDataUrl(filename: string | null): Promise<string | null> {
  * Écrit un document HTML **autonome** (aucune requête réseau) pour un client, et
  * retourne son chemin dans le dossier temporaire.
  *
- * Le document ne contient que ce que le client peut voir : ni notes cliniques,
- * ni conseils IA, ni signaux à surveiller (voir ADR 0019).
+ * Mise en page éditoriale (src/standalone/EditorialReport.tsx). Le document ne
+ * contient que ce que le client peut voir : ni notes cliniques, ni conseils IA,
+ * ni signaux à surveiller (voir ADR 0019).
  */
 export async function generateInteractiveReportHtml(clientId: string): Promise<string> {
   const tpl = templatePath()

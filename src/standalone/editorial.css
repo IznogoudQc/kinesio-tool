@@ -1,0 +1,107 @@
+/* Styles propres au document client. Aucune police web : le fichier doit
+   fonctionner hors ligne, et Georgia est présente sur Windows, macOS et Android. */
+
+.ed-display {
+  font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.ed-eyebrow {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+/* Le chiffre monumental du hero. `clamp` évite qu'il déborde sur téléphone. */
+.ed-score {
+  font-family: Georgia, 'Iowan Old Style', serif;
+  font-size: clamp(5.5rem, 22vw, 11rem);
+  line-height: 0.82;
+  font-variant-numeric: tabular-nums;
+}
+
+.ed-headline {
+  font-size: clamp(2.25rem, 8.5vw, 4.5rem);
+  line-height: 1.02;
+}
+
+.ed-section-title {
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  line-height: 1.1;
+}
+
+/* Colonne de lecture : ~65 caractères, la mesure confortable. */
+.ed-prose {
+  max-width: 62ch;
+  line-height: 1.6;
+}
+
+/* Apparition au défilement, pilotée par IntersectionObserver. */
+.ed-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition:
+    opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.ed-reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* Indicateur « faites défiler » du hero. */
+@keyframes ed-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+
+.ed-nudge {
+  animation: ed-nudge 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ed-nudge {
+    animation: none;
+  }
+}
+
+/* Le client imprimera peut-être le document : on évite le hero pleine hauteur
+   et les fonds sombres qui vident une cartouche d'encre. */
+@media print {
+  .ed-hero {
+    min-height: auto !important;
+    background: #fff !important;
+    color: #0a1c5e !important;
+  }
+  .ed-hero * {
+    color: #0a1c5e !important;
+  }
+  .ed-no-print {
+    display: none !important;
+  }
+  .ed-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
