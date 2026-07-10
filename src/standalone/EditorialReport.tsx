@@ -354,34 +354,76 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       {/* Choix du bilan affiché — discret, mais c'est le cœur de l'interactivité. */}
       <div className="ed-no-print border-b border-marine/10 bg-white">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-start justify-between gap-4 px-6 py-5 sm:px-8">
-          {/* La frise défile d'elle-même plutôt que d'élargir la page. */}
-          <div className="-mx-1 min-w-0 flex-1 overflow-x-auto px-1 pb-1">
-            <BilanSelectorPills
-              bilans={bilans}
-              selectedId={isSynthesis ? null : activeBilan.id}
-              onSelect={setSelectedId}
-              synthesisLatestDate={synthesis.latestContributionDate}
-            />
-          </div>
-          {(previousBilan !== null || compareOptions.length > 0) && (
-            <label className="flex shrink-0 items-center gap-1.5 text-xs text-marine/55">
-              <span>Comparer à</span>
+        <div className="mx-auto max-w-5xl px-6 py-4 sm:px-8 sm:py-5">
+          {/* Téléphone : deux listes pleine largeur. Une frise de pastilles
+              horizontale y déborde et devient illisible. `text-base` (16 px)
+              empêche iOS de zoomer à la sélection. */}
+          <div className="grid gap-3 sm:hidden">
+            <label className="block">
+              <span className="ed-eyebrow block text-marine/40">Bilan affiché</span>
               <select
-                value={compareId}
-                onChange={e => setCompareId(e.target.value)}
-                className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
+                value={selectedId ?? 'synthesis'}
+                onChange={e => setSelectedId(e.target.value === 'synthesis' ? null : e.target.value)}
+                className="mt-1.5 w-full rounded-md border border-cream-dark bg-white px-3 py-2.5 text-base font-medium text-marine focus:outline-none focus:ring-2 focus:ring-gold/50"
               >
-                {previousBilan !== null && <option value="prev">Bilan précédent</option>}
-                {compareOptions.map(b => (
+                <option value="synthesis">Synthèse — vos mesures les plus récentes</option>
+                {bilans.map(b => (
                   <option key={b.id} value={b.id}>
                     {formatBilanDate(b.date)}
                   </option>
                 ))}
-                <option value="none">Aucune comparaison</option>
               </select>
             </label>
-          )}
+
+            {(previousBilan !== null || compareOptions.length > 0) && (
+              <label className="block">
+                <span className="ed-eyebrow block text-marine/40">Comparer à</span>
+                <select
+                  value={compareId}
+                  onChange={e => setCompareId(e.target.value)}
+                  className="mt-1.5 w-full rounded-md border border-cream-dark bg-white px-3 py-2.5 text-base font-medium text-marine focus:outline-none focus:ring-2 focus:ring-gold/50"
+                >
+                  {previousBilan !== null && <option value="prev">Bilan précédent</option>}
+                  {compareOptions.map(b => (
+                    <option key={b.id} value={b.id}>
+                      {formatBilanDate(b.date)}
+                    </option>
+                  ))}
+                  <option value="none">Aucune comparaison</option>
+                </select>
+              </label>
+            )}
+          </div>
+
+          {/* Écran large : la frise, qui montre en plus l'ancienneté et les bilans partiels. */}
+          <div className="hidden flex-wrap items-start justify-between gap-4 sm:flex">
+            <div className="min-w-0 flex-1">
+              <BilanSelectorPills
+                bilans={bilans}
+                selectedId={isSynthesis ? null : activeBilan.id}
+                onSelect={setSelectedId}
+                synthesisLatestDate={synthesis.latestContributionDate}
+              />
+            </div>
+            {(previousBilan !== null || compareOptions.length > 0) && (
+              <label className="flex shrink-0 items-center gap-1.5 text-xs text-marine/55">
+                <span>Comparer à</span>
+                <select
+                  value={compareId}
+                  onChange={e => setCompareId(e.target.value)}
+                  className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
+                >
+                  {previousBilan !== null && <option value="prev">Bilan précédent</option>}
+                  {compareOptions.map(b => (
+                    <option key={b.id} value={b.id}>
+                      {formatBilanDate(b.date)}
+                    </option>
+                  ))}
+                  <option value="none">Aucune comparaison</option>
+                </select>
+              </label>
+            )}
+          </div>
         </div>
       </div>
 

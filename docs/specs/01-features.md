@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🐛 Corrigé (v0.1.96 — Choix du bilan illisible sur téléphone)
+
+Dans le document client, la frise de pastilles « Bilan affiché » est une rangée horizontale : sous 640 px elle
+se coince, les dates se coupent, et le libellé chevauche la première pastille.
+
+Sous `sm`, la frise est remplacée par **deux listes déroulantes pleine largeur et étiquetées** — *Bilan affiché*
+(avec l'option « Synthèse — vos mesures les plus récentes ») et *Comparer à*. Texte à 16 px, ce qui empêche iOS
+de zoomer à la sélection. Au-delà de 640 px, la frise revient : elle montre en plus l'ancienneté de chaque bilan
+et signale les bilans partiels. Version : 0.1.95 → 0.1.96.
+
 ## ✅ Fait (v0.1.95 — Le document client devient éditorial)
 
 Le document interactif de la v0.1.94 était une **copie du Dashboard de Marie-Eve** : une grille pensée pour son
