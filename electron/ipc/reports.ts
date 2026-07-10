@@ -11,6 +11,7 @@ import {
   safeClientFileName,
   todayISODate
 } from '../lib/report-generator'
+import { generateInteractiveReportHtml } from '../lib/standalone-report'
 import { getSmtpCredentials } from './settings'
 
 const ClientIdSchema = z.string().uuid()
@@ -52,8 +53,14 @@ export function registerReportsHandlers(): void {
     }
 
     let pdfPath: string | null = null
+    let htmlPath: string | null = null
     try {
       pdfPath = await generateClientReportPdf(clientId)
+      // Document interactif : autonome, hors ligne. Le PDF reste la pièce jointe
+      // fiable — certains filtres courriel suppriment les pièces jointes .html.
+      htmlPath = await generateInteractiveReportHtml(clientId)
+
+      const stem = `${safeClientFileName(client.name)}-${todayISODate()}`
       const transporter = nodemailer.createTransport({
         host: credentials.host,
         port: credentials.port,
@@ -65,13 +72,17 @@ export function registerReportsHandlers(): void {
         to: client.email,
         subject,
         text: body,
-        attachments: [{ filename: `Bilan-${safeClientFileName(client.name)}-${todayISODate()}.pdf`, path: pdfPath }]
+        attachments: [
+          { filename: `Bilan-${stem}.pdf`, path: pdfPath },
+          { filename: `Bilan-interactif-${stem}.html`, path: htmlPath }
+        ]
       })
       return { sentTo: client.email }
     } finally {
-      if (pdfPath) {
+      for (const path of [pdfPath, htmlPath]) {
+        if (!path) continue
         try {
-          await fs.unlink(pdfPath)
+          await fs.unlink(path)
         } catch {
           // best effort
         }

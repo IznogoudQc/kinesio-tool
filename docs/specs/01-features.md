@@ -642,6 +642,26 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.1.94 — Document interactif envoyé au client)
+
+Chaque courriel de bilan porte maintenant **deux pièces jointes** : le rapport PDF, et un
+**document HTML interactif** proche du Dashboard.
+
+- **Un seul fichier `.html` autonome** : CSS, JavaScript, données et photo du client sont inlinés dedans
+  (~700 Ko). Le client double-clique, ça s'ouvre dans son navigateur, ça marche **hors ligne**, et **rien
+  n'est transmis** à personne. Fidèle au « tout local » du projet : ni portail, ni cloud, ni serveur.
+- **Contenu** : frise de tous ses bilans (cliquable), sélecteur « Comparer à », anneau de score, 5 composites,
+  4 cartes XL avec mini-courbes d'historique, bannière de victoires, âge en forme, graphique de progression
+  (17 mesures), profil musculosquelettique (radar + barres), zones d'entraînement.
+- **Rien de privé n'en sort** : ni notes cliniques (ADR 0019), ni panneau de conseils IA, ni signaux à
+  surveiller avec leurs seuils cliniques.
+- La fenêtre d'envoi annonce les deux pièces jointes et **prévient que certains services de courriel bloquent
+  les `.html`** — le PDF, lui, passe toujours.
+
+Technique : entrée Vite dédiée (`vite.standalone.config.ts`) qui réutilise les composants du Dashboard, puis
+`scripts/inline-standalone.mjs` replie JS + CSS dans un `template.html` unique (aucune dépendance ajoutée).
+Le processus principal y injecte les données du client avant l'envoi. Version : 0.1.93 → 0.1.94.
+
 ## ✅ Fait (v0.1.93 — Export / import de dossiers clients, refait)
 
 Il existait déjà un export/import `.kinesio`, mais **incomplet et non idempotent** : il n'emportait ni les

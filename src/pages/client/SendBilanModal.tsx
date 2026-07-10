@@ -110,9 +110,16 @@ export function SendBilanModal({ client, onCancel, onSent }: SendBilanModalProps
                 />
               </div>
 
-              <div className="flex items-center gap-2 text-marine/65 text-sm bg-cream/70 border border-cream-dark rounded-md px-3 py-2">
-                <Paperclip size={15} className="text-gold shrink-0" />
-                Le rapport PDF de progression sera attaché automatiquement.
+              <div className="flex items-start gap-2 text-marine/65 text-sm bg-cream/70 border border-cream-dark rounded-md px-3 py-2">
+                <Paperclip size={15} className="text-gold shrink-0 mt-0.5" />
+                <span>
+                  Deux pièces jointes seront ajoutées : le <span className="font-medium text-marine">rapport PDF</span> et une{' '}
+                  <span className="font-medium text-marine">version interactive (.html)</span> que le client ouvre dans son
+                  navigateur, hors ligne.
+                  <span className="block text-marine/45 text-xs mt-0.5">
+                    Certains services de courriel bloquent les pièces jointes .html — le PDF, lui, passe toujours.
+                  </span>
+                </span>
               </div>
             </div>
           )}

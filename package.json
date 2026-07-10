@@ -1,6 +1,6 @@
 {
   "name": "kinesio-tool",
-  "version": "0.1.93",
+  "version": "0.1.94",
   "description": "Application locale pour Marie-Eve kinésiologue",
   "main": "out/main/index.js",
   "author": "Kinésio Conseil",
@@ -8,7 +8,8 @@
   "private": true,
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "build": "electron-vite build && npm run build:standalone",
+    "build:standalone": "vite build -c vite.standalone.config.ts && node scripts/inline-standalone.mjs",
     "dist": "npm run build && electron-builder",
     "lint": "eslint .",
     "db:generate": "drizzle-kit generate",
