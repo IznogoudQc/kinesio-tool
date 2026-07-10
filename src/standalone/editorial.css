@@ -1,6 +1,22 @@
 /* Styles propres au document client. Aucune police web : le fichier doit
    fonctionner hors ligne, et Georgia est présente sur Windows, macOS et Android. */
 
+/* Palette du site de la clinique (kinesio-website.pages.dev) — appliquée
+   UNIQUEMENT au document client (cette feuille n'est importée que par le bundle
+   autonome). Les utilitaires Tailwind lisent ces variables via var(), donc tout
+   le document bascule sur l'identité du site : marine plus profond, même or,
+   même crème. L'app garde ses propres couleurs. */
+:root {
+  --color-marine: #001331;
+  --color-marine-dark: #00081f;
+  --color-marine-light: #16295c;
+  --color-gold: #c9a77a;
+  --color-gold-dark: #b0894f;
+  --color-gold-light: #dbbe96;
+  --color-cream: #f4efe6;
+  --color-cream-dark: #ece3d2;
+}
+
 .ed-display {
   font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
   font-weight: 400;
@@ -86,16 +102,61 @@
   }
 }
 
+/* ── Hero : forêt en clin d'œil à l'affiche de la clinique ──────────────────
+   Deux couches décoratives derrière le contenu (`z-index: 0`) :
+   `.ed-hero-forest` porte la photo, `.ed-hero-veil` le dégradé marine qui garde
+   le texte lisible. Le contenu passe au-dessus via `position: relative`. */
+.ed-hero-forest {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center right;
+}
+
+/* Voile marine : opaque à gauche (là où vit le texte), transparent à droite
+   (la forêt respire). L'angle laisse la photo émerger dans le coin. */
+.ed-hero-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    100deg,
+    #001331 0%,
+    #001331 42%,
+    rgba(0, 19, 49, 0.86) 58%,
+    rgba(0, 19, 49, 0.45) 80%,
+    rgba(0, 19, 49, 0.18) 100%
+  );
+}
+
+/* Téléphone : la forêt ne peut pas partager la largeur avec le texte. Elle passe
+   en bas, sous un voile vertical — une présence, pas un décor qui gêne la lecture. */
+@media (max-width: 640px) {
+  .ed-hero-forest {
+    background-position: bottom center;
+  }
+  .ed-hero-veil {
+    background: linear-gradient(
+      180deg,
+      #001331 0%,
+      #001331 52%,
+      rgba(0, 19, 49, 0.86) 76%,
+      rgba(0, 19, 49, 0.55) 100%
+    );
+  }
+}
+
 /* Le client imprimera peut-être le document : on évite le hero pleine hauteur
    et les fonds sombres qui vident une cartouche d'encre. */
 @media print {
   .ed-hero {
     min-height: auto !important;
     background: #fff !important;
-    color: #0a1c5e !important;
+    color: #001331 !important;
   }
   .ed-hero * {
-    color: #0a1c5e !important;
+    color: #001331 !important;
   }
   .ed-no-print {
     display: none !important;

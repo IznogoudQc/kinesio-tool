@@ -642,6 +642,23 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.3 — Document client aux couleurs de la clinique + forêt)
+
+Le document HTML envoyé au client reprend maintenant l'identité visuelle du site de la clinique
+(kinesio-website.pages.dev) et de son affiche.
+
+**Palette du site** — les 8 variables de thème sont surchargées, uniquement dans le bundle autonome (l'app
+garde ses couleurs). Marine plus profond **#001331**, or **#c9a77a**, crème **#f4efe6** : exactement ceux du
+site. Comme les utilitaires Tailwind lisent ces variables via `var()`, tout le document bascule d'un coup.
+
+**Forêt dans le hero** — clin d'œil à l'affiche : colonne marine à gauche (le texte reste sur du bleu plein,
+toujours lisible), dégradé vers une **photo de forêt à droite**. Sur téléphone, la forêt ancre le bas sous un
+voile vertical. Masquée à l'impression (fond blanc). L'image est **redimensionnée, compressée (JPEG ~470 Ko) et
+inlinée en data URI** au build : le document reste un seul fichier autonome et hors ligne (~1,3 Mo). Elle est la
+même pour tous les clients, donc dans le programme, pas dans les données.
+
+Version : 0.2.2 → 0.2.3.
+
 ## ✅ Fait (v0.2.2 — Expliquer d'où sort le « 8 sem. »)
 
 Le document client affichait « Durée estimée : 8 sem. » sans dire d'où venait le chiffre. Pour un client, ça

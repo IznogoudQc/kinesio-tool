@@ -25,6 +25,7 @@ import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
 import { BilanSelectorPills } from '../pages/client/dashboard/BilanSelectorPills'
+import forestUrl from '../assets/forest.jpg'
 
 /** Données injectées par le processus principal. Volontairement dépourvues de
  *  tout élément privé : ni notes cliniques, ni conseils IA, ni signaux
@@ -234,6 +235,12 @@ function CompositeRow({ label, subtitle, score }: { label: string; subtitle: str
 
 // ── Hero ─────────────────────────────────────────────────────────────────────
 
+// Photo de forêt du hero — clin d'œil à l'affiche et au site de la clinique.
+// Vite l'inline en data URI au build (`assetsInlineLimit` très élevé dans
+// vite.standalone.config.ts), donc le document reste autonome et hors ligne.
+// Le cadrage (`cover`, position) est géré par `.ed-hero-forest` dans editorial.css.
+const FOREST_BG = `url(${forestUrl})`
+
 /** Le titre s'adapte à ce que disent les données. Jamais de reproche : un client
  *  qui a régressé est invité à faire le point, pas sermonné. */
 function headlineFor(firstName: string, computed: BilanComputed, previous?: BilanComputed): string {
@@ -272,15 +279,20 @@ function Hero({
         : 'Voici la synthèse de vos mesures.'
 
   return (
-    <header className="ed-hero relative flex min-h-[100svh] flex-col justify-between bg-marine px-6 py-10 text-cream sm:px-10">
-      <div className="flex items-center justify-between gap-4">
+    <header className="ed-hero relative flex min-h-[100svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
+      {/* Forêt — clin d'œil à l'affiche et au site de la clinique. Couches
+          décoratives derrière le contenu ; masquées à l'impression. */}
+      <div className="ed-hero-forest ed-no-print" aria-hidden="true" style={{ backgroundImage: FOREST_BG }} />
+      <div className="ed-hero-veil ed-no-print" aria-hidden="true" />
+
+      <div className="relative z-10 flex items-center justify-between gap-4">
         <p className="ed-eyebrow text-gold">{data.kinesiologist} · Kinésiologue</p>
         {data.avatarDataUrl && (
           <img src={data.avatarDataUrl} alt="" className="h-12 w-12 rounded-full object-cover ring-1 ring-gold/40" />
         )}
       </div>
 
-      <div className="mx-auto w-full max-w-4xl py-12">
+      <div className="relative z-10 mx-auto w-full max-w-4xl py-12">
         <h1 className="ed-display ed-headline text-cream">{headlineFor(firstName, computed, previous)}</h1>
 
         <div className="mt-12 flex flex-wrap items-end gap-x-8 gap-y-4">
@@ -301,7 +313,7 @@ function Hero({
         <p className="ed-prose mt-10 text-lg text-cream/75 sm:text-xl">{subline}</p>
       </div>
 
-      <div className="ed-no-print flex items-center justify-center">
+      <div className="relative z-10 ed-no-print flex items-center justify-center">
         <div className="ed-nudge flex flex-col items-center gap-2 text-cream/50">
           <span className="ed-eyebrow">Faites défiler</span>
           <svg width="18" height="24" viewBox="0 0 18 24" fill="none" aria-hidden="true">
