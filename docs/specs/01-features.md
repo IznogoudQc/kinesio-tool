@@ -642,6 +642,14 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.7 — Logo « Kinésio Conseil » dans le document client)
+
+Le logo de la clinique (la marque publique de Marie-Eve, pas celui de l'app « Kinésio Outils ») apparaît
+maintenant **en haut à gauche** du hero du document HTML. Version blanc/or sur transparent — elle ressort sur
+le marine du hero. Récupéré depuis le site de la clinique, redimensionné, **inliné en data URI** (~40 Ko) : le
+document reste un seul fichier autonome. Masqué à l'impression (le hero passe en fond blanc, où le logo blanc
+serait invisible) ; le nom du praticien reste dans le pied de page. Version : 0.2.6 → 0.2.7.
+
 ## ✅ Fait (v0.2.6 — Statut coloré dans le document client)
 
 Dans le document HTML, le niveau (Excellent, Très bien, Bien, Acceptable, À améliorer) était en gris — il

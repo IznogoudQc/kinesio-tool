@@ -26,6 +26,7 @@ import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
 import { BilanSelectorPills } from '../pages/client/dashboard/BilanSelectorPills'
 import forestUrl from '../assets/forest.jpg'
+import logoConseil from '../assets/logo-conseil.png'
 
 /** Données injectées par le processus principal. Volontairement dépourvues de
  *  tout élément privé : ni notes cliniques, ni conseils IA, ni signaux
@@ -326,7 +327,9 @@ function Hero({
       <div className="ed-hero-veil ed-no-print" aria-hidden="true" />
 
       <div className="relative z-10 flex items-center justify-between gap-4">
-        <p className="ed-eyebrow text-gold">{data.kinesiologist} · Kinésiologue</p>
+        {/* Logo de la clinique — le blanc/or ne ressort que sur fond marine, donc
+            masqué à l'impression (hero blanc). Le nom du praticien reste en pied. */}
+        <img src={logoConseil} alt="Kinésio Conseil" className="ed-no-print h-14 w-auto sm:h-16" />
         {data.avatarDataUrl && (
           <img src={data.avatarDataUrl} alt="" className="h-12 w-12 rounded-full object-cover ring-1 ring-gold/40" />
         )}
