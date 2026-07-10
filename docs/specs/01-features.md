@@ -642,6 +642,18 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🐛 Corrigé (v0.1.99 — Profil musculo illisible sur téléphone)
+
+Les barres du profil musculosquelettique reposaient sur des colonnes à largeur fixe (`w-28`, `w-24`, `w-20`).
+Sous 640 px, la barre était écrasée à zéro et l'écart (▲ ▼) débordait de la carte.
+
+Chaque ligne devient responsive avec le **même balisage** : sous `sm`, le libellé, la catégorie et l'écart
+tiennent sur la première ligne, et la **barre passe seule sur la deuxième**, pleine largeur, avec sa valeur.
+Au-dessus de 640 px, rien ne change — la ligne unique d'origine est restaurée par `sm:order-none`.
+
+Corrige à la fois le document client et la carte du Dashboard quand la fenêtre est étroite.
+Version : 0.1.98 → 0.1.99.
+
 ## 🐛 Corrigé (v0.1.98 — Le « mot au client » était introuvable)
 
 Le mot du kinésiologue affiché dans le PDF et le document HTML vient du champ `notes` du bilan. Ce champ

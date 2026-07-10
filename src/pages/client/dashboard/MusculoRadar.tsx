@@ -170,10 +170,12 @@ function BarRow({ row }: { row: Row }) {
   const color = category ? BAR_COLOR[category] : 'bg-cream-dark'
   const width = percentile === null ? 0 : Math.max(0, Math.min(100, percentile))
 
+  // Sous 640 px, la barre (`order-last w-full`) passe seule sur une deuxième
+  // ligne : sinon les colonnes fixes l'écrasent à zéro et l'écart déborde.
   const inner = (
-    <div className="flex items-center gap-3 py-1 px-1">
-      <div className="w-28 shrink-0 text-sm text-marine font-medium">{axis.label}</div>
-      <div className="flex-1 bg-cream-dark/30 rounded-full h-7 relative overflow-hidden">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-1 px-1">
+      <div className="min-w-0 flex-1 text-sm text-marine font-medium sm:w-28 sm:flex-none">{axis.label}</div>
+      <div className="order-last w-full bg-cream-dark/30 rounded-full h-7 relative overflow-hidden sm:order-none sm:w-auto sm:flex-1">
         {percentile !== null && (
           <div
             className={`h-full rounded-full ${color} transition-all duration-500 ease-out`}
@@ -185,7 +187,7 @@ function BarRow({ row }: { row: Row }) {
           {value === null ? '—' : `${value} ${axis.unit}`}
         </span>
       </div>
-      <div className="w-24 shrink-0 text-right">
+      <div className="shrink-0 text-right sm:w-24">
         {category ? (
           <span className={`text-xs font-medium ${CATEGORY_COLORS[category]}`} title={CATEGORY_LABELS[category]}>
             {CATEGORY_LABELS[category]}
@@ -194,7 +196,7 @@ function BarRow({ row }: { row: Row }) {
           <CategoryBadge category={null} variant="compact" />
         )}
       </div>
-      <div className="w-20 shrink-0 text-right">
+      <div className="shrink-0 text-right sm:w-20">
         {/* Les 6 tests musculo sont tous « higher = better » — pas de lowerIsBetter. */}
         <DeltaIndicator current={value} previous={previousValue} unit={axis.unit} />
       </div>
