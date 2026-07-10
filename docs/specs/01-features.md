@@ -642,6 +642,13 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## 🎨 v0.2.5 — Forêt en gauche→droite sur téléphone aussi
+
+Sur téléphone, la forêt du hero occupait le bas (dégradé haut→bas). Elle reprend le **même sens gauche→droite
+que sur grand écran**, mais avec **beaucoup plus de marine** : la forêt n'est qu'une bande sur le bord droit,
+pour laisser toute la place au texte sur l'étroite largeur du téléphone. Simple ajustement du voile CSS mobile
+(desktop inchangé). Version : 0.2.4 → 0.2.5.
+
 ## ✅ Fait (v0.2.4 — « Synthèse » renommé « Dernières valeurs »)
 
 Le mot « Synthèse » était du jargon : il ne disait pas ce que le mode fait. Il est renommé **« Dernières

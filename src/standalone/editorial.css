@@ -130,18 +130,16 @@
   );
 }
 
-/* Téléphone : la forêt ne peut pas partager la largeur avec le texte. Elle passe
-   en bas, sous un voile vertical — une présence, pas un décor qui gêne la lecture. */
+/* Téléphone : même dégradé gauche → droite que sur grand écran, mais BEAUCOUP
+   plus de marine — la forêt n'est qu'une bande sur le bord droit, pour laisser
+   toute la place au texte sur l'étroite largeur du téléphone. */
 @media (max-width: 640px) {
-  .ed-hero-forest {
-    background-position: bottom center;
-  }
   .ed-hero-veil {
     background: linear-gradient(
-      180deg,
+      100deg,
       #001331 0%,
-      #001331 52%,
-      rgba(0, 19, 49, 0.86) 76%,
+      #001331 62%,
+      rgba(0, 19, 49, 0.9) 78%,
       rgba(0, 19, 49, 0.55) 100%
     );
   }
