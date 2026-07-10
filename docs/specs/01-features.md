@@ -642,6 +642,29 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.2 — Expliquer d'où sort le « 8 sem. »)
+
+Le document client affichait « Durée estimée : 8 sem. » sans dire d'où venait le chiffre. Pour un client, ça
+ressemblait à une promesse tombée du ciel.
+
+**Document HTML** — sous les trois chiffres, un encadré doré :
+
+> **D'où vient ce calcul ?** Il vous reste 14 lb (6 kg) à perdre, au rythme visé de 1,7 lb (0,8 kg) par semaine.
+> Cela donne environ 8 semaines.
+>
+> C'est une **estimation**, pas une promesse. Le rythme réel varie selon votre régularité, votre sommeil, votre
+> entraînement et votre métabolisme — et il ralentit souvent à mesure qu'on approche de la cible. L'échéance est
+> recalculée à chaque bilan.
+
+Les libellés deviennent « ≈ 8 sem. » et « Échéance **estimée** ».
+
+**Rapport PDF** — la phrase du rythme rappelle maintenant le poids à perdre, et une note ajoute la même mise en
+garde : *« Il s'agit d'une estimation, pas d'une garantie… »*
+
+Technique : `buildObjectif` expose désormais le **rythme réellement utilisé** (celui choisi par Marie-Eve, ou
+celui déduit des calories fixées à la main) — sans lui, impossible d'expliquer le calcul. Nouveau formateur
+partagé `dualRate` (« 1,7 lb (0,8 kg) par semaine »), testé. Version : 0.2.1 → 0.2.2.
+
 ## ✅ Fait (v0.2.1 — Bouton « Générer HTML » + texte du courriel)
 
 **Bouton « Générer HTML »** à côté de « Générer PDF », dans l'entête du Dashboard. Il produit exactement le

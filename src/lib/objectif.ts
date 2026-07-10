@@ -69,5 +69,8 @@ export function buildObjectif(
   const weeks = atGoal ? null : weeksToGoal(goal.toLoseKg, effectiveRate)
   const goalDate = weeks != null ? estimatedGoalDate(startDateIso, weeks) : null
 
-  return { goal, target: client.nutritionTargetBodyFat, macros, weeks, goalDate, atGoal }
+  // `rate` est le rythme RÉELLEMENT utilisé pour l'échéance : celui choisi par
+  // Marie-Eve, ou celui déduit des calories manuelles. Le rapport et le document
+  // client s'en servent pour expliquer d'où sort le nombre de semaines.
+  return { goal, target: client.nutritionTargetBodyFat, macros, weeks, goalDate, atGoal, rate: effectiveRate }
 }

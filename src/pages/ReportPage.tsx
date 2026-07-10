@@ -643,16 +643,25 @@ function ObjectifBlock({
                 <strong style={{ color: MARINE }}>{w(goal.goalKg)}</strong>, en préservant la masse musculaire).
               </p>
               {weeks !== null && (
-                <p style={{ fontSize: '10pt', color: INK_SOFT, marginTop: '2.5mm', lineHeight: 1.5 }}>
-                  Au rythme de <strong style={{ color: MARINE }}>{rateDisplay}</strong>&nbsp;: environ{' '}
-                  <strong style={{ color: MARINE }}>{Math.round(weeks)} semaines</strong> (~{Math.round(weeks / 4.33)}&nbsp;mois)
-                  {goalDate !== null && (
-                    <>
-                      {' '}· échéance estimée <strong style={{ color: MARINE }}>{goalDate}</strong>
-                    </>
-                  )}
-                  .
-                </p>
+                <>
+                  <p style={{ fontSize: '10pt', color: INK_SOFT, marginTop: '2.5mm', lineHeight: 1.5 }}>
+                    <strong style={{ color: MARINE }}>{w(goal.toLoseKg)}</strong> à perdre au rythme de{' '}
+                    <strong style={{ color: MARINE }}>{rateDisplay}</strong>&nbsp;: environ{' '}
+                    <strong style={{ color: MARINE }}>{Math.round(weeks)} semaines</strong> (~{Math.round(weeks / 4.33)}&nbsp;mois)
+                    {goalDate !== null && (
+                      <>
+                        {' '}· échéance estimée <strong style={{ color: MARINE }}>{goalDate}</strong>
+                      </>
+                    )}
+                    .
+                  </p>
+                  {/* Le chiffre a l'air d'une promesse s'il n'est pas relativisé. */}
+                  <p style={{ fontSize: '9pt', color: AXIS, marginTop: '1.5mm', lineHeight: 1.45 }}>
+                    Il s'agit d'une <strong style={{ color: INK_SOFT }}>estimation</strong>, pas d'une garantie&nbsp;: le rythme
+                    réel varie selon la régularité, le sommeil, l'entraînement et le métabolisme, et ralentit souvent près de
+                    la cible. L'échéance est recalculée à chaque bilan.
+                  </p>
+                </>
               )}
               {noDeficit && (
                 <p style={{ fontSize: '10pt', color: INK_SOFT, marginTop: '2.5mm', lineHeight: 1.5 }}>

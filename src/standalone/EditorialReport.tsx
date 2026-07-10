@@ -15,7 +15,7 @@ import { detectWins } from '../lib/dashboard-wins'
 import { fitnessAge } from '../lib/fitness-age'
 import { buildActionPlan, formatNextTarget } from '../lib/action-plan'
 import { buildObjectif } from '../lib/objectif'
-import { dualWeight, formatWeeks } from '../lib/objectif-format'
+import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
 import { ACTIVITY_LABELS } from '../lib/nutrition'
 import { useCountUp } from '../lib/useCountUp'
 import { formatBilanDate } from '../pages/client/bilanFields'
@@ -589,15 +589,32 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
               {objectif.weeks !== null && (
                 <div>
                   <p className="ed-eyebrow text-marine/40">Durée estimée</p>
-                  <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{formatWeeks(objectif.weeks)} sem.</p>
+                  <p className="ed-display mt-1 text-4xl tabular-nums text-marine">≈ {formatWeeks(objectif.weeks)} sem.</p>
                 </div>
               )}
               {objectif.goalDate && (
                 <div>
-                  <p className="ed-eyebrow text-marine/40">Échéance</p>
+                  <p className="ed-eyebrow text-marine/40">Échéance estimée</p>
                   <p className="ed-display mt-1 text-4xl text-marine">{objectif.goalDate}</p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* D'où sort le nombre de semaines. Sans ça, le chiffre a l'air d'une
+              promesse tombée du ciel. */}
+          {!objectif.atGoal && objectif.weeks !== null && objectif.rate !== null && (
+            <div className="mt-8 border-l-2 border-gold pl-6">
+              <p className="ed-prose text-base text-marine/70">
+                <span className="font-semibold text-marine">D’où vient ce calcul ?</span> Il vous reste{' '}
+                {dualWeight(objectif.goal.toLoseKg, client.unitWeight)} à perdre, au rythme visé de{' '}
+                {dualRate(objectif.rate, client.unitWeight)}. Cela donne environ {formatWeeks(objectif.weeks)} semaines.
+              </p>
+              <p className="ed-prose mt-3 text-sm text-marine/50">
+                C’est une <strong className="font-semibold text-marine/70">estimation</strong>, pas une promesse. Le rythme
+                réel varie selon votre régularité, votre sommeil, votre entraînement et votre métabolisme — et il ralentit
+                souvent à mesure qu’on approche de la cible. L’échéance est recalculée à chaque bilan.
+              </p>
             </div>
           )}
 

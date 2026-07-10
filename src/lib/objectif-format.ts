@@ -12,6 +12,16 @@ export function dualWeight(kg: number | null, unit: 'kg' | 'lb'): string {
   return unit === 'lb' ? `${lb} lb (${k} kg)` : `${k} kg (${lb} lb)`
 }
 
+/** Formate un rythme de perte (stocké en kg/semaine) dans les deux unités.
+ *  Ex. lb → « 1,7 lb (0,8 kg) par semaine ». */
+export function dualRate(kgPerWeek: number | null, unit: 'kg' | 'lb'): string {
+  if (kgPerWeek === null || !Number.isFinite(kgPerWeek)) return '—'
+  const n = (v: number): string => v.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
+  const lb = n(kgToLb(kgPerWeek))
+  const k = n(kgPerWeek)
+  return unit === 'lb' ? `${lb} lb (${k} kg) par semaine` : `${k} kg (${lb} lb) par semaine`
+}
+
 /** Nombre de semaines, arrondi et sans décimale.
  *
  *  `weeksToGoal` est une division (6 kg ÷ 0,79 kg/sem) : la valeur brute traîne
