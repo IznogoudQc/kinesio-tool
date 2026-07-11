@@ -15,6 +15,35 @@
   box-sizing: border-box;
 }
 
+/* ── Habillage éditorial du Dashboard (niveau 1) ──────────────────────────────
+   Reprend l'identité du document client : palette plus profonde (marine, or et
+   crème du site), grands chiffres en serif, intitulés en petites capitales.
+   Scopé à un conteneur `.dash-editorial` : les utilitaires Tailwind lisent
+   var(--color-*), donc redéfinir ces variables ré-habille tout ce qu'il contient
+   sans toucher au reste de l'app. */
+.dash-editorial {
+  --color-marine: #001331;
+  --color-marine-dark: #00081f;
+  --color-marine-light: #16295c;
+  --color-gold: #c9a77a;
+  --color-gold-dark: #b0894f;
+  --color-gold-light: #dbbe96;
+  --color-cream: #f4efe6;
+  --color-cream-dark: #ece3d2;
+}
+.dash-display {
+  font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  letter-spacing: -0.01em;
+}
+.dash-eyebrow {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
 html,
 body,
 #root {

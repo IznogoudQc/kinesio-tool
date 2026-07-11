@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.26 — Dashboard : habillage éditorial « niveau 1 » (comme le document client))
+
+Le Dashboard adopte l'identité visuelle du document client, sans rien perdre de son interactivité :
+
+- **Fond crème** + palette plus profonde (marine #001331, or #c9a77a, crème #f4efe6), scopée à un conteneur
+  `.dash-editorial` (redéfinit les variables `--color-*` que lisent les utilitaires Tailwind → ré-habille tout
+  le Dashboard sans toucher au reste de l'app).
+- **Grands chiffres en serif** (Georgia via `.dash-display`) : cartes de stats XL, mini-cartes de score,
+  % de gras, plis cutanés.
+- **Intitulés en petites capitales dorées** (`.dash-eyebrow`) : labels de cartes et de sections.
+- Nom du client en serif. Zéro changement fonctionnel (sélecteurs, comparaison, IA, synthèse intacts).
+- Composants déjà partagés avec le document (barres % gras/PA, radar, zones) → cohérence renforcée.
+
+Version : 0.2.25 → 0.2.26.
+
 ## ✅ Fait (v0.2.25 — Document HTML : note du domaine dans l'en-tête de chaque section)
 
 Chaque section détaillée du document HTML affiche maintenant **sa note** dans l'en-tête, à droite du titre

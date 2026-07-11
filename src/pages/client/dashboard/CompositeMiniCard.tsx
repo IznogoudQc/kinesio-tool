@@ -31,9 +31,9 @@ export function CompositeMiniCard({ title, subtitle, current, previous }: Compos
 
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-4 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 shadow-sm">
-      <p className="text-marine/55 text-xs uppercase tracking-wide font-medium">{title}</p>
+      <p className="dash-eyebrow text-gold-dark">{title}</p>
       {subtitle && <p className="text-marine/35 text-[10px] mt-0.5">{subtitle}</p>}
-      <p className={current.score === null ? 'text-marine/25 text-3xl font-bold mt-1' : 'text-marine text-3xl font-bold mt-1 tabular-nums'}>
+      <p className={current.score === null ? 'dash-display text-marine/25 text-3xl font-bold mt-1.5' : 'dash-display text-marine text-3xl font-bold mt-1.5 tabular-nums'}>
         {current.score === null ? '—' : (animScore ?? current.score).toFixed(1)}
       </p>
       <Gauge score={current.score} />

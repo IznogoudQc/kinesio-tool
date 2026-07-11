@@ -336,7 +336,7 @@ export function DashboardTab() {
       <div className="flex items-center gap-5 min-w-0">
         <ClientAvatar client={client} size="xl" className="shadow-sm" />
         <div className="min-w-0">
-          <h1 className="text-marine font-bold text-2xl leading-tight">{client.name}</h1>
+          <h1 className="dash-display text-marine font-bold text-3xl leading-tight">{client.name}</h1>
           <p className="text-marine/55 text-sm mt-0.5">
             {ageLabel} · {sexLabel} · <span className="text-marine/40">{client.email}</span>
           </p>
@@ -502,7 +502,7 @@ export function DashboardTab() {
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
       <div className="flex items-center gap-2 mb-3">
         <Ruler size={16} className="text-gold-dark" />
-        <h3 className="text-marine font-semibold text-sm uppercase tracking-wide">Mesures corporelles</h3>
+        <h3 className="dash-eyebrow text-gold-dark">Mesures corporelles</h3>
       </div>
       {circList.length === 0 && plisList.length === 0 ? (
         <p className="text-marine/45 text-sm">Aucune mesure enregistrée pour ce client.</p>
@@ -535,7 +535,7 @@ export function DashboardTab() {
                 <Calculator size={14} className="text-gold-dark" />
                 <p className="text-marine/65 text-xs uppercase tracking-wide font-medium">% gras (plis cutanés)</p>
               </div>
-              <p className="text-marine text-3xl font-bold leading-none">
+              <p className="dash-display text-marine text-3xl font-bold leading-none">
                 {formatNumber(plisList[0].pourcentageGrasSiri)}
                 <span className="text-base font-medium text-marine/45 ml-1.5">%</span>
               </p>
@@ -551,6 +551,7 @@ export function DashboardTab() {
   )
 
   return (
+    <div className="dash-editorial bg-cream min-h-full">
     <div className="p-6 lg:p-8 max-w-7xl space-y-5">
       {Header}
 
@@ -637,8 +638,8 @@ export function DashboardTab() {
         <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4" style={{ animationDelay: '140ms' }}>
           <div className="flex items-baseline justify-between gap-3 flex-wrap">
             <div>
-              <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold">% de gras</p>
-              <p className="text-marine text-4xl font-bold leading-none mt-1.5">
+              <p className="dash-eyebrow text-gold-dark">% de gras</p>
+              <p className="dash-display text-marine text-5xl font-bold leading-none mt-1.5">
                 {formatNumber(activeData.pourcentage_gras)}
                 <span className="text-lg font-medium text-marine/45 ml-1.5">%</span>
               </p>
@@ -666,7 +667,7 @@ export function DashboardTab() {
 
           {bodyFatSeries.length >= 2 && (
             <div>
-              <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold mb-1">Progression</p>
+              <p className="dash-eyebrow text-gold-dark mb-1">Progression</p>
               <BodyFatTrend series={bodyFatSeries} sex={client.sex} />
             </div>
           )}
@@ -726,7 +727,7 @@ export function DashboardTab() {
 
       <section className="dash-rise space-y-3" style={{ animationDelay: '240ms' }}>
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold">Analyse du bilan</p>
+          <p className="dash-eyebrow text-gold-dark">Analyse du bilan</p>
           {!printMode && <AIAnalysisPanel sex={client.sex} age={age} metrics={aiMetrics} />}
         </div>
         <StrengthsAndWeaknesses data={activeData} age={age} sex={client.sex} norms={norms} />
@@ -743,6 +744,7 @@ export function DashboardTab() {
         />
       )}
       {toast && <Toast message={toast} />}
+    </div>
     </div>
   )
 }

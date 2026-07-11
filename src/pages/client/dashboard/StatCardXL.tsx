@@ -103,10 +103,10 @@ export function StatCardXL({
 
   const card = (
     <div className="bg-gradient-to-br from-white to-cream/40 border border-cream-dark/30 rounded-xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200">
-      <p className="text-marine/55 text-xs uppercase tracking-wide font-medium">{label}</p>
+      <p className="dash-eyebrow text-gold-dark">{label}</p>
 
-      <div className="flex items-baseline gap-1.5 mt-1">
-        <span className="text-marine text-5xl font-bold leading-none tabular-nums">
+      <div className="flex items-baseline gap-1.5 mt-1.5">
+        <span className="dash-display text-marine text-5xl font-bold leading-none tabular-nums">
           {hasValue ? (animValue ?? (value as number)).toLocaleString('fr-CA', { maximumFractionDigits: 1 }) : <span className="text-marine/25">—</span>}
         </span>
         {hasValue && unit && <span className="text-marine/45 text-base font-medium">{unit}</span>}
