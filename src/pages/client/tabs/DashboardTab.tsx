@@ -461,51 +461,53 @@ export function DashboardTab() {
     </section>
   )
 
-  // ── Stats XL ──────────────────────────────────────────────────────────────
-  const StatsRow = (
-    <section id="dash-cardio" className="dash-anchor dash-rise grid grid-cols-1 sm:grid-cols-3 gap-4" style={{ animationDelay: '80ms' }}>
-      <StatCardXL
-        label="VO2max"
-        value={activeData.vo2max}
-        unit="ml/kg/min"
-        test="vo2max"
-        age={age}
-        sex={client.sex}
-        norms={norms}
-        originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.vo2max : undefined}
-        previousValue={compareData?.vo2max}
-        history={historyOf('vo2max')}
-        compareLabel={compareLabel}
-      />
-      <StatCardXL
-        label="IMC"
-        value={activeData.imc}
-        unit="kg/m²"
-        test="bmi"
-        age={age}
-        sex={client.sex}
-        norms={norms}
-        originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.imc : undefined}
-        previousValue={compareData?.imc}
-        history={historyOf('imc')}
-        lowerIsBetter
-        compareLabel={compareLabel}
-      />
-      <StatCardXL
-        label="Tour de taille"
-        value={activeData.tour_taille_cm}
-        unit="cm"
-        test="waistCircumference"
-        age={age}
-        sex={client.sex}
-        norms={norms}
-        originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.tour_taille_cm : undefined}
-        previousValue={compareData?.tour_taille_cm}
-        history={historyOf('tour_taille_cm')}
-        lowerIsBetter
-        compareLabel={compareLabel}
-      />
-    </section>
+  // ── Cartes de stats, réparties par domaine (voir le rendu plus bas) ─────────
+  const Vo2Card = (
+    <StatCardXL
+      label="VO2max"
+      value={activeData.vo2max}
+      unit="ml/kg/min"
+      test="vo2max"
+      age={age}
+      sex={client.sex}
+      norms={norms}
+      originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.vo2max : undefined}
+      previousValue={compareData?.vo2max}
+      history={historyOf('vo2max')}
+      compareLabel={compareLabel}
+    />
+  )
+  const ImcCard = (
+    <StatCardXL
+      label="IMC"
+      value={activeData.imc}
+      unit="kg/m²"
+      test="bmi"
+      age={age}
+      sex={client.sex}
+      norms={norms}
+      originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.imc : undefined}
+      previousValue={compareData?.imc}
+      history={historyOf('imc')}
+      lowerIsBetter
+      compareLabel={compareLabel}
+    />
+  )
+  const TailleCard = (
+    <StatCardXL
+      label="Tour de taille"
+      value={activeData.tour_taille_cm}
+      unit="cm"
+      test="waistCircumference"
+      age={age}
+      sex={client.sex}
+      norms={norms}
+      originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.tour_taille_cm : undefined}
+      previousValue={compareData?.tour_taille_cm}
+      history={historyOf('tour_taille_cm')}
+      lowerIsBetter
+      compareLabel={compareLabel}
+    />
   )
 
   const hasMultiple = count >= 2
@@ -639,7 +641,6 @@ export function DashboardTab() {
       )}
 
       {Hero}
-      {StatsRow}
 
       {healthFlags.length > 0 && (
         <div className="dash-rise" style={{ animationDelay: '120ms' }}>
@@ -647,105 +648,102 @@ export function DashboardTab() {
         </div>
       )}
 
-      {typeof activeData.pourcentage_gras === 'number' && client.sex && (
-        <section id="dash-composition" className="dash-anchor dash-rise bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4" style={{ animationDelay: '140ms' }}>
-          <SectionHead
-            eyebrow="Composition corporelle"
-            title="Pourcentage de gras"
-            right={
-              <div className="text-right">
-                <p className="dash-display text-marine text-5xl font-bold leading-none">
+      {/* ── Composition corporelle ─────────────────────────────────────────── */}
+      <section id="dash-composition" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '140ms' }}>
+        <SectionHead eyebrow="Composition corporelle" title="Votre silhouette" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {ImcCard}
+          {TailleCard}
+        </div>
+        {typeof activeData.pourcentage_gras === 'number' && client.sex && (
+          <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4">
+            <div className="flex items-baseline justify-between gap-3 flex-wrap">
+              <div>
+                <p className="dash-eyebrow text-gold-dark">Pourcentage de gras</p>
+                <p className="dash-display text-marine text-5xl font-bold leading-none mt-1.5">
                   {formatNumber(activeData.pourcentage_gras)}
                   <span className="text-lg font-medium text-marine/45 ml-1.5">%</span>
                 </p>
-                <p className="text-marine/40 text-xs mt-1">du {formatBilanDate((activeBilan ?? latest)!.date)}</p>
               </div>
-            }
-          />
+              <p className="text-marine/40 text-xs">du {formatBilanDate((activeBilan ?? latest)!.date)}</p>
+            </div>
 
-          <BodyFatRiskBar pct={activeData.pourcentage_gras} sex={client.sex} />
+            <BodyFatRiskBar pct={activeData.pourcentage_gras} sex={client.sex} />
 
-          {targetW && (
-            <div className="rounded-lg bg-cream/60 border border-cream-dark/40 px-4 py-3">
-              <div className="flex flex-wrap gap-x-10 gap-y-2">
-                <div>
-                  <p className="text-marine/50 text-[11px] uppercase tracking-wide font-semibold">Poids optimal (≤ {targetW.optimal.targetBf} %)</p>
-                  <p className="text-marine text-2xl font-bold tabular-nums leading-tight">{Math.round(kgToLb(targetW.optimal.targetKg))} lb</p>
+            {targetW && (
+              <div className="rounded-lg bg-cream/60 border border-cream-dark/40 px-4 py-3">
+                <div className="flex flex-wrap gap-x-10 gap-y-2">
+                  <div>
+                    <p className="text-marine/50 text-[11px] uppercase tracking-wide font-semibold">Poids optimal (≤ {targetW.optimal.targetBf} %)</p>
+                    <p className="text-marine text-2xl font-bold tabular-nums leading-tight">{Math.round(kgToLb(targetW.optimal.targetKg))} lb</p>
+                  </div>
+                  <div>
+                    <p className="text-marine/50 text-[11px] uppercase tracking-wide font-semibold">Poids santé max. (≤ {targetW.healthyMax.targetBf} %)</p>
+                    <p className="text-marine text-2xl font-bold tabular-nums leading-tight">{Math.round(kgToLb(targetW.healthyMax.targetKg))} lb</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-marine/50 text-[11px] uppercase tracking-wide font-semibold">Poids santé max. (≤ {targetW.healthyMax.targetBf} %)</p>
-                  <p className="text-marine text-2xl font-bold tabular-nums leading-tight">{Math.round(kgToLb(targetW.healthyMax.targetKg))} lb</p>
-                </div>
+                <p className="text-marine/40 text-[11px] mt-1.5">À masse maigre constante — repères indicatifs, pas des cibles de poids.</p>
               </div>
-              <p className="text-marine/40 text-[11px] mt-1.5">À masse maigre constante — repères indicatifs, pas des cibles de poids.</p>
-            </div>
-          )}
+            )}
 
-          {bodyFatSeries.length >= 2 && (
-            <div>
-              <p className="dash-eyebrow text-gold-dark mb-1">Progression</p>
-              <BodyFatTrend series={bodyFatSeries} sex={client.sex} />
-            </div>
-          )}
-        </section>
-      )}
+            {bodyFatSeries.length >= 2 && (
+              <div>
+                <p className="dash-eyebrow text-gold-dark mb-1">Évolution du % de gras</p>
+                <BodyFatTrend series={bodyFatSeries} sex={client.sex} />
+              </div>
+            )}
+          </div>
+        )}
+        {MesuresPanel}
+      </section>
 
-      {(fitAge !== null || objectif !== null) && (
-        <section className="dash-rise grid grid-cols-1 md:grid-cols-2 gap-4" style={{ animationDelay: '160ms' }}>
+      {/* ── Cœur et endurance ──────────────────────────────────────────────── */}
+      <section id="dash-cardio" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '160ms' }}>
+        <SectionHead eyebrow="Cœur et endurance" title="Votre cœur et votre souffle" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {Vo2Card}
           {fitAge !== null && <FitnessAgeCard fitAge={fitAge} age={age} />}
-          {objectif !== null && <ObjectifCard objectif={objectif} unit={client.unitWeight ?? 'kg'} />}
+        </div>
+        <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} />
+      </section>
+
+      {/* ── Force et mobilité ──────────────────────────────────────────────── */}
+      <section id="dash-musculo" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '180ms' }}>
+        <SectionHead eyebrow="Force et mobilité" title="Six tests, six angles" />
+        <MusculoRadar
+          current={activeData}
+          compare={compareData}
+          compareLabel={compareLabel}
+          age={age}
+          sex={client.sex}
+          norms={norms}
+        />
+      </section>
+
+      {objectif !== null && (
+        <section className="dash-rise space-y-4">
+          <SectionHead eyebrow="Objectif" title="Votre cible" />
+          <ObjectifCard objectif={objectif} unit={client.unitWeight ?? 'kg'} />
         </section>
       )}
 
       {hasMultiple ? (
-        <section className="space-y-5">
+        <section className="dash-rise space-y-5">
           <SectionHead eyebrow="Dans le temps" title="Votre progression" />
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <div className="lg:col-span-8 space-y-5">
-            <ProgressionChart
-              bilans={bilans!}
-              profile={profile}
-              activeBilanId={activeBilan!.id}
-              bodyFatTarget={objectif && !objectif.atGoal ? objectif.target : null}
-              bodyFatGoalLabel={objectif?.goalDate ?? null}
-              compareBilan={compareBilan}
-              compareLabel={compareShortLabel}
-            />
-            <div id="dash-musculo" className="dash-anchor">
-              <MusculoRadar
-                current={activeData}
-                compare={compareData}
-                compareLabel={compareLabel}
-                age={age}
-                sex={client.sex}
-                norms={norms}
-              />
-            </div>
-          </div>
-          <div className="lg:col-span-4 space-y-5">
-            {MesuresPanel}
-            <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} />
-          </div>
-          </div>
+          <ProgressionChart
+            bilans={bilans!}
+            profile={profile}
+            activeBilanId={activeBilan!.id}
+            bodyFatTarget={objectif && !objectif.atGoal ? objectif.target : null}
+            bodyFatGoalLabel={objectif?.goalDate ?? null}
+            compareBilan={compareBilan}
+            compareLabel={compareShortLabel}
+          />
         </section>
       ) : (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            <div className="lg:col-span-8 space-y-5">
-              {/* Un seul bilan : aucune comparaison possible. */}
-              <div id="dash-musculo" className="dash-anchor">
-                <MusculoRadar current={activeData} age={age} sex={client.sex} norms={norms} />
-              </div>
-            </div>
-            <div className="lg:col-span-4 space-y-5">
-              {MesuresPanel}
-              <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} />
-            </div>
-          </div>
-          <div className="bg-gold/10 border border-gold/30 rounded-xl px-5 py-4 text-marine/70 text-sm">
-            Importez ou créez un 2e bilan pour voir la progression dans le temps.
-          </div>
-        </>
+        <div className="bg-gold/10 border border-gold/30 rounded-xl px-5 py-4 text-marine/70 text-sm">
+          Importez ou créez un 2e bilan pour voir la progression dans le temps.
+        </div>
       )}
 
       <section className="dash-rise space-y-4" style={{ animationDelay: '240ms' }}>

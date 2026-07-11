@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.30 — Dashboard : réorganisation par domaine (info séparée))
+
+La rangée du haut mélangeait VO2max (cardio) avec IMC + tour de taille (composition) : cliquer « Cœur et
+endurance » tombait au milieu des mesures de composition. Le Dashboard est **réorganisé en sections par
+domaine**, alignées sur les 4 cartes cliquables et sur le document client :
+
+- **Composition corporelle** (ancre) : IMC + tour de taille + bloc % de gras (barre, poids-cibles, courbe) +
+  mesures corporelles.
+- **Cœur et endurance** (ancre) : VO2max + âge en forme + zones d'entraînement cardiaque.
+- **Force et mobilité** (ancre) : radar musculosquelettique (6 tests).
+- **Objectif** (si activé) · **Dans le temps** (graphique de progression, ≥ 2 bilans) · **Analyse**.
+- Chaque section a un en-tête éditorial ; l'ancre de chaque carte pointe désormais sur du contenu homogène.
+
+Version : 0.2.29 → 0.2.30.
+
 ## ✅ Fait (v0.2.29 — Dashboard : noms des domaines alignés sur le HTML)
 
 Les 4 cartes de la vue d'ensemble du Dashboard reprennent **exactement les libellés du document client** :
