@@ -128,13 +128,6 @@ function fmt(v: number | null, decimals = 1): string {
 function reportDateLabel(): string {
   return new Date().toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' })
 }
-function isoToTime(iso: string): number {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
-  return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : 0
-}
-function yearsBetween(a: string, b: string): number {
-  return Math.abs(isoToTime(b) - isoToTime(a)) / (365.25 * 864e5)
-}
 /** Format compact d'un seuil : entier si rond, sinon 1 décimale. */
 function fmtThreshold(n: number): string {
   return fmt(n, Number.isInteger(n) ? 0 : 1)
@@ -808,7 +801,6 @@ function OverviewSection({
   client,
   bilans,
   chrono,
-  syntheses,
   profile,
   synth,
   latest
@@ -816,7 +808,6 @@ function OverviewSection({
   client: Client
   bilans: Bilan[]
   chrono: Bilan[]
-  syntheses: BilanComputed[]
   profile: BilanProfile
   synth: BilanComputed
   /** Bilan « courant » = synthèse (mêmes valeurs que le Dashboard). */
@@ -849,20 +840,6 @@ function OverviewSection({
     { title: 'Dos et souplesse', score: synth.backHealth, keys: ['flexion_tronc_cm', 'endurance_dos_sec', 'situps'] }
   ]
 
-  const hero = useMemo(() => {
-    if (single) return null
-    let best: { label: string; unit: string; from: number; to: number; pct: number } | null = null
-    for (const m of METRICS) {
-      const from = num(oldest.data[m.key])
-      const to = num(latest.data[m.key])
-      if (from === null || to === null || from === 0) continue
-      const lower = metricNorm(m.key, to, profile)?.lowerIsBetter ?? false
-      const pct = ((lower ? from - to : to - from) / Math.abs(from)) * 100
-      if (pct > 0 && (best === null || pct > best.pct)) best = { label: m.label, unit: m.unit, from, to, pct }
-    }
-    return best
-  }, [single, oldest, latest, profile])
-
   const beforeAfter = useMemo(() => {
     if (single) return []
     // Toutes les métriques renseignées dans le bilan actuel (pas de limite). La
@@ -877,8 +854,6 @@ function OverviewSection({
     }
     return rows
   }, [single, oldest, latest, profile])
-
-  const years = single ? 0 : yearsBetween(oldest.date, latest.date)
 
   return (
     <ReportFlowSection
@@ -949,25 +924,6 @@ function OverviewSection({
         </div>
       ) : (
         <>
-          {hero && (
-            <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8mm' }}>
-              <div>
-                <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD }}>Votre plus belle progression</p>
-                <p className="report-display" style={{ fontSize: '18pt', fontWeight: 600, color: MARINE, marginTop: '1mm' }}>{hero.label}</p>
-                <p className="report-display" style={{ fontSize: '30pt', fontWeight: 700, color: MARINE, lineHeight: 1.1 }}>
-                  {fmt(hero.from)} → {fmt(hero.to)}
-                  <span style={{ fontSize: '13pt', color: INK_SOFT, fontWeight: 500 }}> {hero.unit}</span>
-                </p>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <p className="report-display" style={{ fontSize: '36pt', fontWeight: 700, color: GOLD }}>+{Math.round(hero.pct)} %</p>
-                <p style={{ fontSize: '10pt', color: INK_SOFT }}>en {years >= 1 ? `${years.toFixed(years >= 3 ? 0 : 1)} ans` : `${Math.round(years * 12)} mois`}</p>
-              </div>
-            </div>
-          )}
-          <div className="break-inside-avoid">
-            <JourneyTimeline chrono={chrono} syntheses={syntheses} />
-          </div>
           {beforeAfter.length > 0 && (
             <div className="break-inside-avoid">
               <BlockTitle>Avant / après</BlockTitle>
@@ -1011,57 +967,6 @@ function OverviewSection({
   )
 }
 
-/** Frise horizontale : 1 point par bilan, espacement régulier. */
-function JourneyTimeline({ chrono, syntheses }: { chrono: Bilan[]; syntheses: BilanComputed[] }) {
-  const W = 1000
-  const H = 150
-  const padX = 40
-  const y = 78
-  const n = chrono.length
-  const pts = chrono.map((b, i) => ({
-    x: n <= 1 ? W / 2 : padX + (i / (n - 1)) * (W - 2 * padX),
-    date: b.date,
-    score: syntheses[i]?.overall.score ?? null
-  }))
-  const labelStep = n > 8 ? 2 : 1
-  const showLabel = (i: number) => i === 0 || i === n - 1 || i % labelStep === 0
-
-  return (
-    <div>
-      <BlockTitle>Vos {chrono.length} bilans</BlockTitle>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: '32mm' }}>
-        {pts.slice(1).map((p, i) => {
-          const prev = pts[i]
-          const a = prev.score
-          const b = p.score
-          const color = a === null || b === null ? GRID : b >= a - 0.05 ? '#97C459' : '#E24B4A'
-          return <line key={i} x1={prev.x} y1={y} x2={p.x} y2={y} stroke={color} strokeWidth={5} strokeLinecap="round" />
-        })}
-        {pts.map((p, i) => {
-          const isLast = i === pts.length - 1
-          return (
-            <g key={i}>
-              <circle cx={p.x} cy={y} r={isLast ? 11 : 8} fill={isLast ? GOLD : '#fff'} stroke={isLast ? GOLD : MARINE} strokeWidth={3} />
-              {showLabel(i) && (
-                <text x={p.x} y={y + 32} textAnchor={i === 0 ? 'start' : i === pts.length - 1 ? 'end' : 'middle'} style={{ fontSize: '17px', fill: INK_SOFT }}>
-                  {formatBilanMonth(p.date)}
-                </text>
-              )}
-              {isLast && p.score !== null && (
-                <>
-                  <circle cx={p.x} cy={y - 40} r={20} fill={GOLD} />
-                  <text x={p.x} y={y - 40} textAnchor="middle" dominantBaseline="middle" className="report-display" style={{ fontSize: '21px', fontWeight: 700, fill: '#fff' }}>
-                    {p.score.toFixed(1)}
-                  </text>
-                </>
-              )}
-            </g>
-          )
-        })}
-      </svg>
-    </div>
-  )
-}
 
 /** Libellés courts pour le détail des sous-scores (cartes de la vue d'ensemble). */
 const SHORT_LABEL: Partial<Record<keyof BilanData, string>> = {

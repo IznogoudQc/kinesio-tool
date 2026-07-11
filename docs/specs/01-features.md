@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.34 — PDF : retrait de la page « plus belle progression » + frise (page vide))
+
+Dans le PDF, le bloc « Votre plus belle progression » (hero) + la frise « Vos N bilans » de la Section 1
+débordaient sur une page presque vide. On les retire : la vue d'ensemble garde l'**âge en forme**, les
+**scores** et le **tableau avant/après** (qui remonte pour combler). La progression reste visible via les
+graphiques « Dans le temps » de chaque domaine. Code mort nettoyé (hero, frise `JourneyTimeline`, helpers).
+
+Version : 0.2.33 → 0.2.34.
+
 ## ✅ Fait (v0.2.33 — PDF : % de gras affiché une seule fois (grille de risque))
 
 Dans le PDF, le % de gras apparaissait **deux fois** dans la section Composition : la **grille de risque** de
