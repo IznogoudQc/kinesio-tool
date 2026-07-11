@@ -642,6 +642,17 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.39 — Clin d'œil privé (Nicholas Jean) + « Kinésio Conseil » en pied de PDF)
+
+- **6e principe, gaté par nom** : la clôture « Cinq principes essentiels » devient « Six… » avec un principe
+  « Bon sexe » **uniquement** quand le client s'appelle « Nicholas Jean » (clin d'œil privé du propriétaire).
+  Les vrais clients voient toujours les cinq principes. `principesFor(name)` / `principesCountWord(name)` dans
+  `src/lib/principes.ts` (source unique HTML + PDF). Gating vérifié au rendu.
+- **Pied de PDF** : « Rapport généré par Kinésio Outils » → « Kinésio Conseil » (nom interne de l'outil retiré
+  du document client, comme le logo).
+
+Version : 0.2.38 → 0.2.39.
+
 ## ✅ Fait (v0.2.38 — Dashboard : percentiles retirés · PDF : logo Kinésio Conseil)
 
 - **Dashboard** : retrait du « Xᵉ perc. » (+ écart % vs moyenne) des cartes de stats (`StatCardXL`), comme

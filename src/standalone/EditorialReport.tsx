@@ -29,7 +29,7 @@ import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
 import { BilanSelectorPills } from '../pages/client/dashboard/BilanSelectorPills'
-import { PRINCIPES } from '../lib/principes'
+import { principesFor, principesCountWord } from '../lib/principes'
 import forestUrl from '../assets/forest.jpg'
 import logoConseil from '../assets/logo-conseil.png'
 
@@ -947,15 +947,15 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         <div className="mx-auto max-w-5xl">
           <Reveal>
             <p className="ed-eyebrow text-gold">L’équilibre au quotidien</p>
-            <h2 className="ed-display ed-section-title mt-3 text-cream">Cinq principes essentiels</h2>
+            <h2 className="ed-display ed-section-title mt-3 text-cream">{principesCountWord(client.name)} principes essentiels</h2>
             <p className="ed-prose mt-4 text-base text-cream/70 sm:text-lg">
               À garder en tête avec le plan proposé à la suite de votre bilan — la forme physique se construit
               autant à la table, au lit et dans la tête qu’à l’entraînement.
             </p>
           </Reveal>
           <Reveal delay={80}>
-            <div className="mt-10 grid grid-cols-1 gap-y-8 gap-x-6 sm:grid-cols-5">
-              {PRINCIPES.map(p => (
+            <div className={`mt-10 grid grid-cols-1 gap-y-8 gap-x-6 ${principesFor(client.name).length === 6 ? 'sm:grid-cols-3' : 'sm:grid-cols-5'}`}>
+              {principesFor(client.name).map(p => (
                 <div key={p.title} className="flex items-start gap-4 sm:flex-col sm:items-center sm:text-center">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/30 text-gold">
                     <p.icon size={20} strokeWidth={1.6} />
