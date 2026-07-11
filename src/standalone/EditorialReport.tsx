@@ -26,8 +26,18 @@ import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
 import { BilanSelectorPills } from '../pages/client/dashboard/BilanSelectorPills'
+import { Apple, Dumbbell, Moon, Smile, Wind } from 'lucide-react'
 import forestUrl from '../assets/forest.jpg'
 import logoConseil from '../assets/logo-conseil.png'
+
+// Cinq piliers de bien-être affichés en clôture du document (contenu fixe).
+const PRINCIPES = [
+  { icon: Apple, title: 'Bonne alimentation', line: 'Nourrir son corps, sans se priver.' },
+  { icon: Dumbbell, title: 'De bons exercices', line: 'Bouger régulièrement, à votre rythme.' },
+  { icon: Smile, title: 'Pensées positives', line: 'Un mental qui soutient l’effort.' },
+  { icon: Wind, title: 'Bonne respiration', line: 'Le souffle, un outil de récupération.' },
+  { icon: Moon, title: 'Bon sommeil', line: 'C’est la nuit que le corps se répare.' }
+] as const
 
 /** Données injectées par le processus principal. Volontairement dépourvues de
  *  tout élément privé : ni notes cliniques, ni conseils IA, ni signaux
@@ -789,7 +799,37 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         </Section>
       )}
 
-      <footer className="bg-marine px-6 py-16 text-cream sm:px-8">
+      {/* Cinq piliers de bien-être — un final positif et global, le même pour tous.
+          En marine, il se fond avec le pied de page en un bloc de clôture calme. */}
+      <section className="bg-marine px-6 pt-16 pb-4 text-cream sm:px-8">
+        <div className="mx-auto max-w-5xl">
+          <Reveal>
+            <p className="ed-eyebrow text-gold">L’équilibre au quotidien</p>
+            <h2 className="ed-display ed-section-title mt-3 text-cream">Cinq principes essentiels</h2>
+            <p className="ed-prose mt-4 text-base text-cream/70 sm:text-lg">
+              À garder en tête avec le plan proposé à la suite de votre bilan — la forme physique se construit
+              autant à la table, au lit et dans la tête qu’à l’entraînement.
+            </p>
+          </Reveal>
+          <Reveal delay={80}>
+            <div className="mt-10 grid grid-cols-1 gap-y-8 gap-x-6 sm:grid-cols-5">
+              {PRINCIPES.map(p => (
+                <div key={p.title} className="flex items-start gap-4 sm:flex-col sm:items-center sm:text-center">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-gold/30 text-gold">
+                    <p.icon size={20} strokeWidth={1.6} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="ed-display text-lg text-cream">{p.title}</p>
+                    <p className="mt-1 text-sm leading-snug text-cream/55">{p.line}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      <footer className="bg-marine px-6 pb-16 pt-8 text-cream sm:px-8">
         <div className="mx-auto max-w-5xl">
           <p className="ed-eyebrow text-gold">Préparé pour vous par</p>
           <p className="ed-display mt-3 text-3xl">{data.kinesiologist}</p>

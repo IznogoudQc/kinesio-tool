@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.10 — « Cinq principes essentiels » en clôture (demande de Marie))
+
+Une section finale au document client, à la demande de Marie : cinq piliers de bien-être à garder en tête avec
+le plan proposé. Contenu fixe (le même pour tous), en marine avec icônes dorées, juste avant la signature —
+un final calme qui se fond avec le pied de page.
+
+Bonne alimentation · De bons exercices · Pensées positives · Bonne respiration · Bon sommeil. Chacun avec une
+courte phrase d'accompagnement (modifiable). Empilé proprement sur téléphone. Version : 0.2.9 → 0.2.10.
+
 ## ✅ Fait (v0.2.9 — Priorités : interrupteur par client, à la demande de Marie)
 
 Retour de Marie : les priorités auto sont cliniquement justes, mais ce ne sont pas toujours celles du client
