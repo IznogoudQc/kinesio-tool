@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.28 — Dashboard : vue d'ensemble à 4 cartes cliquables (comme le HTML))
+
+La grille de scores du Hero passe de 5 à **4 domaines** (comme le document client) et devient **navigable** :
+
+- Carte « % gras corporel » retirée (fondue dans Composition). Grille en 2×2.
+- Chaque carte est un **bouton** : au clic, défilement doux jusqu'à la section correspondante
+  (`scrollIntoView`, respecte `prefers-reduced-motion`) — Composition → section % de gras · Aérobie → VO2max ·
+  Indice du dos & Musculo → radar musculosquelettique.
+- Chevron ⌄ + surbrillance au survol. Ancres : `#dash-composition`, `#dash-cardio`, `#dash-musculo`
+  (+ `.dash-anchor` pour la marge de défilement).
+
+Version : 0.2.27 → 0.2.28.
+
 ## ✅ Fait (v0.2.27 — Dashboard : habillage éditorial « niveau 2 » (en-têtes de section))
 
 Suite du niveau 1 : les grandes sections du Dashboard prennent des **en-têtes éditoriaux** façon document

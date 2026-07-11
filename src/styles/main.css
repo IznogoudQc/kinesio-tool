@@ -43,6 +43,10 @@
   font-weight: 600;
   line-height: 1.2;
 }
+/* Cible d'un saut depuis les cartes de la vue d'ensemble — petite marge en haut. */
+.dash-anchor {
+  scroll-margin-top: 1.25rem;
+}
 
 html,
 body,

@@ -415,7 +415,7 @@ export function DashboardTab() {
     </header>
   )
 
-  // ── Hero : score donut + 5 composites ──────────────────────────────────────
+  // ── Hero : score donut + 4 composites cliquables ───────────────────────────
   const Hero = (
     <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-6 shadow-sm">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
@@ -427,35 +427,34 @@ export function DashboardTab() {
             label="Santé et condition physique globale"
           />
         </div>
-        <div className="lg:col-span-8 grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="lg:col-span-8 grid grid-cols-2 gap-3">
           <CompositeMiniCard
             title="Composition"
             subtitle="IMC + %gras + taille"
             current={computed.composition}
             previous={compareComputed?.composition}
-          />
-          <CompositeMiniCard
-            title="% gras corporel"
-            current={computed.bodyFat}
-            previous={compareComputed?.bodyFat}
+            targetId="dash-composition"
           />
           <CompositeMiniCard
             title="Aérobie"
             subtitle="VO2max"
             current={computed.aerobic}
             previous={compareComputed?.aerobic}
+            targetId="dash-cardio"
           />
           <CompositeMiniCard
             title="Indice du dos"
             subtitle="Flex + endur + situps"
             current={computed.backHealth}
             previous={compareComputed?.backHealth}
+            targetId="dash-musculo"
           />
           <CompositeMiniCard
             title="Musculo global"
             subtitle="6 tests"
             current={computed.musculoGlobal}
             previous={compareComputed?.musculoGlobal}
+            targetId="dash-musculo"
           />
         </div>
       </div>
@@ -464,7 +463,7 @@ export function DashboardTab() {
 
   // ── Stats XL ──────────────────────────────────────────────────────────────
   const StatsRow = (
-    <section className="dash-rise grid grid-cols-1 sm:grid-cols-3 gap-4" style={{ animationDelay: '80ms' }}>
+    <section id="dash-cardio" className="dash-anchor dash-rise grid grid-cols-1 sm:grid-cols-3 gap-4" style={{ animationDelay: '80ms' }}>
       <StatCardXL
         label="VO2max"
         value={activeData.vo2max}
@@ -649,7 +648,7 @@ export function DashboardTab() {
       )}
 
       {typeof activeData.pourcentage_gras === 'number' && client.sex && (
-        <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4" style={{ animationDelay: '140ms' }}>
+        <section id="dash-composition" className="dash-anchor dash-rise bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4" style={{ animationDelay: '140ms' }}>
           <SectionHead
             eyebrow="Composition corporelle"
             title="Pourcentage de gras"
@@ -712,14 +711,16 @@ export function DashboardTab() {
               compareBilan={compareBilan}
               compareLabel={compareShortLabel}
             />
-            <MusculoRadar
-              current={activeData}
-              compare={compareData}
-              compareLabel={compareLabel}
-              age={age}
-              sex={client.sex}
-              norms={norms}
-            />
+            <div id="dash-musculo" className="dash-anchor">
+              <MusculoRadar
+                current={activeData}
+                compare={compareData}
+                compareLabel={compareLabel}
+                age={age}
+                sex={client.sex}
+                norms={norms}
+              />
+            </div>
           </div>
           <div className="lg:col-span-4 space-y-5">
             {MesuresPanel}
@@ -732,7 +733,9 @@ export function DashboardTab() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             <div className="lg:col-span-8 space-y-5">
               {/* Un seul bilan : aucune comparaison possible. */}
-              <MusculoRadar current={activeData} age={age} sex={client.sex} norms={norms} />
+              <div id="dash-musculo" className="dash-anchor">
+                <MusculoRadar current={activeData} age={age} sex={client.sex} norms={norms} />
+              </div>
             </div>
             <div className="lg:col-span-4 space-y-5">
               {MesuresPanel}
