@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.18 — PDF : « Votre objectif » déplacé dans sa propre section (fin))
+
+Dans le rapport PDF, l'encadré « Votre objectif » était coincé **en tête de la Section 1** (Vue d'ensemble),
+ce qui tombait mal. Il devient sa **propre section** (« Votre objectif », Section 6), placée **en fin de
+rapport**, juste avant la clôture (forces + mot du kinésiologue + principes, qui reste la dernière section 7).
+
+- Retiré du haut de la Section 1 ; l'eyebrow interne « Votre objectif » du bloc est supprimé (le titre de
+  section le porte maintenant).
+- La nouvelle section ne s'affiche **que s'il y a un objectif** (texte libre ou cible chiffrée nutrition) —
+  pas de page vide sinon.
+- Purement PDF (`ReportPage`) — document HTML et Dashboard inchangés.
+
+Version : 0.2.17 → 0.2.18.
+
 ## ✅ Fait (v0.2.17 — Poids optimal du % de gras dans le document client + PDF)
 
 Le « poids optimal » (poids-cible pour la zone optimale), déjà sur le Dashboard (v0.2.16), est maintenant

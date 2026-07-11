@@ -324,6 +324,7 @@ export function ReportPage() {
       <CardioSection {...shared} computed={latestComputed} />
       <ForceSection {...shared} />
       <DosSection {...shared} />
+      <ObjectifSection client={client} latest={latest} chrono={chrono} profile={profile} />
       <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} />
     </article>
   )
@@ -614,10 +615,6 @@ function ObjectifBlock({
       className="break-inside-avoid"
       style={{ background: CREAM, borderRadius: '4mm', borderLeft: `2mm solid ${GOLD}`, padding: '6mm 8mm' }}
     >
-      <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '2.5mm' }}>
-        Votre objectif
-      </p>
-
       {objectif !== '' && (
         <p style={{ fontSize: '13pt', lineHeight: 1.5, color: MARINE, fontStyle: 'italic', marginBottom: goal ? '5mm' : '0' }}>
           «&nbsp;{objectif}&nbsp;»
@@ -750,6 +747,30 @@ function MacroChip({ label, value, unit }: { label: string; value: string; unit:
   )
 }
 
+/** Section dédiée « Votre objectif », placée en fin de rapport (juste avant la
+ *  clôture). Rendue uniquement s'il y a un objectif : texte libre OU cible
+ *  chiffrée (module nutrition). Le contenu détaillé vit dans `ObjectifBlock`. */
+function ObjectifSection({ client, latest, chrono, profile }: { client: Client; latest: Bilan; chrono: Bilan[]; profile: BilanProfile }) {
+  const objectif = typeof latest.data.objectif === 'string' ? latest.data.objectif.trim() : ''
+  const computed = computeBilan(latest.data, profile)
+  const bodyFatPct =
+    computed.pourcentageGrasDurnin ?? (typeof latest.data.pourcentage_gras === 'number' ? latest.data.pourcentage_gras : null)
+  const target = client.nutritionEnabled ? client.nutritionTargetBodyFat : null
+  const goal = bodyFatGoal(num(latest.data.poids_kg), bodyFatPct, target)
+  if (objectif === '' && goal === null) return null
+  return (
+    <ReportFlowSection
+      title="Votre objectif"
+      sectionNumber="Section 6"
+      intro="Votre cible de composition corporelle et les repères pour l'atteindre — à ajuster avec votre kinésiologue."
+    >
+      <div className="report-stack">
+        <ObjectifBlock objectif={objectif} client={client} latest={latest} chrono={chrono} profile={profile} />
+      </div>
+    </ReportFlowSection>
+  )
+}
+
 function OverviewSection({
   client,
   bilans,
@@ -771,7 +792,6 @@ function OverviewSection({
   const single = bilans.length < 2
   const oldest = chrono[0]
   // `latest` = synthèse (valeurs courantes) ; `oldest` = 1er vrai bilan (avant/après).
-  const objectif = typeof latest.data.objectif === 'string' ? latest.data.objectif.trim() : ''
 
   const fitAge = fitnessAge(num(latest.data.vo2max), profile.sex)
   let fitAgeText = fitAge !== null
@@ -834,9 +854,6 @@ function OverviewSection({
       intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 1 à 5 — plus il est élevé, meilleure est votre santé physique globale."
     >
       <div className="report-stack">
-      {/* Objectif du client — texte libre + (si activé) cible chiffrée & nutrition. */}
-      <ObjectifBlock objectif={objectif} client={client} latest={latest} chrono={chrono} profile={profile} />
-
       {/* Âge en forme — VO2max traduit en âge physiologique. */}
       {fitAge !== null && (
         <div
@@ -1848,7 +1865,7 @@ function MiniSpark({ values }: { values: number[] }) {
   )
 }
 
-// ── Section 6 — Forces & plan d'action ───────────────────────────────────────
+// ── Section 7 — Forces & clôture ─────────────────────────────────────────────
 function ForcesEtPlanSection({ latest, profile, coachName, signature }: { latest: Bilan; profile: BilanProfile; coachName: string; signature: string }) {
   const ranked = METRICS.map(m => {
     const value = num(latest.data[m.key])
@@ -1865,7 +1882,7 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature }: { latest
   const signOff = signature.trim() || `${coachName || 'Marie-Eve Bélanger'}\nKinésiologue`
 
   return (
-    <ReportSection title="Vos forces" sectionNumber="Section 6">
+    <ReportSection title="Vos forces" sectionNumber="Section 7">
       <div style={{ marginTop: '2mm', marginBottom: '9mm' }}>
         <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
           <Trophy size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Vos forces
