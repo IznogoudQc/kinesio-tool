@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.35 — PDF : pression artérielle affichée une seule fois (barres de zones))
+
+Comme le % de gras, la pression artérielle apparaissait **deux fois** dans la section Cœur du PDF : les
+**barres de zones** cliniques (Optimale / Normale / Pré-HT…) ET des **cartes ACSM** (percentile + barre
+À améliorer→Excellent). On retire les cartes ACSM (`pa_systolique` / `pa_diastolique` sortis des `detailKeys`
+de la section Cardio). VO2max et FC repos gardent leur carte.
+
+Version : 0.2.34 → 0.2.35.
+
 ## ✅ Fait (v0.2.34 — PDF : retrait de la page « plus belle progression » + frise (page vide))
 
 Dans le PDF, le bloc « Votre plus belle progression » (hero) + la frise « Vos N bilans » de la Section 1

@@ -1531,7 +1531,7 @@ function CardioSection({ computed, ...props }: DomainProps & { computed: BilanCo
       sectionNumber="Section 3"
       domainWord="capacité cardiovasculaire"
       intro="Votre capacité cardiovasculaire reflète l'efficacité de votre cœur, de vos poumons et de vos muscles à utiliser l'oxygène pendant l'effort. C'est l'un des meilleurs prédicteurs de santé et de longévité. On la mesure par le VO2max, complété par votre tension et votre fréquence cardiaque au repos."
-      detailKeys={['vo2max', 'fc_repos', 'pa_systolique', 'pa_diastolique']}
+      detailKeys={['vo2max', 'fc_repos']}
       heroKey="vo2max"
       composite={computeBilan(props.latest.data, props.profile).aerobic}
       charts={[
