@@ -44,10 +44,10 @@ import logo from '../assets/logo.png'
 import '../print.css'
 
 // ── Palette imprimable ───────────────────────────────────────────────────────
-const MARINE = '#0a1c5e'
-const GOLD = '#b8834a'
-const GOLD_SOFT = '#d4a574'
-const CREAM = '#faf6ec'
+const MARINE = '#001331'
+const GOLD = '#b0894f'
+const GOLD_SOFT = '#c9a77a'
+const CREAM = '#f4efe6'
 const GRID = '#e5e0d2'
 const AXIS = '#9a9486'
 const INK_SOFT = '#6b6555'
@@ -318,6 +318,12 @@ export function ReportPage() {
         avatarUrl={avatarUrl}
         overall={latestComputed.overall.score}
         overallCategory={latestComputed.overall.category}
+        domains={[
+          { label: 'Composition', score: latestComputed.composition },
+          { label: 'Cœur', score: latestComputed.aerobic },
+          { label: 'Dos', score: latestComputed.backHealth },
+          { label: 'Force', score: latestComputed.musculoGlobal }
+        ]}
       />
       <OverviewSection client={client} synth={latestComputed} {...shared} />
       <CompositionSection {...shared} computed={latestComputed} />
@@ -370,19 +376,21 @@ function ReportFlowSection({
   children,
   title,
   sectionNumber,
-  intro
+  intro,
+  score
 }: {
   children: React.ReactNode
   title: string
   sectionNumber: string
   intro?: string
+  score?: CompositeScore
 }) {
   return (
     <section
       className="report-flow"
       style={{ width: '210mm', minHeight: '250mm', margin: '0 auto', padding: '0 16mm', boxSizing: 'border-box', background: '#fff' }}
     >
-      <SectionHeader title={title} sectionNumber={sectionNumber} />
+      <SectionHeader title={title} sectionNumber={sectionNumber} score={score} />
       {intro && (
         <p style={{ fontSize: '11pt', lineHeight: 1.55, color: INK_SOFT, maxWidth: '160mm', marginTop: '-5mm', marginBottom: '9mm' }}>
           {intro}
@@ -393,17 +401,40 @@ function ReportFlowSection({
   )
 }
 
-function SectionHeader({ title, sectionNumber }: { title: string; sectionNumber?: string }) {
+/** Badge de note d'un domaine pour l'en-tête de section (grand chiffre serif +
+ *  catégorie colorée + filet dégradé), aligné sur le document HTML. */
+function PdfScoreBadge({ score }: { score: CompositeScore }) {
+  if (score.score === null) return null
   return (
-    <header className="flex items-end justify-between" style={{ marginBottom: '9mm' }}>
-      <h1 className="report-display" style={{ fontWeight: 600, fontSize: '27pt', color: MARINE, lineHeight: 1.05 }}>
-        {title}
-      </h1>
-      {sectionNumber && (
-        <span style={{ color: '#bcb6a4', fontSize: '9pt', letterSpacing: '0.2em', textTransform: 'uppercase', whiteSpace: 'nowrap', marginLeft: '6mm' }}>
-          {sectionNumber}
-        </span>
+    <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '8mm' }}>
+      <p className="report-display" style={{ fontSize: '25pt', fontWeight: 700, color: MARINE, lineHeight: 1 }}>
+        {score.score.toFixed(1)}
+        <span style={{ fontSize: '12pt', color: '#b9b3a3', fontWeight: 400 }}> / 5</span>
+      </p>
+      {score.category && (
+        <>
+          <p style={{ fontSize: '10pt', fontWeight: 700, color: CAT_BG[score.category], marginTop: '1mm' }}>{CATEGORY_LABELS[score.category]}</p>
+          <div style={{ height: '1.2mm', width: '14mm', borderRadius: '2mm', marginTop: '1.5mm', marginLeft: 'auto', background: `linear-gradient(90deg, ${CAT_BG[score.category]}33, ${CAT_BG[score.category]})` }} />
+        </>
       )}
+    </div>
+  )
+}
+
+function SectionHeader({ title, sectionNumber, score }: { title: string; sectionNumber?: string; score?: CompositeScore }) {
+  return (
+    <header className="flex items-start justify-between" style={{ marginBottom: '9mm' }}>
+      <div>
+        {sectionNumber && (
+          <p style={{ fontSize: '8.5pt', letterSpacing: '0.18em', textTransform: 'uppercase', color: GOLD, fontWeight: 700, marginBottom: '2.5mm' }}>
+            {sectionNumber}
+          </p>
+        )}
+        <h1 className="report-display" style={{ fontWeight: 600, fontSize: '29pt', color: MARINE, lineHeight: 1.03 }}>
+          {title}
+        </h1>
+      </div>
+      {score && <PdfScoreBadge score={score} />}
     </header>
   )
 }
@@ -427,7 +458,8 @@ function CoverPage({
   totalBilans,
   avatarUrl,
   overall,
-  overallCategory
+  overallCategory,
+  domains
 }: {
   client: Client
   latest: Bilan | null
@@ -436,6 +468,7 @@ function CoverPage({
   avatarUrl: string | null
   overall: number | null
   overallCategory?: Category | null
+  domains?: { label: string; score: CompositeScore }[]
 }) {
   const age = computeAge(client.birthdate)
   const subtitle = [age !== null ? `${age} ans` : null, client.sex ? SEX_LABEL[client.sex] : null]
@@ -443,59 +476,59 @@ function CoverPage({
     .join(' · ')
   return (
     <ReportSection pad={false}>
-      <div style={{ padding: '6mm 20mm 12mm', display: 'flex', flexDirection: 'column', flex: 1 }}>
-        <div className="flex items-start justify-between">
-          <img src={logo} alt="Kinésio Outils" style={{ height: '16mm', width: 'auto' }} />
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: '8pt', letterSpacing: '0.16em', textTransform: 'uppercase', color: INK_SOFT }}>
-              Bilan de progression
-            </p>
-            {latest && <p style={{ fontSize: '10pt', color: MARINE, marginTop: '1mm' }}>{formatBilanDate(latest.date)}</p>}
-          </div>
-        </div>
-
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          {/* Photo du client uniquement — pas de silhouette générique en repli
-              (on n'affiche rien sans vraie photo). */}
-          {avatarUrl && (
-            <div
-              style={{
-                width: '62mm',
-                height: '62mm',
-                borderRadius: '50%',
-                background: CREAM,
-                border: `2px solid ${GOLD_SOFT}`,
-                overflow: 'hidden',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            </div>
-          )}
-          <h1 className="report-display" style={{ fontWeight: 600, fontSize: '40pt', color: MARINE, marginTop: avatarUrl ? '9mm' : '0', textAlign: 'center', lineHeight: 1.05 }}>
-            {client.name}
-          </h1>
-          {subtitle && <p style={{ fontSize: '12pt', color: INK_SOFT, marginTop: '2mm' }}>{subtitle}</p>}
-
-          <p style={{ marginTop: '12mm', fontSize: '8.5pt', letterSpacing: '0.16em', textTransform: 'uppercase', color: GOLD }}>
-            Condition physique globale
+      <div style={{ padding: '16mm 20mm 14mm', display: 'flex', flexDirection: 'column', flex: 1, background: '#fff' }}>
+        {/* En-tête : logo + mention. */}
+        <div className="flex items-center justify-between">
+          <img src={logo} alt="Kinésio Conseil" style={{ height: '15mm', width: 'auto' }} />
+          <p style={{ fontSize: '8.5pt', letterSpacing: '0.18em', textTransform: 'uppercase', color: GOLD, fontWeight: 700 }}>
+            Rapport d’évaluation
           </p>
-          <div style={{ marginTop: '2mm' }}>
-            <ScoreRing score={overall} />
-          </div>
-          {overallCategory && (
-            <div style={{ marginTop: '3mm' }}>
-              <CategoryPill category={overallCategory} />
-            </div>
-          )}
         </div>
 
-        <p style={{ textAlign: 'center', fontSize: '9.5pt', color: INK_SOFT }}>
-          {totalBilans > 0 ? `Bilan nº ${totalBilans} · ` : ''}
-          {latest ? `${formatBilanDate(latest.date)} · ` : ''}
-          Préparé par {coachName || 'Marie-Eve Bélanger'}
+        {/* Bloc central : nom + photo, puis panneau crème du score. */}
+        <div style={{ marginTop: 'auto', marginBottom: 'auto' }}>
+          <div className="flex items-center justify-between" style={{ gap: '10mm' }}>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: '8.5pt', letterSpacing: '0.18em', textTransform: 'uppercase', color: GOLD, fontWeight: 700 }}>Votre bilan</p>
+              <h1 className="report-display" style={{ fontWeight: 600, fontSize: '44pt', color: MARINE, marginTop: '3mm', lineHeight: 1.0 }}>
+                {client.name}
+              </h1>
+              <p style={{ fontSize: '11pt', color: INK_SOFT, marginTop: '4mm' }}>
+                {[latest ? formatBilanDate(latest.date) : null, subtitle || null, `préparé par ${coachName || 'Marie-Eve Bélanger'}`]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            </div>
+            {avatarUrl && (
+              <div style={{ width: '34mm', height: '34mm', borderRadius: '50%', flexShrink: 0, background: CREAM, border: `1.5pt solid ${GOLD_SOFT}`, overflow: 'hidden' }}>
+                <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+            )}
+          </div>
+
+          <div style={{ background: CREAM, borderRadius: '4mm', padding: '9mm 11mm', marginTop: '12mm', display: 'flex', alignItems: 'center', gap: '11mm' }}>
+            <div style={{ flexShrink: 0 }}>
+              <ScoreRing score={overall} />
+            </div>
+            {domains && domains.length > 0 && (
+              <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '9mm', rowGap: '3.5mm' }}>
+                {domains.map(d => (
+                  <div key={d.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: `0.3mm solid ${GOLD_SOFT}66`, paddingBottom: '2mm' }}>
+                    <span style={{ fontSize: '10.5pt', color: MARINE }}>{d.label}</span>
+                    <span className="report-display" style={{ fontSize: '15pt', fontWeight: 700, color: d.score.category ? CAT_BG[d.score.category] : MARINE }}>
+                      {d.score.score === null ? '—' : d.score.score.toFixed(1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Pied : résumé. */}
+        <p style={{ marginTop: 'auto', borderTop: `0.3mm solid ${GRID}`, paddingTop: '5mm', fontSize: '10pt', color: INK_SOFT }}>
+          Santé et condition physique globale — <b style={{ color: MARINE }}>{overallCategory ? CATEGORY_LABELS[overallCategory] : '—'}</b>.
+          {totalBilans > 0 ? ` Bilan nº ${totalBilans}.` : ''}
         </p>
       </div>
     </ReportSection>
@@ -885,7 +918,7 @@ function OverviewSection({
         </div>
         <div style={{ flex: 1, minWidth: '110mm', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5mm' }}>
           {cards.map(c => (
-            <div key={c.title} style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}>
+            <div key={c.title} style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm' }}>
               <p className="report-display" style={{ fontSize: '13pt', fontWeight: 600, color: MARINE }}>{c.title}</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '2mm', margin: '1.5mm 0 1mm' }}>
                 <span className="report-display" style={{ fontSize: '26pt', fontWeight: 700, color: MARINE }}>
@@ -1185,7 +1218,7 @@ function DomainSection({
   const interp = domainInterpretation({ domainWord, composite, detailKeys, heroKey, chrono, latest, profile })
 
   return (
-    <ReportFlowSection title={title} sectionNumber={sectionNumber} intro={intro}>
+    <ReportFlowSection title={title} sectionNumber={sectionNumber} intro={intro} score={composite}>
       {topExtra}
 
       {presentDetails.length > 0 && (
@@ -1393,7 +1426,7 @@ function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bila
       <BlockTitle>Vos mesures</BlockTitle>
       <div className="break-inside-avoid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm', marginBottom: plisPresents.length ? '6mm' : 0 }}>
         {stats.map(s => (
-          <div key={s.label} style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}>
+          <div key={s.label} style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm' }}>
             <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT }}>{s.label}</p>
             <p className="report-display" style={{ fontSize: '20pt', fontWeight: 700, color: MARINE, marginTop: '1mm' }}>{s.value}</p>
             {s.hint && <p style={{ fontSize: '8pt', color: AXIS, marginTop: '0.5mm' }}>{s.hint}</p>}
@@ -1751,7 +1784,7 @@ function MetricBlock({ metric, latest, recent, profile }: { metric: MetricDef; l
   const blurb = norm?.category ? EXPLANATION_BY_CATEGORY[norm.category] : null
 
   return (
-    <div className="break-inside-avoid" style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '5mm 6mm' }}>
+    <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm' }}>
       <div className="flex items-center justify-between">
         <h2 className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE }}>{metric.label}</h2>
         {norm?.category && <CategoryPill category={norm.category} />}
@@ -1924,7 +1957,7 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature }: { latest
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm' }}>
             {forces.map(f => (
-              <div key={f.metric.key as string} style={{ border: `1px solid ${GRID}`, borderRadius: '3mm', padding: '4mm 5mm' }}>
+              <div key={f.metric.key as string} style={{ background: CREAM, borderRadius: '3mm', padding: '4mm 5mm' }}>
                 <div className="flex items-center justify-between" style={{ marginBottom: '1mm' }}>
                   <span style={{ fontSize: '10.5pt', fontWeight: 600, color: MARINE }}>{f.metric.label}</span>
                   <CategoryPill category={f.category} />

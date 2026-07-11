@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.32 — PDF : refonte éditoriale (au style du document HTML, imprimable)
+
+Le rapport PDF adopte l'identité du document client (option « imprimable » : corps blanc + panneaux crème).
+
+- **Palette** alignée sur le document : marine profond #001331, or chaud #c9a77a/#b0894f, crème #f4efe6.
+- **En-têtes de section éditoriaux** : intitulé doré en petites capitales + grand titre serif (Fraunces) +
+  **badge de score** du domaine à droite (chiffre serif + catégorie colorée + filet dégradé), comme le HTML.
+- **Couverture refaite** : logo, grand nom en serif, photo optionnelle, **panneau crème** avec l'anneau du
+  score global + les 4 domaines, résumé en pied. Pas de forêt (version imprimable).
+- Cartes de mesures/scores en **chips crème** (au lieu de cartes blanches bordées).
+- Fraunces conservé (serif plus fin que le Georgia du HTML) ; barres % gras / pression déjà partagées.
+
+Version : 0.2.31 → 0.2.32.
+
 ## ✅ Fait (v0.2.31 — Document HTML : retour à la vue d'ensemble + poids visé dans l'objectif)
 
 Deux améliorations du document client :
