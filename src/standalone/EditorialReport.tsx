@@ -629,13 +629,12 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       <Section
         eyebrow="Vue d’ensemble"
-        title="Cinq façons de lire votre condition physique"
+        title="Quatre façons de lire votre condition physique"
         lead="Chaque domaine est noté sur 5, en comparant vos résultats à ceux des personnes de votre âge et de votre sexe. Le score global en est la moyenne."
         tone="white"
       >
         <div>
           <CompositeRow label="Composition corporelle" subtitle="IMC, % de gras, tour de taille" score={computed.composition} href="#composition" />
-          <CompositeRow label="Pourcentage de gras" subtitle="Mesuré aux plis cutanés" score={computed.bodyFat} href="#pourcentage-gras" />
           <CompositeRow label="Cœur et endurance" subtitle="VO2max" score={computed.aerobic} href="#cardio" />
           <CompositeRow label="Santé du dos" subtitle="Flexibilité, endurance, abdominaux" score={computed.backHealth} href="#force-mobilite" />
           <CompositeRow label="Force musculaire" subtitle="Six tests" score={computed.musculoGlobal} href="#force-mobilite" />

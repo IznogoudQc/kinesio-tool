@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.24 — Vue d'ensemble : « Quatre façons » (% de gras fondu dans Composition))
+
+Le % de gras fait partie de la Composition corporelle — il n'a donc plus de ligne à part dans la vue
+d'ensemble du document HTML. On passe de 5 à **4 domaines** (Composition · Cœur et endurance · Santé du dos ·
+Force musculaire), ce qui **aligne le HTML sur le PDF** (qui n'en listait déjà que 4). Titre : « Quatre façons
+de lire votre condition physique ». Les 4 lignes restent cliquables (ancres). Le % de gras garde sa place dans
+la section Composition.
+
+Version : 0.2.23 → 0.2.24.
+
 ## ✅ Fait (v0.2.23 — Document HTML : vue d'ensemble cliquable (navigation par ancres))
 
 Dans le document HTML, les 5 lignes de « Cinq façons de lire votre condition physique » deviennent des
