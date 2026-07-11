@@ -23,6 +23,8 @@ import { DeltaIndicator } from '../components/DeltaIndicator'
 import { Sparkline } from '../components/Sparkline'
 import { BodyFatRiskBar } from '../components/BodyFatRiskBar'
 import { bodyFatTargetWeights } from '../lib/body-fat-risk'
+import { BloodPressureBar } from '../components/BloodPressureBar'
+import { classifyBloodPressure } from '../lib/norms/clinical'
 import { kgToLb } from '../lib/units'
 import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
@@ -475,6 +477,13 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   const fcRepos = typeof activeData.fc_repos === 'number' && !Number.isNaN(activeData.fc_repos) ? activeData.fc_repos : null
   const fcReposCat: Category | null =
     fcRepos !== null && client.sex ? getCategorization('restingHeartRate', fcRepos, age ?? 40, client.sex) : null
+  // Pression artérielle — barres de zones cliniques (OMS/JNC).
+  const paSys = typeof activeData.pa_systolique === 'number' && !Number.isNaN(activeData.pa_systolique) ? activeData.pa_systolique : null
+  const paDia = typeof activeData.pa_diastolique === 'number' && !Number.isNaN(activeData.pa_diastolique) ? activeData.pa_diastolique : null
+  const paCatSys = paSys !== null ? classifyBloodPressure(paSys, 'systolic')?.category ?? null : null
+  const paCatDia = paDia !== null ? classifyBloodPressure(paDia, 'diastolic')?.category ?? null : null
+  // « Dans la norme » = les deux valeurs présentes sont Optimale ou Normale.
+  const paNormale = [paCatSys, paCatDia].every(c => c === null || c === 'EXCELLENT' || c === 'TRES_BIEN')
   // Observations que Marie-Eve destine au client (≠ ses notes cliniques privées).
   const motDuKine = typeof activeData.notes === 'string' ? activeData.notes.trim() : ''
 
@@ -651,6 +660,27 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
                 </>
               )}
               une fréquence de repos basse reflète un cœur efficace et une bonne récupération.
+            </p>
+          </div>
+        )}
+
+        {(paSys !== null || paDia !== null) && (
+          <div className="mt-12">
+            <p className="ed-eyebrow text-marine/40">Pression artérielle</p>
+            <p className="ed-prose mt-3 text-base text-marine/65">
+              Mesurée au repos, après quelques minutes de calme. La <strong className="font-semibold text-marine/80">systolique</strong> est
+              la pression quand le cœur se contracte ; la <strong className="font-semibold text-marine/80">diastolique</strong>, quand il se
+              remplit entre deux battements. Une valeur plus basse est généralement préférable, et une lecture élevée isolée ne signifie pas
+              de l’hypertension — c’est pourquoi on la revérifie régulièrement.
+            </p>
+            <div className="mt-6 space-y-6">
+              {paSys !== null && <BloodPressureBar value={paSys} kind="systolic" />}
+              {paDia !== null && <BloodPressureBar value={paDia} kind="diastolic" />}
+            </div>
+            <p className="ed-prose mt-5 text-sm text-marine/55">
+              {paNormale
+                ? 'Votre pression artérielle au repos est dans la norme. Un contrôle une fois par an suffit.'
+                : 'Une ou plusieurs valeurs sortent de la zone optimale — à reprendre au calme, puis à valider avec votre médecin au besoin.'}
             </p>
           </div>
         )}

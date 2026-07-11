@@ -52,14 +52,63 @@ export interface BpClassification {
  *    Systolique : Optimale <120 · Normale 120-129 · Pré-HT 130-139 · HT1 140-159 · HT2 ≥160
  *    Diastolique : Optimale <80 · Normale 80-84 · Pré-HT 85-89 · HT1 90-99 · HT2 ≥100
  */
+/** Bornes des zones cliniques de PA (OMS/JNC), par type. */
+export const BP_BOUNDS: Record<BpKind, [number, number, number, number]> = {
+  systolic: [120, 130, 140, 160],
+  diastolic: [80, 85, 90, 100]
+}
+
+/** Les 5 zones nommées, de la meilleure (Optimale) à la pire (Hypertension 2),
+ *  avec la catégorie associée (pour la couleur). */
+export const BP_ZONES: { label: string; category: Category }[] = [
+  { label: 'Optimale', category: 'EXCELLENT' },
+  { label: 'Normale', category: 'TRES_BIEN' },
+  { label: 'Pré-hypertension', category: 'BIEN' },
+  { label: 'Hypertension 1', category: 'ACCEPTABLE' },
+  { label: 'Hypertension 2', category: 'A_AMELIORER' }
+]
+
+/** Étendue affichée de la barre [min, max] par type (au-delà, repère saturé). */
+export const BP_DISPLAY: Record<BpKind, [number, number]> = {
+  systolic: [90, 180],
+  diastolic: [60, 115]
+}
+
 export function classifyBloodPressure(value: number, kind: BpKind): BpClassification | null {
   if (!Number.isFinite(value)) return null
-  const t = kind === 'systolic' ? [120, 130, 140, 160] : [80, 85, 90, 100]
-  if (value < t[0]) return { zone: 'Optimale', category: 'EXCELLENT' }
-  if (value < t[1]) return { zone: 'Normale', category: 'TRES_BIEN' }
-  if (value < t[2]) return { zone: 'Pré-hypertension', category: 'BIEN' }
-  if (value < t[3]) return { zone: 'Hypertension 1', category: 'ACCEPTABLE' }
-  return { zone: 'Hypertension 2', category: 'A_AMELIORER' }
+  const t = BP_BOUNDS[kind]
+  const i = value < t[0] ? 0 : value < t[1] ? 1 : value < t[2] ? 2 : value < t[3] ? 3 : 4
+  return { zone: BP_ZONES[i].label, category: BP_ZONES[i].category }
+}
+
+export interface BpBarZone {
+  label: string
+  category: Category
+  /** Borne inférieure incluse. */
+  min: number
+  /** Borne supérieure exclue. */
+  max: number
+}
+export interface BpBar {
+  zones: BpBarZone[]
+  scaleMin: number
+  scaleMax: number
+  current: BpBarZone | null
+  markerRatio: number | null
+}
+
+/** Prépare la barre segmentée d'une valeur de PA : 5 zones proportionnelles,
+ *  repère du client, zone courante. `null` si `value` n'est pas un nombre. */
+export function bloodPressureBar(value: number | null | undefined, kind: BpKind): BpBar | null {
+  const [scaleMin, scaleMax] = BP_DISPLAY[kind]
+  const b = BP_BOUNDS[kind]
+  const edges = [scaleMin, b[0], b[1], b[2], b[3], scaleMax]
+  const zones: BpBarZone[] = BP_ZONES.map((z, i) => ({ label: z.label, category: z.category, min: edges[i], max: edges[i + 1] }))
+  const v = typeof value === 'number' && Number.isFinite(value) ? value : null
+  const cls = v === null ? null : classifyBloodPressure(v, kind)
+  const current = cls ? zones.find(z => z.label === cls.zone) ?? null : null
+  const markerRatio = v === null ? null : Math.max(0, Math.min(1, (v - scaleMin) / (scaleMax - scaleMin)))
+  return { zones, scaleMin, scaleMax, current, markerRatio }
 }
 
 /** Retourne la plage clinique pour un test donné, ou `null` si le test n'est

@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.21 — Document HTML : barres de zones de pression artérielle + explications)
+
+Reprise de la présentation « Cardio-pulmonaire » de l'ancien logiciel : la section « Cœur et endurance » du
+document HTML affiche la **pression artérielle sous forme de barres de zones** (Optimale · Normale ·
+Pré-hypertension · Hypertension 1 · Hypertension 2), une pour la systolique et une pour la diastolique, avec un
+repère à la valeur du client et un texte explicatif.
+
+- Seuils **OMS/JNC** (déjà dans `clinical.ts`) : sys 120/130/140/160, dia 80/85/90/100.
+- Couleurs = catégories de l'app (vert foncé → rouge), pas le bleu de l'ancien logiciel.
+- Texte : définition systolique/diastolique + « valeur basse préférable » + « une lecture élevée isolée ≠
+  hypertension ». Ligne de statut dynamique (« dans la norme » vs « à reprendre au calme »).
+- Nouveau `BloodPressureBar` + `bloodPressureBar()`/`BP_ZONES`/`BP_BOUNDS`/`BP_DISPLAY` dans `clinical.ts` (4 tests).
+- Le PDF montrait déjà la PA (graphes + catégorie dans ses blocs de détail) — inchangé.
+
+Version : 0.2.20 → 0.2.21.
+
 ## ✅ Fait (v0.2.20 — Poids santé max + FC repos toujours visible (parité ancien logiciel))
 
 Comparaison du rapport de l'ancien logiciel de Marie (`.doc`) → deux éléments manquaient :
