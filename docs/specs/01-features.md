@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.29 — Dashboard : noms des domaines alignés sur le HTML)
+
+Les 4 cartes de la vue d'ensemble du Dashboard reprennent **exactement les libellés du document client** :
+« Composition corporelle », « Cœur et endurance » (au lieu d'« Aérobie »), « Santé du dos » (au lieu d'« Indice
+du dos »), « Force musculaire » (au lieu de « Musculo global »). Sous-titres alignés aussi. Cohérence de
+vocabulaire entre l'app et le document.
+
+Version : 0.2.28 → 0.2.29.
+
 ## ✅ Fait (v0.2.28 — Dashboard : vue d'ensemble à 4 cartes cliquables (comme le HTML))
 
 La grille de scores du Hero passe de 5 à **4 domaines** (comme le document client) et devient **navigable** :

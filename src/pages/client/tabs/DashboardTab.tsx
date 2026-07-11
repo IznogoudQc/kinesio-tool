@@ -429,29 +429,29 @@ export function DashboardTab() {
         </div>
         <div className="lg:col-span-8 grid grid-cols-2 gap-3">
           <CompositeMiniCard
-            title="Composition"
-            subtitle="IMC + %gras + taille"
+            title="Composition corporelle"
+            subtitle="IMC, % de gras, tour de taille"
             current={computed.composition}
             previous={compareComputed?.composition}
             targetId="dash-composition"
           />
           <CompositeMiniCard
-            title="Aérobie"
+            title="Cœur et endurance"
             subtitle="VO2max"
             current={computed.aerobic}
             previous={compareComputed?.aerobic}
             targetId="dash-cardio"
           />
           <CompositeMiniCard
-            title="Indice du dos"
-            subtitle="Flex + endur + situps"
+            title="Santé du dos"
+            subtitle="Flexibilité, endurance, abdominaux"
             current={computed.backHealth}
             previous={compareComputed?.backHealth}
             targetId="dash-musculo"
           />
           <CompositeMiniCard
-            title="Musculo global"
-            subtitle="6 tests"
+            title="Force musculaire"
+            subtitle="Six tests"
             current={computed.musculoGlobal}
             previous={compareComputed?.musculoGlobal}
             targetId="dash-musculo"
