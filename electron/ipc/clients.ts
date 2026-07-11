@@ -46,7 +46,8 @@ const UpdateClientSchema = z.object({
   nutritionRateKgPerWeek: RateKgPerWeek,
   nutritionProteinPerLbLean: ProteinPerLbLean,
   nutritionFatMaxG: FatMaxG,
-  nutritionTargetKcal: TargetKcal
+  nutritionTargetKcal: TargetKcal,
+  showActionPlan: z.boolean().optional()
 })
 
 const ClientId = z.string().uuid()

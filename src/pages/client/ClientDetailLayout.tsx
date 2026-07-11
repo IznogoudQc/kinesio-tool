@@ -347,6 +347,9 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
   const [unitLength, setUnitLength] = useState<'cm' | 'in'>(client.unitLength ?? 'cm')
   const [unitWeight, setUnitWeight] = useState<'kg' | 'lb'>(client.unitWeight ?? 'kg')
   const [nutritionEnabled, setNutritionEnabled] = useState(client.nutritionEnabled ?? false)
+  // Affiche les « priorités » auto dans les documents envoyés au client. Marie
+  // les masque quand le vrai focus du client est ailleurs (douleur, poids sensible).
+  const [showActionPlan, setShowActionPlan] = useState(client.showActionPlan ?? true)
   const [targetBodyFat, setTargetBodyFat] = useState(
     client.nutritionTargetBodyFat != null ? String(client.nutritionTargetBodyFat) : ''
   )
@@ -479,7 +482,8 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
         nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null,
         nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
         nutritionFatMaxG: nutritionEnabled ? fatVal : null,
-        nutritionTargetKcal: kcalVal
+        nutritionTargetKcal: kcalVal,
+        showActionPlan
       })
       onSaved(updated)
     } catch (err) {
@@ -674,6 +678,23 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
                 ))}
               </div>
               <p className="text-marine/40 text-sm mt-1">Unité d'affichage et de saisie du poids (les données sont stockées en kg).</p>
+            </div>
+
+            <div className="pt-4 border-t border-cream-dark">
+              <label className="flex items-center gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showActionPlan}
+                  onChange={e => setShowActionPlan(e.target.checked)}
+                  className="accent-gold w-4 h-4"
+                />
+                <span className="text-base font-medium text-marine">Afficher les priorités dans les documents du client</span>
+              </label>
+              <p className="text-marine/40 text-sm mt-1">
+                Liste automatique des points à travailler (rapport PDF et document interactif). Décochez si le
+                vrai focus du client est ailleurs (ex. une douleur) ou s'il ne veut pas d'emphase sur le poids —
+                vos « forces » et votre mot restent affichés.
+              </p>
             </div>
 
             <div className="pt-4 border-t border-cream-dark">

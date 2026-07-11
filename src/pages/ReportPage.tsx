@@ -324,7 +324,7 @@ export function ReportPage() {
       <CardioSection {...shared} computed={latestComputed} />
       <ForceSection {...shared} />
       <DosSection {...shared} />
-      <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} />
+      <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} showActionPlan={client.showActionPlan} />
     </article>
   )
 }
@@ -1820,7 +1820,7 @@ function MiniSpark({ values }: { values: number[] }) {
 }
 
 // ── Section 6 — Forces & plan d'action ───────────────────────────────────────
-function ForcesEtPlanSection({ latest, profile, coachName, signature }: { latest: Bilan; profile: BilanProfile; coachName: string; signature: string }) {
+function ForcesEtPlanSection({ latest, profile, coachName, signature, showActionPlan }: { latest: Bilan; profile: BilanProfile; coachName: string; signature: string; showActionPlan: boolean }) {
   const ranked = METRICS.map(m => {
     const value = num(latest.data[m.key])
     if (value === null) return null
@@ -1861,6 +1861,7 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature }: { latest
         )}
       </div>
 
+      {showActionPlan && (
       <div>
         <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
           <Target size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Votre plan d'action
@@ -1891,6 +1892,7 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature }: { latest
           ))
         )}
       </div>
+      )}
 
       <div style={{ marginTop: '12mm', background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
         <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>Le mot de votre kinésiologue</p>

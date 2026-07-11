@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `show_action_plan` integer DEFAULT true NOT NULL;

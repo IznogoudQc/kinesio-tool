@@ -33,6 +33,8 @@ interface Client {
   nutritionFatMaxG: number | null
   /** Calories cibles fixées manuellement (kcal). `null` = calcul automatique. */
   nutritionTargetKcal: number | null
+  /** Affiche la section « priorités » (plan d'action auto) dans les documents client. */
+  showActionPlan: boolean
   createdAt: string
   updatedAt: string
 }
@@ -330,6 +332,7 @@ interface Window {
           nutritionProteinPerLbLean?: number | null
           nutritionFatMaxG?: number | null
           nutritionTargetKcal?: number | null
+          showActionPlan?: boolean
         }
       ): Promise<Client>
       delete(id: string): Promise<void>

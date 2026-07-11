@@ -76,7 +76,8 @@ export async function generateInteractiveReportHtml(clientId: string): Promise<s
       nutritionRateKgPerWeek: client.nutritionRateKgPerWeek,
       nutritionProteinPerLbLean: client.nutritionProteinPerLbLean,
       nutritionFatMaxG: client.nutritionFatMaxG,
-      nutritionTargetKcal: client.nutritionTargetKcal
+      nutritionTargetKcal: client.nutritionTargetKcal,
+      showActionPlan: client.showActionPlan
     },
     avatarDataUrl: await avatarDataUrl(client.avatarFilename),
     bilans: list,

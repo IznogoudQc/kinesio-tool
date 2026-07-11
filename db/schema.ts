@@ -36,6 +36,11 @@ export const clients = sqliteTable('clients', {
   nutritionFatMaxG: real('nutrition_fat_max_g'),
   // Calories cibles fixées manuellement (kcal). `null` = calcul automatique.
   nutritionTargetKcal: real('nutrition_target_kcal'),
+  // Affiche la section « priorités » (plan d'action auto) dans les documents
+  // envoyés au client. Marie la désactive quand le vrai focus du client est
+  // ailleurs (douleur) ou qu'il ne veut pas d'emphase sur le poids — son « mot »
+  // porte alors les priorités. `true` par défaut.
+  showActionPlan: integer('show_action_plan', { mode: 'boolean' }).notNull().default(true),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

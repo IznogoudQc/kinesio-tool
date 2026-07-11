@@ -30,6 +30,7 @@ export const clientsService = {
       nutritionProteinPerLbLean?: number | null
       nutritionFatMaxG?: number | null
       nutritionTargetKcal?: number | null
+      showActionPlan?: boolean
     }
   ): Promise<Client> {
     return window.api.clients.update(id, data)

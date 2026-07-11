@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.9 — Priorités : interrupteur par client, à la demande de Marie)
+
+Retour de Marie : les priorités auto sont cliniquement justes, mais ce ne sont pas toujours celles du client
+(une douleur à régler, ou quelqu'un qui ne veut pas d'emphase sur son poids). L'algorithme ne peut pas le
+savoir — c'est son jugement clinique.
+
+Nouvelle case dans le dossier du client : **« Afficher les priorités dans les documents du client »** (cochée
+par défaut). Décochée, la liste automatique disparaît du **document HTML et du rapport PDF** ; les **forces**
+et le **mot du kinésiologue** restent — et c'est le mot de Marie qui porte alors le vrai focus.
+
+- Réglage **par client** (colonne `show_action_plan`, migration 0013, défaut `true` → aucun client existant
+  n'est modifié).
+- Quand masqué, le titre du document passe de « Vos forces, et par où continuer » à « Vos forces ».
+
+Version : 0.2.8 → 0.2.9.
+
 ## ✅ Fait (v0.2.8 — Zones de % de gras (ACE), à la demande de Marie)
 
 Marie voulait retrouver, comme dans son ancien logiciel, un repère gradué du **risque santé lié au % de gras**.

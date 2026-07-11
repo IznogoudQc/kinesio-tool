@@ -45,6 +45,7 @@ export interface StandaloneData {
     nutritionProteinPerLbLean: number | null
     nutritionFatMaxG: number | null
     nutritionTargetKcal: number | null
+    showActionPlan: boolean
   }
   /** Photo du client en data URI, ou `null` — le fichier reste autonome. */
   avatarDataUrl: string | null
@@ -439,6 +440,10 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
   const wins = detectWins({ computed, previous: previousComputed, bilans, currentData: activeData })
   const plan = buildActionPlan(activeData, profile)
+  // Marie peut masquer les priorités auto par client (quand le vrai focus du
+  // client est ailleurs). Ses « forces » et son « mot » restent.
+  const showPriorities = client.showActionPlan !== false
+  const hasPriorities = showPriorities && plan.priorities.length > 0
   const objectif = buildObjectif(client, activeData, computed, age, activeBilan.date)
   // Observations que Marie-Eve destine au client (≠ ses notes cliniques privées).
   const motDuKine = typeof activeData.notes === 'string' ? activeData.notes.trim() : ''
@@ -712,11 +717,21 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         </Section>
       )}
 
-      {(plan.forces.length > 0 || plan.priorities.length > 0 || motDuKine) && (
+      {(plan.forces.length > 0 || hasPriorities || motDuKine) && (
         <Section
           eyebrow="Et maintenant ?"
-          title="Vos forces, et par où continuer"
-          lead="Un bilan ne sert à rien s’il ne dit pas quoi faire ensuite. Voici ce sur quoi vous appuyer, et les deux ou trois choses qui feront la plus grande différence."
+          title={
+            hasPriorities
+              ? 'Vos forces, et par où continuer'
+              : plan.forces.length > 0
+                ? 'Vos forces'
+                : 'En terminant'
+          }
+          lead={
+            hasPriorities
+              ? 'Un bilan ne sert à rien s’il ne dit pas quoi faire ensuite. Voici ce sur quoi vous appuyer, et les deux ou trois choses qui feront la plus grande différence.'
+              : undefined
+          }
           tone="white"
         >
           {plan.forces.length > 0 && (
@@ -736,7 +751,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
             </div>
           )}
 
-          {plan.priorities.length > 0 && (
+          {hasPriorities && (
             <div>
               <p className="ed-eyebrow mb-4 text-gold-dark">Vos priorités</p>
               <ol className="space-y-8">
@@ -758,7 +773,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
             </div>
           )}
 
-          {plan.priorities.length === 0 && plan.forces.length > 0 && (
+          {showPriorities && plan.priorities.length === 0 && plan.forces.length > 0 && (
             <p className="ed-prose text-base text-marine/65">
               Aucun point faible marqué — beau travail. Maintenez vos habitudes actuelles.
             </p>
