@@ -642,6 +642,23 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.20 — Poids santé max + FC repos toujours visible (parité ancien logiciel))
+
+Comparaison du rapport de l'ancien logiciel de Marie (`.doc`) → deux éléments manquaient :
+
+1. **Poids santé maximum** — l'ancien rapport donnait DEUX poids-repères : « Poids Optimal Maximum » (haut de
+   la zone Optimal) ET « Poids santé maximum » (haut de la zone En santé). On n'affichait que le premier.
+   Désormais les deux, côte à côte (Dashboard + HTML + PDF), via `bodyFatTargetWeights` :
+   - Poids optimal : haut de « Optimal » (≤ 15 % H / 25 % F).
+   - Poids santé max. : haut de « En santé » (≤ 30 % H / 34 % F).
+   - Vérifié : homme 91,8 kg à 23,1 % → 183 lb et 222 lb, **identique à l'ancien rapport**.
+   - `optimalWeight` remplacé par `bodyFatTargetWeights` (retourne les deux). 10 tests.
+2. **FC au repos toujours visible** — l'ancien rapport l'affichait toujours (« 60 bpm · Sain ») ; le HTML ne la
+   montrait pas (le PDF l'avait déjà via ses blocs de détail). Ajoutée à la section « Cœur et endurance » du
+   document HTML, avec sa catégorie clinique (ACSM FC repos).
+
+Version : 0.2.19 → 0.2.20.
+
 ## ✅ Fait (v0.2.19 — Document HTML : l'objectif en texte libre du client s'affiche)
 
 Le document HTML n'affichait l'objectif **que** si le module nutrition était activé (cible chiffrée) ; le

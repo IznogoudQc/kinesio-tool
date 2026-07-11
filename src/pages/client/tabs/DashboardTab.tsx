@@ -30,7 +30,7 @@ import { detectHealthFlags } from '../../../lib/health-flags'
 import { HealthFlags } from '../dashboard/HealthFlags'
 import { BodyFatRiskBar } from '../../../components/BodyFatRiskBar'
 import { BodyFatTrend } from '../../../components/BodyFatTrend'
-import { optimalWeight, BF_RISK_HEX } from '../../../lib/body-fat-risk'
+import { bodyFatTargetWeights } from '../../../lib/body-fat-risk'
 import { kgToLb } from '../../../lib/units'
 
 function formatNumber(n: number | null | undefined): string {
@@ -301,8 +301,8 @@ export function DashboardTab() {
     })
     .filter((p): p is { date: string; pct: number } => p.pct !== null)
 
-  // Poids à atteindre pour entrer dans la zone optimale (à masse maigre constante).
-  const optWeight = optimalWeight(
+  // Poids-repères (optimal + santé max) dérivés du % de gras, à masse maigre constante.
+  const targetW = bodyFatTargetWeights(
     typeof activeData.pourcentage_gras === 'number' ? activeData.pourcentage_gras : null,
     typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null,
     client.sex
@@ -648,21 +648,19 @@ export function DashboardTab() {
 
           <BodyFatRiskBar pct={activeData.pourcentage_gras} sex={client.sex} />
 
-          {optWeight && (
+          {targetW && (
             <div className="rounded-lg bg-cream/60 border border-cream-dark/40 px-4 py-3">
-              {optWeight.atOptimal ? (
-                <p className="text-sm text-marine/75">
-                  <span className="font-semibold" style={{ color: BF_RISK_HEX.optimal }}>Déjà dans la zone optimale</span>{' '}
-                  (≤ {optWeight.targetBf} %).
-                </p>
-              ) : (
-                <p className="text-sm text-marine/75">
-                  Poids pour atteindre la <span className="font-semibold">zone optimale</span> (≤ {optWeight.targetBf} %) :{' '}
-                  <span className="font-bold text-marine tabular-nums">{Math.round(kgToLb(optWeight.targetKg))} lb</span>{' '}
-                  <span className="text-marine/50 tabular-nums">(− {Math.round(kgToLb(optWeight.deltaKg))} lb)</span>
-                </p>
-              )}
-              <p className="text-marine/40 text-[11px] mt-0.5">À masse maigre constante — repère indicatif, pas une cible de poids.</p>
+              <div className="flex flex-wrap gap-x-10 gap-y-2">
+                <div>
+                  <p className="text-marine/50 text-[11px] uppercase tracking-wide font-semibold">Poids optimal (≤ {targetW.optimal.targetBf} %)</p>
+                  <p className="text-marine text-2xl font-bold tabular-nums leading-tight">{Math.round(kgToLb(targetW.optimal.targetKg))} lb</p>
+                </div>
+                <div>
+                  <p className="text-marine/50 text-[11px] uppercase tracking-wide font-semibold">Poids santé max. (≤ {targetW.healthyMax.targetBf} %)</p>
+                  <p className="text-marine text-2xl font-bold tabular-nums leading-tight">{Math.round(kgToLb(targetW.healthyMax.targetKg))} lb</p>
+                </div>
+              </div>
+              <p className="text-marine/40 text-[11px] mt-1.5">À masse maigre constante — repères indicatifs, pas des cibles de poids.</p>
             </div>
           )}
 

@@ -77,33 +77,48 @@ export function optimalBodyFatMax(sex: 'F' | 'M'): number {
   return bodyFatRiskZones(sex)[1].max as number
 }
 
-export interface OptimalWeight {
-  /** Poids (kg) qui placerait le client au sommet de la zone optimale. */
-  targetKg: number
-  /** Poids à perdre (kg) pour y arriver — 0 si déjà atteint. */
-  deltaKg: number
-  /** % de gras cible utilisé (haut de « Optimal »). */
-  targetBf: number
-  /** Vrai si le client est déjà à/sous la cible. */
-  atOptimal: boolean
+/** % de gras = **haut de la zone « En santé »** (34 % femme, 30 % homme) — la
+ *  limite haute encore saine. */
+export function healthyBodyFatMax(sex: 'F' | 'M'): number {
+  return bodyFatRiskZones(sex)[2].max as number
 }
 
-/** Poids à atteindre pour entrer dans la zone optimale, **à masse maigre
- *  constante** : masse maigre = poids × (1 − %gras/100) ; poids-cible = masse
- *  maigre / (1 − %cible/100). `null` si données manquantes/aberrantes. */
-export function optimalWeight(
+export interface BfTargetWeight {
+  /** % de gras cible (haut de la zone). */
+  targetBf: number
+  /** Poids (kg) qui placerait le client à ce % de gras, à masse maigre constante. */
+  targetKg: number
+}
+
+export interface BfTargetWeights {
+  leanKg: number
+  /** Poids au sommet de la zone « Optimal » (le plus bas des deux). */
+  optimal: BfTargetWeight
+  /** Poids au sommet de la zone « En santé » — limite haute encore saine. */
+  healthyMax: BfTargetWeight
+}
+
+/** Deux poids-repères dérivés du % de gras courant, **à masse maigre constante**
+ *  (masse maigre = poids × (1 − %gras/100) ; poids-cible = masse maigre /
+ *  (1 − %cible/100)) : le poids « optimal » (haut de la zone Optimal) et le
+ *  « poids santé maximum » (haut de la zone En santé, comme l'ancien logiciel de
+ *  Marie). `null` si données manquantes/aberrantes. */
+export function bodyFatTargetWeights(
   pct: number | null | undefined,
   weightKg: number | null | undefined,
   sex: 'F' | 'M' | null
-): OptimalWeight | null {
+): BfTargetWeights | null {
   const p = num(pct)
   const w = num(weightKg)
   if ((sex !== 'F' && sex !== 'M') || p === null || w === null) return null
   if (w <= 0 || p <= 0 || p >= 100) return null
-  const targetBf = optimalBodyFatMax(sex)
-  const lean = w * (1 - p / 100)
-  const targetKg = lean / (1 - targetBf / 100)
-  return { targetKg, deltaKg: Math.max(0, w - targetKg), targetBf, atOptimal: p <= targetBf }
+  const leanKg = w * (1 - p / 100)
+  const at = (bf: number) => leanKg / (1 - bf / 100)
+  return {
+    leanKg,
+    optimal: { targetBf: optimalBodyFatMax(sex), targetKg: at(optimalBodyFatMax(sex)) },
+    healthyMax: { targetBf: healthyBodyFatMax(sex), targetKg: at(healthyBodyFatMax(sex)) }
+  }
 }
 
 /** Prépare tout le nécessaire pour dessiner la barre + situer le client. */

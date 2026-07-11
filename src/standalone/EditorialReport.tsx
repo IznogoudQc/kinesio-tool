@@ -22,7 +22,7 @@ import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
 import { Sparkline } from '../components/Sparkline'
 import { BodyFatRiskBar } from '../components/BodyFatRiskBar'
-import { optimalWeight, BF_RISK_HEX } from '../lib/body-fat-risk'
+import { bodyFatTargetWeights } from '../lib/body-fat-risk'
 import { kgToLb } from '../lib/units'
 import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
@@ -166,8 +166,8 @@ function Measure({
   const category: Category | null = useAcsm ? getCategorization(test, value as number, age as number, sex as 'F' | 'M', norms) : null
   // « +4 ml/kg/min pour atteindre Excellent » — la cible devient concrète.
   const next = useAcsm ? getNextCategoryTarget(test, value as number, age as number, sex as 'F' | 'M', norms) : null
-  // Poids indicatif pour entrer dans la zone optimale (% de gras uniquement).
-  const optWeight = test === 'bodyFat' && has ? optimalWeight(value as number, weightKg ?? null, sex) : null
+  // Poids-repères (optimal + santé max) — % de gras uniquement.
+  const targetW = test === 'bodyFat' && has ? bodyFatTargetWeights(value as number, weightKg ?? null, sex) : null
 
   return (
     <div className="border-t border-marine/10 py-6">
@@ -218,21 +218,19 @@ function Measure({
       {test === 'bodyFat' && has && (
         <div className="mt-5 space-y-3 border-t border-marine/10 pt-4">
           <BodyFatRiskBar pct={value} sex={sex} />
-          {optWeight && (
+          {targetW && (
             <div className="rounded-lg border border-marine/10 bg-marine/[0.03] px-4 py-3">
-              {optWeight.atOptimal ? (
-                <p className="text-sm text-marine/75">
-                  <span className="font-semibold" style={{ color: BF_RISK_HEX.optimal }}>Vous êtes déjà dans la zone optimale</span>{' '}
-                  (≤ {optWeight.targetBf} %).
-                </p>
-              ) : (
-                <p className="text-sm text-marine/75">
-                  Poids indicatif pour atteindre la <span className="font-semibold">zone optimale</span> (≤ {optWeight.targetBf} %) :{' '}
-                  <span className="font-bold tabular-nums text-marine">{Math.round(kgToLb(optWeight.targetKg))} lb</span>{' '}
-                  <span className="tabular-nums text-marine/50">(− {Math.round(kgToLb(optWeight.deltaKg))} lb)</span>
-                </p>
-              )}
-              <p className="mt-0.5 text-[11px] text-marine/40">À masse maigre constante — repère indicatif, pas une cible de poids.</p>
+              <div className="flex flex-wrap gap-x-10 gap-y-3">
+                <div>
+                  <p className="ed-eyebrow text-marine/40">Poids optimal (≤ {targetW.optimal.targetBf} %)</p>
+                  <p className="ed-display mt-0.5 text-2xl tabular-nums text-marine">{Math.round(kgToLb(targetW.optimal.targetKg))} lb</p>
+                </div>
+                <div>
+                  <p className="ed-eyebrow text-marine/40">Poids santé max. (≤ {targetW.healthyMax.targetBf} %)</p>
+                  <p className="ed-display mt-0.5 text-2xl tabular-nums text-marine">{Math.round(kgToLb(targetW.healthyMax.targetKg))} lb</p>
+                </div>
+              </div>
+              <p className="mt-1.5 text-[11px] text-marine/40">À masse maigre constante — repères indicatifs, pas des cibles de poids.</p>
             </div>
           )}
         </div>
@@ -473,6 +471,10 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   const objectif = buildObjectif(client, activeData, computed, age, activeBilan.date)
   // Objectif en texte libre saisi par Marie/le client — affiché même sans module nutrition.
   const objectifText = typeof activeData.objectif === 'string' ? activeData.objectif.trim() : ''
+  // FC au repos — toujours affichée dans la section cardio (repère de récupération).
+  const fcRepos = typeof activeData.fc_repos === 'number' && !Number.isNaN(activeData.fc_repos) ? activeData.fc_repos : null
+  const fcReposCat: Category | null =
+    fcRepos !== null && client.sex ? getCategorization('restingHeartRate', fcRepos, age ?? 40, client.sex) : null
   // Observations que Marie-Eve destine au client (≠ ses notes cliniques privées).
   const motDuKine = typeof activeData.notes === 'string' ? activeData.notes.trim() : ''
 
@@ -630,6 +632,25 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
               {age !== null && fitAge < age
                 ? `Sur le plan cardiorespiratoire, votre corps se comporte comme celui d’une personne de ${fitAge} ans. C’est ${age - fitAge} an${age - fitAge > 1 ? 's' : ''} de moins que votre âge réel.`
                 : `Estimation obtenue en comparant votre VO2max à la valeur médiane de chaque âge.`}
+            </p>
+          </div>
+        )}
+
+        {fcRepos !== null && (
+          <div className="mt-10 border-l-2 border-gold pl-6">
+            <p className="ed-eyebrow text-marine/40">Fréquence cardiaque au repos</p>
+            <p className="ed-display mt-2 text-5xl tabular-nums text-marine">
+              {fcRepos}
+              <span className="text-xl text-marine/45"> bpm</span>
+            </p>
+            <p className="ed-prose mt-2 text-base text-marine/65">
+              {fcReposCat && (
+                <>
+                  <span className="font-semibold" style={{ color: CAT_HEX[fcReposCat] }}>{CATEGORY_LABELS[fcReposCat]}</span>
+                  {' — '}
+                </>
+              )}
+              une fréquence de repos basse reflète un cœur efficace et une bonne récupération.
             </p>
           </div>
         )}
