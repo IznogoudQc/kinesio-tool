@@ -642,6 +642,25 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.15 — % de gras : grille de risque de l'ancien logiciel de Marie)
+
+Marie veut retrouver la présentation de son ancien logiciel pour le % de gras : une **grille de risque à
+5 zones**, avec du risque **aux deux extrémités** (trop maigre = risque, trop gras = risque), un seul palier
+d'âge (« moins de 70 ans »). On remplace donc la barre ACSM (v0.2.14) côté client (décision « A »).
+
+- Grilles (bornes fournies par Marie, source à valider) :
+  - Femme : Risques potentiels &lt;15 · **Optimal** 15-25 · En santé 25-34 · Risques modérés 34-42 · Risques élevés ≥42
+  - Homme : &lt;5 · **5-15** · 15-30 · 30-32,1 · ≥32,1
+- Nouveau design (sans la sphère de l'ancien logiciel) : barre « diapason » accordée au site (crème/marine/or),
+  ambre doux → deux verts → ambre → terracotta ; noms des zones en petites capitales, repère + pastille.
+- Côté client, le % de gras **n'affiche plus** le percentile ACSM ni la catégorie « Très bien » — seulement la
+  grille de risque. L'ACSM reste utilisé **en coulisse** pour le score de composition corporelle (/5) — inchangé.
+- Passé aux 3 surfaces client (document HTML, PDF, Dashboard) + au **PDF des barèmes** (« Exporter les barèmes »),
+  où la ligne % de gras devient un tableau « grille de risque » F/H distinct des colonnes À améliorer→Excellent.
+- `src/lib/body-fat-risk.ts` + `BodyFatRiskBar` (7 tests). Ancien `body-fat-zones.ts` / `BodyFatZoneBar` retirés.
+
+Version : 0.2.14 → 0.2.15.
+
 ## ✅ Fait (v0.2.14 — Zones de % de gras : bascule sur la table ACSM (celle de l'app))
 
 Marie a fourni le tableau qu'elle voulait : le **% de gras corporel ACSM (11ᵉ éd.), ajusté à l'âge et au sexe**.

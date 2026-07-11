@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { ACSM_TABLES } from '../lib/norms/acsm'
 import { getClinicalRange } from '../lib/norms/clinical'
 import type { NormRange, TestKey } from '../lib/norms/types'
+import { bodyFatRiskZones, type BfRiskZone } from '../lib/body-fat-risk'
 
 /** Document de référence des barèmes & formules — rendu pour export PDF via la
  *  fenêtre cachée (report-generator `generateBaremesPdf`). Les tables de
@@ -79,9 +80,53 @@ function Baro({ meta }: { meta: Meta }) {
 const CARDIO: Meta[] = [{ test: 'vo2max', label: 'VO2max', unit: 'ml/kg/min', source: 'ACSM 11ᵉ éd.' }]
 const COMPO: Meta[] = [
   { test: 'bmi', label: 'IMC', unit: 'kg/m²', source: 'OMS · indépendant de l’âge/sexe', mergeSexes: true },
-  { test: 'waistCircumference', label: 'Tour de taille', unit: 'cm', source: 'Santé Canada / ACSM' },
-  { test: 'bodyFat', label: '% de gras corporel', unit: '%', source: 'ACSM 11ᵉ éd.' }
+  { test: 'waistCircumference', label: 'Tour de taille', unit: 'cm', source: 'Santé Canada / ACSM' }
+  // Le % de gras utilise une grille de risque dédiée — voir <BodyFatRiskTable>.
 ]
+
+/** Plage formatée d'une zone de risque (« < 15 », « 15–25 », « ≥ 42 »). */
+function riskRange(z: BfRiskZone): string {
+  const f = (n: number) => n.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
+  if (z.min === 0) return `< ${f(z.max as number)}`
+  if (z.max === null) return `≥ ${f(z.min)}`
+  return `${f(z.min)}–${f(z.max)}`
+}
+
+/** % de gras — grille de **risque** (5 zones, palier « < 70 ans »). Colonnes
+ *  différentes des autres tests : risque aux deux extrémités. Lue depuis
+ *  `body-fat-risk.ts` → toujours synchro avec les barres du client. */
+function BodyFatRiskTable() {
+  const zonesF = bodyFatRiskZones('F')
+  const zonesM = bodyFatRiskZones('M')
+  // Couleur de cellule par zone : neutre (trop maigre) → verts → ambre → rouge.
+  const cls = ['c3', 'c5', 'c4', 'c2', 'c1']
+  const cells = (zones: BfRiskZone[]) => zones.map((z, i) => <td key={z.key} className={cls[i]}>{riskRange(z)}</td>)
+  return (
+    <div className="baro">
+      <div className="baro-t">
+        <h3>% de gras corporel</h3>
+        <span className="u">%</span>
+        <span className="badge low">grille de risque</span>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Groupe</th>
+            {zonesF.map((z, i) => <th key={z.key} className={cls[i]}>{z.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Homme &lt; 70</td>{cells(zonesM)}</tr>
+          <tr><td>Femme &lt; 70</td>{cells(zonesF)}</tr>
+        </tbody>
+      </table>
+      <p className="src">
+        Source : grille de référence (ancien logiciel de Marie) — à valider. Le score de composition corporelle (§ 8)
+        continue d'utiliser les percentiles ACSM pour le % de gras.
+      </p>
+    </div>
+  )
+}
 const FORCE: Meta[] = [
   { test: 'pushups', label: 'Pompes', unit: 'reps', source: 'ACSM 11ᵉ éd.' },
   { test: 'situps', label: 'Redressements assis', unit: 'reps', source: 'ACSM 11ᵉ éd.' },
@@ -138,14 +183,18 @@ export function BaremesPage() {
       <h2>1 · Principe de catégorisation</h2>
       <p>Chaque test est comparé aux percentiles (P10, P25, P50, P75) de la population de même âge et sexe :
         &lt; P10 = À améliorer, P10–P25 = Acceptable, P25–P50 = Bien, P50–P75 = Très bien, ≥ P75 = Excellent
-        (échelle 1 à 5). Pour les mesures où plus bas = mieux (% gras, IMC, tour de taille, tension, FC repos), l'échelle
+        (échelle 1 à 5). Pour les mesures où plus bas = mieux (IMC, tour de taille, tension, FC repos), l'échelle
         est inversée. Un score composite est la moyenne des scores des tests qui le composent.</p>
+      <p><b>Exception — le % de gras</b> est présenté au client via une <b>grille de risque dédiée</b> (5 zones, palier
+        « moins de 70 ans » — voir § 3), avec du risque aux deux extrémités (trop maigre comme trop gras). Les percentiles
+        ACSM du % de gras restent utilisés en coulisse pour le score de composition corporelle.</p>
 
       <h2>2 · Cardio &amp; endurance</h2>
       {CARDIO.map(m => <Baro key={m.test} meta={m} />)}
 
       <h2>3 · Composition corporelle</h2>
       {COMPO.map(m => <Baro key={m.test} meta={m} />)}
+      <BodyFatRiskTable />
 
       <h2>4 · Force &amp; souplesse</h2>
       {FORCE.map(m => <Baro key={m.test} meta={m} />)}
@@ -223,7 +272,8 @@ masse maigre = poids × (1 − %gras/100)   ·   poids-cible = maigre / (1 − %
       <h2>10 · Sources</h2>
       <ul className="src-list">
         <li>ACSM's Guidelines for Exercise Testing and Prescription, 11ᵉ éd. (2021).</li>
-        <li>Durnin &amp; Womersley (1974) · Siri (1961) · Brožek (1963) — % de gras.</li>
+        <li>Durnin &amp; Womersley (1974) · Siri (1961) · Brožek (1963) — calcul du % de gras (plis cutanés).</li>
+        <li><b>Grille de risque du % de gras</b> (palier &lt; 70 ans) — reprise de l'ancien logiciel de Marie, <b>source à valider</b>.</li>
         <li>Foster/Pollock (1984), Cooper (1968), Léger (1988) — VO2max.</li>
         <li>Tanaka (2001), Sayers (1999), Mifflin-St Jeor (1990), OMS/JNC.</li>
         <li><b>Hors ACSM (à valider en priorité)</b> : endurance du dos, saut vertical, puissance en watts, FC repos.</li>

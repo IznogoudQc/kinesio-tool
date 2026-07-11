@@ -21,7 +21,7 @@ import { useCountUp } from '../lib/useCountUp'
 import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
 import { Sparkline } from '../components/Sparkline'
-import { BodyFatZoneBar } from '../components/BodyFatZoneBar'
+import { BodyFatRiskBar } from '../components/BodyFatRiskBar'
 import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
@@ -153,10 +153,14 @@ function Measure({
   const anim = useCountUp(has ? (value as number) : null)
   const shown = has ? (anim ?? (value as number)) : null
 
-  const percentile = has && age !== null && sex ? getPercentile(test, value as number, age, sex, norms) : null
-  const category: Category | null = has && age !== null && sex ? getCategorization(test, value as number, age, sex, norms) : null
+  // Le % de gras n'affiche QUE la grille de risque de Marie (pas le percentile
+  // ACSM ni la catégorie) — décision « A ». L'ACSM reste utilisé en coulisse
+  // pour le score de composition corporelle.
+  const useAcsm = has && age !== null && sex && test !== 'bodyFat'
+  const percentile = useAcsm ? getPercentile(test, value as number, age as number, sex as 'F' | 'M', norms) : null
+  const category: Category | null = useAcsm ? getCategorization(test, value as number, age as number, sex as 'F' | 'M', norms) : null
   // « +4 ml/kg/min pour atteindre Excellent » — la cible devient concrète.
-  const next = has && age !== null && sex ? getNextCategoryTarget(test, value as number, age, sex, norms) : null
+  const next = useAcsm ? getNextCategoryTarget(test, value as number, age as number, sex as 'F' | 'M', norms) : null
 
   return (
     <div className="border-t border-marine/10 py-6">
@@ -203,10 +207,10 @@ function Measure({
         </p>
       )}
 
-      {/* Repère santé ACE — uniquement pour le % de gras. */}
+      {/* Grille de risque de Marie — uniquement pour le % de gras. */}
       {test === 'bodyFat' && has && (
         <div className="mt-5 border-t border-marine/10 pt-4">
-          <BodyFatZoneBar pct={value} sex={sex} age={age} norms={norms} />
+          <BodyFatRiskBar pct={value} sex={sex} />
         </div>
       )}
     </div>

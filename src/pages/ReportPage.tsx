@@ -32,7 +32,7 @@ import { classifyBloodPressure } from '../lib/norms/clinical'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
-import { bodyFatScale, BF_CAT_HEX } from '../lib/body-fat-zones'
+import { bodyFatRisk, BF_RISK_HEX } from '../lib/body-fat-risk'
 import { PRINCIPES } from '../lib/principes'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { fitnessAge } from '../lib/fitness-age'
@@ -1275,20 +1275,30 @@ function domainInterpretation({
   return parts.length > 0 ? parts.join(' ') : null
 }
 
-/** Barre des zones de % de gras (ACSM 11ᵉ éd.) — version PDF, styles inline. Même logique
- *  partagée que le document client et le Dashboard (`bodyFatScale`). */
-function PdfBodyFatZones({ pct, sex, age, norms }: { pct: number | null; sex: 'F' | 'M' | null; age: number | null; norms: NormsType }) {
-  const s = bodyFatScale(pct, sex, age, norms)
+/** Grille de risque du % de gras (grille de Marie, palier « moins de 70 ans ») —
+ *  version PDF, styles inline. Même logique partagée que le document client et le
+ *  Dashboard (`bodyFatRisk`). */
+function PdfBodyFatZones({ pct, sex }: { pct: number | null; sex: 'F' | 'M' | null }) {
+  const s = bodyFatRisk(pct, sex)
   if (!s || s.current === null || s.markerRatio === null || pct === null) return null
   const { zones, scaleMax, current, markerRatio } = s
   const markerPct = markerRatio * 100
   const labelLeft = Math.max(6, Math.min(94, markerPct))
   const bounds = zones.slice(1).map(z => z.min)
+  const widthOf = (z: (typeof zones)[number]) => (((z.max ?? scaleMax) - z.min) / scaleMax) * 100
   return (
     <div className="break-inside-avoid" style={{ marginTop: '6mm' }}>
       <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: INK_SOFT, marginBottom: '2.5mm' }}>
-        Zones de % de gras — vous êtes dans la zone «&nbsp;<span style={{ color: BF_CAT_HEX[current.category], fontWeight: 700 }}>{current.label}</span>&nbsp;»
+        Zone de % de gras — vous êtes dans «&nbsp;<span style={{ color: BF_RISK_HEX[current.key], fontWeight: 700 }}>{current.label}</span>&nbsp;»
       </p>
+      {/* Noms des zones au-dessus de la barre. */}
+      <div style={{ display: 'flex', marginBottom: '1mm' }}>
+        {zones.map(z => (
+          <span key={z.key} style={{ width: `${widthOf(z)}%`, textAlign: 'center', fontSize: '6pt', textTransform: 'uppercase', letterSpacing: '0.02em', color: AXIS, lineHeight: 1.15, padding: '0 0.3mm' }}>
+            {z.label}
+          </span>
+        ))}
+      </div>
       <div style={{ position: 'relative', height: '4mm' }}>
         <span style={{ position: 'absolute', left: `${labelLeft}%`, transform: 'translateX(-50%)', fontSize: '8pt', fontWeight: 700, color: MARINE }}>
           {fmt(pct)}&nbsp;%
@@ -1296,29 +1306,28 @@ function PdfBodyFatZones({ pct, sex, age, norms }: { pct: number | null; sex: 'F
       </div>
       <div style={{ position: 'relative' }}>
         <div style={{ display: 'flex', height: '3mm', borderRadius: '1.5mm', overflow: 'hidden' }}>
-          {zones.map(z => {
-            const w = (((z.max ?? scaleMax) - z.min) / scaleMax) * 100
-            return <div key={z.category} style={{ width: `${w}%`, background: BF_CAT_HEX[z.category] }} />
-          })}
+          {zones.map(z => (
+            <div key={z.key} style={{ width: `${widthOf(z)}%`, background: BF_RISK_HEX[z.key] }} />
+          ))}
         </div>
         <div style={{ position: 'absolute', top: 0, height: '3mm', left: `${markerPct}%`, width: '0.7mm', transform: 'translateX(-50%)', background: MARINE, boxShadow: '0 0 0 0.4mm #fff' }} />
       </div>
       <div style={{ position: 'relative', height: '4mm', marginTop: '1mm' }}>
         {bounds.map(b => (
           <span key={b} style={{ position: 'absolute', left: `${(b / scaleMax) * 100}%`, transform: 'translateX(-50%)', fontSize: '7pt', color: AXIS }}>
-            {b}
+            {b.toLocaleString('fr-CA', { maximumFractionDigits: 1 })}
           </span>
         ))}
       </div>
       <p style={{ fontSize: '7.5pt', color: AXIS, marginTop: '0.5mm' }}>
-        Référence : ACSM (11ᵉ éd.), ajusté selon l'âge et le sexe — même barème que la catégorie ci-dessus.
+        Grille de référence du % de gras — palier « moins de 70 ans ». Vert = zones favorables.
       </p>
     </div>
   )
 }
 
 // Composition — extras (chiffres clés + plis cutanés).
-function CompositionExtras({ latest, computed, weightUnit, sex, age, norms }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null; age: number | null; norms: NormsType }) {
+function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null }) {
   const d = latest.data as Record<string, unknown>
   const plis = [
     { label: 'Triceps', key: 'pli_triceps' },
@@ -1357,8 +1366,6 @@ function CompositionExtras({ latest, computed, weightUnit, sex, age, norms }: { 
       <PdfBodyFatZones
         pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)}
         sex={sex}
-        age={age}
-        norms={norms}
       />
       {plisPresents.length > 0 && (
         <div className="break-inside-avoid">
@@ -1504,7 +1511,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
         { kind: 'line', key: 'imc', title: 'IMC (kg/m²)', color: MARINE },
         { kind: 'line', key: 'tour_taille_cm', title: 'Tour de taille (cm)', color: GOLD }
       ]}
-      topExtra={<CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} sex={props.profile.sex} age={props.profile.age} norms={props.profile.norms} />}
+      topExtra={<CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} sex={props.profile.sex} />}
     />
   )
 }
