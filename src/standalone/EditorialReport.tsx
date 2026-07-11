@@ -4,7 +4,6 @@ import {
   computeAge,
   getCategorization,
   getNextCategoryTarget,
-  getPercentile,
   type Category,
   type NormsType,
   type TestKey
@@ -234,7 +233,6 @@ function Measure({
   // ACSM ni la catégorie) — décision « A ». L'ACSM reste utilisé en coulisse
   // pour le score de composition corporelle.
   const useAcsm = has && age !== null && sex && test !== 'bodyFat'
-  const percentile = useAcsm ? getPercentile(test, value as number, age as number, sex as 'F' | 'M', norms) : null
   const category: Category | null = useAcsm ? getCategorization(test, value as number, age as number, sex as 'F' | 'M', norms) : null
   // « +4 ml/kg/min pour atteindre Excellent » — la cible devient concrète.
   const next = useAcsm ? getNextCategoryTarget(test, value as number, age as number, sex as 'F' | 'M', norms) : null
@@ -263,12 +261,6 @@ function Measure({
       )}
 
       {category && <CategoryCue category={category} />}
-
-      {category && percentile !== null && (
-        <p className="mt-1.5 text-sm text-marine/55">
-          Mieux que {Math.round(percentile)} % des personnes de votre âge et de votre sexe.
-        </p>
-      )}
 
       {next && (
         <p className="mt-2 text-sm text-marine/70">

@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.37 — Document client : retrait des comparaisons « mieux que X % des personnes »)
+
+« Mieux que 0 % des personnes de votre âge et de votre sexe » est décourageant et pratiquement faux. On
+retire toutes les **comparaisons explicites avec la population** du document client :
+
+- **HTML** : la phrase « Mieux que X % des personnes… » (composant `Measure`).
+- **PDF** : « Xᵉ percentile » (cartes de détail) et « · Xᵉ perc. » (cartes « Vos forces »).
+- **Conservé** : les catégories (À améliorer → Excellent) — elles jugent le niveau sans dire « pire que X % » —
+  les barres de zones, et les cibles « pour atteindre Excellent ».
+- Le **Dashboard** (outil interne de Marie) garde les percentiles — non montré au client.
+
+Version : 0.2.36 → 0.2.37.
+
 ## ✅ Fait (v0.2.36 — PDF : objectif sur une seule page (graphique de trajectoire réduit))
 
 Dans le PDF, la section « Votre objectif » débordait : la carte (cible + macros) sur une page, le graphique

@@ -1698,9 +1698,6 @@ function MetricBlock({ metric, latest, recent, profile }: { metric: MetricDef; l
         <div style={{ flexShrink: 0 }}>
           <span className="report-display" style={{ fontSize: '30pt', fontWeight: 700, color: MARINE }}>{fmt(value)}</span>
           <span style={{ fontSize: '11pt', color: INK_SOFT, marginLeft: '1.5mm' }}>{metric.unit}</span>
-          {norm?.percentile !== null && norm?.percentile !== undefined && (
-            <p style={{ fontSize: '9pt', color: INK_SOFT }}>{Math.round(norm.percentile)}ᵉ percentile</p>
-          )}
           {protocol && <p style={{ fontSize: '8.5pt', color: AXIS, marginTop: '0.5mm' }}>Estimé via {protocol}</p>}
         </div>
         {spark.length >= 2 && (
@@ -1869,7 +1866,6 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature }: { latest
                 </div>
                 <p style={{ fontSize: '9.5pt', color: INK_SOFT }}>
                   {fmt(f.value)} {f.metric.unit}
-                  {f.percentile !== null && ` · ${Math.round(f.percentile)}ᵉ perc.`}
                 </p>
               </div>
             ))}
