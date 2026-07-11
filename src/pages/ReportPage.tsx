@@ -34,6 +34,7 @@ import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { RECO } from '../lib/action-plan'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
 import { bodyFatScale, BF_TONE_HEX } from '../lib/body-fat-zones'
+import { PRINCIPES } from '../lib/principes'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { fitnessAge } from '../lib/fitness-age'
 import { kgToLb } from '../lib/units'
@@ -1898,6 +1899,21 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature, showAction
         <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>Le mot de votre kinésiologue</p>
         {notes !== '' && <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '5mm' }}>{notes}</p>}
         <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: notes !== '' ? 'italic' : 'normal' }}>{signOff}</p>
+      </div>
+
+      {/* Cinq piliers de bien-être — clôture, identique au document interactif. */}
+      <div className="break-inside-avoid" style={{ marginTop: '10mm', paddingTop: '6mm', borderTop: `1px solid ${GRID}` }}>
+        <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '1.5mm' }}>L'équilibre au quotidien</p>
+        <p className="report-display" style={{ fontSize: '14pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>Cinq principes essentiels</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '4mm' }}>
+          {PRINCIPES.map(p => (
+            <div key={p.title} style={{ textAlign: 'center' }}>
+              <p.icon size={18} color={GOLD} strokeWidth={1.6} style={{ marginBottom: '1.5mm' }} />
+              <p style={{ fontSize: '9.5pt', fontWeight: 600, color: MARINE }}>{p.title}</p>
+              <p style={{ fontSize: '8pt', color: INK_SOFT, marginTop: '0.5mm', lineHeight: 1.35 }}>{p.line}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       <p style={{ marginTop: 'auto', paddingTop: '10mm', fontSize: '8pt', color: AXIS, textAlign: 'center' }}>

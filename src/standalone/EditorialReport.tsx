@@ -26,18 +26,9 @@ import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
 import { BilanSelectorPills } from '../pages/client/dashboard/BilanSelectorPills'
-import { Apple, Dumbbell, Moon, Smile, Wind } from 'lucide-react'
+import { PRINCIPES } from '../lib/principes'
 import forestUrl from '../assets/forest.jpg'
 import logoConseil from '../assets/logo-conseil.png'
-
-// Cinq piliers de bien-être affichés en clôture du document (contenu fixe).
-const PRINCIPES = [
-  { icon: Apple, title: 'Bonne alimentation', line: 'Nourrir son corps, sans se priver.' },
-  { icon: Dumbbell, title: 'De bons exercices', line: 'Bouger régulièrement, à votre rythme.' },
-  { icon: Smile, title: 'Pensées positives', line: 'Un mental qui soutient l’effort.' },
-  { icon: Wind, title: 'Bonne respiration', line: 'Le souffle, un outil de récupération.' },
-  { icon: Moon, title: 'Bon sommeil', line: 'C’est la nuit que le corps se répare.' }
-] as const
 
 /** Données injectées par le processus principal. Volontairement dépourvues de
  *  tout élément privé : ni notes cliniques, ni conseils IA, ni signaux

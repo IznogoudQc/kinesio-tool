@@ -642,6 +642,13 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.11 — Cinq principes essentiels aussi dans le PDF)
+
+Les cinq piliers (v0.2.10) s'affichent désormais **aussi dans le rapport PDF**, en clôture de la section
+forces/plan, après le mot du kinésiologue. La liste est extraite dans un module partagé
+(`src/lib/principes.ts`) que le document HTML et le PDF consomment — identiques, impossibles à diverger.
+Version : 0.2.10 → 0.2.11.
+
 ## ✅ Fait (v0.2.10 — « Cinq principes essentiels » en clôture (demande de Marie))
 
 Une section finale au document client, à la demande de Marie : cinq piliers de bien-être à garder en tête avec
