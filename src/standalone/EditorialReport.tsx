@@ -13,7 +13,7 @@ import { computeBilan, type BilanComputed, type BilanProfile, type CompositeScor
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../lib/synthesisBilan'
 import { detectWins } from '../lib/dashboard-wins'
 import { fitnessAge } from '../lib/fitness-age'
-import { buildActionPlan, formatNextTarget } from '../lib/action-plan'
+import { buildActionPlan } from '../lib/action-plan'
 import { buildObjectif } from '../lib/objectif'
 import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
 import { ACTIVITY_LABELS } from '../lib/nutrition'
@@ -46,7 +46,6 @@ export interface StandaloneData {
     nutritionProteinPerLbLean: number | null
     nutritionFatMaxG: number | null
     nutritionTargetKcal: number | null
-    showActionPlan: boolean
   }
   /** Photo du client en data URI, ou `null` — le fichier reste autonome. */
   avatarDataUrl: string | null
@@ -440,11 +439,9 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   const fitAge = fitnessAge(computed.vo2max ?? (typeof activeData.vo2max === 'number' ? activeData.vo2max : null), client.sex)
 
   const wins = detectWins({ computed, previous: previousComputed, bilans, currentData: activeData })
+  // On garde les « forces » (mises en valeur pour le client), pas les priorités
+  // auto — retirées à la demande de Marie (peu utiles, pas toujours le focus réel).
   const plan = buildActionPlan(activeData, profile)
-  // Marie peut masquer les priorités auto par client (quand le vrai focus du
-  // client est ailleurs). Ses « forces » et son « mot » restent.
-  const showPriorities = client.showActionPlan !== false
-  const hasPriorities = showPriorities && plan.priorities.length > 0
   const objectif = buildObjectif(client, activeData, computed, age, activeBilan.date)
   // Observations que Marie-Eve destine au client (≠ ses notes cliniques privées).
   const motDuKine = typeof activeData.notes === 'string' ? activeData.notes.trim() : ''
@@ -718,25 +715,10 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         </Section>
       )}
 
-      {(plan.forces.length > 0 || hasPriorities || motDuKine) && (
-        <Section
-          eyebrow="Et maintenant ?"
-          title={
-            hasPriorities
-              ? 'Vos forces, et par où continuer'
-              : plan.forces.length > 0
-                ? 'Vos forces'
-                : 'En terminant'
-          }
-          lead={
-            hasPriorities
-              ? 'Un bilan ne sert à rien s’il ne dit pas quoi faire ensuite. Voici ce sur quoi vous appuyer, et les deux ou trois choses qui feront la plus grande différence.'
-              : undefined
-          }
-          tone="white"
-        >
+      {(plan.forces.length > 0 || motDuKine) && (
+        <Section eyebrow="Et maintenant ?" title={plan.forces.length > 0 ? 'Vos forces' : 'En terminant'} tone="white">
           {plan.forces.length > 0 && (
-            <div className="mb-12">
+            <div>
               <p className="ed-eyebrow mb-4 text-gold-dark">Vos forces</p>
               <div className="grid gap-4 sm:grid-cols-3">
                 {plan.forces.map(f => (
@@ -750,34 +732,6 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
                 ))}
               </div>
             </div>
-          )}
-
-          {hasPriorities && (
-            <div>
-              <p className="ed-eyebrow mb-4 text-gold-dark">Vos priorités</p>
-              <ol className="space-y-8">
-                {plan.priorities.map((p, i) => (
-                  <li key={p.metric.key as string} className="flex gap-5">
-                    <span className="ed-display flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold text-lg font-bold text-marine">
-                      {i + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <p className="ed-display text-xl text-marine">{p.metric.label}</p>
-                      <p className="ed-prose mt-1.5 text-base text-marine/65">{p.advice}</p>
-                      {formatNextTarget(p) && (
-                        <p className="mt-2 text-sm font-semibold text-marine">Objectif : {formatNextTarget(p)}</p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </div>
-          )}
-
-          {showPriorities && plan.priorities.length === 0 && plan.forces.length > 0 && (
-            <p className="ed-prose text-base text-marine/65">
-              Aucun point faible marqué — beau travail. Maintenez vos habitudes actuelles.
-            </p>
           )}
 
           {motDuKine && (

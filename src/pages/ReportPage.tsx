@@ -31,7 +31,6 @@ import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { classifyBloodPressure } from '../lib/norms/clinical'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
-import { RECO } from '../lib/action-plan'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
 import { bodyFatScale, BF_TONE_HEX } from '../lib/body-fat-zones'
 import { PRINCIPES } from '../lib/principes'
@@ -325,7 +324,7 @@ export function ReportPage() {
       <CardioSection {...shared} computed={latestComputed} />
       <ForceSection {...shared} />
       <DosSection {...shared} />
-      <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} showActionPlan={client.showActionPlan} />
+      <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} />
     </article>
   )
 }
@@ -1821,7 +1820,7 @@ function MiniSpark({ values }: { values: number[] }) {
 }
 
 // ── Section 6 — Forces & plan d'action ───────────────────────────────────────
-function ForcesEtPlanSection({ latest, profile, coachName, signature, showActionPlan }: { latest: Bilan; profile: BilanProfile; coachName: string; signature: string; showActionPlan: boolean }) {
+function ForcesEtPlanSection({ latest, profile, coachName, signature }: { latest: Bilan; profile: BilanProfile; coachName: string; signature: string }) {
   const ranked = METRICS.map(m => {
     const value = num(latest.data[m.key])
     if (value === null) return null
@@ -1830,14 +1829,14 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature, showAction
     return { metric: m, value, category: norm.category, percentile: norm.percentile, next: norm.next, lowerIsBetter: norm.lowerIsBetter }
   }).filter((x): x is NonNullable<typeof x> => x !== null)
 
+  // Priorités auto retirées à la demande de Marie — on ne garde que les forces.
   const forces = ranked.filter(r => r.category === 'EXCELLENT' || r.category === 'TRES_BIEN').sort((a, b) => SCORE_OF[b.category] - SCORE_OF[a.category]).slice(0, 3)
-  const axes = ranked.filter(r => r.category === 'A_AMELIORER' || r.category === 'ACCEPTABLE').sort((a, b) => SCORE_OF[a.category] - SCORE_OF[b.category]).slice(0, 3)
 
   const notes = typeof latest.data.notes === 'string' ? latest.data.notes.trim() : ''
   const signOff = signature.trim() || `${coachName || 'Marie-Eve Bélanger'}\nKinésiologue`
 
   return (
-    <ReportSection title="Vos forces et votre plan d'action" sectionNumber="Section 6">
+    <ReportSection title="Vos forces" sectionNumber="Section 6">
       <div style={{ marginTop: '2mm', marginBottom: '9mm' }}>
         <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
           <Trophy size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Vos forces
@@ -1862,38 +1861,6 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature, showAction
         )}
       </div>
 
-      {showActionPlan && (
-      <div>
-        <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
-          <Target size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Votre plan d'action
-        </p>
-        {axes.length === 0 ? (
-          <p style={{ fontSize: '10pt', color: INK_SOFT }}>Aucun point faible marqué — beau travail ! Maintenez vos habitudes actuelles et vos résultats.</p>
-        ) : (
-          axes.map((a, i) => (
-            <div key={a.metric.key as string} style={{ display: 'flex', gap: '4mm', marginBottom: '5mm' }} className="break-inside-avoid">
-              <div style={{ flexShrink: 0, width: '8mm', height: '8mm', borderRadius: '50%', background: GOLD, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '11pt' }}>{i + 1}</div>
-              <div style={{ flex: 1 }}>
-                <div className="flex items-center justify-between">
-                  <span style={{ fontSize: '11pt', fontWeight: 600, color: MARINE }}>{a.metric.label}</span>
-                  <CategoryPill category={a.category} />
-                </div>
-                <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginTop: '0.5mm' }}>{RECO[a.metric.key] ?? 'Discutez d’un plan ciblé avec votre kinésiologue.'}</p>
-                {a.next && !a.next.isAtTop && (
-                  <p style={{ fontSize: '9.5pt', color: MARINE, marginTop: '1mm', fontWeight: 600 }}>
-                    Objectif : {a.lowerIsBetter ? '≤' : '≥'} {fmt(a.next.targetValue)} {a.metric.unit}{' '}
-                    <span style={{ color: INK_SOFT, fontWeight: 400 }}>
-                      pour atteindre « {CATEGORY_LABELS[a.next.nextCategory]} »
-                      {a.next.delta !== 0 && ` (${a.next.delta >= 0 ? '+' : ''}${fmt(a.next.delta)} ${a.metric.unit})`}
-                    </span>
-                  </p>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-      )}
 
       <div style={{ marginTop: '12mm', background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
         <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>Le mot de votre kinésiologue</p>

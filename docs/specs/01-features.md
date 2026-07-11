@@ -642,6 +642,18 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.12 — Priorités auto retirées (demande de Marie))
+
+Marie trouve les priorités automatiques peu utiles. Elles sont **retirées complètement** des documents envoyés
+au client : le document HTML et le rapport PDF ne montrent plus la liste « priorités / plan d'action ». Les
+**forces** et le **mot du kinésiologue** restent — c'est le mot de Marie qui guide.
+
+L'interrupteur par client ajouté en v0.2.9 devient inutile : il est supprimé, ainsi que la colonne
+`show_action_plan` (migration 0014, `DROP COLUMN`). Le titre de clôture passe à « Vos forces ».
+`buildActionPlan` reste utilisé pour les forces (les priorités ne sont simplement plus affichées).
+
+Version : 0.2.11 → 0.2.12.
+
 ## ✅ Fait (v0.2.11 — Cinq principes essentiels aussi dans le PDF)
 
 Les cinq piliers (v0.2.10) s'affichent désormais **aussi dans le rapport PDF**, en clôture de la section

@@ -1,0 +1,1 @@
+ALTER TABLE `clients` DROP COLUMN `show_action_plan`;
