@@ -22,6 +22,8 @@ import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
 import { Sparkline } from '../components/Sparkline'
 import { BodyFatRiskBar } from '../components/BodyFatRiskBar'
+import { optimalWeight, BF_RISK_HEX } from '../lib/body-fat-risk'
+import { kgToLb } from '../lib/units'
 import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
@@ -136,7 +138,8 @@ function Measure({
   norms,
   previousValue,
   lowerIsBetter = false,
-  history
+  history,
+  weightKg
 }: {
   label: string
   value: number | undefined
@@ -148,6 +151,8 @@ function Measure({
   previousValue?: number
   lowerIsBetter?: boolean
   history: (number | null)[]
+  /** Poids du bilan (kg) — sert au « poids optimal » du % de gras. */
+  weightKg?: number | null
 }) {
   const has = typeof value === 'number' && !Number.isNaN(value)
   const anim = useCountUp(has ? (value as number) : null)
@@ -161,6 +166,8 @@ function Measure({
   const category: Category | null = useAcsm ? getCategorization(test, value as number, age as number, sex as 'F' | 'M', norms) : null
   // « +4 ml/kg/min pour atteindre Excellent » — la cible devient concrète.
   const next = useAcsm ? getNextCategoryTarget(test, value as number, age as number, sex as 'F' | 'M', norms) : null
+  // Poids indicatif pour entrer dans la zone optimale (% de gras uniquement).
+  const optWeight = test === 'bodyFat' && has ? optimalWeight(value as number, weightKg ?? null, sex) : null
 
   return (
     <div className="border-t border-marine/10 py-6">
@@ -207,10 +214,27 @@ function Measure({
         </p>
       )}
 
-      {/* Grille de risque de Marie — uniquement pour le % de gras. */}
+      {/* Grille de risque de Marie + poids optimal — uniquement pour le % de gras. */}
       {test === 'bodyFat' && has && (
-        <div className="mt-5 border-t border-marine/10 pt-4">
+        <div className="mt-5 space-y-3 border-t border-marine/10 pt-4">
           <BodyFatRiskBar pct={value} sex={sex} />
+          {optWeight && (
+            <div className="rounded-lg border border-marine/10 bg-marine/[0.03] px-4 py-3">
+              {optWeight.atOptimal ? (
+                <p className="text-sm text-marine/75">
+                  <span className="font-semibold" style={{ color: BF_RISK_HEX.optimal }}>Vous êtes déjà dans la zone optimale</span>{' '}
+                  (≤ {optWeight.targetBf} %).
+                </p>
+              ) : (
+                <p className="text-sm text-marine/75">
+                  Poids indicatif pour atteindre la <span className="font-semibold">zone optimale</span> (≤ {optWeight.targetBf} %) :{' '}
+                  <span className="font-bold tabular-nums text-marine">{Math.round(kgToLb(optWeight.targetKg))} lb</span>{' '}
+                  <span className="tabular-nums text-marine/50">(− {Math.round(kgToLb(optWeight.deltaKg))} lb)</span>
+                </p>
+              )}
+              <p className="mt-0.5 text-[11px] text-marine/40">À masse maigre constante — repère indicatif, pas une cible de poids.</p>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -584,7 +608,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         lead="L’IMC seul dit peu de choses : un athlète musclé et une personne sédentaire peuvent avoir le même. C’est en le lisant avec le pourcentage de gras et le tour de taille qu’il prend son sens."
       >
         <Measure label="Indice de masse corporelle" value={activeData.imc} unit="kg/m²" test="bmi" {...measureProps} previousValue={compareData?.imc} lowerIsBetter history={historyOf('imc')} />
-        <Measure label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} />
+        <Measure label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />
         <Measure label="Tour de taille" value={activeData.tour_taille_cm} unit="cm" test="waistCircumference" {...measureProps} previousValue={compareData?.tour_taille_cm} lowerIsBetter history={historyOf('tour_taille_cm')} />
       </Section>
 

@@ -32,7 +32,7 @@ import { classifyBloodPressure } from '../lib/norms/clinical'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
-import { bodyFatRisk, BF_RISK_HEX } from '../lib/body-fat-risk'
+import { bodyFatRisk, BF_RISK_HEX, optimalWeight } from '../lib/body-fat-risk'
 import { PRINCIPES } from '../lib/principes'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { fitnessAge } from '../lib/fitness-age'
@@ -1326,6 +1326,25 @@ function PdfBodyFatZones({ pct, sex }: { pct: number | null; sex: 'F' | 'M' | nu
   )
 }
 
+/** Poids indicatif pour entrer dans la zone optimale (% de gras) — version PDF. */
+function PdfOptimalWeight({ pct, weightKg, sex }: { pct: number | null; weightKg: number | null; sex: 'F' | 'M' | null }) {
+  const ow = optimalWeight(pct, weightKg, sex)
+  if (!ow) return null
+  return (
+    <p className="break-inside-avoid" style={{ fontSize: '8.5pt', color: INK_SOFT, marginTop: '3mm' }}>
+      {ow.atOptimal ? (
+        <>Déjà dans la <b style={{ color: MARINE }}>zone optimale</b> (≤ {ow.targetBf} %).</>
+      ) : (
+        <>
+          Poids indicatif pour atteindre la <b style={{ color: MARINE }}>zone optimale</b> (≤ {ow.targetBf} %) :{' '}
+          <b style={{ color: MARINE }}>{Math.round(kgToLb(ow.targetKg))} lb</b> (− {Math.round(kgToLb(ow.deltaKg))} lb).
+          <span style={{ color: AXIS }}> À masse maigre constante — repère indicatif.</span>
+        </>
+      )}
+    </p>
+  )
+}
+
 // Composition — extras (chiffres clés + plis cutanés).
 function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null }) {
   const d = latest.data as Record<string, unknown>
@@ -1367,6 +1386,7 @@ function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bila
         pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)}
         sex={sex}
       />
+      <PdfOptimalWeight pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)} weightKg={num(d.poids_kg)} sex={sex} />
       {plisPresents.length > 0 && (
         <div className="break-inside-avoid">
           <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: INK_SOFT, marginBottom: '2.5mm', breakAfter: 'avoid' }}>Plis cutanés (mm)</p>

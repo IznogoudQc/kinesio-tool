@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.17 — Poids optimal du % de gras dans le document client + PDF)
+
+Le « poids optimal » (poids-cible pour la zone optimale), déjà sur le Dashboard (v0.2.16), est maintenant
+aussi montré **au client** dans le document HTML et le rapport PDF — comme le faisait l'ancien logiciel de
+Marie (« Poids Optimal Maximum »).
+
+- Sous la barre de % de gras : « Poids indicatif pour atteindre la zone optimale (≤ 25 % F / ≤ 15 % H) :
+  X lb (− Y lb) », ou « Vous êtes déjà dans la zone optimale » si le client y est.
+- Même helper partagé `optimalWeight` (masse maigre constante) → mêmes chiffres sur les 3 surfaces.
+- En lb, avec la mention « repère indicatif, pas une cible de poids ».
+
+Version : 0.2.16 → 0.2.17.
+
 ## ✅ Fait (v0.2.16 — Dashboard : section % de gras unifiée (courbe + poids-cible))
 
 Le Dashboard affichait le % de gras **deux fois** (carte XL en haut + section « Zones » en bas). On retire la
