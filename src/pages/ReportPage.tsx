@@ -40,7 +40,7 @@ import { kgToLb } from '../lib/units'
 import { dualWeight, estimatedGoalDate } from '../lib/objectif-format'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
-import logo from '../assets/logo.png'
+import logo from '../assets/logo-conseil.png'
 import '../print.css'
 
 // ── Palette imprimable ───────────────────────────────────────────────────────

@@ -39,10 +39,6 @@ interface StatCardXLProps {
   history?: (number | null)[]
 }
 
-function suffixe(p: number): string {
-  return Math.round(p) === 1 ? 'er' : 'e'
-}
-
 export function StatCardXL({
   label,
   value,
@@ -138,20 +134,6 @@ export function StatCardXL({
         </div>
       )}
 
-      {percentile !== null && (
-        <div className="flex items-center gap-2 mt-2 text-xs">
-          <span className="font-semibold text-marine">
-            {Math.round(percentile)}
-            <sup>{suffixe(percentile)}</sup> perc.
-          </span>
-          {delta && (
-            <span className={`font-medium ${delta.isBetter ? 'text-green-600' : 'text-red-500'}`}>
-              {delta.deltaPct >= 0 ? '+' : ''}
-              {delta.deltaPct.toFixed(0)} %
-            </span>
-          )}
-        </div>
-      )}
 
       {rangeInfo && hasValue && (
         <div className="mt-3">

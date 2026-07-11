@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.38 — Dashboard : percentiles retirés · PDF : logo Kinésio Conseil)
+
+- **Dashboard** : retrait du « Xᵉ perc. » (+ écart % vs moyenne) des cartes de stats (`StatCardXL`), comme
+  demandé pour le document client. Les percentiles restent disponibles en coulisse pour l'analyse IA. Cartes :
+  valeur + écart vs bilan précédent + barre de catégorie conservés.
+- **PDF** : la couverture utilise maintenant le **logo Kinésio Conseil** (`logo-conseil.png`, le même que le
+  document HTML) au lieu du logo « Kinésio Outils » (`logo.png`).
+
+Version : 0.2.37 → 0.2.38.
+
 ## ✅ Fait (v0.2.37 — Document client : retrait des comparaisons « mieux que X % des personnes »)
 
 « Mieux que 0 % des personnes de votre âge et de votre sexe » est décourageant et pratiquement faux. On
