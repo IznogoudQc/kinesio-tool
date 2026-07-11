@@ -104,16 +104,18 @@ function Section({
   title,
   lead,
   tone = 'paper',
+  id,
   children
 }: {
   eyebrow: string
   title: string
   lead?: string
   tone?: 'paper' | 'white'
+  id?: string
   children: ReactNode
 }) {
   return (
-    <section className={tone === 'white' ? 'bg-white' : 'bg-cream'}>
+    <section id={id} className={`ed-anchor ${tone === 'white' ? 'bg-white' : 'bg-cream'}`}>
       <div className="mx-auto max-w-5xl px-6 py-16 sm:px-8 sm:py-24">
         <Reveal>
           <p className="ed-eyebrow text-gold-dark">{eyebrow}</p>
@@ -141,7 +143,8 @@ function Measure({
   previousValue,
   lowerIsBetter = false,
   history,
-  weightKg
+  weightKg,
+  id
 }: {
   label: string
   value: number | undefined
@@ -155,6 +158,8 @@ function Measure({
   history: (number | null)[]
   /** Poids du bilan (kg) — sert au « poids optimal » du % de gras. */
   weightKg?: number | null
+  /** Ancre pour la navigation depuis la vue d'ensemble. */
+  id?: string
 }) {
   const has = typeof value === 'number' && !Number.isNaN(value)
   const anim = useCountUp(has ? (value as number) : null)
@@ -172,7 +177,7 @@ function Measure({
   const targetW = test === 'bodyFat' && has ? bodyFatTargetWeights(value as number, weightKg ?? null, sex) : null
 
   return (
-    <div className="border-t border-marine/10 py-6">
+    <div id={id} className="ed-anchor border-t border-marine/10 py-6">
       <p className="ed-eyebrow text-marine/40">{label}</p>
       <div className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="ed-display text-5xl tabular-nums text-marine sm:text-6xl">
@@ -281,14 +286,30 @@ const DOMAIN_ADVICE: Record<Category, string> = {
   A_AMELIORER: 'C’est le domaine à travailler en priorité — et donc celui qui progressera le plus vite.'
 }
 
-function CompositeRow({ label, subtitle, score }: { label: string; subtitle: string; score: CompositeScore }) {
+function CompositeRow({ label, subtitle, score, href }: { label: string; subtitle: string; score: CompositeScore; href?: string }) {
   const anim = useCountUp(score.score)
   const shown = anim ?? score.score
 
-  return (
-    <div className="flex items-baseline justify-between gap-4 border-t border-marine/10 py-5">
+  const inner = (
+    <>
       <div className="min-w-0">
-        <p className="ed-display text-xl text-marine sm:text-2xl">{label}</p>
+        <p className="ed-display flex items-center gap-2 text-xl text-marine sm:text-2xl">
+          {label}
+          {href && (
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="ed-no-print h-4 w-4 shrink-0 text-marine/25 transition-transform duration-200 group-hover:translate-y-0.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          )}
+        </p>
         <p className="mt-0.5 text-xs text-marine/40">{subtitle}</p>
       </div>
       <div className="shrink-0 text-right">
@@ -307,7 +328,16 @@ function CompositeRow({ label, subtitle, score }: { label: string; subtitle: str
           </p>
         )}
       </div>
-    </div>
+    </>
+  )
+
+  const rowClass = 'flex items-baseline justify-between gap-4 border-t border-marine/10 py-5'
+  return href ? (
+    <a href={href} className={`group -mx-3 rounded-lg px-3 transition-colors hover:bg-marine/[0.035] ${rowClass}`}>
+      {inner}
+    </a>
+  ) : (
+    <div className={rowClass}>{inner}</div>
   )
 }
 
@@ -604,11 +634,11 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         tone="white"
       >
         <div>
-          <CompositeRow label="Composition corporelle" subtitle="IMC, % de gras, tour de taille" score={computed.composition} />
-          <CompositeRow label="Pourcentage de gras" subtitle="Mesuré aux plis cutanés" score={computed.bodyFat} />
-          <CompositeRow label="Cœur et endurance" subtitle="VO2max" score={computed.aerobic} />
-          <CompositeRow label="Santé du dos" subtitle="Flexibilité, endurance, abdominaux" score={computed.backHealth} />
-          <CompositeRow label="Force musculaire" subtitle="Six tests" score={computed.musculoGlobal} />
+          <CompositeRow label="Composition corporelle" subtitle="IMC, % de gras, tour de taille" score={computed.composition} href="#composition" />
+          <CompositeRow label="Pourcentage de gras" subtitle="Mesuré aux plis cutanés" score={computed.bodyFat} href="#pourcentage-gras" />
+          <CompositeRow label="Cœur et endurance" subtitle="VO2max" score={computed.aerobic} href="#cardio" />
+          <CompositeRow label="Santé du dos" subtitle="Flexibilité, endurance, abdominaux" score={computed.backHealth} href="#force-mobilite" />
+          <CompositeRow label="Force musculaire" subtitle="Six tests" score={computed.musculoGlobal} href="#force-mobilite" />
         </div>
         {computed.overall.category && (
           <p className="ed-prose mt-8 text-base text-marine/65">{DOMAIN_ADVICE[computed.overall.category]}</p>
@@ -616,16 +646,18 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
       </Section>
 
       <Section
+        id="composition"
         eyebrow="Composition corporelle"
         title="Ce que raconte votre silhouette"
         lead="L’IMC seul dit peu de choses : un athlète musclé et une personne sédentaire peuvent avoir le même. C’est en le lisant avec le pourcentage de gras et le tour de taille qu’il prend son sens."
       >
         <Measure label="Indice de masse corporelle" value={activeData.imc} unit="kg/m²" test="bmi" {...measureProps} previousValue={compareData?.imc} lowerIsBetter history={historyOf('imc')} />
-        <Measure label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />
+        <Measure id="pourcentage-gras" label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />
         <Measure label="Tour de taille" value={activeData.tour_taille_cm} unit="cm" test="waistCircumference" {...measureProps} previousValue={compareData?.tour_taille_cm} lowerIsBetter history={historyOf('tour_taille_cm')} />
       </Section>
 
       <Section
+        id="cardio"
         eyebrow="Cœur et endurance"
         title="La mesure qui prédit le mieux votre santé"
         lead="Le VO2max est le volume d’oxygène que votre corps sait utiliser à l’effort maximal. C’est le meilleur indicateur unique de longévité en bonne santé — et il répond vite à l’entraînement."
@@ -691,6 +723,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
       </Section>
 
       <Section
+        id="force-mobilite"
         eyebrow="Force et mobilité"
         title="Six tests, six angles"
         lead="Chaque barre situe votre résultat parmi les personnes de votre âge et de votre sexe. Basculez en vue radar pour voir la forme d’ensemble de votre profil."

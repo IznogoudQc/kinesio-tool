@@ -17,6 +17,18 @@
   --color-cream-dark: #ece3d2;
 }
 
+/* Navigation par ancres depuis la vue d'ensemble : défilement doux (sauf si
+   l'utilisateur préfère réduire les animations) + petite marge pour ne pas
+   coller le titre de section au bord haut. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+.ed-anchor {
+  scroll-margin-top: 1.5rem;
+}
+
 .ed-display {
   font-family: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
   font-weight: 400;

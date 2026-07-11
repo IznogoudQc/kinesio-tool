@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.23 — Document HTML : vue d'ensemble cliquable (navigation par ancres))
+
+Dans le document HTML, les 5 lignes de « Cinq façons de lire votre condition physique » deviennent des
+**boutons/ancres** : cliquer sur un domaine fait défiler en douceur jusqu'à sa section détaillée.
+
+- Composition corporelle → section Composition · Pourcentage de gras → la mesure % de gras ·
+  Cœur et endurance → section Cardio · Santé du dos & Force musculaire → section « Force et mobilité ».
+- Chaque ligne : chevron ⌄ discret + surbrillance au survol. `<a href="#ancre">` + `id` sur les sections/mesures.
+- Défilement doux (`scroll-behavior: smooth`, désactivé si `prefers-reduced-motion`) + `scroll-margin-top`.
+- Purement HTML interactif — sans effet sur le PDF (paginé) ni l'impression (chevrons masqués).
+
+Version : 0.2.22 → 0.2.23.
+
 ## ✅ Fait (v0.2.22 — PDF : pression artérielle en barres de zones (comme le HTML))
 
 Le rapport PDF affichait la pression artérielle en **tableau** (valeur + pastille de catégorie). Il reprend
