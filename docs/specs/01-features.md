@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.36 — PDF : objectif sur une seule page (graphique de trajectoire réduit))
+
+Dans le PDF, la section « Votre objectif » débordait : la carte (cible + macros) sur une page, le graphique
+« Trajectoire vers votre objectif » sur la suivante. On **réduit le graphique de trajectoire** (46 mm au lieu
+de 72 mm, sans marge basse) pour que la carte + le graphique tiennent sur **une seule page**. `BigChartCard`
+accepte désormais `height`/`marginBottom` (les graphiques de domaine gardent leur grande taille).
+
+Version : 0.2.35 → 0.2.36.
+
 ## ✅ Fait (v0.2.35 — PDF : pression artérielle affichée une seule fois (barres de zones))
 
 Comme le % de gras, la pression artérielle apparaissait **deux fois** dans la section Cœur du PDF : les

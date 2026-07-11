@@ -717,7 +717,7 @@ function ObjectifBlock({
     </div>
 
     {projectionData !== null && (
-      <BigChartCard title={`Trajectoire vers votre objectif (poids en ${unit === 'lb' ? 'lb' : 'kg'})`}>
+      <BigChartCard title={`Trajectoire vers votre objectif (poids en ${unit === 'lb' ? 'lb' : 'kg'})`} height="46mm" marginBottom="0">
         <WeightProjectionChart data={projectionData} />
       </BigChartCard>
     )}
@@ -1588,11 +1588,11 @@ interface ChartPoint {
 }
 
 /** Carte de graphique pleine largeur (grand format). */
-function BigChartCard({ title, children }: { title: string; children: React.ReactElement }) {
+function BigChartCard({ title, children, height = '72mm', marginBottom = '10mm' }: { title: string; children: React.ReactElement; height?: string; marginBottom?: string }) {
   return (
-    <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm 4mm', marginBottom: '10mm' }}>
+    <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm 4mm', marginBottom }}>
       <p style={{ fontSize: '11pt', fontWeight: 600, color: MARINE, marginBottom: '3mm' }}>{title}</p>
-      <div style={{ width: '100%', height: '72mm' }}>
+      <div style={{ width: '100%', height }}>
         <ResponsiveContainer width="100%" height="100%">
           {children}
         </ResponsiveContainer>
