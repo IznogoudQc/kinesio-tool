@@ -206,7 +206,7 @@ function Measure({
       {/* Repère santé ACE — uniquement pour le % de gras. */}
       {test === 'bodyFat' && has && (
         <div className="mt-5 border-t border-marine/10 pt-4">
-          <BodyFatZoneBar pct={value} sex={sex} age={age} />
+          <BodyFatZoneBar pct={value} sex={sex} age={age} norms={norms} />
         </div>
       )}
     </div>

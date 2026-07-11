@@ -1,20 +1,24 @@
-import { bodyFatScale, BF_TONE_HEX } from '../lib/body-fat-zones'
+import { bodyFatScale, BF_CAT_HEX } from '../lib/body-fat-zones'
+import type { NormsType } from '../lib/norms'
 
-/** Barre graduée des zones de % de gras (InBody Canada, ajustées à l'âge), avec un repère à la valeur du
- *  client et le nom de sa zone. Repère de santé — complémentaire de la catégorie
- *  ACSM (percentiles) affichée ailleurs. Partagée : document client + Dashboard. */
+/** Barre graduée des zones de % de gras (ACSM 11ᵉ éd., ajustées à l'âge), avec un
+ *  repère à la valeur du client et le nom de sa zone. Les zones reprennent les
+ *  cinq catégories du moteur de normes : la zone affichée coïncide donc toujours
+ *  avec la catégorie ACSM montrée ailleurs. Partagée : document client + Dashboard. */
 export function BodyFatZoneBar({
   pct,
   sex,
   age,
+  norms = 'acsm',
   className = ''
 }: {
   pct: number | null | undefined
   sex: 'F' | 'M' | null
   age: number | null
+  norms?: NormsType
   className?: string
 }): React.JSX.Element | null {
-  const scale = bodyFatScale(pct, sex, age)
+  const scale = bodyFatScale(pct, sex, age, norms)
   if (!scale) return null
   const { zones, scaleMax, current, markerRatio } = scale
   const markerPct = markerRatio === null ? null : markerRatio * 100
@@ -25,8 +29,8 @@ export function BodyFatZoneBar({
     <div className={className}>
       {current && (
         <p className="text-sm text-marine/60">
-          Zone santé :{' '}
-          <span className="font-semibold" style={{ color: BF_TONE_HEX[current.tone] }}>
+          Votre zone :{' '}
+          <span className="font-semibold" style={{ color: BF_CAT_HEX[current.category] }}>
             {current.label}
           </span>{' '}
           <span className="text-marine/40">pour votre âge et votre sexe</span>
@@ -54,7 +58,7 @@ export function BodyFatZoneBar({
             {zones.map(z => {
               const zMax = z.max ?? scaleMax
               const w = ((zMax - z.min) / scaleMax) * 100
-              return <div key={z.key} style={{ width: `${w}%`, background: BF_TONE_HEX[z.tone] }} />
+              return <div key={z.category} style={{ width: `${w}%`, background: BF_CAT_HEX[z.category] }} />
             })}
           </div>
           {/* Trait repère du client. */}
@@ -82,7 +86,7 @@ export function BodyFatZoneBar({
       </div>
 
       <p className="mt-1 text-[11px] text-marine/40">
-        Zones de % de gras, ajustées selon l’âge — référence : InBody Canada.
+        Zones de % de gras, ajustées selon l’âge — référence : ACSM (11ᵉ éd.).
       </p>
     </div>
   )

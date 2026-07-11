@@ -32,7 +32,7 @@ import { classifyBloodPressure } from '../lib/norms/clinical'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
-import { bodyFatScale, BF_TONE_HEX } from '../lib/body-fat-zones'
+import { bodyFatScale, BF_CAT_HEX } from '../lib/body-fat-zones'
 import { PRINCIPES } from '../lib/principes'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { fitnessAge } from '../lib/fitness-age'
@@ -1275,10 +1275,10 @@ function domainInterpretation({
   return parts.length > 0 ? parts.join(' ') : null
 }
 
-/** Barre des zones de % de gras (InBody Canada) — version PDF, styles inline. Même logique
+/** Barre des zones de % de gras (ACSM 11ᵉ éd.) — version PDF, styles inline. Même logique
  *  partagée que le document client et le Dashboard (`bodyFatScale`). */
-function PdfBodyFatZones({ pct, sex, age }: { pct: number | null; sex: 'F' | 'M' | null; age: number | null }) {
-  const s = bodyFatScale(pct, sex, age)
+function PdfBodyFatZones({ pct, sex, age, norms }: { pct: number | null; sex: 'F' | 'M' | null; age: number | null; norms: NormsType }) {
+  const s = bodyFatScale(pct, sex, age, norms)
   if (!s || s.current === null || s.markerRatio === null || pct === null) return null
   const { zones, scaleMax, current, markerRatio } = s
   const markerPct = markerRatio * 100
@@ -1287,7 +1287,7 @@ function PdfBodyFatZones({ pct, sex, age }: { pct: number | null; sex: 'F' | 'M'
   return (
     <div className="break-inside-avoid" style={{ marginTop: '6mm' }}>
       <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: INK_SOFT, marginBottom: '2.5mm' }}>
-        Zones de % de gras — vous êtes dans la zone «&nbsp;<span style={{ color: BF_TONE_HEX[current.tone], fontWeight: 700 }}>{current.label}</span>&nbsp;»
+        Zones de % de gras — vous êtes dans la zone «&nbsp;<span style={{ color: BF_CAT_HEX[current.category], fontWeight: 700 }}>{current.label}</span>&nbsp;»
       </p>
       <div style={{ position: 'relative', height: '4mm' }}>
         <span style={{ position: 'absolute', left: `${labelLeft}%`, transform: 'translateX(-50%)', fontSize: '8pt', fontWeight: 700, color: MARINE }}>
@@ -1298,7 +1298,7 @@ function PdfBodyFatZones({ pct, sex, age }: { pct: number | null; sex: 'F' | 'M'
         <div style={{ display: 'flex', height: '3mm', borderRadius: '1.5mm', overflow: 'hidden' }}>
           {zones.map(z => {
             const w = (((z.max ?? scaleMax) - z.min) / scaleMax) * 100
-            return <div key={z.key} style={{ width: `${w}%`, background: BF_TONE_HEX[z.tone] }} />
+            return <div key={z.category} style={{ width: `${w}%`, background: BF_CAT_HEX[z.category] }} />
           })}
         </div>
         <div style={{ position: 'absolute', top: 0, height: '3mm', left: `${markerPct}%`, width: '0.7mm', transform: 'translateX(-50%)', background: MARINE, boxShadow: '0 0 0 0.4mm #fff' }} />
@@ -1311,14 +1311,14 @@ function PdfBodyFatZones({ pct, sex, age }: { pct: number | null; sex: 'F' | 'M'
         ))}
       </div>
       <p style={{ fontSize: '7.5pt', color: AXIS, marginTop: '0.5mm' }}>
-        Référence : InBody Canada (ajusté selon l'âge). Repère de santé, complémentaire au percentile ci-dessus.
+        Référence : ACSM (11ᵉ éd.), ajusté selon l'âge et le sexe — même barème que la catégorie ci-dessus.
       </p>
     </div>
   )
 }
 
 // Composition — extras (chiffres clés + plis cutanés).
-function CompositionExtras({ latest, computed, weightUnit, sex, age }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null; age: number | null }) {
+function CompositionExtras({ latest, computed, weightUnit, sex, age, norms }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null; age: number | null; norms: NormsType }) {
   const d = latest.data as Record<string, unknown>
   const plis = [
     { label: 'Triceps', key: 'pli_triceps' },
@@ -1358,6 +1358,7 @@ function CompositionExtras({ latest, computed, weightUnit, sex, age }: { latest:
         pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)}
         sex={sex}
         age={age}
+        norms={norms}
       />
       {plisPresents.length > 0 && (
         <div className="break-inside-avoid">
@@ -1503,7 +1504,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
         { kind: 'line', key: 'imc', title: 'IMC (kg/m²)', color: MARINE },
         { kind: 'line', key: 'tour_taille_cm', title: 'Tour de taille (cm)', color: GOLD }
       ]}
-      topExtra={<CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} sex={props.profile.sex} age={props.profile.age} />}
+      topExtra={<CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} sex={props.profile.sex} age={props.profile.age} norms={props.profile.norms} />}
     />
   )
 }

@@ -1,80 +1,46 @@
-/** Zones de pourcentage de gras corporel, **ajustées selon l'âge**, d'après le
- *  tableau d'InBody Canada (les seuils montent avec l'âge). Référence canadienne
- *  et citable, plus juste qu'un barème fixe.
+/** Zones de pourcentage de gras corporel, **ajustées selon l'âge**, dérivées
+ *  directement des normes **ACSM (11ᵉ éd.)** déjà utilisées par l'app pour
+ *  catégoriser le % de gras (`src/lib/norms/acsm.ts`, table `BODY_FAT`).
  *
- *  C'est un repère de **santé** distinct de la catégorie ACSM affichée ailleurs
- *  (qui, elle, compare le client aux percentiles de sa population). Complémentaires.
+ *  Comme la barre reprend exactement les cinq catégories du moteur de normes
+ *  (À améliorer / Acceptable / Bien / Très bien / Excellent), le nom de la zone
+ *  du client **coïncide toujours** avec la catégorie affichée ailleurs — plus de
+ *  contradiction possible entre « la barre » et « la catégorie ».
  *
- *  Source unique pour le document client, le rapport PDF et le Dashboard — mêmes
- *  bornes partout.
- *  https://inbodycanada.ca/fr/la-composition-corporelle/tableau-du-pourcentage-de-graisse-corporelle-un-guide-pour-vos-parametres-de-sante/
+ *  Source unique pour le document client, le rapport PDF et le Dashboard.
+ *  Référence : American College of Sports Medicine, *Guidelines for Exercise
+ *  Testing and Prescription*, 11ᵉ éd.
  */
 
-export type BfTone = 'low' | 'fit' | 'acceptable' | 'risk'
+import { getCategorization, getNormPercentiles } from './norms/index.ts'
+import { CATEGORY_LABELS, type Category, type NormsType } from './norms/types.ts'
+
+export { CATEGORY_LABELS }
+export type { Category }
+
+/** Couleurs hex des cinq zones — équivalents des classes Tailwind de
+ *  `CATEGORY_COLORS` (cohérence Dashboard / BilanDetail / document client). */
+export const BF_CAT_HEX: Record<Category, string> = {
+  A_AMELIORER: '#ef4444', // red-500
+  ACCEPTABLE: '#f97316', // orange-500
+  BIEN: '#ca8a04', // yellow-600
+  TRES_BIEN: '#22c55e', // green-500
+  EXCELLENT: '#15803d' // green-700
+}
 
 export interface BfZone {
-  key: string
+  category: Category
   label: string
   /** Borne inférieure incluse (%). */
   min: number
   /** Borne supérieure exclue (%), ou `null` = pas de plafond. */
   max: number | null
-  tone: BfTone
-}
-
-export const BF_TONE_HEX: Record<BfTone, string> = {
-  low: '#2563eb', // graisse essentielle (réserve faible) — bleu
-  fit: '#16a34a', // athlétique / en forme — vert
-  acceptable: '#ca8a04', // acceptable — ambre
-  risk: '#dc2626' // obésité — rouge
-}
-
-/** Bornes de transition [début « en forme », début « acceptable », début
- *  « obésité »] par sexe et par tranche d'âge (index 0 = 20-29 … 4 = 60+). */
-const CUTS: Record<'F' | 'M', [number, number, number][]> = {
-  M: [
-    [6, 14, 25], // 20-29
-    [6, 15, 26], // 30-39
-    [7, 16, 27], // 40-49
-    [8, 17, 28], // 50-59
-    [9, 18, 29] // 60+
-  ],
-  F: [
-    [14, 21, 32], // 20-29
-    [15, 22, 33], // 30-39
-    [16, 23, 34], // 40-49
-    [17, 24, 35], // 50-59
-    [18, 25, 36] // 60+
-  ]
-}
-
-/** Fin de l'échelle affichée (au-delà, la barre est saturée). */
-export const BF_SCALE_MAX: Record<'F' | 'M', number> = { F: 45, M: 38 }
-
-/** Index de tranche d'âge du tableau. `null`/< 30 → 20-29 (le plus jeune). */
-function ageBracket(age: number | null): number {
-  if (age === null || age < 30) return 0
-  if (age < 40) return 1
-  if (age < 50) return 2
-  if (age < 60) return 3
-  return 4
-}
-
-/** Les 4 zones (ajustées à l'âge) pour ce profil. */
-export function bodyFatZones(sex: 'F' | 'M', age: number | null): BfZone[] {
-  const [fit, acceptable, obese] = CUTS[sex][ageBracket(age)]
-  return [
-    { key: 'essentielle', label: 'Graisse essentielle', min: 0, max: fit, tone: 'low' },
-    { key: 'forme', label: 'En forme', min: fit, max: acceptable, tone: 'fit' },
-    { key: 'acceptable', label: 'Acceptable', min: acceptable, max: obese, tone: 'acceptable' },
-    { key: 'obesite', label: 'Obésité', min: obese, max: null, tone: 'risk' }
-  ]
 }
 
 export interface BodyFatScale {
   zones: BfZone[]
   scaleMax: number
-  /** Zone où se situe le client, ou `null` si `pct`/`sex` manquent. */
+  /** Zone où se situe le client, ou `null` si `pct`/`sex`/`âge` manquent. */
   current: BfZone | null
   /** Position 0–1 du repère sur l'échelle (bornée). */
   markerRatio: number | null
@@ -82,17 +48,37 @@ export interface BodyFatScale {
 
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
-/** Prépare tout le nécessaire pour dessiner la barre + situer le client. */
+/** Prépare tout le nécessaire pour dessiner la barre + situer le client, à
+ *  partir des percentiles ACSM pour ce profil (âge + sexe). Renvoie `null` si le
+ *  profil est incomplet ou si la norme ne couvre pas ce cas. */
 export function bodyFatScale(
   pct: number | null | undefined,
   sex: 'F' | 'M' | null,
-  age: number | null
+  age: number | null,
+  norms: NormsType = 'acsm'
 ): BodyFatScale | null {
   if (sex !== 'F' && sex !== 'M') return null
-  const zones = bodyFatZones(sex, age)
-  const scaleMax = BF_SCALE_MAX[sex]
+  if (typeof age !== 'number' || !Number.isFinite(age)) return null
+  const range = getNormPercentiles('bodyFat', age, sex, norms)
+  // % de gras est un test « lowerIsBetter » : sans ça, l'ordre des zones serait faux.
+  if (!range || !range.lowerIsBetter) return null
+
+  const { p10, p25, p50, p75 } = range.percentiles
+  // Ordre croissant de % de gras → gauche (peu de gras, Excellent) vers droite.
+  // Cutoffs identiques à `categorize()` : < p75 Excellent … ≥ p10 À améliorer.
+  const zones: BfZone[] = [
+    { category: 'EXCELLENT', label: CATEGORY_LABELS.EXCELLENT, min: 0, max: p75 },
+    { category: 'TRES_BIEN', label: CATEGORY_LABELS.TRES_BIEN, min: p75, max: p50 },
+    { category: 'BIEN', label: CATEGORY_LABELS.BIEN, min: p50, max: p25 },
+    { category: 'ACCEPTABLE', label: CATEGORY_LABELS.ACCEPTABLE, min: p25, max: p10 },
+    { category: 'A_AMELIORER', label: CATEGORY_LABELS.A_AMELIORER, min: p10, max: null }
+  ]
+
+  // « À améliorer » est ouvert vers le haut ; on laisse une marge visible à droite.
+  const scaleMax = p10 + 12
   const p = num(pct)
-  const current = p === null ? null : (zones.find(z => p >= z.min && (z.max === null || p < z.max)) ?? null)
+  const currentCat = p === null ? null : getCategorization('bodyFat', p, age, sex, norms)
+  const current = currentCat ? (zones.find(z => z.category === currentCat) ?? null) : null
   const markerRatio = p === null ? null : Math.max(0, Math.min(1, p / scaleMax))
   return { zones, scaleMax, current, markerRatio }
 }

@@ -631,7 +631,7 @@ export function DashboardTab() {
       {typeof activeData.pourcentage_gras === 'number' && client.sex && (
         <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm" style={{ animationDelay: '140ms' }}>
           <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold mb-3">Zones de % de gras</p>
-          <BodyFatZoneBar pct={activeData.pourcentage_gras} sex={client.sex} age={age} />
+          <BodyFatZoneBar pct={activeData.pourcentage_gras} sex={client.sex} age={age} norms={norms} />
         </section>
       )}
 

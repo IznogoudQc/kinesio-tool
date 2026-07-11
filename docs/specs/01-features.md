@@ -642,6 +642,24 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.14 — Zones de % de gras : bascule sur la table ACSM (celle de l'app))
+
+Marie a fourni le tableau qu'elle voulait : le **% de gras corporel ACSM (11ᵉ éd.), ajusté à l'âge et au sexe**.
+Vérification faite : c'est **exactement la table `BODY_FAT` déjà utilisée par l'app** pour catégoriser le % de gras
+(mêmes cutoffs, ligne pour ligne). On abandonne donc InBody (v0.2.13) et on **dérive la barre directement des
+normes ACSM** du moteur (`getNormPercentiles` + `getCategorization`).
+
+- 5 zones = les 5 catégories de l'app : À améliorer · Acceptable · Bien · Très bien · Excellent, ajustées à l'âge.
+- **Conséquence clé** : la zone affichée sur la barre **coïncide toujours** avec la catégorie ACSM montrée ailleurs
+  (fin de la confusion « Très bien » au-dessus / « Acceptable » sur la barre — elles venaient de deux sources).
+- Couleurs alignées sur `CATEGORY_COLORS` ; bornes = les percentiles p75/p50/p25/p10 pour l'âge et le sexe.
+- La barre suit la norme active (`norms`) — passée aux trois surfaces (document, PDF, Dashboard).
+- Source sous la barre : « ajustées selon l'âge — référence : ACSM (11ᵉ éd.) ».
+- `src/lib/body-fat-zones.ts` réécrit, 8 tests (dont : la zone coïncide avec `getCategorization`, cutoffs = percentiles,
+  ajustement par âge H et F).
+
+Version : 0.2.13 → 0.2.14.
+
 ## ✅ Fait (v0.2.13 — Zones de % de gras : table canadienne ajustée à l'âge (InBody Canada))
 
 Sur suggestion de Marie, la barre des zones de % de gras passe d'ACE (barème fixe américain) au tableau

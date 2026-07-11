@@ -1,47 +1,57 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { bodyFatScale, bodyFatZones } from './body-fat-zones.ts'
+import { bodyFatScale } from './body-fat-zones.ts'
+import { getCategorization, getNormPercentiles } from './norms/index.ts'
 
 test('sexe inconnu → pas d’échelle', () => {
   assert.equal(bodyFatScale(22, null, 40), null)
 })
 
-test('homme 25 ans, 23 % → « Acceptable » (14–24 à 20-29)', () => {
-  assert.equal(bodyFatScale(23, 'M', 25)!.current?.key, 'acceptable')
+test('âge inconnu → pas d’échelle (les normes ACSM sont par tranche d’âge)', () => {
+  assert.equal(bodyFatScale(22, 'M', null), null)
 })
 
-test('homme 25 ans, 25 % → « Obésité » ; 24,9 % reste « Acceptable »', () => {
-  assert.equal(bodyFatScale(25, 'M', 25)!.current?.key, 'obesite')
-  assert.equal(bodyFatScale(24.9, 'M', 25)!.current?.key, 'acceptable')
-})
-
-test('ajustement selon l’âge : 25 % chez l’homme', () => {
-  // 20-29 : obésité dès 25. 60+ : encore « Acceptable » (18–28).
-  assert.equal(bodyFatScale(25, 'M', 25)!.current?.key, 'obesite')
-  assert.equal(bodyFatScale(25, 'M', 65)!.current?.key, 'acceptable')
-})
-
-test('femme : la zone acceptable monte avec l’âge (jusqu’à 35 à 60+)', () => {
-  // 34 % : obésité à 20-29 (≥32), mais « Acceptable » à 60+ (25–35).
-  assert.equal(bodyFatScale(34, 'F', 25)!.current?.key, 'obesite')
-  assert.equal(bodyFatScale(34, 'F', 65)!.current?.key, 'acceptable')
-})
-
-test('femme 30 ans, 18 % → « En forme » (15–21)', () => {
-  assert.equal(bodyFatScale(18, 'F', 30)!.current?.key, 'forme')
-})
-
-test('âge inconnu → tranche 20-29 par défaut', () => {
+test('les 5 zones ACSM correspondent aux cutoffs des percentiles (H 20-29)', () => {
+  const p = getNormPercentiles('bodyFat', 25, 'M', 'acsm')!.percentiles
+  const zones = bodyFatScale(20, 'M', 25)!.zones
   assert.deepEqual(
-    bodyFatZones('M', null).map(z => z.max),
-    bodyFatZones('M', 25).map(z => z.max)
+    zones.map(z => [z.category, z.min, z.max]),
+    [
+      ['EXCELLENT', 0, p.p75],
+      ['TRES_BIEN', p.p75, p.p50],
+      ['BIEN', p.p50, p.p25],
+      ['ACCEPTABLE', p.p25, p.p10],
+      ['A_AMELIORER', p.p10, null]
+    ]
   )
 })
 
-test('4 zones contiguës, la dernière sans plafond', () => {
+test('la zone du client coïncide toujours avec la catégorie ACSM', () => {
+  for (const [pct, sex, age] of [
+    [10, 'M', 25], [15, 'M', 25], [17, 'M', 25], [20, 'M', 25], [33, 'M', 25],
+    [18, 'F', 30], [24, 'F', 30], [33, 'F', 65]
+  ] as const) {
+    assert.equal(
+      bodyFatScale(pct, sex, age)!.current?.category,
+      getCategorization('bodyFat', pct, age, sex, 'acsm')
+    )
+  }
+})
+
+test('ajustement selon l’âge — homme 25 % : « À améliorer » à 25 ans, « Bien » à 45 ans', () => {
+  assert.equal(bodyFatScale(25, 'M', 25)!.current?.category, 'A_AMELIORER')
+  assert.equal(bodyFatScale(25, 'M', 45)!.current?.category, 'BIEN')
+})
+
+test('ajustement selon l’âge — femme 33 % : « À améliorer » à 25 ans, « Acceptable » à 65 ans', () => {
+  assert.equal(bodyFatScale(33, 'F', 25)!.current?.category, 'A_AMELIORER')
+  assert.equal(bodyFatScale(33, 'F', 65)!.current?.category, 'ACCEPTABLE')
+})
+
+test('5 zones contiguës, ascendantes, la dernière sans plafond', () => {
   for (const sex of ['F', 'M'] as const) {
-    const z = bodyFatZones(sex, 45)
-    assert.equal(z.length, 4)
+    const z = bodyFatScale(20, sex, 45)!.zones
+    assert.equal(z.length, 5)
     for (let i = 1; i < z.length; i++) assert.equal(z[i].min, z[i - 1].max)
     assert.equal(z[z.length - 1].max, null)
   }
