@@ -471,6 +471,8 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   // auto — retirées à la demande de Marie (peu utiles, pas toujours le focus réel).
   const plan = buildActionPlan(activeData, profile)
   const objectif = buildObjectif(client, activeData, computed, age, activeBilan.date)
+  // Objectif en texte libre saisi par Marie/le client — affiché même sans module nutrition.
+  const objectifText = typeof activeData.objectif === 'string' ? activeData.objectif.trim() : ''
   // Observations que Marie-Eve destine au client (≠ ses notes cliniques privées).
   const motDuKine = typeof activeData.notes === 'string' ? activeData.notes.trim() : ''
 
@@ -662,16 +664,23 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         </Section>
       )}
 
-      {objectif && (
+      {(objectifText !== '' || objectif) && (
         <Section
           eyebrow="Votre objectif"
-          title={objectif.atGoal ? 'Vous y êtes.' : `Cap sur ${objectif.target} % de gras`}
+          title={objectif ? (objectif.atGoal ? 'Vous y êtes.' : `Cap sur ${objectif.target} % de gras`) : 'Votre cap'}
           lead={
-            objectif.atGoal
-              ? 'Vous avez atteint la cible de composition fixée avec votre kinésiologue. L’enjeu devient de la tenir dans le temps.'
-              : 'Une cible chiffrée, une échéance réaliste, et de quoi vous y rendre sans perdre de muscle.'
+            objectif
+              ? objectif.atGoal
+                ? 'Vous avez atteint la cible de composition fixée avec votre kinésiologue. L’enjeu devient de la tenir dans le temps.'
+                : 'Une cible chiffrée, une échéance réaliste, et de quoi vous y rendre sans perdre de muscle.'
+              : undefined
           }
         >
+          {objectifText !== '' && (
+            <p className="ed-prose text-2xl italic leading-relaxed text-marine sm:text-3xl">«&nbsp;{objectifText}&nbsp;»</p>
+          )}
+          {objectif && (
+          <div className={objectifText !== '' ? 'mt-10' : ''}>
           {!objectif.atGoal && (
             <div className="grid gap-8 sm:grid-cols-3">
               <div>
@@ -739,6 +748,8 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
                 d’activité. Ils ne remplacent pas l’avis d’une nutritionniste.
               </p>
             </div>
+          )}
+          </div>
           )}
         </Section>
       )}

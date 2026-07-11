@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.19 — Document HTML : l'objectif en texte libre du client s'affiche)
+
+Le document HTML n'affichait l'objectif **que** si le module nutrition était activé (cible chiffrée) ; le
+**texte libre** saisi par Marie/le client (`data.objectif`) — la citation «&nbsp;…&nbsp;» du PDF — n'apparaissait
+jamais. Corrigé :
+
+- La section « Votre objectif » du HTML montre maintenant la citation en italique du texte libre.
+- Elle s'affiche même **sans module nutrition** (titre « Votre cap »). Avec nutrition, la citation vient
+  au-dessus des cibles chiffrées (poids à perdre, échéance, macros).
+- Aligne le HTML sur le PDF (qui affichait déjà les deux).
+
+Version : 0.2.18 → 0.2.19.
+
 ## ✅ Fait (v0.2.18 — PDF : « Votre objectif » déplacé dans sa propre section (fin))
 
 Dans le rapport PDF, l'encadré « Votre objectif » était coincé **en tête de la Section 1** (Vue d'ensemble),
