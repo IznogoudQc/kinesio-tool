@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.33 — PDF : % de gras affiché une seule fois (grille de risque))
+
+Dans le PDF, le % de gras apparaissait **deux fois** dans la section Composition : la **grille de risque** de
+Marie (Optimal / En santé…) ET une **carte ACSM** (percentile + « pour atteindre Excellent »). On retire la
+carte ACSM (`pourcentage_gras` sorti des `detailKeys` de la section Composition) — cohérent avec la décision
+« côté client, le % de gras ne montre que la grille de Marie ». L'IMC et le tour de taille gardent leur carte.
+
+Version : 0.2.32 → 0.2.33.
+
 ## ✅ Fait (v0.2.32 — PDF : refonte éditoriale (au style du document HTML, imprimable)
 
 Le rapport PDF adopte l'identité du document client (option « imprimable » : corps blanc + panneaux crème).
