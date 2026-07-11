@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.27 — Dashboard : habillage éditorial « niveau 2 » (en-têtes de section))
+
+Suite du niveau 1 : les grandes sections du Dashboard prennent des **en-têtes éditoriaux** façon document
+client, sans changement fonctionnel.
+
+- Nouveau composant `SectionHead` (intitulé doré en petites capitales + titre en serif + emplacement à droite
+  pour une valeur ou un contrôle).
+- Appliqué à : **% de gras** (« Composition corporelle » / « Pourcentage de gras », valeur à droite),
+  **progression** (« Dans le temps » / « Votre progression »), **analyse** (« Analyse » / « Forces et axes de
+  progrès », bouton IA à droite).
+- Plus d'air entre les sections (`space-y-8`). Aucune perte d'interactivité.
+
+Version : 0.2.26 → 0.2.27.
+
 ## ✅ Fait (v0.2.26 — Dashboard : habillage éditorial « niveau 1 » (comme le document client))
 
 Le Dashboard adopte l'identité visuelle du document client, sans rien perdre de son interactivité :

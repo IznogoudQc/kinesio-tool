@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Calculator, FileText, FileUp, Globe, Info, Mail, PartyPopper, Ruler } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
@@ -36,6 +36,20 @@ import { kgToLb } from '../../../lib/units'
 function formatNumber(n: number | null | undefined): string {
   if (typeof n !== 'number' || Number.isNaN(n)) return '—'
   return n.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
+}
+
+/** En-tête de section éditorial (niveau 2) : intitulé doré en petites capitales +
+ *  titre en serif, avec un emplacement optionnel à droite (contrôle, bouton). */
+function SectionHead({ eyebrow, title, right }: { eyebrow?: string; title: string; right?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+      <div className="min-w-0">
+        {eyebrow && <p className="dash-eyebrow text-gold-dark">{eyebrow}</p>}
+        <h2 className="dash-display mt-1 text-2xl leading-tight text-marine sm:text-3xl">{title}</h2>
+      </div>
+      {right}
+    </div>
+  )
 }
 
 export function DashboardTab() {
@@ -552,7 +566,7 @@ export function DashboardTab() {
 
   return (
     <div className="dash-editorial bg-cream min-h-full">
-    <div className="p-6 lg:p-8 max-w-7xl space-y-5">
+    <div className="p-6 lg:p-8 max-w-7xl space-y-8">
       {Header}
 
       {count >= 1 && (
@@ -636,16 +650,19 @@ export function DashboardTab() {
 
       {typeof activeData.pourcentage_gras === 'number' && client.sex && (
         <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4" style={{ animationDelay: '140ms' }}>
-          <div className="flex items-baseline justify-between gap-3 flex-wrap">
-            <div>
-              <p className="dash-eyebrow text-gold-dark">% de gras</p>
-              <p className="dash-display text-marine text-5xl font-bold leading-none mt-1.5">
-                {formatNumber(activeData.pourcentage_gras)}
-                <span className="text-lg font-medium text-marine/45 ml-1.5">%</span>
-              </p>
-            </div>
-            <p className="text-marine/40 text-xs">du {formatBilanDate((activeBilan ?? latest)!.date)}</p>
-          </div>
+          <SectionHead
+            eyebrow="Composition corporelle"
+            title="Pourcentage de gras"
+            right={
+              <div className="text-right">
+                <p className="dash-display text-marine text-5xl font-bold leading-none">
+                  {formatNumber(activeData.pourcentage_gras)}
+                  <span className="text-lg font-medium text-marine/45 ml-1.5">%</span>
+                </p>
+                <p className="text-marine/40 text-xs mt-1">du {formatBilanDate((activeBilan ?? latest)!.date)}</p>
+              </div>
+            }
+          />
 
           <BodyFatRiskBar pct={activeData.pourcentage_gras} sex={client.sex} />
 
@@ -682,7 +699,9 @@ export function DashboardTab() {
       )}
 
       {hasMultiple ? (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <section className="space-y-5">
+          <SectionHead eyebrow="Dans le temps" title="Votre progression" />
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           <div className="lg:col-span-8 space-y-5">
             <ProgressionChart
               bilans={bilans!}
@@ -706,7 +725,8 @@ export function DashboardTab() {
             {MesuresPanel}
             <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} />
           </div>
-        </div>
+          </div>
+        </section>
       ) : (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -725,11 +745,12 @@ export function DashboardTab() {
         </>
       )}
 
-      <section className="dash-rise space-y-3" style={{ animationDelay: '240ms' }}>
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <p className="dash-eyebrow text-gold-dark">Analyse du bilan</p>
-          {!printMode && <AIAnalysisPanel sex={client.sex} age={age} metrics={aiMetrics} />}
-        </div>
+      <section className="dash-rise space-y-4" style={{ animationDelay: '240ms' }}>
+        <SectionHead
+          eyebrow="Analyse"
+          title="Forces et axes de progrès"
+          right={!printMode && <AIAnalysisPanel sex={client.sex} age={age} metrics={aiMetrics} />}
+        />
         <StrengthsAndWeaknesses data={activeData} age={age} sex={client.sex} norms={norms} />
       </section>
 
