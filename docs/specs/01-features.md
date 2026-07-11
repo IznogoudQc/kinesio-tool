@@ -642,6 +642,18 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.25 — Document HTML : note du domaine dans l'en-tête de chaque section)
+
+Chaque section détaillée du document HTML affiche maintenant **sa note** dans l'en-tête, à droite du titre
+(comme dans la vue d'ensemble) : grand chiffre « X.X / 5 » + catégorie colorée + petite barre dégradée.
+
+- Composition corporelle, Cœur et endurance : une note.
+- Force et mobilité (2 domaines) : deux notes étiquetées (Santé du dos · Force musculaire).
+- Nouveaux `ScoreValue` / `ScoreBadge` ; `Section` accepte `scores?: {label?, score}[]`.
+- En-tête en flex responsive (note sous le titre sur mobile). Purement HTML.
+
+Version : 0.2.24 → 0.2.25.
+
 ## ✅ Fait (v0.2.24 — Vue d'ensemble : « Quatre façons » (% de gras fondu dans Composition))
 
 Le % de gras fait partie de la Composition corporelle — il n'a donc plus de ligne à part dans la vue

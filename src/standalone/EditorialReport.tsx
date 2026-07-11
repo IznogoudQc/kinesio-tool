@@ -99,12 +99,55 @@ function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }
   )
 }
 
+/** Note d'un domaine (X.X / 5 + catégorie colorée). `big` pour l'en-tête solo. */
+function ScoreValue({ score, big = false }: { score: CompositeScore; big?: boolean }) {
+  const anim = useCountUp(score.score)
+  const shown = anim ?? score.score
+  return (
+    <div>
+      <p className={`ed-display tabular-nums text-marine sm:text-right ${big ? 'text-4xl sm:text-5xl' : 'text-2xl sm:text-3xl'}`}>
+        {shown === null ? '—' : shown.toFixed(1)}
+        <span className="text-base text-marine/35"> / 5</span>
+      </p>
+      {score.category && (
+        <p className="mt-1 flex items-center gap-2 text-sm font-semibold sm:justify-end" style={{ color: CAT_HEX[score.category] }}>
+          <span
+            aria-hidden="true"
+            className="h-1.5 w-10 rounded-full"
+            style={{ background: `linear-gradient(90deg, ${CAT_HEX[score.category]}1f, ${CAT_HEX[score.category]})` }}
+          />
+          {CATEGORY_LABELS[score.category]}
+        </p>
+      )}
+    </div>
+  )
+}
+
+/** Badge de note(s) pour l'en-tête d'une section. 1 domaine = grande note ; 2 =
+ *  deux notes compactes étiquetées (ex. section « Force et mobilité »). */
+function ScoreBadge({ items }: { items: { label?: string; score: CompositeScore }[] }) {
+  if (items.length === 1) return <ScoreValue score={items[0].score} big />
+  return (
+    <div className="flex flex-row gap-8 sm:flex-col sm:items-end sm:gap-4">
+      {items.map((it, i) => (
+        <div key={i}>
+          {it.label && <p className="ed-eyebrow text-marine/40 sm:text-right">{it.label}</p>}
+          <div className="mt-1">
+            <ScoreValue score={it.score} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function Section({
   eyebrow,
   title,
   lead,
   tone = 'paper',
   id,
+  scores,
   children
 }: {
   eyebrow: string
@@ -112,14 +155,20 @@ function Section({
   lead?: string
   tone?: 'paper' | 'white'
   id?: string
+  scores?: { label?: string; score: CompositeScore }[]
   children: ReactNode
 }) {
   return (
     <section id={id} className={`ed-anchor ${tone === 'white' ? 'bg-white' : 'bg-cream'}`}>
       <div className="mx-auto max-w-5xl px-6 py-16 sm:px-8 sm:py-24">
         <Reveal>
-          <p className="ed-eyebrow text-gold-dark">{eyebrow}</p>
-          <h2 className="ed-display ed-section-title mt-3 text-marine">{title}</h2>
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+            <div className="min-w-0">
+              <p className="ed-eyebrow text-gold-dark">{eyebrow}</p>
+              <h2 className="ed-display ed-section-title mt-3 text-marine">{title}</h2>
+            </div>
+            {scores && scores.length > 0 && <div className="shrink-0">{<ScoreBadge items={scores} />}</div>}
+          </div>
           {lead && <p className="ed-prose mt-4 text-base text-marine/65 sm:text-lg">{lead}</p>}
         </Reveal>
         <Reveal delay={80}>
@@ -646,6 +695,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       <Section
         id="composition"
+        scores={[{ score: computed.composition }]}
         eyebrow="Composition corporelle"
         title="Ce que raconte votre silhouette"
         lead="L’IMC seul dit peu de choses : un athlète musclé et une personne sédentaire peuvent avoir le même. C’est en le lisant avec le pourcentage de gras et le tour de taille qu’il prend son sens."
@@ -657,6 +707,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       <Section
         id="cardio"
+        scores={[{ score: computed.aerobic }]}
         eyebrow="Cœur et endurance"
         title="La mesure qui prédit le mieux votre santé"
         lead="Le VO2max est le volume d’oxygène que votre corps sait utiliser à l’effort maximal. C’est le meilleur indicateur unique de longévité en bonne santé — et il répond vite à l’entraînement."
@@ -723,6 +774,10 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       <Section
         id="force-mobilite"
+        scores={[
+          { label: 'Santé du dos', score: computed.backHealth },
+          { label: 'Force musculaire', score: computed.musculoGlobal }
+        ]}
         eyebrow="Force et mobilité"
         title="Six tests, six angles"
         lead="Chaque barre situe votre résultat parmi les personnes de votre âge et de votre sexe. Basculez en vue radar pour voir la forme d’ensemble de votre profil."
