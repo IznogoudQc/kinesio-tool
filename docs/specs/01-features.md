@@ -642,6 +642,18 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.31 — Document HTML : retour à la vue d'ensemble + poids visé dans l'objectif)
+
+Deux améliorations du document client :
+
+- **Retour à la vue d'ensemble** : chaque section (Composition, Cœur, Force, Objectif, Progression, clôture) a
+  un lien « ↑ Retour à la vue d'ensemble » en bas, qui défile jusqu'à la section « Quatre façons » (id
+  `vue-ensemble`). Masqué à l'impression. Complète la navigation par ancres.
+- **Poids visé dans l'objectif** : quand le module nutrition est actif, la grille affiche maintenant le
+  **poids visé** (`goal.goalKg`) à côté du poids à perdre, de la durée et de l'échéance (grille 2×2).
+
+Version : 0.2.30 → 0.2.31.
+
 ## ✅ Fait (v0.2.30 — Dashboard : réorganisation par domaine (info séparée))
 
 La rangée du haut mélangeait VO2max (cardio) avec IMC + tour de taille (composition) : cliquer « Cœur et

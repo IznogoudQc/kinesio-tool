@@ -148,6 +148,7 @@ function Section({
   tone = 'paper',
   id,
   scores,
+  backTop = false,
   children
 }: {
   eyebrow: string
@@ -156,6 +157,8 @@ function Section({
   tone?: 'paper' | 'white'
   id?: string
   scores?: { label?: string; score: CompositeScore }[]
+  /** Ajoute un lien « Retour à la vue d'ensemble » en bas de la section. */
+  backTop?: boolean
   children: ReactNode
 }) {
   return (
@@ -174,6 +177,19 @@ function Section({
         <Reveal delay={80}>
           <div className="mt-10">{children}</div>
         </Reveal>
+        {backTop && (
+          <div className="ed-no-print mt-14 border-t border-marine/10 pt-6 text-center">
+            <a
+              href="#vue-ensemble"
+              className="inline-flex items-center gap-1.5 text-sm font-semibold text-gold-dark transition-colors hover:text-marine"
+            >
+              <svg aria-hidden="true" viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m18 15-6-6-6 6" />
+              </svg>
+              Retour à la vue d’ensemble
+            </a>
+          </div>
+        )}
       </div>
     </section>
   )
@@ -677,6 +693,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
       )}
 
       <Section
+        id="vue-ensemble"
         eyebrow="Vue d’ensemble"
         title="Quatre façons de lire votre condition physique"
         lead="Chaque domaine est noté sur 5, en comparant vos résultats à ceux des personnes de votre âge et de votre sexe. Le score global en est la moyenne."
@@ -695,6 +712,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       <Section
         id="composition"
+        backTop
         scores={[{ score: computed.composition }]}
         eyebrow="Composition corporelle"
         title="Ce que raconte votre silhouette"
@@ -707,6 +725,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       <Section
         id="cardio"
+        backTop
         scores={[{ score: computed.aerobic }]}
         eyebrow="Cœur et endurance"
         title="La mesure qui prédit le mieux votre santé"
@@ -774,6 +793,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       <Section
         id="force-mobilite"
+        backTop
         scores={[
           { label: 'Santé du dos', score: computed.backHealth },
           { label: 'Force musculaire', score: computed.musculoGlobal }
@@ -791,6 +811,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
           title="Le chemin parcouru"
           lead="Choisissez la mesure qui vous intéresse. La ligne grise, quand elle apparaît, est la moyenne des personnes de votre âge et de votre sexe."
           tone="white"
+          backTop
         >
           <ProgressionChart
             bilans={bilans}
@@ -805,6 +826,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
       {(objectifText !== '' || objectif) && (
         <Section
           eyebrow="Votre objectif"
+          backTop
           title={objectif ? (objectif.atGoal ? 'Vous y êtes.' : `Cap sur ${objectif.target} % de gras`) : 'Votre cap'}
           lead={
             objectif
@@ -820,7 +842,13 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
           {objectif && (
           <div className={objectifText !== '' ? 'mt-10' : ''}>
           {!objectif.atGoal && (
-            <div className="grid gap-8 sm:grid-cols-3">
+            <div className="grid gap-8 sm:grid-cols-2">
+              <div>
+                <p className="ed-eyebrow text-marine/40">Poids visé</p>
+                <p className="ed-display mt-1 text-4xl tabular-nums text-marine">
+                  {dualWeight(objectif.goal.goalKg, client.unitWeight)}
+                </p>
+              </div>
               <div>
                 <p className="ed-eyebrow text-marine/40">À perdre</p>
                 <p className="ed-display mt-1 text-4xl tabular-nums text-marine">
@@ -893,7 +921,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
       )}
 
       {(plan.forces.length > 0 || motDuKine) && (
-        <Section eyebrow="Et maintenant ?" title={plan.forces.length > 0 ? 'Vos forces' : 'En terminant'} tone="white">
+        <Section eyebrow="Et maintenant ?" title={plan.forces.length > 0 ? 'Vos forces' : 'En terminant'} tone="white" backTop>
           {plan.forces.length > 0 && (
             <div>
               <p className="ed-eyebrow mb-4 text-gold-dark">Vos forces</p>
