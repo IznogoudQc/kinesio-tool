@@ -1275,10 +1275,10 @@ function domainInterpretation({
   return parts.length > 0 ? parts.join(' ') : null
 }
 
-/** Barre des zones de % de gras (ACE) — version PDF, styles inline. Même logique
+/** Barre des zones de % de gras (InBody Canada) — version PDF, styles inline. Même logique
  *  partagée que le document client et le Dashboard (`bodyFatScale`). */
-function PdfBodyFatZones({ pct, sex }: { pct: number | null; sex: 'F' | 'M' | null }) {
-  const s = bodyFatScale(pct, sex)
+function PdfBodyFatZones({ pct, sex, age }: { pct: number | null; sex: 'F' | 'M' | null; age: number | null }) {
+  const s = bodyFatScale(pct, sex, age)
   if (!s || s.current === null || s.markerRatio === null || pct === null) return null
   const { zones, scaleMax, current, markerRatio } = s
   const markerPct = markerRatio * 100
@@ -1311,14 +1311,14 @@ function PdfBodyFatZones({ pct, sex }: { pct: number | null; sex: 'F' | 'M' | nu
         ))}
       </div>
       <p style={{ fontSize: '7.5pt', color: AXIS, marginTop: '0.5mm' }}>
-        Référence : American Council on Exercise (ACE). Repère de santé, complémentaire au percentile ci-dessus.
+        Référence : InBody Canada (ajusté selon l'âge). Repère de santé, complémentaire au percentile ci-dessus.
       </p>
     </div>
   )
 }
 
 // Composition — extras (chiffres clés + plis cutanés).
-function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null }) {
+function CompositionExtras({ latest, computed, weightUnit, sex, age }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null; age: number | null }) {
   const d = latest.data as Record<string, unknown>
   const plis = [
     { label: 'Triceps', key: 'pli_triceps' },
@@ -1357,6 +1357,7 @@ function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bila
       <PdfBodyFatZones
         pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)}
         sex={sex}
+        age={age}
       />
       {plisPresents.length > 0 && (
         <div className="break-inside-avoid">
@@ -1502,7 +1503,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
         { kind: 'line', key: 'imc', title: 'IMC (kg/m²)', color: MARINE },
         { kind: 'line', key: 'tour_taille_cm', title: 'Tour de taille (cm)', color: GOLD }
       ]}
-      topExtra={<CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} sex={props.profile.sex} />}
+      topExtra={<CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} sex={props.profile.sex} age={props.profile.age} />}
     />
   )
 }

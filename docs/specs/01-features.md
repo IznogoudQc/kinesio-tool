@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.13 — Zones de % de gras : table canadienne ajustée à l'âge (InBody Canada))
+
+Sur suggestion de Marie, la barre des zones de % de gras passe d'ACE (barème fixe américain) au tableau
+**InBody Canada** — source canadienne et **ajustée selon l'âge** (les seuils montent d'environ 1 point par
+décennie, ce qui correspond à ce que faisait son ancien logiciel).
+
+- 4 zones : Graisse essentielle · En forme · Acceptable · Obésité, par tranche d'âge (20-29 … 60+) et par sexe.
+- La zone du client dépend maintenant de son **âge** (ex. 34 % chez une femme = obésité à 25 ans, mais
+  « acceptable » à 60+). Passée aux trois surfaces (document, PDF, Dashboard).
+- Source citée sous la barre : « ajustées selon l'âge — référence : InBody Canada ». Toujours complémentaire du
+  percentile ACSM, clairement distingué (« mieux que X % » vs « zone santé pour votre âge et votre sexe »).
+- Logique partagée et testée (`src/lib/body-fat-zones.ts`, 9 tests, dont les cas d'ajustement par âge).
+
+Version : 0.2.12 → 0.2.13.
+
 ## ✅ Fait (v0.2.12 — Priorités auto retirées (demande de Marie))
 
 Marie trouve les priorités automatiques peu utiles. Elles sont **retirées complètement** des documents envoyés

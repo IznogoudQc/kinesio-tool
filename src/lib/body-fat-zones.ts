@@ -1,15 +1,16 @@
-/** Zones de pourcentage de gras corporel selon l'American Council on Exercise
- *  (ACE), par sexe. Référence citable, standard en kinésiologie.
+/** Zones de pourcentage de gras corporel, **ajustées selon l'âge**, d'après le
+ *  tableau d'InBody Canada (les seuils montent avec l'âge). Référence canadienne
+ *  et citable, plus juste qu'un barème fixe.
  *
  *  C'est un repère de **santé** distinct de la catégorie ACSM affichée ailleurs
- *  (qui, elle, compare le client aux percentiles de sa population). Les deux sont
- *  complémentaires.
+ *  (qui, elle, compare le client aux percentiles de sa population). Complémentaires.
  *
- *  Source unique pour le document client, le rapport PDF et le Dashboard — afin
- *  qu'ils affichent tous exactement les mêmes bornes.
+ *  Source unique pour le document client, le rapport PDF et le Dashboard — mêmes
+ *  bornes partout.
+ *  https://inbodycanada.ca/fr/la-composition-corporelle/tableau-du-pourcentage-de-graisse-corporelle-un-guide-pour-vos-parametres-de-sante/
  */
 
-export type BfTone = 'low' | 'athlete' | 'fitness' | 'acceptable' | 'risk'
+export type BfTone = 'low' | 'fit' | 'acceptable' | 'risk'
 
 export interface BfZone {
   key: string
@@ -22,34 +23,53 @@ export interface BfZone {
 }
 
 export const BF_TONE_HEX: Record<BfTone, string> = {
-  low: '#2563eb', // réserve faible (graisse essentielle) — bleu
-  athlete: '#15803d', // vert foncé
-  fitness: '#16a34a', // vert
-  acceptable: '#ca8a04', // ambre
-  risk: '#dc2626' // rouge
+  low: '#2563eb', // graisse essentielle (réserve faible) — bleu
+  fit: '#16a34a', // athlétique / en forme — vert
+  acceptable: '#ca8a04', // acceptable — ambre
+  risk: '#dc2626' // obésité — rouge
 }
 
-/** Bornes ACE, rendues contiguës pour une barre (on coupe à la borne basse de
- *  la catégorie suivante). Femme et homme. */
-export const ACE_ZONES: Record<'F' | 'M', BfZone[]> = {
-  F: [
-    { key: 'essentielle', label: 'Graisse essentielle', min: 0, max: 14, tone: 'low' },
-    { key: 'athlete', label: 'Athlète', min: 14, max: 21, tone: 'athlete' },
-    { key: 'forme', label: 'En forme', min: 21, max: 25, tone: 'fitness' },
-    { key: 'acceptable', label: 'Acceptable', min: 25, max: 32, tone: 'acceptable' },
-    { key: 'obesite', label: 'Obésité', min: 32, max: null, tone: 'risk' }
-  ],
+/** Bornes de transition [début « en forme », début « acceptable », début
+ *  « obésité »] par sexe et par tranche d'âge (index 0 = 20-29 … 4 = 60+). */
+const CUTS: Record<'F' | 'M', [number, number, number][]> = {
   M: [
-    { key: 'essentielle', label: 'Graisse essentielle', min: 0, max: 6, tone: 'low' },
-    { key: 'athlete', label: 'Athlète', min: 6, max: 14, tone: 'athlete' },
-    { key: 'forme', label: 'En forme', min: 14, max: 18, tone: 'fitness' },
-    { key: 'acceptable', label: 'Acceptable', min: 18, max: 25, tone: 'acceptable' },
-    { key: 'obesite', label: 'Obésité', min: 25, max: null, tone: 'risk' }
+    [6, 14, 25], // 20-29
+    [6, 15, 26], // 30-39
+    [7, 16, 27], // 40-49
+    [8, 17, 28], // 50-59
+    [9, 18, 29] // 60+
+  ],
+  F: [
+    [14, 21, 32], // 20-29
+    [15, 22, 33], // 30-39
+    [16, 23, 34], // 40-49
+    [17, 24, 35], // 50-59
+    [18, 25, 36] // 60+
   ]
 }
 
 /** Fin de l'échelle affichée (au-delà, la barre est saturée). */
 export const BF_SCALE_MAX: Record<'F' | 'M', number> = { F: 45, M: 38 }
+
+/** Index de tranche d'âge du tableau. `null`/< 30 → 20-29 (le plus jeune). */
+function ageBracket(age: number | null): number {
+  if (age === null || age < 30) return 0
+  if (age < 40) return 1
+  if (age < 50) return 2
+  if (age < 60) return 3
+  return 4
+}
+
+/** Les 4 zones (ajustées à l'âge) pour ce profil. */
+export function bodyFatZones(sex: 'F' | 'M', age: number | null): BfZone[] {
+  const [fit, acceptable, obese] = CUTS[sex][ageBracket(age)]
+  return [
+    { key: 'essentielle', label: 'Graisse essentielle', min: 0, max: fit, tone: 'low' },
+    { key: 'forme', label: 'En forme', min: fit, max: acceptable, tone: 'fit' },
+    { key: 'acceptable', label: 'Acceptable', min: acceptable, max: obese, tone: 'acceptable' },
+    { key: 'obesite', label: 'Obésité', min: obese, max: null, tone: 'risk' }
+  ]
+}
 
 export interface BodyFatScale {
   zones: BfZone[]
@@ -63,9 +83,13 @@ export interface BodyFatScale {
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
 /** Prépare tout le nécessaire pour dessiner la barre + situer le client. */
-export function bodyFatScale(pct: number | null | undefined, sex: 'F' | 'M' | null): BodyFatScale | null {
+export function bodyFatScale(
+  pct: number | null | undefined,
+  sex: 'F' | 'M' | null,
+  age: number | null
+): BodyFatScale | null {
   if (sex !== 'F' && sex !== 'M') return null
-  const zones = ACE_ZONES[sex]
+  const zones = bodyFatZones(sex, age)
   const scaleMax = BF_SCALE_MAX[sex]
   const p = num(pct)
   const current = p === null ? null : (zones.find(z => p >= z.min && (z.max === null || p < z.max)) ?? null)
