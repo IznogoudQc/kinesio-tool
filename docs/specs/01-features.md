@@ -642,6 +642,18 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.22 — PDF : pression artérielle en barres de zones (comme le HTML))
+
+Le rapport PDF affichait la pression artérielle en **tableau** (valeur + pastille de catégorie). Il reprend
+maintenant le **même style de barres de zones** que le document HTML (v0.2.21) : une barre segmentée
+Optimale → Hypertension 2 pour la systolique et une pour la diastolique, avec repère + seuils + texte explicatif.
+
+- Nouveau `PdfBloodPressureBar` (styles inline print), même logique partagée `bloodPressureBar` que le HTML.
+- Couleurs = `CAT_BG` (palette catégories du PDF).
+- Remplace le tableau dans `CardioExtras`. Section « Votre cœur et votre endurance ».
+
+Version : 0.2.21 → 0.2.22.
+
 ## ✅ Fait (v0.2.21 — Document HTML : barres de zones de pression artérielle + explications)
 
 Reprise de la présentation « Cardio-pulmonaire » de l'ancien logiciel : la section « Cœur et endurance » du

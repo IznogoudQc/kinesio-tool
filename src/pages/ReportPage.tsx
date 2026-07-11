@@ -28,7 +28,7 @@ import {
   type TestKey
 } from '../lib/norms'
 import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
-import { classifyBloodPressure } from '../lib/norms/clinical'
+import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
@@ -1424,14 +1424,51 @@ function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bila
 }
 
 // Cardio — extras (tension nommée + zones cardiaques + récupération).
+/** Barre segmentée des zones de PA (Optimale → Hypertension 2) — version PDF. */
+function PdfBloodPressureBar({ value, kind }: { value: number | null; kind: BpKind }) {
+  const bar = bloodPressureBar(value, kind)
+  if (!bar || bar.markerRatio === null || value === null) return null
+  const { zones, scaleMin, scaleMax, current, markerRatio } = bar
+  const span = scaleMax - scaleMin
+  const widthOf = (z: (typeof zones)[number]) => ((z.max - z.min) / span) * 100
+  const markerPct = markerRatio * 100
+  const labelLeft = Math.max(6, Math.min(94, markerPct))
+  const bounds = zones.slice(1).map(z => z.min)
+  return (
+    <div className="break-inside-avoid" style={{ marginBottom: '5mm' }}>
+      <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT, marginBottom: '1.5mm' }}>
+        {kind === 'systolic' ? 'Systolique' : 'Diastolique'}
+        {current && <> — <span style={{ color: CAT_BG[current.category], fontWeight: 700 }}>{current.label}</span></>}
+      </p>
+      <div style={{ display: 'flex', marginBottom: '1mm' }}>
+        {zones.map(z => (
+          <span key={z.label} style={{ width: `${widthOf(z)}%`, textAlign: 'center', fontSize: '6pt', textTransform: 'uppercase', letterSpacing: '0.02em', color: AXIS, lineHeight: 1.15, padding: '0 0.3mm' }}>
+            {z.label}
+          </span>
+        ))}
+      </div>
+      <div style={{ position: 'relative', height: '4mm' }}>
+        <span style={{ position: 'absolute', left: `${labelLeft}%`, transform: 'translateX(-50%)', fontSize: '8pt', fontWeight: 700, color: MARINE }}>{fmt(value, 0)} mmHg</span>
+      </div>
+      <div style={{ position: 'relative' }}>
+        <div style={{ display: 'flex', height: '3mm', borderRadius: '1.5mm', overflow: 'hidden' }}>
+          {zones.map(z => <div key={z.label} style={{ width: `${widthOf(z)}%`, background: CAT_BG[z.category] }} />)}
+        </div>
+        <div style={{ position: 'absolute', top: 0, height: '3mm', left: `${markerPct}%`, width: '0.7mm', transform: 'translateX(-50%)', background: MARINE, boxShadow: '0 0 0 0.4mm #fff' }} />
+      </div>
+      <div style={{ position: 'relative', height: '4mm', marginTop: '1mm' }}>
+        {bounds.map(b => (
+          <span key={b} style={{ position: 'absolute', left: `${((b - scaleMin) / span) * 100}%`, transform: 'translateX(-50%)', fontSize: '7pt', color: AXIS }}>{b}</span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function CardioExtras({ latest, computed }: { latest: Bilan; computed: BilanComputed }) {
   const d = latest.data as Record<string, unknown>
   const sys = num(d.pa_systolique)
   const dia = num(d.pa_diastolique)
-  const bpRows = [
-    { label: 'Systolique', value: sys, cls: sys !== null ? classifyBloodPressure(sys, 'systolic') : null },
-    { label: 'Diastolique', value: dia, cls: dia !== null ? classifyBloodPressure(dia, 'diastolic') : null }
-  ].filter(r => r.value !== null)
 
   const z = computed.fcZones
   const zoneRows = z
@@ -1448,23 +1485,16 @@ function CardioExtras({ latest, computed }: { latest: Bilan; computed: BilanComp
 
   return (
     <>
-      {bpRows.length > 0 && (
-        <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
-          <BlockTitle>Tension artérielle au repos</BlockTitle>
-          <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '3mm' }}>
-            Classée selon les seuils cliniques : Optimale · Normale · Pré-hypertension · Hypertension 1 · Hypertension 2 (OMS / JNC).
+      {(sys !== null || dia !== null) && (
+        <div style={{ marginBottom: '8mm' }}>
+          <BlockTitle>Pression artérielle au repos</BlockTitle>
+          <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '4mm' }}>
+            Mesurée au repos. La systolique est la pression quand le cœur se contracte ; la diastolique, quand il se remplit
+            entre deux battements. Une valeur plus basse est préférable, et une lecture élevée isolée ne signifie pas de
+            l'hypertension — on la revérifie régulièrement (seuils OMS / JNC).
           </p>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11pt' }}>
-            <tbody>
-              {bpRows.map(r => (
-                <tr key={r.label} style={{ borderBottom: `1px solid ${GRID}` }}>
-                  <td style={{ padding: '3mm', color: INK_SOFT }}>{r.label}</td>
-                  <td style={{ padding: '3mm', color: MARINE, fontWeight: 700 }}>{fmt(r.value, 0)} mmHg</td>
-                  <td style={{ padding: '3mm', textAlign: 'right' }}>{r.cls && <CategoryPill category={r.cls.category} label={r.cls.zone} />}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <PdfBloodPressureBar value={sys} kind="systolic" />
+          <PdfBloodPressureBar value={dia} kind="diastolic" />
         </div>
       )}
 
