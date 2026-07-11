@@ -21,6 +21,7 @@ import { useCountUp } from '../lib/useCountUp'
 import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
 import { Sparkline } from '../components/Sparkline'
+import { BodyFatZoneBar } from '../components/BodyFatZoneBar'
 import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
@@ -199,6 +200,13 @@ function Measure({
             </>
           )}
         </p>
+      )}
+
+      {/* Repère santé ACE — uniquement pour le % de gras. */}
+      {test === 'bodyFat' && has && (
+        <div className="mt-5 border-t border-marine/10 pt-4">
+          <BodyFatZoneBar pct={value} sex={sex} />
+        </div>
       )}
     </div>
   )

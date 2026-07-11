@@ -28,6 +28,7 @@ import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../../../lib/s
 import { detectWins } from '../../../lib/dashboard-wins'
 import { detectHealthFlags } from '../../../lib/health-flags'
 import { HealthFlags } from '../dashboard/HealthFlags'
+import { BodyFatZoneBar } from '../../../components/BodyFatZoneBar'
 
 function formatNumber(n: number | null | undefined): string {
   if (typeof n !== 'number' || Number.isNaN(n)) return '—'
@@ -625,6 +626,13 @@ export function DashboardTab() {
         <div className="dash-rise" style={{ animationDelay: '120ms' }}>
           <HealthFlags flags={healthFlags} />
         </div>
+      )}
+
+      {typeof activeData.pourcentage_gras === 'number' && client.sex && (
+        <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm" style={{ animationDelay: '140ms' }}>
+          <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold mb-3">Zones de % de gras</p>
+          <BodyFatZoneBar pct={activeData.pourcentage_gras} sex={client.sex} />
+        </section>
       )}
 
       {(fitAge !== null || objectif !== null) && (

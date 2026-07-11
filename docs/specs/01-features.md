@@ -642,6 +642,23 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.8 — Zones de % de gras (ACE), à la demande de Marie)
+
+Marie voulait retrouver, comme dans son ancien logiciel, un repère gradué du **risque santé lié au % de gras**.
+Ajout d'une **barre de zones colorées** (bleu → rouge) avec un repère à la valeur du client et le nom de sa zone.
+
+- **Référence citable : American Council on Exercise (ACE)** — standard du milieu, seuils par sexe. Femme :
+  athlète 14-20, en forme 21-24, acceptable 25-31, obésité 32 %+. Homme : décalé d'environ 10 points.
+  La source est **citée sous la barre** dans le document client et le PDF.
+- **C'est un repère complémentaire**, distinct de la catégorie ACSM (percentiles) déjà affichée — les deux sont
+  étiquetés clairement pour ne pas se contredire (« Zone santé ACE » vs « mieux que X % »).
+- **Affiché aux trois endroits** demandés : document HTML du client (sous le % de gras), rapport PDF (section
+  composition) et Dashboard de Marie.
+- Logique **partagée et testée** (`src/lib/body-fat-zones.ts`, 8 tests) — les trois surfaces affichent
+  exactement les mêmes bornes.
+
+Version : 0.2.7 → 0.2.8.
+
 ## ✅ Fait (v0.2.7 — Logo « Kinésio Conseil » dans le document client)
 
 Le logo de la clinique (la marque publique de Marie-Eve, pas celui de l'app « Kinésio Outils ») apparaît
