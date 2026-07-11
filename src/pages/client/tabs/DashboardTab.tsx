@@ -29,6 +29,9 @@ import { detectWins } from '../../../lib/dashboard-wins'
 import { detectHealthFlags } from '../../../lib/health-flags'
 import { HealthFlags } from '../dashboard/HealthFlags'
 import { BodyFatRiskBar } from '../../../components/BodyFatRiskBar'
+import { BodyFatTrend } from '../../../components/BodyFatTrend'
+import { optimalWeight, BF_RISK_HEX } from '../../../lib/body-fat-risk'
+import { kgToLb } from '../../../lib/units'
 
 function formatNumber(n: number | null | undefined): string {
   if (typeof n !== 'number' || Number.isNaN(n)) return '—'
@@ -288,6 +291,22 @@ export function DashboardTab() {
       const v = b.data[key]
       return typeof v === 'number' && !Number.isNaN(v) ? v : null
     })
+
+  // Série datée du % de gras (du plus ancien au plus récent) → courbe de tendance.
+  const bodyFatSeries = [...(bilans ?? [])]
+    .reverse()
+    .map(b => {
+      const v = b.data.pourcentage_gras
+      return { date: b.date, pct: typeof v === 'number' && !Number.isNaN(v) ? v : null }
+    })
+    .filter((p): p is { date: string; pct: number } => p.pct !== null)
+
+  // Poids à atteindre pour entrer dans la zone optimale (à masse maigre constante).
+  const optWeight = optimalWeight(
+    typeof activeData.pourcentage_gras === 'number' ? activeData.pourcentage_gras : null,
+    typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null,
+    client.sex
+  )
   // Bilans proposés comme point de comparaison (hero stats + radar musculo). On
   // retire celui affiché et le précédent (déjà couvert par « Bilan précédent »).
   const compareOptions = (bilans ?? [])
@@ -431,7 +450,7 @@ export function DashboardTab() {
 
   // ── Stats XL ──────────────────────────────────────────────────────────────
   const StatsRow = (
-    <section className="dash-rise grid grid-cols-2 lg:grid-cols-4 gap-4" style={{ animationDelay: '80ms' }}>
+    <section className="dash-rise grid grid-cols-1 sm:grid-cols-3 gap-4" style={{ animationDelay: '80ms' }}>
       <StatCardXL
         label="VO2max"
         value={activeData.vo2max}
@@ -456,20 +475,6 @@ export function DashboardTab() {
         originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.imc : undefined}
         previousValue={compareData?.imc}
         history={historyOf('imc')}
-        lowerIsBetter
-        compareLabel={compareLabel}
-      />
-      <StatCardXL
-        label="% de gras"
-        value={activeData.pourcentage_gras}
-        unit="%"
-        test="bodyFat"
-        age={age}
-        sex={client.sex}
-        norms={norms}
-        originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.pourcentage_gras : undefined}
-        previousValue={compareData?.pourcentage_gras}
-        history={historyOf('pourcentage_gras')}
         lowerIsBetter
         compareLabel={compareLabel}
       />
@@ -629,9 +634,44 @@ export function DashboardTab() {
       )}
 
       {typeof activeData.pourcentage_gras === 'number' && client.sex && (
-        <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm" style={{ animationDelay: '140ms' }}>
-          <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold mb-3">Zones de % de gras</p>
+        <section className="dash-rise bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4" style={{ animationDelay: '140ms' }}>
+          <div className="flex items-baseline justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold">% de gras</p>
+              <p className="text-marine text-4xl font-bold leading-none mt-1.5">
+                {formatNumber(activeData.pourcentage_gras)}
+                <span className="text-lg font-medium text-marine/45 ml-1.5">%</span>
+              </p>
+            </div>
+            <p className="text-marine/40 text-xs">du {formatBilanDate((activeBilan ?? latest)!.date)}</p>
+          </div>
+
           <BodyFatRiskBar pct={activeData.pourcentage_gras} sex={client.sex} />
+
+          {optWeight && (
+            <div className="rounded-lg bg-cream/60 border border-cream-dark/40 px-4 py-3">
+              {optWeight.atOptimal ? (
+                <p className="text-sm text-marine/75">
+                  <span className="font-semibold" style={{ color: BF_RISK_HEX.optimal }}>Déjà dans la zone optimale</span>{' '}
+                  (≤ {optWeight.targetBf} %).
+                </p>
+              ) : (
+                <p className="text-sm text-marine/75">
+                  Poids pour atteindre la <span className="font-semibold">zone optimale</span> (≤ {optWeight.targetBf} %) :{' '}
+                  <span className="font-bold text-marine tabular-nums">{Math.round(kgToLb(optWeight.targetKg))} lb</span>{' '}
+                  <span className="text-marine/50 tabular-nums">(− {Math.round(kgToLb(optWeight.deltaKg))} lb)</span>
+                </p>
+              )}
+              <p className="text-marine/40 text-[11px] mt-0.5">À masse maigre constante — repère indicatif, pas une cible de poids.</p>
+            </div>
+          )}
+
+          {bodyFatSeries.length >= 2 && (
+            <div>
+              <p className="text-marine/50 text-xs uppercase tracking-wide font-semibold mb-1">Progression</p>
+              <BodyFatTrend series={bodyFatSeries} sex={client.sex} />
+            </div>
+          )}
         </section>
       )}
 

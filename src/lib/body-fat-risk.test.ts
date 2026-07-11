@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { bodyFatRisk, bodyFatRiskZones } from './body-fat-risk.ts'
+import { bodyFatRisk, bodyFatRiskZones, optimalWeight, optimalBodyFatMax } from './body-fat-risk.ts'
 
 test('sexe inconnu → pas d’échelle', () => {
   assert.equal(bodyFatRisk(30, null), null)
@@ -42,4 +42,30 @@ test('repère borné entre 0 et 1', () => {
   assert.equal(bodyFatRisk(0, 'F')!.markerRatio, 0)
   assert.equal(bodyFatRisk(999, 'F')!.markerRatio, 1)
   assert.equal(bodyFatRisk(null, 'F')!.markerRatio, null)
+})
+
+test('cible optimale = haut de « Optimal » (25 F / 15 H)', () => {
+  assert.equal(optimalBodyFatMax('F'), 25)
+  assert.equal(optimalBodyFatMax('M'), 15)
+})
+
+test('poids optimal : homme 90 kg à 23,1 % → cible ~81,4 kg', () => {
+  const r = optimalWeight(23.1, 90, 'M')!
+  // masse maigre = 90×0,769 = 69,21 ; cible = 69,21/0,85 ≈ 81,42
+  assert.ok(Math.abs(r.targetKg - 81.42) < 0.1)
+  assert.ok(Math.abs(r.deltaKg - 8.58) < 0.1)
+  assert.equal(r.atOptimal, false)
+})
+
+test('poids optimal : déjà sous la cible → delta 0, atOptimal', () => {
+  const r = optimalWeight(12, 80, 'M')!
+  assert.equal(r.deltaKg, 0)
+  assert.equal(r.atOptimal, true)
+})
+
+test('poids optimal : données manquantes/aberrantes → null', () => {
+  assert.equal(optimalWeight(null, 80, 'M'), null)
+  assert.equal(optimalWeight(20, null, 'M'), null)
+  assert.equal(optimalWeight(20, 80, null), null)
+  assert.equal(optimalWeight(120, 80, 'M'), null)
 })

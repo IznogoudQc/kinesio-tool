@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.16 — Dashboard : section % de gras unifiée (courbe + poids-cible))
+
+Le Dashboard affichait le % de gras **deux fois** (carte XL en haut + section « Zones » en bas). On retire la
+carte XL et on enrichit la section du bas pour en faire la source unique :
+
+- **Carte « % de gras » retirée** de la rangée de stats XL (il reste VO2max · IMC · Tour de taille, sur 3 colonnes).
+- La section « % de gras » regroupe maintenant : la **valeur + date**, la **barre de zones de risque**, un encadré
+  **« poids pour atteindre la zone optimale »** (en lb, avec l'écart), et une **courbe de progression**.
+- **Poids-cible** (`optimalWeight`) : à masse maigre constante, poids qui placerait le client au haut de la zone
+  « Optimal » (≤ 25 % femme / ≤ 15 % homme). Affiché « déjà atteint » si le client y est déjà.
+- **Courbe** (`BodyFatTrend`) : progression du % de gras dans le temps, avec les **zones de risque en fond**
+  (mêmes couleurs que la barre) et la ligne « Optimal » en pointillé — trajectoire lisible d'un coup d'œil.
+- Purement Dashboard (le document client et le PDF ne changent pas). `optimalWeight` couvert par 4 tests.
+
+Version : 0.2.15 → 0.2.16.
+
 ## ✅ Fait (v0.2.15 — % de gras : grille de risque de l'ancien logiciel de Marie)
 
 Marie veut retrouver la présentation de son ancien logiciel pour le % de gras : une **grille de risque à
