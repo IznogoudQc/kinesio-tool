@@ -106,6 +106,7 @@ Format (texte simple, français) :
 - Ce sont des IDÉES / EXEMPLES, jamais un plan nutritionnel individualisé.
 - N'invente aucune allergie ni restriction non fournie. Respecte les aliments à éviter indiqués.
 - PRIORISE les aliments que la personne AIME et EXCLUS ceux qu'elle n'aime pas / à exclure (préférences personnelles) — c'est important pour l'adhésion.
+- VARIE les journées : chaque journée doit être DISTINCTE. Ne répète pas les mêmes aliments principaux ni les mêmes repas d'une journée à l'autre (ex. si œufs au déjeuner du jour 1, propose une autre source de protéines au jour 2). L'objectif est d'offrir de la diversité.
 - Termine par : « Idées générales à titre d'exemple — pour un plan personnalisé, consultez une nutritionniste. »`
 
 function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): string {

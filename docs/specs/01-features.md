@@ -642,6 +642,14 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.62 — Idées de menu : journées variées (pas de répétition))
+
+Le prompt IA des idées de menu demande maintenant de rendre **chaque journée distincte** : ne pas répéter les
+mêmes aliments principaux ni les mêmes repas d'un jour à l'autre (ex. si œufs au jour 1, autre source de
+protéines au jour 2). Objectif : diversité et meilleure adhésion.
+
+Version : 0.2.61 → 0.2.62.
+
 ## ✅ Fait (v0.2.61 — Modèles de protocole nutrition réutilisables)
 
 Marie peut créer des **modèles de protocole** (ex. « Perte de gras standard ») et les **appliquer à un client
