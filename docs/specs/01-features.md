@@ -642,6 +642,17 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.44 — Document nutrition : objectif chiffré & macros affichés)
+
+Correctif : le document HTML « Nutrition & jeûne » affichait « aucune consigne » même quand l'objectif
+chiffré était activé, car il ne comptait que le jeûne/hydratation/aliments. Il **affiche maintenant l'objectif
+chiffré & les macros** (repris du bilan, mêmes calculs `buildObjectif`) : % de gras visé, poids visé, à
+perdre, échéance, et les 4 macros (calories, protéines, lipides, glucides). `hasAny` inclut désormais
+l'objectif → le message « aucune consigne » n'apparaît que si vraiment rien n'est renseigné. Vérifié en
+headless (objectif activé sans jeûne/hydratation → bloc objectif présent, message d'absence retiré).
+
+Version : 0.2.43 → 0.2.44.
+
 ## ✅ Fait (v0.2.43 — Nutrition sortie du rapport → document HTML dédié « Nutrition & jeûne »)
 
 Retour à un rapport **simple** côté nutrition (comme avant v0.2.42) : la grosse section « Nutrition & jeûne »

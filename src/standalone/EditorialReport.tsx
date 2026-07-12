@@ -13,7 +13,7 @@ import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../lib/synthes
 import { detectWins } from '../lib/dashboard-wins'
 import { fitnessAge } from '../lib/fitness-age'
 import { buildActionPlan } from '../lib/action-plan'
-import { buildObjectif } from '../lib/objectif'
+import { buildObjectif, type Objectif } from '../lib/objectif'
 import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
 import { ACTIVITY_LABELS } from '../lib/nutrition'
 import { useCountUp } from '../lib/useCountUp'
@@ -673,12 +673,87 @@ function NutritionBody({ client }: { client: StandaloneData['client'] }) {
   )
 }
 
+/** Objectif chiffré & macros (repris du bilan) pour le document nutrition. */
+function NutritionObjectifBlock({ objectif, client }: { objectif: Objectif; client: StandaloneData['client'] }) {
+  return (
+    <div className="mb-6 rounded-xl border border-marine/10 p-6 sm:p-8">
+      <p className="ed-eyebrow text-gold-dark">Objectif chiffré</p>
+      <p className="ed-display mt-2 text-2xl leading-tight text-marine">
+        {objectif.atGoal ? 'Vous y êtes.' : `Cap sur ${objectif.target} % de gras`}
+      </p>
+
+      {!objectif.atGoal && (
+        <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <p className="ed-eyebrow text-marine/40">Poids visé</p>
+            <p className="ed-display mt-1 text-3xl tabular-nums text-marine">{dualWeight(objectif.goal.goalKg, client.unitWeight)}</p>
+          </div>
+          <div>
+            <p className="ed-eyebrow text-marine/40">À perdre</p>
+            <p className="ed-display mt-1 text-3xl tabular-nums text-marine">{dualWeight(objectif.goal.toLoseKg, client.unitWeight)}</p>
+          </div>
+          {objectif.weeks !== null && (
+            <div>
+              <p className="ed-eyebrow text-marine/40">Durée estimée</p>
+              <p className="ed-display mt-1 text-3xl tabular-nums text-marine">≈ {formatWeeks(objectif.weeks)} sem.</p>
+            </div>
+          )}
+          {objectif.goalDate && (
+            <div>
+              <p className="ed-eyebrow text-marine/40">Échéance</p>
+              <p className="ed-display mt-1 text-3xl text-marine">{objectif.goalDate}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {objectif.macros && (
+        <div className="mt-8 border-t border-marine/10 pt-6">
+          <p className="ed-eyebrow text-marine/40">
+            Repères alimentaires
+            {client.nutritionActivityLevel ? ` · ${ACTIVITY_LABELS[client.nutritionActivityLevel]}` : ''}
+          </p>
+          <div className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-4">
+            {[
+              { label: 'Calories', value: Math.round(objectif.macros.targetKcal), unit: 'kcal / jour' },
+              { label: 'Protéines', value: Math.round(objectif.macros.proteinG), unit: 'g' },
+              { label: 'Lipides', value: Math.round(objectif.macros.fatG), unit: 'g' },
+              { label: 'Glucides', value: Math.round(objectif.macros.carbsG), unit: 'g' }
+            ].map(m => (
+              <div key={m.label}>
+                <p className="ed-eyebrow text-marine/40">{m.label}</p>
+                <p className="ed-display mt-1 text-2xl tabular-nums text-marine">{m.value.toLocaleString('fr-CA')}</p>
+                <p className="text-xs text-marine/40">{m.unit}</p>
+              </div>
+            ))}
+          </div>
+          <p className="ed-prose mt-4 text-sm text-marine/50">
+            Repères indicatifs, calculés à partir de votre masse maigre et de votre niveau d’activité. Ils ne remplacent
+            pas l’avis d’une nutritionniste.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** Document HTML autonome DÉDIÉ à la nutrition & au jeûne — distinct du bilan.
  *  Même identité visuelle (marine / or / crème) que le bilan interactif. */
 export function NutritionDocument({ data }: { data: StandaloneData }) {
   const { client } = data
   const firstName = client.name.trim().split(/\s+/)[0]
+
+  // Objectif chiffré & macros — mêmes calculs que le bilan (synthèse des bilans).
+  const age = computeAge(client.birthdate)
+  const profile: BilanProfile = { age, sex: client.sex, norms: data.norms }
+  const synth = data.bilans.length > 0 ? buildSynthesisBilan(data.bilans) : null
+  const objectifData = synth?.data ?? {}
+  const objectifComputed = computeBilan(objectifData, profile)
+  const objectifDate = synth?.latestContributionDate ?? data.bilans[0]?.date ?? data.generatedAt
+  const objectif = client.nutritionEnabled ? buildObjectif(client, objectifData, objectifComputed, age, objectifDate) : null
+
   const hasAny =
+    !!objectif ||
     !!client.jeuneType ||
     (!!client.jeuneFenetreDebut && !!client.jeuneFenetreFin) ||
     (typeof client.hydratationMlParJour === 'number' && client.hydratationMlParJour > 0) ||
@@ -711,9 +786,9 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
       </header>
 
       <Section eyebrow="Votre plan" title="Nutrition & jeûne" tone="white">
-        {hasAny ? (
-          <NutritionBody client={client} />
-        ) : (
+        {objectif && <NutritionObjectifBlock objectif={objectif} client={client} />}
+        <NutritionBody client={client} />
+        {!hasAny && (
           <p className="ed-prose text-base text-marine/60">
             Aucune consigne nutrition n’a encore été renseignée par votre kinésiologue.
           </p>
