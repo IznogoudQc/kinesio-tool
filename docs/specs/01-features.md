@@ -642,6 +642,14 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.58 — Composition : PDF aligné sur la phrase du HTML)
+
+Le PDF utilise maintenant **exactement la même phrase** que le HTML pour l'intro de la section Composition
+(remplace le paragraphe clinique) : « L'IMC seul dit peu de choses… Il doit être interprété avec le % de
+gras, le tour de taille et l'évaluation de la kinésiologue. » Confirmé identique au caractère près.
+
+Version : 0.2.57 → 0.2.58.
+
 ## ✅ Fait (v0.2.57 — Composition : mention de l'évaluation de la kinésiologue)
 
 Correction du texte de la section « Composition corporelle » :
