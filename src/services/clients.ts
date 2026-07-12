@@ -32,6 +32,15 @@ export const clientsService = {
       nutritionTargetKcal?: number | null
       principePersoTitre?: string | null
       principePersoTexte?: string | null
+      jeuneType?: '16:8' | '18:6' | '20:4' | 'omad' | '5:2' | null
+      jeuneFenetreDebut?: string | null
+      jeuneFenetreFin?: string | null
+      jeuneNotes?: string | null
+      hydratationMlParJour?: number | null
+      supplementsNotes?: string | null
+      alimentsPrivilegier?: string | null
+      alimentsEviter?: string | null
+      nutritionMot?: string | null
     }
   ): Promise<Client> {
     return window.api.clients.update(id, data)

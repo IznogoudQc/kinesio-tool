@@ -41,6 +41,19 @@ export const clients = sqliteTable('clients', {
   // s'affiche (HTML + PDF). Éditable par Marie, par client.
   principePersoTitre: text('principe_perso_titre'),
   principePersoTexte: text('principe_perso_texte'),
+  // ── Nutrition & jeûne (onglet dédié) ──────────────────────────────────────
+  // Jeûne intermittent : type de protocole + fenêtre d'alimentation (HH:MM) + consignes.
+  jeuneType: text('jeune_type', { enum: ['16:8', '18:6', '20:4', 'omad', '5:2'] }),
+  jeuneFenetreDebut: text('jeune_fenetre_debut'),
+  jeuneFenetreFin: text('jeune_fenetre_fin'),
+  jeuneNotes: text('jeune_notes'),
+  // Hydratation : cible en ml/jour. `null` = calcul auto d'après le poids.
+  hydratationMlParJour: real('hydratation_ml_par_jour'),
+  // Suppléments, aliments à privilégier / à éviter, mot de Marie sur la nutrition (textes libres).
+  supplementsNotes: text('supplements_notes'),
+  alimentsPrivilegier: text('aliments_privilegier'),
+  alimentsEviter: text('aliments_eviter'),
+  nutritionMot: text('nutrition_mot'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

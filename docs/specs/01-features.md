@@ -642,6 +642,28 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.41 — Nouvel onglet « Nutrition & jeûne » (config sortie de « Modifier »))
+
+Un **onglet dédié « Nutrition & jeûne »** par client, entre Mesures et Notes. Toute la configuration
+nutrition quitte le modal « Modifier » (qui ne garde que l'identité : nom, courriel, sexe, unités, photo,
+principe perso) et s'y installe, enrichie de nouvelles briques :
+
+- **Objectif chiffré & macros** (déplacé) : activation, % de gras visé, niveau d'activité, rythme de perte,
+  formule des macros (calories auto/manuel, protéines, lipides).
+- **Jeûne intermittent** : protocole (16:8, 18:6, 20:4, OMAD, 5:2) avec fenêtre suggérée auto-remplie,
+  heures début/fin, **horloge 24 h** visuelle (fenêtre d'alimentation en or, gère le passage de minuit),
+  durée fenêtre/jeûne calculée, consignes libres.
+- **Hydratation** : cible ml/jour + équivalent L et verres de 250 ml.
+- **Suppléments**, **aliments à privilégier / à éviter**, **mot de Marie sur la nutrition** (textes libres).
+
+9 colonnes DB (`jeune_type`, `jeune_fenetre_debut/fin`, `jeune_notes`, `hydratation_ml_par_jour`,
+`supplements_notes`, `aliments_privilegier/eviter`, `nutrition_mot` — migration 0016), câblées à travers
+env.d.ts / services / IPC zod. Enregistrement via `clientsService.update` + remontée du client au layout
+(`onClientUpdated`) pour garder l'en-tête synchronisé. L'affichage de la nutrition dans le **rapport client
+(HTML + PDF)** suit à la prochaine version.
+
+Version : 0.2.40 → 0.2.41.
+
 ## ✅ Fait (v0.2.40 — Principe personnalisé éditable par client (remplace le gate codé en dur))
 
 Le 6ᵉ principe n'est plus codé en dur sur « Nicholas Jean » : c'est un **champ éditable par Marie, par

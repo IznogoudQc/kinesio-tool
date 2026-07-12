@@ -5,16 +5,6 @@ import { clientsService } from '../../services/clients'
 import { transferService } from '../../services/transfer'
 import { ClientAvatar } from '../../components/ClientAvatar'
 import { AvatarCropper } from '../../components/AvatarCropper'
-import {
-  ACTIVITY_LABELS,
-  ACTIVITY_ORDER,
-  RATE_PRESETS,
-  DEFAULT_RATE_KG_PER_WEEK,
-  DEFAULT_PROTEIN_PER_LB_LEAN,
-  DEFAULT_FAT_MAX_G,
-  type ActivityLevel
-} from '../../lib/nutrition'
-import { kgToLb } from '../../lib/units'
 
 /** Convertit un Blob en string base64 (sans le prefix data:...) — pour traverser contextBridge. */
 async function blobToBase64(blob: Blob): Promise<string> {
@@ -46,6 +36,7 @@ const TABS: TabDef[] = [
   { to: 'dashboard', label: 'Dashboard', enabled: true },
   { to: 'bilans', label: 'Bilans', enabled: true },
   { to: 'mesures', label: 'Mesures', enabled: true },
+  { to: 'nutrition', label: 'Nutrition & jeûne', enabled: true },
   { to: 'notes', label: 'Notes', enabled: true }
 ]
 
@@ -53,10 +44,17 @@ const TABS: TabDef[] = [
  *  re-forwardé par les couches intermédiaires type `<DashboardLayout>`). */
 export interface ClientOutletContext {
   client: Client
+  /** Permet à un onglet (ex. Nutrition) de remonter le client mis à jour au layout,
+   *  pour garder l'en-tête et les autres onglets synchronisés sans rechargement. */
+  onClientUpdated?: (client: Client) => void
 }
 
 export function useClient(): Client {
   return useOutletContext<ClientOutletContext>().client
+}
+
+export function useClientContext(): ClientOutletContext {
+  return useOutletContext<ClientOutletContext>()
 }
 
 /** Permet aux couches intermédiaires de récupérer le contexte parent tel quel
@@ -228,7 +226,7 @@ export function ClientDetailLayout() {
       </div>
 
       <div className="flex-1 overflow-auto">
-        <Outlet context={{ client } satisfies ClientOutletContext} />
+        <Outlet context={{ client, onClientUpdated: setClient } satisfies ClientOutletContext} />
       </div>
 
       {editing && (
@@ -346,24 +344,6 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
   const [sex, setSex] = useState<'F' | 'M' | ''>(client.sex ?? '')
   const [unitLength, setUnitLength] = useState<'cm' | 'in'>(client.unitLength ?? 'cm')
   const [unitWeight, setUnitWeight] = useState<'kg' | 'lb'>(client.unitWeight ?? 'kg')
-  const [nutritionEnabled, setNutritionEnabled] = useState(client.nutritionEnabled ?? false)
-  const [targetBodyFat, setTargetBodyFat] = useState(
-    client.nutritionTargetBodyFat != null ? String(client.nutritionTargetBodyFat) : ''
-  )
-  const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>(client.nutritionActivityLevel ?? '')
-  const [rateKgPerWeek, setRateKgPerWeek] = useState<number>(
-    client.nutritionRateKgPerWeek ?? DEFAULT_RATE_KG_PER_WEEK
-  )
-  const [proteinPerLb, setProteinPerLb] = useState<string>(
-    String(client.nutritionProteinPerLbLean ?? DEFAULT_PROTEIN_PER_LB_LEAN)
-  )
-  const [fatMaxG, setFatMaxG] = useState<string>(String(client.nutritionFatMaxG ?? DEFAULT_FAT_MAX_G))
-  const [caloriesMode, setCaloriesMode] = useState<'auto' | 'manual'>(
-    client.nutritionTargetKcal != null ? 'manual' : 'auto'
-  )
-  const [manualKcal, setManualKcal] = useState<string>(
-    client.nutritionTargetKcal != null ? String(client.nutritionTargetKcal) : ''
-  )
   const [principeTitre, setPrincipeTitre] = useState<string>(client.principePersoTitre ?? '')
   const [principeTexte, setPrincipeTexte] = useState<string>(client.principePersoTexte ?? '')
   const [error, setError] = useState<string | null>(null)
@@ -441,31 +421,6 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
       setError('Date de naissance invalide.')
       return
     }
-    const targetPct = targetBodyFat.trim() !== '' ? Number(targetBodyFat) : null
-    if (nutritionEnabled && targetPct !== null && (!Number.isFinite(targetPct) || targetPct < 3 || targetPct > 60)) {
-      setError('Le % de gras visé doit être compris entre 3 et 60.')
-      return
-    }
-    const proteinVal = proteinPerLb.trim() !== '' ? Number(proteinPerLb) : null
-    const fatVal = fatMaxG.trim() !== '' ? Number(fatMaxG) : null
-    if (nutritionEnabled && proteinVal !== null && (!Number.isFinite(proteinVal) || proteinVal < 0.3 || proteinVal > 2.5)) {
-      setError('Les protéines (g/lb de masse maigre) doivent être comprises entre 0,3 et 2,5.')
-      return
-    }
-    if (nutritionEnabled && fatVal !== null && (!Number.isFinite(fatVal) || fatVal < 20 || fatVal > 200)) {
-      setError('Le plafond de lipides doit être compris entre 20 et 200 g.')
-      return
-    }
-    const kcalVal =
-      nutritionEnabled && caloriesMode === 'manual' && manualKcal.trim() !== '' ? Number(manualKcal) : null
-    if (kcalVal !== null && (!Number.isFinite(kcalVal) || kcalVal < 800 || kcalVal > 6000)) {
-      setError('Les calories manuelles doivent être comprises entre 800 et 6000.')
-      return
-    }
-    if (nutritionEnabled && caloriesMode === 'manual' && manualKcal.trim() === '') {
-      setError('Indiquez les calories cibles, ou choisissez « Automatique ».')
-      return
-    }
     try {
       setSaving(true)
       const updated = await clientsService.update(client.id, {
@@ -475,13 +430,6 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
         sex: sex ? sex : null,
         unitLength,
         unitWeight,
-        nutritionEnabled,
-        nutritionTargetBodyFat: nutritionEnabled ? targetPct : null,
-        nutritionActivityLevel: nutritionEnabled && activityLevel !== '' ? activityLevel : null,
-        nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null,
-        nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
-        nutritionFatMaxG: nutritionEnabled ? fatVal : null,
-        nutritionTargetKcal: kcalVal,
         principePersoTitre: principeTitre.trim() || null,
         principePersoTexte: principeTexte.trim() || null
       })
@@ -678,152 +626,6 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
                 ))}
               </div>
               <p className="text-marine/40 text-sm mt-1">Unité d'affichage et de saisie du poids (les données sont stockées en kg).</p>
-            </div>
-
-            <div className="pt-4 border-t border-cream-dark">
-              <label className="flex items-center gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={nutritionEnabled}
-                  onChange={e => setNutritionEnabled(e.target.checked)}
-                  className="accent-gold w-4 h-4"
-                />
-                <span className="text-base font-medium text-marine">Objectif chiffré &amp; nutrition</span>
-              </label>
-              <p className="text-marine/40 text-sm mt-1">
-                Ajoute au rapport les livres à perdre pour atteindre le % de gras visé, et des macros
-                alimentaires indicatives.
-              </p>
-
-              {nutritionEnabled && (
-                <div className="mt-3 space-y-3 pl-6">
-                  <div>
-                    <label className="block text-sm font-medium text-marine mb-1">% de gras corporel visé</label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={3}
-                        max={60}
-                        step={0.5}
-                        value={targetBodyFat}
-                        onChange={e => setTargetBodyFat(e.target.value)}
-                        placeholder="15"
-                        className="w-24 px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
-                      />
-                      <span className="text-marine/50 text-base">%</span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-marine mb-1">Niveau d'activité</label>
-                    <select
-                      value={activityLevel}
-                      onChange={e => setActivityLevel(e.target.value as ActivityLevel | '')}
-                      className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
-                    >
-                      <option value="">— Choisir —</option>
-                      {ACTIVITY_ORDER.map(a => (
-                        <option key={a} value={a}>
-                          {ACTIVITY_LABELS[a]}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-marine/40 text-xs mt-1">Sert à l'estimation calorique pour les macros.</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-marine mb-1">Rythme de perte visé</label>
-                    <select
-                      value={String(rateKgPerWeek)}
-                      onChange={e => setRateKgPerWeek(Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
-                    >
-                      {RATE_PRESETS.map(r => (
-                        <option key={r.kgPerWeek} value={String(r.kgPerWeek)}>
-                          {r.kgPerWeek.toLocaleString('fr-CA')} kg/sem (≈ {kgToLb(r.kgPerWeek).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} lb) — {r.intensity}
-                          {r.kgPerWeek === DEFAULT_RATE_KG_PER_WEEK ? ' · recommandé' : ''}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-marine/40 text-xs mt-1">Détermine l'échéance estimée et l'ampleur du déficit calorique.</p>
-                  </div>
-
-                  <div className="rounded-md border border-cream-dark bg-white/60 p-3">
-                    <p className="text-sm font-medium text-marine mb-2">Formule des macros</p>
-                    <div className="flex items-start gap-2 mb-2 text-marine text-sm">
-                      <span className="w-20 pt-1.5">Calories</span>
-                      <div className="flex flex-col gap-1.5">
-                        <div className="flex items-center gap-4">
-                          {([
-                            { value: 'auto', label: 'Automatique' },
-                            { value: 'manual', label: 'Manuel' }
-                          ] as const).map(opt => (
-                            <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="calories-mode"
-                                checked={caloriesMode === opt.value}
-                                onChange={() => setCaloriesMode(opt.value)}
-                                className="accent-gold"
-                              />
-                              {opt.label}
-                            </label>
-                          ))}
-                        </div>
-                        {caloriesMode === 'manual' ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              min={800}
-                              max={6000}
-                              step={50}
-                              value={manualKcal}
-                              onChange={e => setManualKcal(e.target.value)}
-                              placeholder="2000"
-                              className="w-24 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
-                            />
-                            <span className="text-marine/60">kcal / jour</span>
-                          </div>
-                        ) : (
-                          <span className="text-marine/50 text-xs">Calculées à partir du métabolisme et du rythme.</span>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 mb-2 text-marine text-sm">
-                      <span className="w-20">Protéines</span>
-                      <input
-                        type="number"
-                        min={0.3}
-                        max={2.5}
-                        step={0.1}
-                        value={proteinPerLb}
-                        onChange={e => setProteinPerLb(e.target.value)}
-                        className="w-20 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
-                      />
-                      <span className="text-marine/60">g par lb de masse maigre</span>
-                    </div>
-                    <div className="flex items-center gap-2 mb-2 text-marine text-sm">
-                      <span className="w-20">Lipides</span>
-                      <span className="text-marine/60">max</span>
-                      <input
-                        type="number"
-                        min={20}
-                        max={200}
-                        step={5}
-                        value={fatMaxG}
-                        onChange={e => setFatMaxG(e.target.value)}
-                        className="w-20 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
-                      />
-                      <span className="text-marine/60">g</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-marine text-sm">
-                      <span className="w-20">Glucides</span>
-                      <span className="text-marine/60">le reste des calories cibles</span>
-                    </div>
-                    <p className="text-marine/40 text-xs mt-2">
-                      Les calories cibles viennent du métabolisme (Mifflin-St Jeor) moins le déficit du rythme choisi.
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
             <div className="border-t border-cream-dark pt-5 mt-5">

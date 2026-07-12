@@ -37,6 +37,24 @@ interface Client {
   principePersoTitre: string | null
   /** Texte du principe personnalisé. */
   principePersoTexte: string | null
+  /** Protocole de jeûne intermittent choisi. `null` = pas de jeûne configuré. */
+  jeuneType: '16:8' | '18:6' | '20:4' | 'omad' | '5:2' | null
+  /** Début de la fenêtre d'alimentation (HH:MM). `null` si non défini. */
+  jeuneFenetreDebut: string | null
+  /** Fin de la fenêtre d'alimentation (HH:MM). `null` si non défini. */
+  jeuneFenetreFin: string | null
+  /** Consignes libres de Marie sur le jeûne. */
+  jeuneNotes: string | null
+  /** Cible d'hydratation en ml/jour. `null` = calcul auto d'après le poids. */
+  hydratationMlParJour: number | null
+  /** Suppléments recommandés (texte libre). */
+  supplementsNotes: string | null
+  /** Aliments à privilégier (texte libre). */
+  alimentsPrivilegier: string | null
+  /** Aliments à éviter (texte libre). */
+  alimentsEviter: string | null
+  /** Mot de Marie sur la nutrition (affiché dans le rapport). */
+  nutritionMot: string | null
   createdAt: string
   updatedAt: string
 }
@@ -336,6 +354,15 @@ interface Window {
           nutritionTargetKcal?: number | null
           principePersoTitre?: string | null
           principePersoTexte?: string | null
+          jeuneType?: '16:8' | '18:6' | '20:4' | 'omad' | '5:2' | null
+          jeuneFenetreDebut?: string | null
+          jeuneFenetreFin?: string | null
+          jeuneNotes?: string | null
+          hydratationMlParJour?: number | null
+          supplementsNotes?: string | null
+          alimentsPrivilegier?: string | null
+          alimentsEviter?: string | null
+          nutritionMot?: string | null
         }
       ): Promise<Client>
       delete(id: string): Promise<void>

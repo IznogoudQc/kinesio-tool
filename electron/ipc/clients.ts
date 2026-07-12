@@ -23,6 +23,13 @@ const RateKgPerWeek = z.union([z.number().min(0.1).max(2), z.null()]).optional()
 const ProteinPerLbLean = z.union([z.number().min(0.3).max(2.5), z.null()]).optional()
 const FatMaxG = z.union([z.number().min(20).max(200), z.null()]).optional()
 const TargetKcal = z.union([z.number().min(800).max(6000), z.null()]).optional()
+// ── Nutrition & jeûne (onglet dédié) ──
+const JeuneType = z.union([z.enum(['16:8', '18:6', '20:4', 'omad', '5:2']), z.null()]).optional()
+const HeureOrNull = z
+  .union([z.string().regex(/^\d{2}:\d{2}$/, 'Heure invalide (attendu HH:MM)'), z.null()])
+  .optional()
+const HydratationMl = z.union([z.number().min(0).max(10000), z.null()]).optional()
+const TexteLibreOrNull = z.union([z.string().max(2000).trim(), z.null()]).optional()
 
 const CreateClientSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(200).trim(),
@@ -48,7 +55,16 @@ const UpdateClientSchema = z.object({
   nutritionFatMaxG: FatMaxG,
   nutritionTargetKcal: TargetKcal,
   principePersoTitre: z.union([z.string().max(60).trim(), z.null()]).optional(),
-  principePersoTexte: z.union([z.string().max(300).trim(), z.null()]).optional()
+  principePersoTexte: z.union([z.string().max(300).trim(), z.null()]).optional(),
+  jeuneType: JeuneType,
+  jeuneFenetreDebut: HeureOrNull,
+  jeuneFenetreFin: HeureOrNull,
+  jeuneNotes: TexteLibreOrNull,
+  hydratationMlParJour: HydratationMl,
+  supplementsNotes: TexteLibreOrNull,
+  alimentsPrivilegier: TexteLibreOrNull,
+  alimentsEviter: TexteLibreOrNull,
+  nutritionMot: TexteLibreOrNull
 })
 
 const ClientId = z.string().uuid()
