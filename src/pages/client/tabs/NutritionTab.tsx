@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Apple, Ban, CalendarClock, Check, Droplet, ExternalLink, MessageSquareQuote, Pill, Target } from 'lucide-react'
+import { Apple, Ban, CalendarClock, Check, Droplet, ExternalLink, MessageSquareQuote, Pill, Sparkles, Target, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
 import { bilansService } from '../../../services/bilans'
+import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
 import {
   ACTIVITY_LABELS,
   ACTIVITY_ORDER,
@@ -96,6 +97,14 @@ const MOT_PRESETS = [
   'La régularité bat la perfection : chaque petit choix compte.',
   'Mange vrai, bouge souvent, dors bien — le reste suit.'
 ]
+
+/** Message lisible pour une erreur de génération IA (clé absente → renvoi Paramètres). */
+function aiErrorMessage(err: unknown): string {
+  if (err instanceof AIAdviceError && err.code === 'NO_API_KEY') {
+    return 'Aucune clé API Anthropic configurée — ajoutez-la dans Paramètres pour utiliser l’IA.'
+  }
+  return err instanceof Error ? err.message : 'Erreur lors de la génération IA.'
+}
 
 /** Ajoute `item` en nouvelle ligne (sans doublon, insensible à la casse). */
 function appendLine(current: string, item: string): string {
@@ -207,6 +216,11 @@ export function NutritionTab() {
   const [alimentsPrivilegier, setAlimentsPrivilegier] = useState(client.alimentsPrivilegier ?? '')
   const [alimentsEviter, setAlimentsEviter] = useState(client.alimentsEviter ?? '')
   const [nutritionMot, setNutritionMot] = useState(client.nutritionMot ?? '')
+  const [nutritionMenu, setNutritionMenu] = useState(client.nutritionMenu ?? '')
+
+  // Génération IA (plan de suppléments / idées de menu).
+  const [aiBusy, setAiBusy] = useState<'supp' | 'menu' | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -343,7 +357,8 @@ export function NutritionTab() {
         supplementsNotes: supplementsNotes.trim() || null,
         alimentsPrivilegier: alimentsPrivilegier.trim() || null,
         alimentsEviter: alimentsEviter.trim() || null,
-        nutritionMot: nutritionMot.trim() || null
+        nutritionMot: nutritionMot.trim() || null,
+        nutritionMenu: nutritionMenu.trim() || null
       })
       onClientUpdated?.(updated)
       return true
@@ -374,6 +389,42 @@ export function NutritionTab() {
       setError(err instanceof Error ? err.message : 'Impossible de générer le document nutrition.')
     } finally {
       setOpening(false)
+    }
+  }
+
+  /** IA : organise les suppléments saisis en horaire (remplace le champ, éditable). */
+  async function generateSupplementsPlan() {
+    setAiError(null)
+    setAiBusy('supp')
+    try {
+      const text = await aiAdviceService.generateNutrition({ type: 'supplements', supplements: supplementsNotes })
+      setSupplementsNotes(text)
+    } catch (err) {
+      setAiError(aiErrorMessage(err))
+    } finally {
+      setAiBusy(null)
+    }
+  }
+
+  /** IA : idées de menu (journées types) selon les macros + aliments. */
+  async function generateMenuIdeas() {
+    setAiError(null)
+    setAiBusy('menu')
+    try {
+      const text = await aiAdviceService.generateNutrition({
+        type: 'menu',
+        kcal: liveMacros?.targetKcal ?? null,
+        proteinG: liveMacros?.proteinG ?? null,
+        fatG: liveMacros?.fatG ?? null,
+        carbsG: liveMacros?.carbsG ?? null,
+        foodsGood: alimentsPrivilegier,
+        foodsBad: alimentsEviter
+      })
+      setNutritionMenu(text)
+    } catch (err) {
+      setAiError(aiErrorMessage(err))
+    } finally {
+      setAiBusy(null)
     }
   }
 
@@ -635,10 +686,23 @@ export function NutritionTab() {
         <textarea
           value={supplementsNotes}
           onChange={e => setSupplementsNotes(e.target.value)}
-          rows={4}
+          rows={5}
           placeholder="Ex. Vitamine D3 + K2 — avec un repas contenant du gras&#10;Créatine 5 g — tous les jours"
           className={`${fieldClass} resize-y`}
         />
+        <div className="mt-2 flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={generateSupplementsPlan}
+            disabled={aiBusy !== null || supplementsNotes.trim() === ''}
+            title={supplementsNotes.trim() === '' ? 'Ajoutez d’abord des suppléments.' : 'Organiser en horaire avec l’IA'}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-gold/50 text-marine/80 text-sm hover:border-gold hover:bg-gold/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Sparkles size={15} className="text-gold-dark" />
+            {aiBusy === 'supp' ? 'Génération…' : 'Organiser en horaire (IA)'}
+          </button>
+          <span className="text-marine/40 text-xs">L’IA classe par moment de prise. Vous pouvez ensuite modifier le texte.</span>
+        </div>
       </Section>
 
       {/* ── Aliments ────────────────────────────────────────────────────────── */}
@@ -664,6 +728,44 @@ export function NutritionTab() {
           />
         </Section>
       </div>
+
+      {/* ── Idées de menu (IA) ──────────────────────────────────────────────── */}
+      <Section
+        icon={Utensils}
+        title="Idées de menu"
+        desc="Exemples de journées types selon les macros et les aliments — modifiables."
+      >
+        <div className="mb-2 flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={generateMenuIdeas}
+            disabled={aiBusy !== null}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-gold/50 text-marine/80 text-sm hover:border-gold hover:bg-gold/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Sparkles size={15} className="text-gold-dark" />
+            {aiBusy === 'menu' ? 'Génération…' : 'Générer des idées (IA)'}
+          </button>
+          {liveMacros && (
+            <span className="text-marine/40 text-xs">
+              Basé sur ≈ {liveMacros.targetKcal.toLocaleString('fr-CA')} kcal · {liveMacros.proteinG} P / {liveMacros.fatG} L / {liveMacros.carbsG} G
+            </span>
+          )}
+        </div>
+        <textarea
+          value={nutritionMenu}
+          onChange={e => setNutritionMenu(e.target.value)}
+          rows={8}
+          placeholder="Cliquez « Générer des idées » ou écrivez vos propres exemples de journées (déjeuner, dîner, souper, collations)."
+          className={`${fieldClass} resize-y`}
+        />
+        <p className="text-marine/40 text-xs mt-1.5">
+          Idées génériques à titre d’exemple — un plan nutritionnel personnalisé relève d’une nutritionniste.
+        </p>
+      </Section>
+
+      {aiError && (
+        <div className="text-red-700 text-base bg-red-50 border border-red-200 rounded-md px-4 py-3">{aiError}</div>
+      )}
 
       {/* ── Mot de Marie ────────────────────────────────────────────────────── */}
       <Section

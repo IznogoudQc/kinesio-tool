@@ -29,7 +29,7 @@ const HeureOrNull = z
   .union([z.string().regex(/^\d{2}:\d{2}$/, 'Heure invalide (attendu HH:MM)'), z.null()])
   .optional()
 const HydratationMl = z.union([z.number().min(0).max(10000), z.null()]).optional()
-const TexteLibreOrNull = z.union([z.string().max(2000).trim(), z.null()]).optional()
+const TexteLibreOrNull = z.union([z.string().max(5000).trim(), z.null()]).optional()
 
 const CreateClientSchema = z.object({
   name: z.string().min(1, 'Le nom est requis').max(200).trim(),
@@ -70,7 +70,9 @@ const UpdateClientSchema = z.object({
   supplementsNotes: TexteLibreOrNull,
   alimentsPrivilegier: TexteLibreOrNull,
   alimentsEviter: TexteLibreOrNull,
-  nutritionMot: TexteLibreOrNull
+  nutritionMot: TexteLibreOrNull,
+  // Idées de menu — texte plus long (généré par l'IA), on relève le plafond.
+  nutritionMenu: z.union([z.string().max(8000).trim(), z.null()]).optional()
 })
 
 const ClientId = z.string().uuid()

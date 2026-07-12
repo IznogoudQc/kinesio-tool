@@ -121,7 +121,8 @@ async function buildStandaloneHtml(
       supplementsNotes: client.supplementsNotes,
       alimentsPrivilegier: client.alimentsPrivilegier,
       alimentsEviter: client.alimentsEviter,
-      nutritionMot: client.nutritionMot
+      nutritionMot: client.nutritionMot,
+      nutritionMenu: client.nutritionMenu
     },
     avatarDataUrl: await avatarDataUrl(client.avatarFilename),
     bilans: list,

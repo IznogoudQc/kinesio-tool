@@ -70,6 +70,7 @@ export interface StandaloneData {
     alimentsPrivilegier: string | null
     alimentsEviter: string | null
     nutritionMot: string | null
+    nutritionMenu: string | null
   }
   /** Photo du client en data URI, ou `null` — le fichier reste autonome. */
   avatarDataUrl: string | null
@@ -611,8 +612,9 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
   const eviter = (client.alimentsEviter ?? '').trim()
   const supp = (client.supplementsNotes ?? '').trim()
   const mot = (client.nutritionMot ?? '').trim()
+  const menu = (client.nutritionMenu ?? '').trim()
 
-  if (!hasJeune && !hasHydra && !privil && !eviter && !supp && !mot) return null
+  if (!hasJeune && !hasHydra && !privil && !eviter && !supp && !mot && !menu) return null
 
   const verres = hasHydra ? Math.round((hydra as number) / 250) : null
 
@@ -666,6 +668,13 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
           <div className="mt-4">
             <EdBullets text={supp} />
           </div>
+        </div>
+      )}
+
+      {menu && (
+        <div className="mt-6 rounded-xl border border-marine/10 p-6">
+          <p className="ed-eyebrow text-gold-dark">Idées de menu</p>
+          <p className="ed-prose mt-4 whitespace-pre-line text-base leading-relaxed text-marine/75">{menu}</p>
         </div>
       )}
     </>
@@ -814,7 +823,8 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
     !!(client.alimentsPrivilegier ?? '').trim() ||
     !!(client.alimentsEviter ?? '').trim() ||
     !!(client.supplementsNotes ?? '').trim() ||
-    !!(client.nutritionMot ?? '').trim()
+    !!(client.nutritionMot ?? '').trim() ||
+    !!(client.nutritionMenu ?? '').trim()
 
   return (
     <div className="overflow-x-hidden bg-cream text-marine">

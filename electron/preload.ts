@@ -146,7 +146,9 @@ contextBridge.exposeInMainWorld('api', {
     testConnection: (): Promise<{ ok: boolean; error?: string; code?: string }> =>
       ipcRenderer.invoke('ai:test-connection'),
     generate: (payload: unknown): Promise<{ ok: boolean; advice?: unknown; error?: string; code?: string }> =>
-      ipcRenderer.invoke('ai:generate', payload)
+      ipcRenderer.invoke('ai:generate', payload),
+    generateNutrition: (payload: unknown): Promise<{ ok: boolean; text?: string; error?: string; code?: string }> =>
+      ipcRenderer.invoke('ai:generate-nutrition', payload)
   },
   app: {
     getVersion: (): Promise<string> =>

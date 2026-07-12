@@ -70,6 +70,58 @@ Règles :
 - Les « pistes » sont des recommandations d'ACTIVITÉ PHYSIQUE (le champ du kinésiologue). Pour la nutrition détaillée, réfère à un(e) nutritionniste au lieu de prescrire.
 - Si tour de taille / ratio taille-hanche à risque OMS élevé, ou âge ≥ 50 avec exercice haute intensité, ajoute un warning de validation médicale.`
 
+// ── Nutrition : plan de suppléments + idées de menu ─────────────────────────
+const NutritionPayloadSchema = z.object({
+  type: z.enum(['supplements', 'menu']),
+  kcal: z.number().nullable().optional(),
+  proteinG: z.number().nullable().optional(),
+  fatG: z.number().nullable().optional(),
+  carbsG: z.number().nullable().optional(),
+  supplements: z.string().max(3000).optional(),
+  foodsGood: z.string().max(3000).optional(),
+  foodsBad: z.string().max(3000).optional()
+})
+
+const SUPPLEMENTS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
+
+On te donne la liste des suppléments qu'un client prévoit prendre. Organise-les en un HORAIRE QUOTIDIEN clair et sécuritaire.
+
+Format de réponse (texte simple, français, pas de Markdown lourd) :
+- Regroupe par moment : « Matin (à jeun) », « Déjeuner », « Midi », « Après-midi », « Souper », « Au coucher ».
+- Sous chaque moment, une puce par supplément, en précisant AVEC ou SANS nourriture.
+- Ajoute une courte section « À espacer / interactions » (ex. zinc et calcium/fer à distance ; fer avec vitamine C mais loin du café/thé ; magnésium le soir).
+- Base-toi UNIQUEMENT sur les suppléments fournis. N'ajoute rien qui n'a pas été demandé et n'invente pas de dosages.
+- Reste bref et pratique.
+- Termine par : « Horaire indicatif — validez avec votre pharmacien ou professionnel de la santé, surtout en cas de médication. »`
+
+const MENU_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
+
+Propose 1 à 2 EXEMPLES de journées (IDÉES DE MENU génériques, NON prescriptives) qui respectent approximativement les cibles de calories et de macros fournies, en tenant compte des aliments à privilégier et à éviter.
+
+Format (texte simple, français) :
+- Pour chaque journée : « Déjeuner », « Dîner », « Souper », « Collations » avec des aliments simples et des portions approximatives.
+- À la fin de chaque journée, un total approximatif : calories, protéines, lipides, glucides.
+- Ce sont des IDÉES / EXEMPLES, jamais un plan nutritionnel individualisé.
+- N'invente aucune allergie ni restriction non fournie. Respecte les aliments à éviter indiqués.
+- Termine par : « Idées générales à titre d'exemple — pour un plan personnalisé, consultez une nutritionniste. »`
+
+function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): string {
+  if (p.type === 'supplements') {
+    return `Suppléments à organiser en horaire :\n${(p.supplements ?? '').trim() || '(aucun supplément fourni)'}`
+  }
+  const macros: string[] = []
+  if (typeof p.kcal === 'number') macros.push(`${Math.round(p.kcal)} kcal`)
+  if (typeof p.proteinG === 'number') macros.push(`${Math.round(p.proteinG)} g de protéines`)
+  if (typeof p.fatG === 'number') macros.push(`${Math.round(p.fatG)} g de lipides`)
+  if (typeof p.carbsG === 'number') macros.push(`${Math.round(p.carbsG)} g de glucides`)
+  const lines = [
+    `Cibles quotidiennes : ${macros.length ? macros.join(', ') : 'non précisées'}.`,
+    `Aliments à privilégier : ${(p.foodsGood ?? '').trim().replace(/\n/g, ', ') || 'non précisés'}.`,
+    `Aliments à éviter : ${(p.foodsBad ?? '').trim().replace(/\n/g, ', ') || 'non précisés'}.`
+  ]
+  return lines.join('\n')
+}
+
 function buildUserMessage(payload: z.infer<typeof PayloadSchema>): string {
   const sex = payload.sex === 'F' ? 'Femme' : payload.sex === 'M' ? 'Homme' : 'sexe non renseigné'
   const age = payload.age !== null ? `${payload.age} ans` : 'âge non renseigné'
@@ -236,6 +288,34 @@ export function registerAIHandlers(): void {
       if (err instanceof z.ZodError) {
         return { ok: false, error: 'Le JSON Anthropic ne correspond pas au schéma attendu.', code: 'BAD_RESPONSE' as AIErrorCode }
       }
+      return { ok: false, error: err instanceof Error ? err.message : 'Erreur inconnue', code: 'BAD_RESPONSE' as AIErrorCode }
+    }
+  })
+
+  // ── Génération nutrition (plan de suppléments / idées de menu) ─────────────
+  // Retourne du TEXTE éditable (pas de JSON strict) : Marie l'ajuste ensuite.
+  ipcMain.handle('ai:generate-nutrition', async (_e, rawPayload: unknown) => {
+    const apiKey = await getApiKey()
+    if (!apiKey) {
+      return { ok: false, error: 'Aucune clé API Anthropic configurée.', code: 'NO_API_KEY' as AIErrorCode }
+    }
+    let payload: z.infer<typeof NutritionPayloadSchema>
+    try {
+      payload = NutritionPayloadSchema.parse(rawPayload)
+    } catch {
+      return { ok: false, error: 'Payload invalide.', code: 'BAD_RESPONSE' as AIErrorCode }
+    }
+    try {
+      const response = await callAnthropic(apiKey, {
+        model: MODEL_GENERATE,
+        max_tokens: 1600,
+        system: payload.type === 'supplements' ? SUPPLEMENTS_SYSTEM : MENU_SYSTEM,
+        messages: [{ role: 'user', content: buildNutritionMessage(payload) }]
+      })
+      const text = extractText(response).trim()
+      return { ok: true, text }
+    } catch (err) {
+      if (err instanceof AIError) return { ok: false, error: err.message, code: err.code }
       return { ok: false, error: err instanceof Error ? err.message : 'Erreur inconnue', code: 'BAD_RESPONSE' as AIErrorCode }
     }
   })

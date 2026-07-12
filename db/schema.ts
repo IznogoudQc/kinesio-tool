@@ -64,6 +64,8 @@ export const clients = sqliteTable('clients', {
   alimentsPrivilegier: text('aliments_privilegier'),
   alimentsEviter: text('aliments_eviter'),
   nutritionMot: text('nutrition_mot'),
+  // Idées de menu (journées types) — souvent générées par l'IA puis ajustées par Marie.
+  nutritionMenu: text('nutrition_menu'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

@@ -62,6 +62,8 @@ interface Client {
   alimentsEviter: string | null
   /** Mot de Marie sur la nutrition (affiché dans le rapport). */
   nutritionMot: string | null
+  /** Idées de menu (journées types) — texte libre, souvent généré par l'IA. */
+  nutritionMenu: string | null
   createdAt: string
   updatedAt: string
 }
@@ -375,6 +377,7 @@ interface Window {
           alimentsPrivilegier?: string | null
           alimentsEviter?: string | null
           nutritionMot?: string | null
+          nutritionMenu?: string | null
         }
       ): Promise<Client>
       delete(id: string): Promise<void>
@@ -480,6 +483,17 @@ interface Window {
           deltaPct?: number
         }>
       }): Promise<{ ok: boolean; advice?: unknown; error?: string; code?: string }>
+      /** Génère un texte nutrition (plan de suppléments ou idées de menu) — éditable ensuite. */
+      generateNutrition(payload: {
+        type: 'supplements' | 'menu'
+        kcal?: number | null
+        proteinG?: number | null
+        fatG?: number | null
+        carbsG?: number | null
+        supplements?: string
+        foodsGood?: string
+        foodsBad?: string
+      }): Promise<{ ok: boolean; text?: string; error?: string; code?: string }>
     }
     app: {
       getVersion(): Promise<string>

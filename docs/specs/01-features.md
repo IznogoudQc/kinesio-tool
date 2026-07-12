@@ -642,6 +642,24 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.54 — IA nutrition : plan de suppléments + idées de menu)
+
+Deux générateurs IA (Anthropic, via l'infra existante — clé dans le trousseau OS) dans l'onglet Nutrition,
+dont le résultat est un **texte éditable** que Marie ajuste :
+
+- **Organiser en horaire (suppléments)** : l'IA classe les suppléments saisis par moment de prise (matin à
+  jeun, déjeuner, souper, coucher…), avec/sans nourriture et interactions à espacer. Remplace le champ
+  Suppléments (éditable).
+- **Idées de menu** : nouvelle section — l'IA propose 1–2 journées types calées sur les macros (résultat en
+  direct) et les aliments à privilégier/éviter. **Format « idées / exemples » non prescriptif** + disclaimer
+  « un plan personnalisé relève d'une nutritionniste » (champ de pratique : menus = acte réservé OPDQ).
+
+Nouveau champ DB `nutrition_menu` (migration 0020) + section « Idées de menu » dans le document client.
+IPC `ai:generate-nutrition` (texte, pas de JSON strict) → preload → `aiAdviceService.generateNutrition`.
+Erreurs gérées (clé absente → renvoi Paramètres). Rendu du document vérifié en headless.
+
+Version : 0.2.53 → 0.2.54.
+
 ## ✅ Fait (v0.2.53 — Suppléments : liste étendue + moment de prise recommandé)
 
 Liste de suppléments enrichie (Vitamine D3 + K2, Zinc, Fer, Vitamine C, Probiotiques, Oméga-3 EPA/DHA,

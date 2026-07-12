@@ -76,6 +76,27 @@ export const aiAdviceService = {
       )
     }
     return res.advice as AIAdvice
+  },
+
+  /** Génère un texte nutrition (plan de suppléments ou idées de menu) — Marie l'ajuste ensuite. */
+  async generateNutrition(payload: {
+    type: 'supplements' | 'menu'
+    kcal?: number | null
+    proteinG?: number | null
+    fatG?: number | null
+    carbsG?: number | null
+    supplements?: string
+    foodsGood?: string
+    foodsBad?: string
+  }): Promise<string> {
+    const res = await window.api.ai.generateNutrition(payload)
+    if (!res.ok || typeof res.text !== 'string') {
+      throw new AIAdviceError(
+        (res.code as AIErrorCode) ?? 'BAD_RESPONSE',
+        res.error ?? 'Erreur inconnue lors de la génération.'
+      )
+    }
+    return res.text
   }
 }
 
