@@ -33,6 +33,10 @@ interface Client {
   nutritionFatMaxG: number | null
   /** Calories cibles fixées manuellement (kcal). `null` = calcul automatique. */
   nutritionTargetKcal: number | null
+  /** Principe personnalisé (6e pilier) affiché en clôture du rapport si rempli. `null`/vide = non affiché. */
+  principePersoTitre: string | null
+  /** Texte du principe personnalisé. */
+  principePersoTexte: string | null
   createdAt: string
   updatedAt: string
 }
@@ -330,6 +334,8 @@ interface Window {
           nutritionProteinPerLbLean?: number | null
           nutritionFatMaxG?: number | null
           nutritionTargetKcal?: number | null
+          principePersoTitre?: string | null
+          principePersoTexte?: string | null
         }
       ): Promise<Client>
       delete(id: string): Promise<void>

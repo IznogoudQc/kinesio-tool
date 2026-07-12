@@ -364,6 +364,8 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
   const [manualKcal, setManualKcal] = useState<string>(
     client.nutritionTargetKcal != null ? String(client.nutritionTargetKcal) : ''
   )
+  const [principeTitre, setPrincipeTitre] = useState<string>(client.principePersoTitre ?? '')
+  const [principeTexte, setPrincipeTexte] = useState<string>(client.principePersoTexte ?? '')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [avatarBusy, setAvatarBusy] = useState(false)
@@ -479,7 +481,9 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
         nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null,
         nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
         nutritionFatMaxG: nutritionEnabled ? fatVal : null,
-        nutritionTargetKcal: kcalVal
+        nutritionTargetKcal: kcalVal,
+        principePersoTitre: principeTitre.trim() || null,
+        principePersoTexte: principeTexte.trim() || null
       })
       onSaved(updated)
     } catch (err) {
@@ -820,6 +824,29 @@ function EditClientModal({ client, onCancel, onUpdated, onSaved }: EditClientMod
                   </div>
                 </div>
               )}
+            </div>
+
+            <div className="border-t border-cream-dark pt-5 mt-5">
+              <p className="text-base font-medium text-marine mb-1">Principe personnalisé (optionnel)</p>
+              <p className="text-marine/50 text-xs mb-3">
+                Un 6<sup>e</sup> principe montré en clôture du rapport de ce client. Laissez vide pour n’en afficher aucun.
+              </p>
+              <input
+                type="text"
+                value={principeTitre}
+                onChange={e => setPrincipeTitre(e.target.value)}
+                maxLength={60}
+                placeholder="Titre (ex. Bon sommeil)"
+                className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+              />
+              <input
+                type="text"
+                value={principeTexte}
+                onChange={e => setPrincipeTexte(e.target.value)}
+                maxLength={300}
+                placeholder="Courte phrase (ex. C’est la nuit que le corps se répare.)"
+                className="mt-2 w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+              />
             </div>
           </div>
           </div>

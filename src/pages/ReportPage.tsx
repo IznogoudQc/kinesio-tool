@@ -324,7 +324,7 @@ export function ReportPage() {
       <ForceSection {...shared} />
       <DosSection {...shared} />
       <ObjectifSection client={client} latest={latest} chrono={chrono} profile={profile} />
-      <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} clientName={client.name} />
+      <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} customPrincipe={{ title: client.principePersoTitre, line: client.principePersoTexte }} />
     </article>
   )
 }
@@ -1833,7 +1833,7 @@ function MiniSpark({ values }: { values: number[] }) {
 }
 
 // ── Section 7 — Forces & clôture ─────────────────────────────────────────────
-function ForcesEtPlanSection({ latest, profile, coachName, signature, clientName }: { latest: Bilan; profile: BilanProfile; coachName: string; signature: string; clientName: string }) {
+function ForcesEtPlanSection({ latest, profile, coachName, signature, customPrincipe }: { latest: Bilan; profile: BilanProfile; coachName: string; signature: string; customPrincipe: { title: string | null; line: string | null } }) {
   const ranked = METRICS.map(m => {
     const value = num(latest.data[m.key])
     if (value === null) return null
@@ -1883,9 +1883,9 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature, clientName
       {/* Cinq piliers de bien-être — clôture, identique au document interactif. */}
       <div className="break-inside-avoid" style={{ marginTop: '10mm', paddingTop: '6mm', borderTop: `1px solid ${GRID}` }}>
         <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '1.5mm' }}>L'équilibre au quotidien</p>
-        <p className="report-display" style={{ fontSize: '14pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>{principesCountWord(clientName)} principes essentiels</p>
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${principesFor(clientName).length === 6 ? 3 : 5}, 1fr)`, gap: '4mm' }}>
-          {principesFor(clientName).map(p => (
+        <p className="report-display" style={{ fontSize: '14pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>{principesCountWord(customPrincipe)} principes essentiels</p>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${principesFor(customPrincipe).length === 6 ? 3 : 5}, 1fr)`, gap: '4mm' }}>
+          {principesFor(customPrincipe).map(p => (
             <div key={p.title} style={{ textAlign: 'center' }}>
               <p.icon size={18} color={GOLD} strokeWidth={1.6} style={{ marginBottom: '1.5mm' }} />
               <p style={{ fontSize: '9.5pt', fontWeight: 600, color: MARINE }}>{p.title}</p>

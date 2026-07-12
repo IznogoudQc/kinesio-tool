@@ -36,6 +36,11 @@ export const clients = sqliteTable('clients', {
   nutritionFatMaxG: real('nutrition_fat_max_g'),
   // Calories cibles fixées manuellement (kcal). `null` = calcul automatique.
   nutritionTargetKcal: real('nutrition_target_kcal'),
+  // Principe personnalisé optionnel (6e pilier) montré en clôture du rapport
+  // client. Si `principePersoTitre` est rempli, un principe supplémentaire
+  // s'affiche (HTML + PDF). Éditable par Marie, par client.
+  principePersoTitre: text('principe_perso_titre'),
+  principePersoTexte: text('principe_perso_texte'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

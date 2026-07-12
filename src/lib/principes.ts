@@ -1,4 +1,4 @@
-import { Apple, Dumbbell, Heart, Moon, Smile, Wind, type LucideIcon } from 'lucide-react'
+import { Apple, Dumbbell, Sparkles, Moon, Smile, Wind, type LucideIcon } from 'lucide-react'
 
 /** Piliers de bien-être affichés en clôture des documents client (contenu
  *  fixe). Source unique pour le document HTML et le rapport PDF. */
@@ -16,20 +16,21 @@ export const PRINCIPES: Principe[] = [
   { icon: Moon, title: 'Bon sommeil', line: 'C’est la nuit que le corps se répare.' }
 ]
 
-/** Clin d'œil privé : un 6e principe, uniquement pour le bilan de Nicholas Jean. */
-const JOKE_PRINCIPE: Principe = {
-  icon: Heart,
-  title: 'Bon sexe',
-  line: 'Faites l’amour souvent, c’est bon pour votre testostérone.'
+/** Principe personnalisé optionnel (6e pilier), éditable par Marie par client. */
+export interface CustomPrincipe {
+  title?: string | null
+  line?: string | null
 }
 
-/** Principes à afficher pour ce client (ajoute le clin d'œil pour Nicholas Jean). */
-export function principesFor(clientName: string | null | undefined): Principe[] {
-  const isNicholas = (clientName ?? '').trim().toLowerCase() === 'nicholas jean'
-  return isNicholas ? [...PRINCIPES, JOKE_PRINCIPE] : PRINCIPES
+/** Principes à afficher pour ce client : les cinq de base, plus un 6e
+ *  personnalisé si Marie a rempli un titre. */
+export function principesFor(custom?: CustomPrincipe): Principe[] {
+  const title = custom?.title?.trim()
+  if (!title) return PRINCIPES
+  return [...PRINCIPES, { icon: Sparkles, title, line: (custom?.line ?? '').trim() }]
 }
 
 /** Mot du nombre de principes (« Cinq » / « Six »). */
-export function principesCountWord(clientName: string | null | undefined): string {
-  return principesFor(clientName).length === 6 ? 'Six' : 'Cinq'
+export function principesCountWord(custom?: CustomPrincipe): string {
+  return principesFor(custom).length === 6 ? 'Six' : 'Cinq'
 }

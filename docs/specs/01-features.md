@@ -642,6 +642,17 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.40 — Principe personnalisé éditable par client (remplace le gate codé en dur))
+
+Le 6ᵉ principe n'est plus codé en dur sur « Nicholas Jean » : c'est un **champ éditable par Marie, par
+client**. Deux colonnes DB (`principe_perso_titre` / `principe_perso_texte`, migration 0015). Dans le
+formulaire d'édition du client : « Principe personnalisé (optionnel) » — titre + phrase. Si le titre est
+rempli, un 6ᵉ principe (icône ✨) s'affiche en clôture du **HTML et du PDF** ; sinon cinq comme avant.
+`principesFor(custom)` / `principesCountWord(custom)`. Vérifié au rendu (rempli → « Six » + affiché, vide →
+« Cinq »).
+
+Version : 0.2.39 → 0.2.40.
+
 ## ✅ Fait (v0.2.39 — Clin d'œil privé (Nicholas Jean) + « Kinésio Conseil » en pied de PDF)
 
 - **6e principe, gaté par nom** : la clôture « Cinq principes essentiels » devient « Six… » avec un principe
