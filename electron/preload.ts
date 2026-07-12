@@ -150,6 +150,11 @@ contextBridge.exposeInMainWorld('api', {
     generateNutrition: (payload: unknown): Promise<{ ok: boolean; text?: string; error?: string; code?: string }> =>
       ipcRenderer.invoke('ai:generate-nutrition', payload)
   },
+  nutritionTemplates: {
+    list: () => ipcRenderer.invoke('nutrition-templates:list'),
+    save: (data: { name: string; data: string }) => ipcRenderer.invoke('nutrition-templates:save', data),
+    delete: (id: string) => ipcRenderer.invoke('nutrition-templates:delete', id)
+  },
   app: {
     getVersion: (): Promise<string> =>
       ipcRenderer.invoke('app:get-version')

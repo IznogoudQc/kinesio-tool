@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.61 — Modèles de protocole nutrition réutilisables)
+
+Marie peut créer des **modèles de protocole** (ex. « Perte de gras standard ») et les **appliquer à un client
+en 1 clic**, puis ajuster. Panneau **« Modèles »** dans l'onglet Nutrition : liste des modèles (Appliquer /
+Supprimer) + « Enregistrer le protocole actuel » (nom + capture des réglages courants).
+
+- Le modèle capture le **protocole** (objectif chiffré + macros formule/manuel + repas/jour + planning de
+  jeûne + hydratation + suppléments + aliments à privilégier/éviter), **pas** les données propres au client
+  (goûts, mot, idées de menu, objectif libre).
+- Nouvelle table `nutrition_templates` (migration 0023, app-level) + IPC `nutrition-templates:*`
+  (list/save/delete) enregistré dans `main.ts` + preload + service + types.
+
+Version : 0.2.60 → 0.2.61.
+
 ## ✅ Fait (v0.2.60 — Jeûne prolongé : repères de sécurité dans le document)
 
 Nouveau bloc **« Jeûne prolongé — repères de sécurité »** dans le document client, affiché **uniquement si le

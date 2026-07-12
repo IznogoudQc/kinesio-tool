@@ -163,3 +163,15 @@ export const clientNotes = sqliteTable('client_notes', {
 
 export type ClientNote = typeof clientNotes.$inferSelect
 export type NewClientNote = typeof clientNotes.$inferInsert
+
+// Modèles de protocole nutrition réutilisables (app-level, pas par client). `data`
+// = JSON d'un sous-ensemble des réglages nutrition, appliqué à un client en 1 clic.
+export const nutritionTemplates = sqliteTable('nutrition_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  data: text('data').notNull(),
+  createdAt: text('created_at').notNull()
+})
+
+export type NutritionTemplate = typeof nutritionTemplates.$inferSelect
+export type NewNutritionTemplate = typeof nutritionTemplates.$inferInsert

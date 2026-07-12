@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Apple, Ban, CalendarClock, Check, Droplet, ExternalLink, Heart, MessageSquareQuote, Pill, Sparkles, Target, ThumbsDown, Utensils } from 'lucide-react'
+import { Apple, Ban, BookMarked, CalendarClock, Check, Droplet, ExternalLink, Heart, MessageSquareQuote, Pill, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
 import { bilansService } from '../../../services/bilans'
 import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
+import { nutritionTemplatesService } from '../../../services/nutritionTemplates'
 import {
   ACTIVITY_LABELS,
   ACTIVITY_ORDER,
@@ -227,6 +228,12 @@ export function NutritionTab() {
   const [aiBusy, setAiBusy] = useState<'supp' | 'menu' | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
 
+  // Modèles de protocole réutilisables.
+  const [templates, setTemplates] = useState<NutritionTemplate[]>([])
+  const [showTemplates, setShowTemplates] = useState(false)
+  const [newTemplateName, setNewTemplateName] = useState('')
+  const [templateBusy, setTemplateBusy] = useState(false)
+
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
@@ -438,6 +445,89 @@ export function NutritionTab() {
     }
   }
 
+  useEffect(() => {
+    nutritionTemplatesService.list().then(setTemplates).catch(() => {})
+  }, [])
+
+  /** Sous-ensemble des réglages nutrition capturé dans un modèle. */
+  function currentTemplateData(): Record<string, unknown> {
+    return {
+      nutritionEnabled,
+      nutritionTargetBodyFat: targetBodyFat.trim() !== '' ? Number(targetBodyFat) : null,
+      nutritionActivityLevel: activityLevel || null,
+      nutritionRateKgPerWeek: rateKgPerWeek,
+      nutritionProteinPerLbLean: proteinPerLb.trim() !== '' ? Number(proteinPerLb) : null,
+      nutritionFatMaxG: fatMaxG.trim() !== '' ? Number(fatMaxG) : null,
+      nutritionMacroManual: macroManual,
+      nutritionManualProteinG: manualProteinG.trim() !== '' ? Number(manualProteinG) : null,
+      nutritionManualFatG: manualFatG.trim() !== '' ? Number(manualFatG) : null,
+      nutritionManualCarbG: manualCarbG.trim() !== '' ? Number(manualCarbG) : null,
+      nutritionRepasParJour: repasParJour,
+      jeunePlanning: programs,
+      hydratationMlParJour: hydratationMl.trim() !== '' ? Number(hydratationMl) : null,
+      supplementsNotes: supplementsNotes.trim() || null,
+      alimentsPrivilegier: alimentsPrivilegier.trim() || null,
+      alimentsEviter: alimentsEviter.trim() || null
+    }
+  }
+
+  /** Applique un modèle (JSON) aux champs du formulaire. Champs client (goûts,
+   *  mot, menu, objectif libre) NON touchés — le modèle est un protocole. */
+  function applyTemplateJson(json: string) {
+    let d: Record<string, unknown>
+    try {
+      d = JSON.parse(json)
+    } catch {
+      return
+    }
+    const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? (v as number) : null)
+    const str = (v: unknown) => (typeof v === 'string' ? v : '')
+    if ('nutritionEnabled' in d) setNutritionEnabled(!!d.nutritionEnabled)
+    if ('nutritionTargetBodyFat' in d) setTargetBodyFat(num(d.nutritionTargetBodyFat) != null ? String(d.nutritionTargetBodyFat) : '')
+    if ('nutritionActivityLevel' in d) setActivityLevel((d.nutritionActivityLevel as ActivityLevel) ?? '')
+    if (num(d.nutritionRateKgPerWeek) != null) setRateKgPerWeek(Number(d.nutritionRateKgPerWeek))
+    if ('nutritionProteinPerLbLean' in d) setProteinPerLb(num(d.nutritionProteinPerLbLean) != null ? String(d.nutritionProteinPerLbLean) : String(DEFAULT_PROTEIN_PER_LB_LEAN))
+    if ('nutritionFatMaxG' in d) setFatMaxG(num(d.nutritionFatMaxG) != null ? String(d.nutritionFatMaxG) : String(DEFAULT_FAT_MAX_G))
+    if ('nutritionMacroManual' in d) setMacroManual(!!d.nutritionMacroManual)
+    if ('nutritionManualProteinG' in d) setManualProteinG(num(d.nutritionManualProteinG) != null ? String(d.nutritionManualProteinG) : '')
+    if ('nutritionManualFatG' in d) setManualFatG(num(d.nutritionManualFatG) != null ? String(d.nutritionManualFatG) : '')
+    if ('nutritionManualCarbG' in d) setManualCarbG(num(d.nutritionManualCarbG) != null ? String(d.nutritionManualCarbG) : '')
+    if (num(d.nutritionRepasParJour) != null) setRepasParJour(Number(d.nutritionRepasParJour))
+    if (Array.isArray(d.jeunePlanning)) setPrograms(d.jeunePlanning as FastingProgram[])
+    if ('hydratationMlParJour' in d) setHydratationMl(num(d.hydratationMlParJour) != null ? String(d.hydratationMlParJour) : '')
+    if ('supplementsNotes' in d) setSupplementsNotes(str(d.supplementsNotes))
+    if ('alimentsPrivilegier' in d) setAlimentsPrivilegier(str(d.alimentsPrivilegier))
+    if ('alimentsEviter' in d) setAlimentsEviter(str(d.alimentsEviter))
+    setShowTemplates(false)
+  }
+
+  async function saveTemplate() {
+    const name = newTemplateName.trim()
+    if (!name) return
+    setTemplateBusy(true)
+    try {
+      await nutritionTemplatesService.save(name, JSON.stringify(currentTemplateData()))
+      setNewTemplateName('')
+      setTemplates(await nutritionTemplatesService.list())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible d’enregistrer le modèle.')
+    } finally {
+      setTemplateBusy(false)
+    }
+  }
+
+  async function deleteTemplate(id: string) {
+    setTemplateBusy(true)
+    try {
+      await nutritionTemplatesService.delete(id)
+      setTemplates(await nutritionTemplatesService.list())
+    } catch {
+      /* silencieux */
+    } finally {
+      setTemplateBusy(false)
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto p-8 pb-28 space-y-6">
       <div className="flex items-start justify-between gap-4">
@@ -447,16 +537,87 @@ export function NutritionTab() {
             Ces réglages composent le document nutrition remis à {client.name.split(' ')[0]}.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={handleOpenDoc}
-          disabled={opening}
-          className="shrink-0 inline-flex items-center gap-2 px-3.5 py-2 text-marine/70 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <ExternalLink size={15} />
-          {opening ? 'Ouverture…' : 'Voir le document'}
-        </button>
+        <div className="shrink-0 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setShowTemplates(v => !v)}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 border rounded-md text-base transition-colors ${showTemplates ? 'border-gold/60 bg-gold/10 text-marine' : 'text-marine/70 hover:text-marine border-cream-dark hover:border-gold/60'}`}
+          >
+            <BookMarked size={15} />
+            Modèles
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenDoc}
+            disabled={opening}
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-marine/70 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ExternalLink size={15} />
+            {opening ? 'Ouverture…' : 'Voir le document'}
+          </button>
+        </div>
       </div>
+
+      {showTemplates && (
+        <div className="rounded-lg border border-gold/40 bg-cream/40 p-5 space-y-4">
+          <p className="text-marine font-medium">Modèles de protocole</p>
+          <p className="text-marine/50 text-sm -mt-2">
+            Enregistre les réglages nutrition actuels comme modèle réutilisable, ou applique-en un à ce client. Les
+            goûts, le mot et les idées de menu (propres au client) ne sont pas touchés.
+          </p>
+
+          {templates.length > 0 ? (
+            <ul className="space-y-2">
+              {templates.map(t => (
+                <li key={t.id} className="flex items-center justify-between gap-3 rounded-md border border-cream-dark bg-white px-3 py-2">
+                  <span className="text-marine font-medium truncate">{t.name}</span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => applyTemplateJson(t.data)}
+                      disabled={templateBusy}
+                      className="px-3 py-1.5 rounded-md bg-gold text-marine text-sm font-semibold hover:bg-gold-dark transition-colors disabled:opacity-50"
+                    >
+                      Appliquer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteTemplate(t.id)}
+                      disabled={templateBusy}
+                      className="p-1.5 rounded-md text-red-600/70 hover:text-red-700 hover:bg-red-50 disabled:opacity-50"
+                      aria-label="Supprimer le modèle"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-marine/45 text-sm">Aucun modèle enregistré pour l’instant.</p>
+          )}
+
+          <div className="flex items-center gap-2 pt-1 border-t border-cream-dark">
+            <input
+              type="text"
+              value={newTemplateName}
+              onChange={e => setNewTemplateName(e.target.value)}
+              placeholder="Nom du modèle (ex. Perte de gras standard)"
+              maxLength={80}
+              className={`flex-1 ${fieldClass}`}
+            />
+            <button
+              type="button"
+              onClick={saveTemplate}
+              disabled={templateBusy || newTemplateName.trim() === ''}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-gold/50 text-marine/80 text-base hover:border-gold hover:bg-gold/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Save size={15} />
+              Enregistrer le protocole actuel
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Objectif chiffré & nutrition ────────────────────────────────────── */}
       <Section

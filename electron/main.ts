@@ -8,6 +8,7 @@ import { registerNotesHandlers } from './ipc/notes'
 import { registerReportsHandlers } from './ipc/reports'
 import { registerAIHandlers } from './ipc/ai'
 import { registerTransferHandlers } from './ipc/transfer'
+import { registerNutritionTemplatesHandlers } from './ipc/nutritionTemplates'
 import { initDb } from '../db/client'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
@@ -94,6 +95,7 @@ app.whenReady().then(() => {
   registerNotesHandlers()
   registerReportsHandlers()
   registerAIHandlers()
+  registerNutritionTemplatesHandlers()
   createWindow()
 
   app.on('activate', () => {

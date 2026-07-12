@@ -339,6 +339,15 @@ interface ClientNoteInput {
   content: string
 }
 
+/** Modèle de protocole nutrition réutilisable (app-level). */
+interface NutritionTemplate {
+  id: string
+  name: string
+  /** Chaîne JSON — sous-ensemble des réglages nutrition à réappliquer. */
+  data: string
+  createdAt: string
+}
+
 interface Window {
   api: {
     clients: {
@@ -505,6 +514,11 @@ interface Window {
         foodsLiked?: string
         foodsDisliked?: string
       }): Promise<{ ok: boolean; text?: string; error?: string; code?: string }>
+    }
+    nutritionTemplates: {
+      list(): Promise<NutritionTemplate[]>
+      save(data: { name: string; data: string }): Promise<NutritionTemplate>
+      delete(id: string): Promise<void>
     }
     app: {
       getVersion(): Promise<string>
