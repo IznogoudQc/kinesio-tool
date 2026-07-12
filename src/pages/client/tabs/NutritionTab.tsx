@@ -219,6 +219,10 @@ export function NutritionTab() {
     })
   }, [nutritionEnabled, macroManual, manualProteinG, manualFatG, manualCarbG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerLb, fatMaxG])
 
+  // Hydratation recommandée ≈ 35 ml/kg (milieu de la fourchette 30–40), arrondie à 100 ml.
+  const hydraWeightKg = latestData && typeof latestData.poids_kg === 'number' ? latestData.poids_kg : null
+  const hydraSuggestion = hydraWeightKg != null ? Math.round((hydraWeightKg * 35) / 100) * 100 : null
+
   /** Valide + enregistre. Retourne `true` si la sauvegarde a réussi. */
   async function persist(): Promise<boolean> {
     setError(null)
@@ -562,8 +566,20 @@ export function NutritionTab() {
               {(ml / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} L
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => hydraSuggestion != null && setHydratationMl(String(hydraSuggestion))}
+            disabled={hydraSuggestion == null}
+            title={hydraSuggestion == null ? 'Ajoutez un poids dans un bilan pour activer le calcul.' : `≈ 35 ml × ${hydraWeightKg} kg`}
+            className="px-2.5 py-1 rounded-full border border-gold/40 text-sm text-marine/70 transition-colors hover:border-gold hover:bg-gold/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gold/40 disabled:hover:bg-transparent"
+          >
+            🧮 Calculer d'après le poids
+            {hydraSuggestion != null && ` (≈ ${(hydraSuggestion / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} L)`}
+          </button>
         </div>
-        <p className="text-marine/40 text-xs mt-1.5">Repère courant : environ 30 à 40 ml par kg de poids corporel.</p>
+        <p className="text-marine/40 text-xs mt-1.5">
+          Repère courant : environ 30 à 40 ml par kg de poids corporel (≈ 35 ml/kg utilisé pour le calcul).
+        </p>
       </Section>
 
       <Section icon={Pill} title="Suppléments" desc="Recommandations libres.">

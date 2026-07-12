@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.51 — Hydratation : calcul automatique d'après le poids)
+
+Bouton **« Calculer d'après le poids »** dans la section Hydratation : remplit la cible à partir du dernier
+poids saisi (synthèse des bilans), à **~35 ml/kg** (milieu de la fourchette recommandée 30–40 ml/kg),
+arrondie à 100 ml. Le bouton affiche l'estimation (« ≈ 3,2 L ») et est désactivé s'il n'y a pas de poids.
+Repère mis à jour dans l'aide.
+
+Version : 0.2.50 → 0.2.51.
+
 ## ✅ Fait (v0.2.50 — Document nutrition : objectif identique au bilan (même texte))
 
 Le bloc « Votre objectif » du **document nutrition** est maintenant **strictement identique** à celui du
