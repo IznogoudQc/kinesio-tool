@@ -162,6 +162,24 @@ export interface MacroEstimate {
   fatG: number
 }
 
+/** Nombre de repas par défaut si non précisé. */
+export const DEFAULT_MEALS_PER_DAY = 3
+
+/** Répartit (à parts égales) les macros du jour sur `meals` repas. Chaque valeur
+ *  est arrondie ; c'est indicatif, pas une somme exacte au gramme près. */
+export function macrosPerMeal(macros: MacroEstimate, meals: number): MacroEstimate {
+  const n = Math.max(1, Math.round(meals))
+  const per = (v: number) => Math.round(v / n)
+  return {
+    bmr: 0,
+    tdee: 0,
+    targetKcal: per(macros.targetKcal),
+    proteinG: per(macros.proteinG),
+    carbsG: per(macros.carbsG),
+    fatG: per(macros.fatG)
+  }
+}
+
 /**
  * Estimation calorique + macros pour une perte de gras. Formule (paramétrable) :
  *  - protéines = `proteinPerLbLean` g × masse maigre (en livres) ;

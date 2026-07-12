@@ -43,6 +43,8 @@ export const clients = sqliteTable('clients', {
   nutritionManualProteinG: real('nutrition_manual_protein_g'),
   nutritionManualFatG: real('nutrition_manual_fat_g'),
   nutritionManualCarbG: real('nutrition_manual_carb_g'),
+  // Nombre de repas / jour pour répartir les macros. `null` = défaut (3).
+  nutritionRepasParJour: integer('nutrition_repas_par_jour'),
   // Principe personnalisé optionnel (6e pilier) montré en clôture du rapport
   // client. Si `principePersoTitre` est rempli, un principe supplémentaire
   // s'affiche (HTML + PDF). Éditable par Marie, par client.

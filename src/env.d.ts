@@ -38,6 +38,8 @@ interface Client {
   nutritionManualProteinG: number | null
   nutritionManualFatG: number | null
   nutritionManualCarbG: number | null
+  /** Nombre de repas / jour pour répartir les macros. `null` = défaut (3). */
+  nutritionRepasParJour: number | null
   /** Principe personnalisé (6e pilier) affiché en clôture du rapport si rempli. `null`/vide = non affiché. */
   principePersoTitre: string | null
   /** Texte du principe personnalisé. */
@@ -369,6 +371,7 @@ interface Window {
           nutritionManualProteinG?: number | null
           nutritionManualFatG?: number | null
           nutritionManualCarbG?: number | null
+          nutritionRepasParJour?: number | null
           principePersoTitre?: string | null
           principePersoTexte?: string | null
           jeuneType?: '16:8' | '18:6' | '20:4' | 'omad' | '5:2' | null

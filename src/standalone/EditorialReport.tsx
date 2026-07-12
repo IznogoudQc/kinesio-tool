@@ -15,7 +15,7 @@ import { fitnessAge } from '../lib/fitness-age'
 import { buildActionPlan } from '../lib/action-plan'
 import { buildObjectif, type Objectif } from '../lib/objectif'
 import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
-import { ACTIVITY_LABELS } from '../lib/nutrition'
+import { ACTIVITY_LABELS, DEFAULT_MEALS_PER_DAY, macrosPerMeal } from '../lib/nutrition'
 import { useCountUp } from '../lib/useCountUp'
 import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
@@ -58,6 +58,7 @@ export interface StandaloneData {
     nutritionManualProteinG: number | null
     nutritionManualFatG: number | null
     nutritionManualCarbG: number | null
+    nutritionRepasParJour: number | null
     principePersoTitre: string | null
     principePersoTexte: string | null
     jeuneType: '16:8' | '18:6' | '20:4' | 'omad' | '5:2' | null
@@ -688,12 +689,15 @@ function ObjectifBody({
   objectif,
   objectifText,
   unitWeight,
-  activityLevel
+  activityLevel,
+  mealsPerDay
 }: {
   objectif: Objectif | null
   objectifText: string
   unitWeight: 'kg' | 'lb'
   activityLevel: StandaloneData['client']['nutritionActivityLevel']
+  /** Si fourni (> 1), affiche la répartition des macros par repas. */
+  mealsPerDay?: number
 }) {
   return (
     <>
@@ -775,6 +779,30 @@ function ObjectifBody({
                   </div>
                 ))}
               </div>
+
+              {mealsPerDay && mealsPerDay > 1 && (
+                <div className="mt-6 rounded-lg bg-cream/60 p-5">
+                  <p className="ed-eyebrow text-marine/40">Répartition par repas · {mealsPerDay} repas / jour</p>
+                  <div className="mt-3 grid grid-cols-2 gap-6 sm:grid-cols-4">
+                    {(() => {
+                      const pm = macrosPerMeal(objectif.macros, mealsPerDay)
+                      return [
+                        { label: 'Calories', value: pm.targetKcal, unit: 'kcal' },
+                        { label: 'Protéines', value: pm.proteinG, unit: 'g' },
+                        { label: 'Lipides', value: pm.fatG, unit: 'g' },
+                        { label: 'Glucides', value: pm.carbsG, unit: 'g' }
+                      ]
+                    })().map(m => (
+                      <div key={m.label}>
+                        <p className="ed-eyebrow text-marine/40">{m.label}</p>
+                        <p className="ed-display mt-1 text-2xl tabular-nums text-marine">{m.value.toLocaleString('fr-CA')}</p>
+                        <p className="text-xs text-marine/40">{m.unit}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <p className="ed-prose mt-5 text-sm text-marine/50">
                 Ce sont des repères indicatifs, calculés à partir de votre masse maigre et de votre niveau d’activité. Ils
                 ne remplacent pas l’avis d’une nutritionniste.
@@ -857,6 +885,7 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
             objectifText={objectifText}
             unitWeight={client.unitWeight}
             activityLevel={client.nutritionActivityLevel}
+            mealsPerDay={client.nutritionRepasParJour ?? DEFAULT_MEALS_PER_DAY}
           />
         </Section>
       )}

@@ -12,9 +12,11 @@ import {
   DEFAULT_RATE_KG_PER_WEEK,
   DEFAULT_PROTEIN_PER_LB_LEAN,
   DEFAULT_FAT_MAX_G,
+  DEFAULT_MEALS_PER_DAY,
   bodyFatGoal,
   dailyDeficitForRate,
   estimateMacros,
+  macrosPerMeal,
   type ActivityLevel,
   type MacroEstimate
 } from '../../../lib/nutrition'
@@ -202,6 +204,7 @@ export function NutritionTab() {
   const [manualCarbG, setManualCarbG] = useState<string>(
     client.nutritionManualCarbG != null ? String(client.nutritionManualCarbG) : ''
   )
+  const [repasParJour, setRepasParJour] = useState<number>(client.nutritionRepasParJour ?? DEFAULT_MEALS_PER_DAY)
 
   // ── Planning de jeûne flexible ────────────────────────────────────────────────
   const [programs, setPrograms] = useState<FastingProgram[]>(() => parseInitialPrograms(client.jeunePlanning))
@@ -349,6 +352,7 @@ export function NutritionTab() {
         nutritionManualProteinG: protGVal,
         nutritionManualFatG: fatGVal,
         nutritionManualCarbG: carbGVal,
+        nutritionRepasParJour: nutritionEnabled ? repasParJour : null,
         // Ancien modèle de jeûne (type unique + fenêtre) remplacé par le planning.
         jeuneType: null,
         jeuneFenetreDebut: null,
@@ -624,6 +628,45 @@ export function NutritionTab() {
                   </p>
                 )}
               </div>
+
+              {liveMacros && (
+                <div className="mt-4 border-t border-cream-dark pt-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-[11px] uppercase tracking-wide text-gold-dark font-semibold">Par repas</p>
+                    <label className="flex items-center gap-2 text-sm text-marine/70">
+                      Repas / jour
+                      <select
+                        value={repasParJour}
+                        onChange={e => setRepasParJour(Number(e.target.value))}
+                        className="px-2 py-1 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+                      >
+                        {[1, 2, 3, 4, 5].map(n => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    {(() => {
+                      const pm = macrosPerMeal(liveMacros, repasParJour)
+                      return [
+                        { l: 'Calories', v: pm.targetKcal, u: 'kcal' },
+                        { l: 'Protéines', v: pm.proteinG, u: 'g' },
+                        { l: 'Lipides', v: pm.fatG, u: 'g' },
+                        { l: 'Glucides', v: pm.carbsG, u: 'g' }
+                      ]
+                    })().map(m => (
+                      <div key={m.l} className="rounded-md bg-white/70 border border-cream-dark py-2">
+                        <p className="text-[10px] uppercase tracking-wide text-marine/40">{m.l}</p>
+                        <p className="text-base font-semibold tabular-nums text-marine leading-tight">{m.v.toLocaleString('fr-CA')}</p>
+                        <p className="text-[10px] text-marine/40">{m.u}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

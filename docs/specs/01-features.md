@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.59 — Macros par repas (répartition))
+
+Répartition des macros du jour sur N repas. Sélecteur **« Repas / jour »** (1–5, défaut 3) dans le panneau
+Macros de l'app : affiche, sous le résultat quotidien, la répartition par repas (calories / protéines /
+lipides / glucides). Le **document client** montre aussi « Répartition par repas · N repas / jour » sous les
+macros de l'objectif. Logique pure `macrosPerMeal` (+ 4 tests). Colonne `nutrition_repas_par_jour`
+(migration 0022) câblée types/IPC/document. Vérifié en headless.
+
+Version : 0.2.58 → 0.2.59.
+
 ## ✅ Fait (v0.2.58 — Composition : PDF aligné sur la phrase du HTML)
 
 Le PDF utilise maintenant **exactement la même phrase** que le HTML pour l'intro de la section Composition
