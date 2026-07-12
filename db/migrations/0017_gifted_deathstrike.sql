@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `jeune_planning` text;

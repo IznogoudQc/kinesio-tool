@@ -36,6 +36,7 @@ export const clientsService = {
       jeuneFenetreDebut?: string | null
       jeuneFenetreFin?: string | null
       jeuneNotes?: string | null
+      jeunePlanning?: string | null
       hydratationMlParJour?: number | null
       supplementsNotes?: string | null
       alimentsPrivilegier?: string | null

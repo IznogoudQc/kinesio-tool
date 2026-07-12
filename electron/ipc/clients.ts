@@ -60,6 +60,8 @@ const UpdateClientSchema = z.object({
   jeuneFenetreDebut: HeureOrNull,
   jeuneFenetreFin: HeureOrNull,
   jeuneNotes: TexteLibreOrNull,
+  // Planning de jeûne : chaîne JSON (validée côté renderer). On borne la taille.
+  jeunePlanning: z.union([z.string().max(20000), z.null()]).optional(),
   hydratationMlParJour: HydratationMl,
   supplementsNotes: TexteLibreOrNull,
   alimentsPrivilegier: TexteLibreOrNull,

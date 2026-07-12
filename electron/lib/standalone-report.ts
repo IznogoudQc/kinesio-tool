@@ -20,6 +20,17 @@ function readSetting(key: string): string | null {
   return getDb().select().from(settings).where(eq(settings.key, key)).get()?.value ?? null
 }
 
+/** Parse la chaîne JSON du planning de jeûne en tableau (ou `null` si vide/invalide). */
+function parseJeunePlanning(raw: string | null): unknown[] | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : null
+  } catch {
+    return null
+  }
+}
+
 async function avatarDataUrl(filename: string | null): Promise<string | null> {
   if (!filename) return null
   const path = getAvatarPath(filename)
@@ -101,6 +112,7 @@ async function buildStandaloneHtml(
       jeuneFenetreDebut: client.jeuneFenetreDebut,
       jeuneFenetreFin: client.jeuneFenetreFin,
       jeuneNotes: client.jeuneNotes,
+      jeunePlanning: parseJeunePlanning(client.jeunePlanning),
       hydratationMlParJour: client.hydratationMlParJour,
       supplementsNotes: client.supplementsNotes,
       alimentsPrivilegier: client.alimentsPrivilegier,

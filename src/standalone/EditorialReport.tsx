@@ -30,6 +30,8 @@ import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
 import { BilanSelectorPills } from '../pages/client/dashboard/BilanSelectorPills'
 import { principesFor, principesCountWord } from '../lib/principes'
+import { dailyWindows, describeProgram, fastingDaysInRange, toISO as fastingToISO, type FastingProgram } from '../lib/fasting-planning'
+import { FastingCalendar } from '../components/FastingCalendar'
 import forestUrl from '../assets/forest.jpg'
 import logoConseil from '../assets/logo-conseil.png'
 
@@ -58,6 +60,7 @@ export interface StandaloneData {
     jeuneFenetreDebut: string | null
     jeuneFenetreFin: string | null
     jeuneNotes: string | null
+    jeunePlanning: FastingProgram[] | null
     hydratationMlParJour: number | null
     supplementsNotes: string | null
     alimentsPrivilegier: string | null
@@ -508,60 +511,6 @@ function Hero({
 
 // ── Nutrition & jeûne ────────────────────────────────────────────────────────
 
-const JEUNE_LABEL: Record<'16:8' | '18:6' | '20:4' | 'omad' | '5:2', string> = {
-  '16:8': 'Jeûne 16:8 — 16 h de jeûne, fenêtre de 8 h',
-  '18:6': 'Jeûne 18:6 — 18 h de jeûne, fenêtre de 6 h',
-  '20:4': 'Jeûne 20:4 — 20 h de jeûne, fenêtre de 4 h',
-  omad: 'OMAD — un seul repas par jour',
-  '5:2': 'Jeûne 5:2 — 2 jours à faible apport par semaine'
-}
-
-/** Durée (h) de la fenêtre d'alimentation, gère le passage de minuit. `null` si incalculable. */
-function edWindowHours(debut: string, fin: string): number | null {
-  const toMin = (t: string) => {
-    const [h, m] = t.split(':').map(Number)
-    return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null
-  }
-  const a = toMin(debut)
-  const b = toMin(fin)
-  if (a === null || b === null) return null
-  const diff = (b - a + 1440) % 1440
-  return diff === 0 ? 24 : diff / 60
-}
-
-/** Barre 24 h : fenêtre d'alimentation en or sur fond marine clair. */
-function EdFastingBar({ debut, fin }: { debut: string; fin: string }) {
-  const toH = (t: string) => {
-    const [h, m] = t.split(':').map(Number)
-    return Number.isFinite(h) && Number.isFinite(m) ? h + m / 60 : null
-  }
-  const a = toH(debut)
-  const b = toH(fin)
-  if (a === null || b === null) return null
-  const segs = b > a
-    ? [{ left: (a / 24) * 100, width: ((b - a) / 24) * 100 }]
-    : [
-        { left: (a / 24) * 100, width: ((24 - a) / 24) * 100 },
-        { left: 0, width: (b / 24) * 100 }
-      ]
-  return (
-    <div className="mt-4">
-      <div className="relative h-5 overflow-hidden rounded-full bg-marine/10">
-        {segs.map((s, i) => (
-          <div key={i} className="absolute top-0 h-full bg-gold" style={{ left: `${s.left}%`, width: `${s.width}%` }} />
-        ))}
-      </div>
-      <div className="mt-1 flex justify-between text-[11px] tabular-nums text-marine/35">
-        <span>0 h</span>
-        <span>6 h</span>
-        <span>12 h</span>
-        <span>18 h</span>
-        <span>24 h</span>
-      </div>
-    </div>
-  )
-}
-
 /** Liste à puces à partir d'un texte multi-lignes (une puce par ligne non vide). */
 function EdBullets({ text }: { text: string }) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
@@ -578,22 +527,89 @@ function EdBullets({ text }: { text: string }) {
   )
 }
 
+/** Choisit jusqu'à `max` mois (à partir de `startY/startM0`) contenant au moins une
+ *  occurrence de jeûne ; sinon au moins le mois de départ. */
+function monthsWithFasts(
+  programs: FastingProgram[],
+  startY: number,
+  startM0: number,
+  lookahead = 6,
+  max = 3
+): { y: number; m: number }[] {
+  const nonDaily = programs.filter(p => p.freq !== 'daily')
+  const out: { y: number; m: number }[] = []
+  for (let i = 0; i < lookahead && out.length < max; i++) {
+    const abs = startM0 + i
+    const y = startY + Math.floor(abs / 12)
+    const m = ((abs % 12) + 12) % 12
+    const from = fastingToISO(new Date(Date.UTC(y, m, 1)))
+    const to = fastingToISO(new Date(Date.UTC(y, m + 1, 0)))
+    if (Object.keys(fastingDaysInRange(nonDaily, from, to)).length > 0) out.push({ y, m })
+  }
+  if (out.length === 0) out.push({ y: startY, m: startM0 })
+  return out
+}
+
+/** Bloc jeûne du document : fenêtres quotidiennes + calendrier + liste des programmes. */
+function NutritionFastingBlock({ programs, generatedAt }: { programs: FastingProgram[]; generatedAt: string }) {
+  const daily = dailyWindows(programs)
+  const nonDaily = programs.filter(p => p.freq !== 'daily')
+  const start = new Date(generatedAt)
+  const months = nonDaily.length > 0 ? monthsWithFasts(programs, start.getUTCFullYear(), start.getUTCMonth()) : []
+
+  return (
+    <div className="mb-6 rounded-xl border border-marine/10 p-6">
+      <p className="ed-eyebrow text-gold-dark">Jeûne</p>
+
+      {daily.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {daily.map(p => (
+            <span key={p.id} className="rounded-full bg-gold/15 px-3 py-1 text-sm text-marine">
+              {p.label || 'Fenêtre'} · tous les jours
+              {p.windowStart && p.windowEnd ? ` (${p.windowStart}–${p.windowEnd})` : ''}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {months.length > 0 && (
+        <div className="mt-5 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {months.map(({ y, m }) => (
+            <FastingCalendar key={`${y}-${m}`} programs={programs} year={y} month0={m} />
+          ))}
+        </div>
+      )}
+
+      {nonDaily.length > 0 && (
+        <ul className="mt-5 space-y-2">
+          {nonDaily.map(p => (
+            <li key={p.id} className="flex items-start gap-2.5 text-base text-marine/75">
+              <span className="mt-2 h-2 w-2 shrink-0 rounded-sm bg-gold" />
+              <span>
+                <strong className="text-marine">{p.label || describeProgram(p)}</strong> — {describeProgram(p)}
+                {p.notes ? ` · ${p.notes}` : ''}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
 /** Corps de la section nutrition (cartes). `null` si aucune brique n'est remplie. */
-function NutritionBody({ client }: { client: StandaloneData['client'] }) {
-  const jeuneDebut = client.jeuneFenetreDebut ?? ''
-  const jeuneFin = client.jeuneFenetreFin ?? ''
-  const hasJeune = !!client.jeuneType || (!!jeuneDebut && !!jeuneFin)
+function NutritionBody({ client, generatedAt }: { client: StandaloneData['client']; generatedAt: string }) {
+  const programs = client.jeunePlanning ?? []
+  const hasJeune = programs.length > 0
   const hydra = client.hydratationMlParJour
   const hasHydra = typeof hydra === 'number' && Number.isFinite(hydra) && hydra > 0
   const privil = (client.alimentsPrivilegier ?? '').trim()
   const eviter = (client.alimentsEviter ?? '').trim()
   const supp = (client.supplementsNotes ?? '').trim()
-  const jeuneNotes = (client.jeuneNotes ?? '').trim()
   const mot = (client.nutritionMot ?? '').trim()
 
   if (!hasJeune && !hasHydra && !privil && !eviter && !supp && !mot) return null
 
-  const fenetreH = hasJeune && jeuneDebut && jeuneFin ? edWindowHours(jeuneDebut, jeuneFin) : null
   const verres = hasHydra ? Math.round((hydra as number) / 250) : null
 
   return (
@@ -605,40 +621,19 @@ function NutritionBody({ client }: { client: StandaloneData['client'] }) {
         </div>
       )}
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        {hasJeune && (
-          <div className="rounded-xl border border-marine/10 p-6">
-            <p className="ed-eyebrow text-gold-dark">Jeûne intermittent</p>
-            {client.jeuneType && (
-              <p className="ed-display mt-3 text-2xl leading-tight text-marine">{JEUNE_LABEL[client.jeuneType]}</p>
-            )}
-            {jeuneDebut && jeuneFin && (
-              <>
-                <EdFastingBar debut={jeuneDebut} fin={jeuneFin} />
-                <p className="mt-3 text-base text-marine/70">
-                  Fenêtre d’alimentation&nbsp;: <strong className="text-marine">{jeuneDebut} → {jeuneFin}</strong>
-                  {fenetreH != null && <> ({fenetreH.toLocaleString('fr-CA')} h)</>}
-                </p>
-              </>
-            )}
-            {jeuneNotes && (
-              <p className="ed-prose mt-4 whitespace-pre-line text-base leading-relaxed text-marine/70">{jeuneNotes}</p>
-            )}
-          </div>
-        )}
+      {hasJeune && <NutritionFastingBlock programs={programs} generatedAt={generatedAt} />}
 
-        {hasHydra && (
-          <div className="rounded-xl border border-marine/10 p-6">
-            <p className="ed-eyebrow text-gold-dark">Hydratation</p>
-            <p className="ed-display mt-3 text-4xl tabular-nums text-marine">
-              {((hydra as number) / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} L
-            </p>
-            <p className="mt-1 text-base text-marine/60">
-              {(hydra as number).toLocaleString('fr-CA')} ml par jour · environ {verres} verres de 250 ml
-            </p>
-          </div>
-        )}
-      </div>
+      {hasHydra && (
+        <div className="mb-6 rounded-xl border border-marine/10 p-6">
+          <p className="ed-eyebrow text-gold-dark">Hydratation</p>
+          <p className="ed-display mt-3 text-4xl tabular-nums text-marine">
+            {((hydra as number) / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} L
+          </p>
+          <p className="mt-1 text-base text-marine/60">
+            {(hydra as number).toLocaleString('fr-CA')} ml par jour · environ {verres} verres de 250 ml
+          </p>
+        </div>
+      )}
 
       {(privil || eviter) && (
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
@@ -754,8 +749,7 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
 
   const hasAny =
     !!objectif ||
-    !!client.jeuneType ||
-    (!!client.jeuneFenetreDebut && !!client.jeuneFenetreFin) ||
+    (client.jeunePlanning?.length ?? 0) > 0 ||
     (typeof client.hydratationMlParJour === 'number' && client.hydratationMlParJour > 0) ||
     !!(client.alimentsPrivilegier ?? '').trim() ||
     !!(client.alimentsEviter ?? '').trim() ||
@@ -787,7 +781,7 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
 
       <Section eyebrow="Votre plan" title="Nutrition & jeûne" tone="white">
         {objectif && <NutritionObjectifBlock objectif={objectif} client={client} />}
-        <NutritionBody client={client} />
+        <NutritionBody client={client} generatedAt={data.generatedAt} />
         {!hasAny && (
           <p className="ed-prose text-base text-marine/60">
             Aucune consigne nutrition n’a encore été renseignée par votre kinésiologue.

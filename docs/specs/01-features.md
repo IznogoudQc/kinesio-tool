@@ -642,6 +642,29 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.45 — Planning de jeûne flexible + calendrier (app + document))
+
+Le jeûne rigide (un protocole + une fenêtre fixe) devient un **planning flexible** : une liste de
+**programmes**, chacun étant soit une **fenêtre quotidienne** (16:8, 18:6…), soit un **jeûne prolongé**
+(24/36/48/72/96 h…), avec une **récurrence** au choix — quotidien, chaque semaine (jour donné), aux 2
+semaines, mensuel, saisonnier, ou date ponctuelle. Exemples couverts : « 48 h le lundi aux 2 semaines »,
+« 96 h une fois par saison ».
+
+- **Logique pure** `src/lib/fasting-planning.ts` (+ 14 tests) : modèle `FastingProgram`, calcul des
+  occurrences par récurrence, projection sur un calendrier (les jeûnes prolongés couvrent plusieurs jours,
+  débordement de mois géré), grille mensuelle lundi→dimanche.
+- **Composant** `src/components/FastingCalendar.tsx` : calendrier mensuel, journées de jeûne surlignées en
+  or (jour de début étiqueté, jours de continuation « ↳ jeûne »). Réutilisé app + document.
+- **App** (onglet Nutrition) : `FastingPlanner` — aperçu calendrier avec navigation mensuelle, liste de
+  programmes (ajout/édition/suppression), éditeur (type, durée, récurrence, jour, date, consignes).
+- **Document HTML client** : bloc jeûne = fenêtres quotidiennes en chips + jusqu'à 3 calendriers mensuels
+  (les mois à venir qui contiennent des jeûnes) + légende des programmes.
+- **DB** : colonne `jeune_planning` (JSON, migration 0017) câblée env.d.ts / services / IPC zod / document
+  autonome (parsé dans le builder). L'ancien modèle (`jeuneType`/fenêtre/notes) est remis à `null` à
+  l'enregistrement. Rendu du document vérifié en headless (3 mois, occurrences correctes).
+
+Version : 0.2.44 → 0.2.45.
+
 ## ✅ Fait (v0.2.44 — Document nutrition : objectif chiffré & macros affichés)
 
 Correctif : le document HTML « Nutrition & jeûne » affichait « aucune consigne » même quand l'objectif

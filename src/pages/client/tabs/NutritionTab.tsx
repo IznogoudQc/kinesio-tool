@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Apple, Ban, Check, Clock, Droplet, ExternalLink, MessageSquareQuote, Pill, Target } from 'lucide-react'
+import { useState } from 'react'
+import { Apple, Ban, CalendarClock, Check, Droplet, ExternalLink, MessageSquareQuote, Pill, Target } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
@@ -13,32 +13,18 @@ import {
   type ActivityLevel
 } from '../../../lib/nutrition'
 import { kgToLb } from '../../../lib/units'
+import { FastingPlanner } from './FastingPlanner'
+import type { FastingProgram } from '../../../lib/fasting-planning'
 
-type JeuneType = '16:8' | '18:6' | '20:4' | 'omad' | '5:2'
-
-/** Fenêtre d'alimentation suggérée par protocole — pré-remplie si l'utilisatrice
- *  choisit un type sans avoir déjà défini d'heures. `null` = pas de fenêtre fixe. */
-const JEUNE_PRESETS: Record<JeuneType, { label: string; hint: string; window: [string, string] | null }> = {
-  '16:8': { label: '16:8 — jeûne 16 h, fenêtre 8 h', hint: '1 repas sauté, 8 h pour manger', window: ['12:00', '20:00'] },
-  '18:6': { label: '18:6 — jeûne 18 h, fenêtre 6 h', hint: 'Fenêtre resserrée de 6 h', window: ['13:00', '19:00'] },
-  '20:4': { label: '20:4 — jeûne 20 h, fenêtre 4 h (Warrior)', hint: 'Fenêtre de 4 h', window: ['16:00', '20:00'] },
-  omad: { label: 'OMAD — un seul repas par jour', hint: 'Un repas dans une courte fenêtre', window: ['17:00', '18:00'] },
-  '5:2': { label: '5:2 — 2 jours à faible apport / semaine', hint: '2 journées ~500–600 kcal', window: null }
-}
-
-const JEUNE_ORDER: JeuneType[] = ['16:8', '18:6', '20:4', 'omad', '5:2']
-
-/** Durée (h) de la fenêtre d'alimentation, gère le passage de minuit. `null` si incalculable. */
-function windowHours(debut: string, fin: string): number | null {
-  const m = (t: string) => {
-    const [h, min] = t.split(':').map(Number)
-    return Number.isFinite(h) && Number.isFinite(min) ? h * 60 + min : null
+/** Parse le planning JSON stocké en base en tableau de programmes (vide si invalide). */
+function parseInitialPrograms(raw: string | null | undefined): FastingProgram[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? (parsed as FastingProgram[]) : []
+  } catch {
+    return []
   }
-  const a = m(debut)
-  const b = m(fin)
-  if (a === null || b === null) return null
-  const diff = (b - a + 1440) % 1440
-  return diff === 0 ? 24 : diff / 60
 }
 
 const fieldClass =
@@ -71,49 +57,6 @@ function Section({
   )
 }
 
-/** Barre visuelle 24 h avec la fenêtre d'alimentation surlignée en or. */
-function FastingClock({ debut, fin }: { debut: string; fin: string }) {
-  const a = (() => {
-    const [h, m] = debut.split(':').map(Number)
-    return Number.isFinite(h) && Number.isFinite(m) ? h + m / 60 : null
-  })()
-  const b = (() => {
-    const [h, m] = fin.split(':').map(Number)
-    return Number.isFinite(h) && Number.isFinite(m) ? h + m / 60 : null
-  })()
-  if (a === null || b === null) return null
-
-  // Segments d'alimentation (en % de 24 h) — gère le passage de minuit.
-  const segments: Array<{ left: number; width: number }> =
-    b > a
-      ? [{ left: (a / 24) * 100, width: ((b - a) / 24) * 100 }]
-      : [
-          { left: (a / 24) * 100, width: ((24 - a) / 24) * 100 },
-          { left: 0, width: (b / 24) * 100 }
-        ]
-
-  return (
-    <div className="mt-1">
-      <div className="relative h-6 rounded-full bg-marine/10 overflow-hidden">
-        {segments.map((s, i) => (
-          <div
-            key={i}
-            className="absolute top-0 h-full bg-gold/70"
-            style={{ left: `${s.left}%`, width: `${s.width}%` }}
-          />
-        ))}
-      </div>
-      <div className="flex justify-between text-[11px] text-marine/40 mt-1 tabular-nums">
-        <span>0 h</span>
-        <span>6 h</span>
-        <span>12 h</span>
-        <span>18 h</span>
-        <span>24 h</span>
-      </div>
-    </div>
-  )
-}
-
 export function NutritionTab() {
   const { client, onClientUpdated } = useClientContext()
 
@@ -135,11 +78,8 @@ export function NutritionTab() {
     client.nutritionTargetKcal != null ? String(client.nutritionTargetKcal) : ''
   )
 
-  // ── Jeûne intermittent ──────────────────────────────────────────────────────
-  const [jeuneType, setJeuneType] = useState<JeuneType | ''>(client.jeuneType ?? '')
-  const [jeuneDebut, setJeuneDebut] = useState(client.jeuneFenetreDebut ?? '')
-  const [jeuneFin, setJeuneFin] = useState(client.jeuneFenetreFin ?? '')
-  const [jeuneNotes, setJeuneNotes] = useState(client.jeuneNotes ?? '')
+  // ── Planning de jeûne flexible ────────────────────────────────────────────────
+  const [programs, setPrograms] = useState<FastingProgram[]>(() => parseInitialPrograms(client.jeunePlanning))
 
   // ── Hydratation & suppléments ────────────────────────────────────────────────
   const [hydratationMl, setHydratationMl] = useState(
@@ -157,21 +97,8 @@ export function NutritionTab() {
   const [saved, setSaved] = useState(false)
   const [opening, setOpening] = useState(false)
 
-  const fenetreH = useMemo(() => windowHours(jeuneDebut, jeuneFin), [jeuneDebut, jeuneFin])
   const mlNum = hydratationMl.trim() !== '' ? Number(hydratationMl) : null
   const verres = mlNum != null && Number.isFinite(mlNum) ? Math.round(mlNum / 250) : null
-
-  function chooseJeuneType(next: JeuneType | '') {
-    setJeuneType(next)
-    // Pré-remplit la fenêtre suggérée uniquement si aucune heure n'est déjà saisie.
-    if (next && !jeuneDebut && !jeuneFin) {
-      const preset = JEUNE_PRESETS[next].window
-      if (preset) {
-        setJeuneDebut(preset[0])
-        setJeuneFin(preset[1])
-      }
-    }
-  }
 
   /** Valide + enregistre. Retourne `true` si la sauvegarde a réussi. */
   async function persist(): Promise<boolean> {
@@ -217,10 +144,12 @@ export function NutritionTab() {
         nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
         nutritionFatMaxG: nutritionEnabled ? fatVal : null,
         nutritionTargetKcal: kcalVal,
-        jeuneType: jeuneType || null,
-        jeuneFenetreDebut: jeuneDebut || null,
-        jeuneFenetreFin: jeuneFin || null,
-        jeuneNotes: jeuneNotes.trim() || null,
+        // Ancien modèle de jeûne (type unique + fenêtre) remplacé par le planning.
+        jeuneType: null,
+        jeuneFenetreDebut: null,
+        jeuneFenetreFin: null,
+        jeuneNotes: null,
+        jeunePlanning: programs.length > 0 ? JSON.stringify(programs) : null,
         hydratationMlParJour: mlVal,
         supplementsNotes: supplementsNotes.trim() || null,
         alimentsPrivilegier: alimentsPrivilegier.trim() || null,
@@ -424,57 +353,13 @@ export function NutritionTab() {
         )}
       </Section>
 
-      {/* ── Jeûne intermittent ──────────────────────────────────────────────── */}
-      <Section icon={Clock} title="Jeûne intermittent" desc="Protocole, fenêtre d'alimentation et consignes.">
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-marine mb-1">Protocole</label>
-            <select value={jeuneType} onChange={e => chooseJeuneType(e.target.value as JeuneType | '')} className={fieldClass}>
-              <option value="">Aucun jeûne</option>
-              {JEUNE_ORDER.map(t => (
-                <option key={t} value={t}>
-                  {JEUNE_PRESETS[t].label}
-                </option>
-              ))}
-            </select>
-            {jeuneType && <p className="text-marine/40 text-xs mt-1">{JEUNE_PRESETS[jeuneType].hint}</p>}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-marine mb-1">Fenêtre — début</label>
-              <input type="time" value={jeuneDebut} onChange={e => setJeuneDebut(e.target.value)} className={fieldClass} />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-marine mb-1">Fenêtre — fin</label>
-              <input type="time" value={jeuneFin} onChange={e => setJeuneFin(e.target.value)} className={fieldClass} />
-            </div>
-          </div>
-
-          {jeuneDebut && jeuneFin && (
-            <div>
-              <FastingClock debut={jeuneDebut} fin={jeuneFin} />
-              {fenetreH != null && (
-                <p className="text-marine/60 text-sm mt-2">
-                  Fenêtre d'alimentation de <strong className="text-marine">{fenetreH.toLocaleString('fr-CA')} h</strong>{' '}
-                  ({jeuneDebut} → {jeuneFin}) · jeûne de{' '}
-                  <strong className="text-marine">{(24 - fenetreH).toLocaleString('fr-CA')} h</strong>.
-                </p>
-              )}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-sm font-medium text-marine mb-1">Consignes</label>
-            <textarea
-              value={jeuneNotes}
-              onChange={e => setJeuneNotes(e.target.value)}
-              rows={3}
-              placeholder="Ex. Café noir et eau permis pendant le jeûne. Rompre le jeûne avec des protéines."
-              className={`${fieldClass} resize-y`}
-            />
-          </div>
-        </div>
+      {/* ── Planning de jeûne flexible ──────────────────────────────────────── */}
+      <Section
+        icon={CalendarClock}
+        title="Planning de jeûne"
+        desc="Ajoute des programmes (fenêtre quotidienne 16:8, jeûne 48 h le lundi, 96 h une fois par saison…). Le calendrier montre les journées de jeûne."
+      >
+        <FastingPlanner programs={programs} onChange={setPrograms} />
       </Section>
 
       {/* ── Hydratation & suppléments ───────────────────────────────────────── */}

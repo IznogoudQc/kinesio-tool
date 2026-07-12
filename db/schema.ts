@@ -47,6 +47,9 @@ export const clients = sqliteTable('clients', {
   jeuneFenetreDebut: text('jeune_fenetre_debut'),
   jeuneFenetreFin: text('jeune_fenetre_fin'),
   jeuneNotes: text('jeune_notes'),
+  // Planning de jeûne flexible — tableau JSON de « programmes » (fenêtre quotidienne
+  // ou jeûne prolongé + récurrence). Voir src/lib/fasting-planning.ts. `null`/`[]` = aucun.
+  jeunePlanning: text('jeune_planning'),
   // Hydratation : cible en ml/jour. `null` = calcul auto d'après le poids.
   hydratationMlParJour: real('hydratation_ml_par_jour'),
   // Suppléments, aliments à privilégier / à éviter, mot de Marie sur la nutrition (textes libres).

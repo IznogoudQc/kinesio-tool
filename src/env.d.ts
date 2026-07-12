@@ -45,6 +45,8 @@ interface Client {
   jeuneFenetreFin: string | null
   /** Consignes libres de Marie sur le jeûne. */
   jeuneNotes: string | null
+  /** Planning de jeûne flexible — chaîne JSON d'un tableau de programmes (voir src/lib/fasting-planning.ts). `null`/vide = aucun. */
+  jeunePlanning: string | null
   /** Cible d'hydratation en ml/jour. `null` = calcul auto d'après le poids. */
   hydratationMlParJour: number | null
   /** Suppléments recommandés (texte libre). */
@@ -358,6 +360,7 @@ interface Window {
           jeuneFenetreDebut?: string | null
           jeuneFenetreFin?: string | null
           jeuneNotes?: string | null
+          jeunePlanning?: string | null
           hydratationMlParJour?: number | null
           supplementsNotes?: string | null
           alimentsPrivilegier?: string | null
