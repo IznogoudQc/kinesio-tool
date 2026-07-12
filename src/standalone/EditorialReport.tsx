@@ -885,8 +885,12 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
   const objectifText = typeof objectifData.objectif === 'string' ? objectifData.objectif.trim() : ''
   const hasObjectif = !!objectif || objectifText !== ''
 
+  const hasJeune = (client.jeunePlanning?.length ?? 0) > 0
+  // Sans planning de jeûne, on retire « & jeûne » du titre (hero + section).
+  const planTitle = hasJeune ? 'Nutrition & jeûne' : 'Nutrition'
+
   const hasBricks =
-    (client.jeunePlanning?.length ?? 0) > 0 ||
+    hasJeune ||
     (typeof client.hydratationMlParJour === 'number' && client.hydratationMlParJour > 0) ||
     !!(client.alimentsPrivilegier ?? '').trim() ||
     !!(client.alimentsEviter ?? '').trim() ||
@@ -908,7 +912,7 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
         </div>
 
         <div className="relative z-10 mx-auto w-full max-w-4xl py-12">
-          <p className="ed-eyebrow text-gold">Nutrition &amp; jeûne</p>
+          <p className="ed-eyebrow text-gold">{planTitle}</p>
           <h1 className="ed-display ed-headline mt-3 text-cream">{firstName}, votre plan alimentaire.</h1>
           <p className="ed-prose mt-10 text-lg text-cream/75 sm:text-xl">
             Vos repères nutrition et jeûne, réunis en un seul endroit — à ajuster avec votre kinésiologue.
@@ -931,12 +935,12 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
       )}
 
       {hasBricks ? (
-        <Section eyebrow="Votre plan" title="Nutrition & jeûne" tone="white">
+        <Section eyebrow="Votre plan" title={planTitle} tone="white">
           <NutritionBody client={client} generatedAt={data.generatedAt} />
         </Section>
       ) : (
         !hasObjectif && (
-          <Section eyebrow="Votre plan" title="Nutrition & jeûne" tone="white">
+          <Section eyebrow="Votre plan" title={planTitle} tone="white">
             <p className="ed-prose text-base text-marine/60">
               Aucune consigne nutrition n’a encore été renseignée par votre kinésiologue.
             </p>

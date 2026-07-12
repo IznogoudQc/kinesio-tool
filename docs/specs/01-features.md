@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.63 — Document : titre « Nutrition » sans « & jeûne » si aucun jeûne)
+
+Dans le document client, si le client **n'a aucun programme de jeûne** planifié, le titre devient
+**« Nutrition »** (au lieu de « Nutrition & jeûne ») — pour l'eyebrow du hero et le titre de la section
+« Votre plan ». `planTitle = hasJeune ? 'Nutrition & jeûne' : 'Nutrition'`. Vérifié en headless (sans jeûne →
+« Nutrition », avec jeûne → « Nutrition & jeûne »).
+
+Version : 0.2.62 → 0.2.63.
+
 ## ✅ Fait (v0.2.62 — Idées de menu : journées variées (pas de répétition))
 
 Le prompt IA des idées de menu demande maintenant de rendre **chaque journée distincte** : ne pas répéter les
