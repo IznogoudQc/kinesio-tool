@@ -324,6 +324,7 @@ export function ReportPage() {
       <ForceSection {...shared} />
       <DosSection {...shared} />
       <ObjectifSection client={client} latest={latest} chrono={chrono} profile={profile} />
+      <NutritionSectionPdf client={client} />
       <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} customPrincipe={{ title: client.principePersoTitre, line: client.principePersoTexte }} />
     </article>
   )
@@ -792,6 +793,181 @@ function ObjectifSection({ client, latest, chrono, profile }: { client: Client; 
     >
       <div className="report-stack">
         <ObjectifBlock objectif={objectif} client={client} latest={latest} chrono={chrono} profile={profile} />
+      </div>
+    </ReportFlowSection>
+  )
+}
+
+// ── Nutrition & jeûne (PDF) ──────────────────────────────────────────────────
+
+const JEUNE_LABEL_PDF: Record<'16:8' | '18:6' | '20:4' | 'omad' | '5:2', string> = {
+  '16:8': 'Jeûne 16:8 — 16 h de jeûne, fenêtre de 8 h',
+  '18:6': 'Jeûne 18:6 — 18 h de jeûne, fenêtre de 6 h',
+  '20:4': 'Jeûne 20:4 — 20 h de jeûne, fenêtre de 4 h',
+  omad: 'OMAD — un seul repas par jour',
+  '5:2': 'Jeûne 5:2 — 2 jours à faible apport par semaine'
+}
+
+function pdfWindowHours(debut: string, fin: string): number | null {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(':').map(Number)
+    return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null
+  }
+  const a = toMin(debut)
+  const b = toMin(fin)
+  if (a === null || b === null) return null
+  const diff = (b - a + 1440) % 1440
+  return diff === 0 ? 24 : diff / 60
+}
+
+/** Barre 24 h imprimable : fenêtre d'alimentation en or. */
+function PdfFastingBar({ debut, fin }: { debut: string; fin: string }) {
+  const toH = (t: string) => {
+    const [h, m] = t.split(':').map(Number)
+    return Number.isFinite(h) && Number.isFinite(m) ? h + m / 60 : null
+  }
+  const a = toH(debut)
+  const b = toH(fin)
+  if (a === null || b === null) return null
+  const segs = b > a
+    ? [{ left: (a / 24) * 100, width: ((b - a) / 24) * 100 }]
+    : [
+        { left: (a / 24) * 100, width: ((24 - a) / 24) * 100 },
+        { left: 0, width: (b / 24) * 100 }
+      ]
+  return (
+    <div style={{ marginTop: '3mm' }}>
+      <div style={{ position: 'relative', height: '3.5mm', borderRadius: '2mm', background: GRID, overflow: 'hidden', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+        {segs.map((s, i) => (
+          <div key={i} style={{ position: 'absolute', top: 0, height: '100%', left: `${s.left}%`, width: `${s.width}%`, background: GOLD, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />
+        ))}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1mm', fontSize: '7pt', color: '#9a9382' }}>
+        <span>0 h</span><span>6 h</span><span>12 h</span><span>18 h</span><span>24 h</span>
+      </div>
+    </div>
+  )
+}
+
+/** Puces à partir d'un texte multi-lignes (≥ 2 lignes → liste ; sinon paragraphe). */
+function PdfBullets({ text }: { text: string }) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+  if (lines.length <= 1) {
+    return <p style={{ fontSize: '10pt', lineHeight: 1.5, color: INK_SOFT, whiteSpace: 'pre-line', margin: 0 }}>{text}</p>
+  }
+  return (
+    <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+      {lines.map((l, i) => (
+        <li key={i} style={{ display: 'flex', gap: '2mm', fontSize: '10pt', lineHeight: 1.45, color: INK_SOFT, marginBottom: i === lines.length - 1 ? 0 : '1.6mm' }}>
+          <span style={{ marginTop: '1.8mm', height: '1.1mm', width: '1.1mm', flexShrink: 0, borderRadius: '50%', background: GOLD, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />
+          <span>{l}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+const nutCardStyle: React.CSSProperties = {
+  border: `0.3mm solid ${GRID}`,
+  borderRadius: '3mm',
+  padding: '6mm',
+  breakInside: 'avoid',
+  background: '#fff'
+}
+
+/** Section « Nutrition & jeûne » du PDF — rendue uniquement si au moins une brique
+ *  est renseignée (jeûne, hydratation, aliments, suppléments, mot). */
+function NutritionSectionPdf({ client }: { client: Client }) {
+  const jeuneDebut = client.jeuneFenetreDebut ?? ''
+  const jeuneFin = client.jeuneFenetreFin ?? ''
+  const hasJeune = !!client.jeuneType || (!!jeuneDebut && !!jeuneFin)
+  const hydra = client.hydratationMlParJour
+  const hasHydra = typeof hydra === 'number' && Number.isFinite(hydra) && hydra > 0
+  const privil = (client.alimentsPrivilegier ?? '').trim()
+  const eviter = (client.alimentsEviter ?? '').trim()
+  const supp = (client.supplementsNotes ?? '').trim()
+  const jeuneNotes = (client.jeuneNotes ?? '').trim()
+  const mot = (client.nutritionMot ?? '').trim()
+
+  if (!hasJeune && !hasHydra && !privil && !eviter && !supp && !mot) return null
+
+  const fenetreH = hasJeune && jeuneDebut && jeuneFin ? pdfWindowHours(jeuneDebut, jeuneFin) : null
+  const verres = hasHydra ? Math.round((hydra as number) / 250) : null
+
+  return (
+    <ReportFlowSection
+      title="Nutrition & jeûne"
+      sectionNumber="Section 7"
+      intro="Vos repères alimentaires au quotidien — à ajuster avec votre kinésiologue."
+    >
+      <div className="report-stack">
+        {mot && (
+          <div style={{ background: CREAM, borderRadius: '3mm', padding: '7mm', breakInside: 'avoid', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}>
+            <BlockTitle>Le mot de votre kinésiologue</BlockTitle>
+            <p style={{ fontSize: '12pt', fontStyle: 'italic', lineHeight: 1.5, color: MARINE, margin: 0 }}>{mot}</p>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: '6mm' }}>
+          {hasJeune && (
+            <div style={{ ...nutCardStyle, flex: 1 }}>
+              <BlockTitle>Jeûne intermittent</BlockTitle>
+              {client.jeuneType && (
+                <p className="report-display" style={{ fontSize: '15pt', color: MARINE, lineHeight: 1.15, margin: 0 }}>
+                  {JEUNE_LABEL_PDF[client.jeuneType]}
+                </p>
+              )}
+              {jeuneDebut && jeuneFin && (
+                <>
+                  <PdfFastingBar debut={jeuneDebut} fin={jeuneFin} />
+                  <p style={{ fontSize: '10pt', color: INK_SOFT, margin: '3mm 0 0' }}>
+                    Fenêtre&nbsp;: <strong style={{ color: MARINE }}>{jeuneDebut} → {jeuneFin}</strong>
+                    {fenetreH != null && ` (${fenetreH.toLocaleString('fr-CA')} h)`}
+                  </p>
+                </>
+              )}
+              {jeuneNotes && (
+                <p style={{ fontSize: '10pt', lineHeight: 1.5, color: INK_SOFT, whiteSpace: 'pre-line', margin: '3mm 0 0' }}>{jeuneNotes}</p>
+              )}
+            </div>
+          )}
+
+          {hasHydra && (
+            <div style={{ ...nutCardStyle, flex: 1 }}>
+              <BlockTitle>Hydratation</BlockTitle>
+              <p className="report-display" style={{ fontSize: '22pt', color: MARINE, lineHeight: 1, margin: 0 }}>
+                {((hydra as number) / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} L
+              </p>
+              <p style={{ fontSize: '10pt', color: INK_SOFT, margin: '2mm 0 0' }}>
+                {(hydra as number).toLocaleString('fr-CA')} ml par jour · environ {verres} verres de 250 ml
+              </p>
+            </div>
+          )}
+        </div>
+
+        {(privil || eviter) && (
+          <div style={{ display: 'flex', gap: '6mm' }}>
+            {privil && (
+              <div style={{ ...nutCardStyle, flex: 1 }}>
+                <BlockTitle>À privilégier</BlockTitle>
+                <PdfBullets text={privil} />
+              </div>
+            )}
+            {eviter && (
+              <div style={{ ...nutCardStyle, flex: 1 }}>
+                <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: INK_SOFT, fontWeight: 700, margin: '0 0 4mm' }}>À limiter</p>
+                <PdfBullets text={eviter} />
+              </div>
+            )}
+          </div>
+        )}
+
+        {supp && (
+          <div style={nutCardStyle}>
+            <BlockTitle>Suppléments</BlockTitle>
+            <PdfBullets text={supp} />
+          </div>
+        )}
       </div>
     </ReportFlowSection>
   )
@@ -1849,7 +2025,7 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature, customPrin
   const signOff = signature.trim() || `${coachName || 'Marie-Eve Bélanger'}\nKinésiologue`
 
   return (
-    <ReportSection title="Vos forces" sectionNumber="Section 7">
+    <ReportSection title="Vos forces" sectionNumber="Section 8">
       <div style={{ marginTop: '2mm', marginBottom: '9mm' }}>
         <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
           <Trophy size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Vos forces

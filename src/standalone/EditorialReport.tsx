@@ -51,6 +51,15 @@ export interface StandaloneData {
     nutritionTargetKcal: number | null
     principePersoTitre: string | null
     principePersoTexte: string | null
+    jeuneType: '16:8' | '18:6' | '20:4' | 'omad' | '5:2' | null
+    jeuneFenetreDebut: string | null
+    jeuneFenetreFin: string | null
+    jeuneNotes: string | null
+    hydratationMlParJour: number | null
+    supplementsNotes: string | null
+    alimentsPrivilegier: string | null
+    alimentsEviter: string | null
+    nutritionMot: string | null
   }
   /** Photo du client en data URI, ou `null` — le fichier reste autonome. */
   avatarDataUrl: string | null
@@ -494,6 +503,172 @@ function Hero({
   )
 }
 
+// ── Nutrition & jeûne ────────────────────────────────────────────────────────
+
+const JEUNE_LABEL: Record<'16:8' | '18:6' | '20:4' | 'omad' | '5:2', string> = {
+  '16:8': 'Jeûne 16:8 — 16 h de jeûne, fenêtre de 8 h',
+  '18:6': 'Jeûne 18:6 — 18 h de jeûne, fenêtre de 6 h',
+  '20:4': 'Jeûne 20:4 — 20 h de jeûne, fenêtre de 4 h',
+  omad: 'OMAD — un seul repas par jour',
+  '5:2': 'Jeûne 5:2 — 2 jours à faible apport par semaine'
+}
+
+/** Durée (h) de la fenêtre d'alimentation, gère le passage de minuit. `null` si incalculable. */
+function edWindowHours(debut: string, fin: string): number | null {
+  const toMin = (t: string) => {
+    const [h, m] = t.split(':').map(Number)
+    return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null
+  }
+  const a = toMin(debut)
+  const b = toMin(fin)
+  if (a === null || b === null) return null
+  const diff = (b - a + 1440) % 1440
+  return diff === 0 ? 24 : diff / 60
+}
+
+/** Barre 24 h : fenêtre d'alimentation en or sur fond marine clair. */
+function EdFastingBar({ debut, fin }: { debut: string; fin: string }) {
+  const toH = (t: string) => {
+    const [h, m] = t.split(':').map(Number)
+    return Number.isFinite(h) && Number.isFinite(m) ? h + m / 60 : null
+  }
+  const a = toH(debut)
+  const b = toH(fin)
+  if (a === null || b === null) return null
+  const segs = b > a
+    ? [{ left: (a / 24) * 100, width: ((b - a) / 24) * 100 }]
+    : [
+        { left: (a / 24) * 100, width: ((24 - a) / 24) * 100 },
+        { left: 0, width: (b / 24) * 100 }
+      ]
+  return (
+    <div className="mt-4">
+      <div className="relative h-5 overflow-hidden rounded-full bg-marine/10">
+        {segs.map((s, i) => (
+          <div key={i} className="absolute top-0 h-full bg-gold" style={{ left: `${s.left}%`, width: `${s.width}%` }} />
+        ))}
+      </div>
+      <div className="mt-1 flex justify-between text-[11px] tabular-nums text-marine/35">
+        <span>0 h</span>
+        <span>6 h</span>
+        <span>12 h</span>
+        <span>18 h</span>
+        <span>24 h</span>
+      </div>
+    </div>
+  )
+}
+
+/** Liste à puces à partir d'un texte multi-lignes (une puce par ligne non vide). */
+function EdBullets({ text }: { text: string }) {
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
+  if (lines.length <= 1) return <p className="ed-prose whitespace-pre-line text-base leading-relaxed text-marine/75">{text}</p>
+  return (
+    <ul className="space-y-2">
+      {lines.map((l, i) => (
+        <li key={i} className="flex gap-2.5 text-base text-marine/75">
+          <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+          <span className="leading-relaxed">{l}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function NutritionSection({ client }: { client: StandaloneData['client'] }) {
+  const jeuneDebut = client.jeuneFenetreDebut ?? ''
+  const jeuneFin = client.jeuneFenetreFin ?? ''
+  const hasJeune = !!client.jeuneType || (!!jeuneDebut && !!jeuneFin)
+  const hydra = client.hydratationMlParJour
+  const hasHydra = typeof hydra === 'number' && Number.isFinite(hydra) && hydra > 0
+  const privil = (client.alimentsPrivilegier ?? '').trim()
+  const eviter = (client.alimentsEviter ?? '').trim()
+  const supp = (client.supplementsNotes ?? '').trim()
+  const jeuneNotes = (client.jeuneNotes ?? '').trim()
+  const mot = (client.nutritionMot ?? '').trim()
+
+  if (!hasJeune && !hasHydra && !privil && !eviter && !supp && !mot) return null
+
+  const fenetreH = hasJeune && jeuneDebut && jeuneFin ? edWindowHours(jeuneDebut, jeuneFin) : null
+  const verres = hasHydra ? Math.round((hydra as number) / 250) : null
+
+  return (
+    <Section eyebrow="Nutrition & jeûne" title="Votre plan alimentaire" tone="white" backTop>
+      {mot && (
+        <div className="mb-10 rounded-xl bg-cream p-8 sm:p-10">
+          <p className="ed-eyebrow text-gold-dark">Le mot de votre kinésiologue</p>
+          <p className="ed-prose mt-4 whitespace-pre-line text-lg italic leading-relaxed text-marine">{mot}</p>
+        </div>
+      )}
+
+      <div className="grid gap-6 sm:grid-cols-2">
+        {hasJeune && (
+          <div className="rounded-xl border border-marine/10 p-6">
+            <p className="ed-eyebrow text-gold-dark">Jeûne intermittent</p>
+            {client.jeuneType && (
+              <p className="ed-display mt-3 text-2xl leading-tight text-marine">{JEUNE_LABEL[client.jeuneType]}</p>
+            )}
+            {jeuneDebut && jeuneFin && (
+              <>
+                <EdFastingBar debut={jeuneDebut} fin={jeuneFin} />
+                <p className="mt-3 text-base text-marine/70">
+                  Fenêtre d’alimentation&nbsp;: <strong className="text-marine">{jeuneDebut} → {jeuneFin}</strong>
+                  {fenetreH != null && <> ({fenetreH.toLocaleString('fr-CA')} h)</>}
+                </p>
+              </>
+            )}
+            {jeuneNotes && (
+              <p className="ed-prose mt-4 whitespace-pre-line text-base leading-relaxed text-marine/70">{jeuneNotes}</p>
+            )}
+          </div>
+        )}
+
+        {hasHydra && (
+          <div className="rounded-xl border border-marine/10 p-6">
+            <p className="ed-eyebrow text-gold-dark">Hydratation</p>
+            <p className="ed-display mt-3 text-4xl tabular-nums text-marine">
+              {((hydra as number) / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} L
+            </p>
+            <p className="mt-1 text-base text-marine/60">
+              {(hydra as number).toLocaleString('fr-CA')} ml par jour · environ {verres} verres de 250 ml
+            </p>
+          </div>
+        )}
+      </div>
+
+      {(privil || eviter) && (
+        <div className="mt-6 grid gap-6 sm:grid-cols-2">
+          {privil && (
+            <div className="rounded-xl border border-marine/10 p-6">
+              <p className="ed-eyebrow text-gold-dark">À privilégier</p>
+              <div className="mt-4">
+                <EdBullets text={privil} />
+              </div>
+            </div>
+          )}
+          {eviter && (
+            <div className="rounded-xl border border-marine/10 p-6">
+              <p className="ed-eyebrow text-marine/40">À limiter</p>
+              <div className="mt-4">
+                <EdBullets text={eviter} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {supp && (
+        <div className="mt-6 rounded-xl border border-marine/10 p-6">
+          <p className="ed-eyebrow text-gold-dark">Suppléments</p>
+          <div className="mt-4">
+            <EdBullets text={supp} />
+          </div>
+        </div>
+      )}
+    </Section>
+  )
+}
+
 // ── Document ─────────────────────────────────────────────────────────────────
 
 export function EditorialReport({ data }: { data: StandaloneData }) {
@@ -913,6 +1088,8 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
           )}
         </Section>
       )}
+
+      <NutritionSection client={client} />
 
       {(plan.forces.length > 0 || motDuKine) && (
         <Section eyebrow="Et maintenant ?" title={plan.forces.length > 0 ? 'Vos forces' : 'En terminant'} tone="white" backTop>

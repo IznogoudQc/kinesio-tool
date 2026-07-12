@@ -78,7 +78,16 @@ export async function generateInteractiveReportHtml(clientId: string): Promise<s
       nutritionFatMaxG: client.nutritionFatMaxG,
       nutritionTargetKcal: client.nutritionTargetKcal,
       principePersoTitre: client.principePersoTitre,
-      principePersoTexte: client.principePersoTexte
+      principePersoTexte: client.principePersoTexte,
+      jeuneType: client.jeuneType,
+      jeuneFenetreDebut: client.jeuneFenetreDebut,
+      jeuneFenetreFin: client.jeuneFenetreFin,
+      jeuneNotes: client.jeuneNotes,
+      hydratationMlParJour: client.hydratationMlParJour,
+      supplementsNotes: client.supplementsNotes,
+      alimentsPrivilegier: client.alimentsPrivilegier,
+      alimentsEviter: client.alimentsEviter,
+      nutritionMot: client.nutritionMot
     },
     avatarDataUrl: await avatarDataUrl(client.avatarFilename),
     bilans: list,

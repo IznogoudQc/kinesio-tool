@@ -642,6 +642,26 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.42 — Section « Nutrition & jeûne » dans le rapport client (HTML + PDF))
+
+Les réglages de l'onglet Nutrition & jeûne s'affichent maintenant dans le **rapport client**, à la fois
+dans le **document HTML interactif** (`NutritionSection`) et dans le **PDF** (`NutritionSectionPdf`,
+« Section 7 », entre l'objectif et les forces). La section n'apparaît que si au moins une brique est
+renseignée. Contenu :
+
+- **Mot de Marie** sur la nutrition (encadré crème, en tête).
+- **Jeûne intermittent** : libellé du protocole + **horloge 24 h** (fenêtre d'alimentation en or, gère le
+  passage de minuit) + fenêtre HH:MM et durée + consignes.
+- **Hydratation** : cible en L, ml/jour et verres de 250 ml.
+- **À privilégier / À limiter** : deux colonnes en puces (une par ligne).
+- **Suppléments** : puces.
+
+`ForcesEtPlanSection` renumérotée « Section 8 ». Les 9 champs sont propagés au document autonome
+(`StandaloneData.client` + builder `standalone-report.ts`). Rendu HTML vérifié en headless (mot, fenêtre
+12:00→20:00, hydratation 2,5 L, puces aliments/suppléments présents).
+
+Version : 0.2.41 → 0.2.42.
+
 ## ✅ Fait (v0.2.41 — Nouvel onglet « Nutrition & jeûne » (config sortie de « Modifier »))
 
 Un **onglet dédié « Nutrition & jeûne »** par client, entre Mesures et Notes. Toute la configuration
