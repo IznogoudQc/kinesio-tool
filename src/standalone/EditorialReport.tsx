@@ -1107,7 +1107,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         scores={[{ score: computed.composition }]}
         eyebrow="Composition corporelle"
         title="Ce que raconte votre silhouette"
-        lead="L’IMC seul dit peu de choses : un athlète musclé et une personne sédentaire peuvent avoir le même. C’est en le lisant avec le pourcentage de gras et le tour de taille qu’il prend son sens."
+        lead="L’IMC seul dit peu de choses : un athlète musclé et une personne sédentaire peuvent avoir le même. Il doit être interprété avec le % de gras, le tour de taille et l’évaluation de la kinésiologue."
       >
         <Measure label="Indice de masse corporelle" value={activeData.imc} unit="kg/m²" test="bmi" {...measureProps} previousValue={compareData?.imc} lowerIsBetter history={historyOf('imc')} />
         <Measure id="pourcentage-gras" label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />

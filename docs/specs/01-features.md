@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.57 — Composition : mention de l'évaluation de la kinésiologue)
+
+Correction du texte de la section « Composition corporelle » :
+- **HTML** (intro « Ce que raconte votre silhouette ») : « L'IMC seul dit peu de choses… Il doit être
+  interprété avec le % de gras, le tour de taille **et l'évaluation de la kinésiologue**. »
+- **PDF** (intro plus clinique, conservée) : ajout de « — toujours interprétés avec l'évaluation de votre
+  kinésiologue » en fin de phrase.
+
+Le message reconnaît le jugement professionnel de Marie dans les deux versions. Rendu HTML vérifié en
+headless (nouveau texte présent, ancien retiré).
+
+Version : 0.2.56 → 0.2.57.
+
 ## ✅ Fait (v0.2.56 — Test de non-régression export/import (toutes les colonnes client))
 
 L'export/import `.kinesio` transporte déjà **la ligne client complète** (toutes les colonnes) — donc tous les

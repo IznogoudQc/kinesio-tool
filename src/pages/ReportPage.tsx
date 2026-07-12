@@ -1508,7 +1508,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
       title="Votre composition corporelle"
       sectionNumber="Section 2"
       domainWord="composition corporelle"
-      intro="La composition corporelle décrit la répartition entre la masse grasse et la masse maigre de votre corps. Un excès de gras, surtout à la taille, augmente le risque de maladies cardiovasculaires et de diabète. On l'évalue par l'IMC, le tour de taille et le pourcentage de gras estimé à partir des plis cutanés."
+      intro="La composition corporelle décrit la répartition entre la masse grasse et la masse maigre de votre corps. Un excès de gras, surtout à la taille, augmente le risque de maladies cardiovasculaires et de diabète. On l'évalue par l'IMC, le tour de taille et le pourcentage de gras estimé à partir des plis cutanés — toujours interprétés avec l'évaluation de votre kinésiologue."
       detailKeys={['imc', 'tour_taille_cm']}
       heroKey="pourcentage_gras"
       composite={computeBilan(props.latest.data, props.profile).composition}
