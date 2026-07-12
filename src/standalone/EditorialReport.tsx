@@ -603,6 +603,45 @@ function NutritionFastingBlock({ programs, generatedAt }: { programs: FastingPro
   )
 }
 
+/** Repères de sécurité pour les jeûnes prolongés — affichés si le planning contient
+ *  au moins un jeûne de 24 h ou plus. Contenu éducatif général (non prescriptif). */
+function ProlongedFastingSafety({ programs }: { programs: FastingProgram[] }) {
+  const hasLong = programs.some(p => p.kind === 'extended' && (p.durationHours ?? 0) >= 24)
+  if (!hasLong) return null
+  return (
+    <div className="mt-6 rounded-xl border border-gold/40 bg-gold/5 p-6">
+      <p className="ed-eyebrow text-gold-dark">Jeûne prolongé — repères de sécurité</p>
+      <div className="mt-4 grid gap-5 sm:grid-cols-3">
+        <div>
+          <p className="ed-display text-lg text-marine">Électrolytes</p>
+          <p className="ed-prose mt-1 text-base leading-relaxed text-marine/70">
+            Sur un jeûne long, l’eau seule ne suffit pas. Ajoutez du sel (sodium) et pensez au potassium et au
+            magnésium pour éviter fatigue, maux de tête et crampes.
+          </p>
+        </div>
+        <div>
+          <p className="ed-display text-lg text-marine">Rompre le jeûne</p>
+          <p className="ed-prose mt-1 text-base leading-relaxed text-marine/70">
+            Reprenez en douceur : bouillon, puis petites portions d’aliments faciles à digérer (protéines, légumes
+            cuits). Évitez un gros repas ou beaucoup de sucre d’un coup.
+          </p>
+        </div>
+        <div>
+          <p className="ed-display text-lg text-marine">À surveiller</p>
+          <p className="ed-prose mt-1 text-base leading-relaxed text-marine/70">
+            Étourdissements, palpitations, grande faiblesse ou confusion : rompez le jeûne et consultez. Écoutez
+            votre corps.
+          </p>
+        </div>
+      </div>
+      <p className="ed-prose mt-5 text-sm text-marine/50">
+        Repères généraux — ils ne remplacent pas un avis médical. Validez avec votre médecin, surtout en cas de
+        condition de santé, de grossesse ou de médication.
+      </p>
+    </div>
+  )
+}
+
 /** Corps de la section nutrition (cartes). `null` si aucune brique n'est remplie. */
 function NutritionBody({ client, generatedAt }: { client: StandaloneData['client']; generatedAt: string }) {
   const programs = client.jeunePlanning ?? []
@@ -629,6 +668,7 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
       )}
 
       {hasJeune && <NutritionFastingBlock programs={programs} generatedAt={generatedAt} />}
+      {hasJeune && <ProlongedFastingSafety programs={programs} />}
 
       {hasHydra && (
         <div className="mb-6 rounded-xl border border-marine/10 p-6">

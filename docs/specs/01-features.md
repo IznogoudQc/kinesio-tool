@@ -642,6 +642,17 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.60 — Jeûne prolongé : repères de sécurité dans le document)
+
+Nouveau bloc **« Jeûne prolongé — repères de sécurité »** dans le document client, affiché **uniquement si le
+planning contient un jeûne de ≥ 24 h** (`ProlongedFastingSafety`). Trois repères éducatifs (non
+prescriptifs) : **électrolytes** (sodium/potassium/magnésium), **comment rompre le jeûne** (bouillon puis
+petites portions), **signaux à surveiller** (étourdissements, palpitations… → rompre et consulter) +
+disclaimer médical. Pertinent pour les protocoles de 48–96 h. Vérifié en headless (affiché pour un 48 h,
+absent pour un 16:8 seul).
+
+Version : 0.2.59 → 0.2.60.
+
 ## ✅ Fait (v0.2.59 — Macros par repas (répartition))
 
 Répartition des macros du jour sur N repas. Sélecteur **« Repas / jour »** (1–5, défaut 3) dans le panneau
