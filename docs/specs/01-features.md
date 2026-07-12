@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.47 — Nutrition : propositions pré-remplies (Marie garde ou modifie))
+
+Les champs libres de l'onglet Nutrition proposent maintenant des **suggestions cliquables** que Marie
+insère puis garde, modifie ou retire — plutôt que de partir d'un champ vide :
+
+- **À privilégier / À éviter / Suppléments** : rangée de chips (« + Légumes verts », « + Oméga-3 »…). Un
+  clic ajoute la ligne (sans doublon, coché ✓ si déjà présent). `appendLine` insère en nouvelle ligne.
+- **Hydratation** : boutons rapides 2 L / 2,5 L / 3 L.
+- **Mot de Marie** : trois exemples de message cliquables, affichés seulement quand le champ est vide.
+
+Rien n'est imposé : ce sont des points de départ modifiables. Composant `SuggestChips` réutilisable.
+
+Version : 0.2.46 → 0.2.47.
+
 ## ✅ Fait (v0.2.46 — Jeûne prolongé : heure de début (et fin déduite))
 
 Un jeûne prolongé peut désormais avoir une **heure de début** (l'heure de fin se déduit de la durée). Ex.

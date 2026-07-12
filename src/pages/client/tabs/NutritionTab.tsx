@@ -57,6 +57,57 @@ function Section({
   )
 }
 
+// Propositions par défaut — Marie clique pour insérer, puis garde, modifie ou retire.
+const FOODS_GOOD = [
+  'Légumes verts', 'Protéines maigres (poulet, poisson, œufs)', 'Légumineuses', 'Fruits entiers',
+  'Grains entiers', 'Noix et graines', 'Yogourt grec', 'Eau'
+]
+const FOODS_BAD = [
+  'Sucres ajoutés', 'Boissons sucrées', 'Aliments ultra-transformés', 'Alcool', 'Fritures',
+  'Charcuteries', 'Grignotage le soir'
+]
+const SUPPLEMENTS = ['Vitamine D 1000 UI', 'Oméga-3', 'Créatine 5 g/jour', 'Magnésium', 'Multivitamine', 'Protéine en poudre']
+const HYDRATION_PRESETS = [2000, 2500, 3000]
+const MOT_PRESETS = [
+  'On vise le progrès, pas la perfection. Un repas à la fois.',
+  'La régularité bat la perfection : chaque petit choix compte.',
+  'Mange vrai, bouge souvent, dors bien — le reste suit.'
+]
+
+/** Ajoute `item` en nouvelle ligne (sans doublon, insensible à la casse). */
+function appendLine(current: string, item: string): string {
+  const lines = current.split('\n').map(l => l.trim()).filter(Boolean)
+  if (lines.some(l => l.toLowerCase() === item.toLowerCase())) return current
+  return current.trim() ? `${current.replace(/\s+$/, '')}\n${item}` : item
+}
+
+/** Rangée de propositions cliquables ; un clic ajoute la ligne (coché si déjà présent). */
+function SuggestChips({ items, current, onPick }: { items: string[]; current: string; onPick: (item: string) => void }) {
+  const present = new Set(current.split('\n').map(l => l.trim().toLowerCase()))
+  return (
+    <div className="mb-2.5">
+      <p className="text-marine/40 text-xs mb-1.5">Propositions — cliquez pour ajouter :</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map(it => {
+          const used = present.has(it.toLowerCase())
+          return (
+            <button
+              key={it}
+              type="button"
+              onClick={() => onPick(it)}
+              disabled={used}
+              className={`px-2.5 py-1 rounded-full border text-sm transition-colors ${used ? 'border-cream-dark text-marine/30 cursor-default' : 'border-gold/40 text-marine/70 hover:border-gold hover:bg-gold/10'}`}
+            >
+              {used ? '✓ ' : '+ '}
+              {it}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export function NutritionTab() {
   const { client, onClientUpdated } = useClientContext()
 
@@ -383,10 +434,24 @@ export function NutritionTab() {
             </span>
           )}
         </div>
+        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+          <span className="text-marine/40 text-xs mr-1">Propositions :</span>
+          {HYDRATION_PRESETS.map(ml => (
+            <button
+              key={ml}
+              type="button"
+              onClick={() => setHydratationMl(String(ml))}
+              className={`px-2.5 py-1 rounded-full border text-sm transition-colors ${Number(hydratationMl) === ml ? 'border-gold bg-gold/15 text-marine font-semibold' : 'border-gold/40 text-marine/70 hover:border-gold hover:bg-gold/10'}`}
+            >
+              {(ml / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 1 })} L
+            </button>
+          ))}
+        </div>
         <p className="text-marine/40 text-xs mt-1.5">Repère courant : environ 30 à 40 ml par kg de poids corporel.</p>
       </Section>
 
       <Section icon={Pill} title="Suppléments" desc="Recommandations libres.">
+        <SuggestChips items={SUPPLEMENTS} current={supplementsNotes} onPick={it => setSupplementsNotes(c => appendLine(c, it))} />
         <textarea
           value={supplementsNotes}
           onChange={e => setSupplementsNotes(e.target.value)}
@@ -399,6 +464,7 @@ export function NutritionTab() {
       {/* ── Aliments ────────────────────────────────────────────────────────── */}
       <div className="grid md:grid-cols-2 gap-6">
         <Section icon={Apple} title="À privilégier" desc="Aliments à mettre de l'avant.">
+          <SuggestChips items={FOODS_GOOD} current={alimentsPrivilegier} onPick={it => setAlimentsPrivilegier(c => appendLine(c, it))} />
           <textarea
             value={alimentsPrivilegier}
             onChange={e => setAlimentsPrivilegier(e.target.value)}
@@ -408,6 +474,7 @@ export function NutritionTab() {
           />
         </Section>
         <Section icon={Ban} title="À éviter" desc="Aliments à limiter.">
+          <SuggestChips items={FOODS_BAD} current={alimentsEviter} onPick={it => setAlimentsEviter(c => appendLine(c, it))} />
           <textarea
             value={alimentsEviter}
             onChange={e => setAlimentsEviter(e.target.value)}
@@ -424,6 +491,23 @@ export function NutritionTab() {
         title="Mot de Marie sur la nutrition"
         desc="Court message affiché dans la section nutrition du rapport."
       >
+        {nutritionMot.trim() === '' && (
+          <div className="mb-2.5">
+            <p className="text-marine/40 text-xs mb-1.5">Exemples — cliquez pour partir de là :</p>
+            <div className="flex flex-col gap-1.5">
+              {MOT_PRESETS.map(m => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setNutritionMot(m)}
+                  className="text-left px-3 py-2 rounded-md border border-gold/40 text-marine/70 text-sm hover:border-gold hover:bg-gold/10 transition-colors"
+                >
+                  « {m} »
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <textarea
           value={nutritionMot}
           onChange={e => setNutritionMot(e.target.value)}
