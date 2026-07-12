@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
-import { Apple, Ban, Check, Clock, Droplet, MessageSquareQuote, Pill, Target } from 'lucide-react'
+import { Apple, Ban, Check, Clock, Droplet, ExternalLink, MessageSquareQuote, Pill, Target } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
+import { reportsService } from '../../../services/reports'
 import {
   ACTIVITY_LABELS,
   ACTIVITY_ORDER,
@@ -154,6 +155,7 @@ export function NutritionTab() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
+  const [opening, setOpening] = useState(false)
 
   const fenetreH = useMemo(() => windowHours(jeuneDebut, jeuneFin), [jeuneDebut, jeuneFin])
   const mlNum = hydratationMl.trim() !== '' ? Number(hydratationMl) : null
@@ -171,38 +173,38 @@ export function NutritionTab() {
     }
   }
 
-  async function handleSave() {
+  /** Valide + enregistre. Retourne `true` si la sauvegarde a réussi. */
+  async function persist(): Promise<boolean> {
     setError(null)
-    setSaved(false)
 
     const targetPct = targetBodyFat.trim() !== '' ? Number(targetBodyFat) : null
     if (nutritionEnabled && targetPct !== null && (!Number.isFinite(targetPct) || targetPct < 3 || targetPct > 60)) {
       setError('Le % de gras visé doit être compris entre 3 et 60.')
-      return
+      return false
     }
     const proteinVal = proteinPerLb.trim() !== '' ? Number(proteinPerLb) : null
     const fatVal = fatMaxG.trim() !== '' ? Number(fatMaxG) : null
     if (nutritionEnabled && proteinVal !== null && (!Number.isFinite(proteinVal) || proteinVal < 0.3 || proteinVal > 2.5)) {
       setError('Les protéines (g/lb de masse maigre) doivent être comprises entre 0,3 et 2,5.')
-      return
+      return false
     }
     if (nutritionEnabled && fatVal !== null && (!Number.isFinite(fatVal) || fatVal < 20 || fatVal > 200)) {
       setError('Le plafond de lipides doit être compris entre 20 et 200 g.')
-      return
+      return false
     }
     const kcalVal = nutritionEnabled && caloriesMode === 'manual' && manualKcal.trim() !== '' ? Number(manualKcal) : null
     if (kcalVal !== null && (!Number.isFinite(kcalVal) || kcalVal < 800 || kcalVal > 6000)) {
       setError('Les calories manuelles doivent être comprises entre 800 et 6000.')
-      return
+      return false
     }
     if (nutritionEnabled && caloriesMode === 'manual' && manualKcal.trim() === '') {
       setError('Indiquez les calories cibles, ou choisissez « Automatique ».')
-      return
+      return false
     }
     const mlVal = hydratationMl.trim() !== '' ? Number(hydratationMl) : null
     if (mlVal !== null && (!Number.isFinite(mlVal) || mlVal < 0 || mlVal > 10000)) {
       setError("La cible d'hydratation doit être comprise entre 0 et 10 000 ml.")
-      return
+      return false
     }
 
     try {
@@ -226,23 +228,55 @@ export function NutritionTab() {
         nutritionMot: nutritionMot.trim() || null
       })
       onClientUpdated?.(updated)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      return true
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur lors de l'enregistrement.")
+      return false
     } finally {
       setSaving(false)
     }
   }
 
+  async function handleSave() {
+    setSaved(false)
+    if (await persist()) {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 3000)
+    }
+  }
+
+  /** Enregistre d'abord (le document lit la base), puis ouvre le HTML nutrition. */
+  async function handleOpenDoc() {
+    setOpening(true)
+    try {
+      if (!(await persist())) return
+      const path = await reportsService.generateNutritionHtml(client.id)
+      await reportsService.openPdf(path)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Impossible de générer le document nutrition.')
+    } finally {
+      setOpening(false)
+    }
+  }
+
   return (
     <div className="max-w-3xl mx-auto p-8 pb-28 space-y-6">
-      <div>
-        <h1 className="text-marine font-semibold text-2xl">Nutrition &amp; jeûne</h1>
-        <p className="text-marine/50 text-base mt-1">
-          Ces réglages personnalisent le plan alimentaire de {client.name.split(' ')[0]} et s'affichent dans le rapport
-          client.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-marine font-semibold text-2xl">Nutrition &amp; jeûne</h1>
+          <p className="text-marine/50 text-base mt-1">
+            Ces réglages composent le document nutrition remis à {client.name.split(' ')[0]}.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleOpenDoc}
+          disabled={opening}
+          className="shrink-0 inline-flex items-center gap-2 px-3.5 py-2 text-marine/70 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ExternalLink size={15} />
+          {opening ? 'Ouverture…' : 'Voir le document'}
+        </button>
       </div>
 
       {/* ── Objectif chiffré & nutrition ────────────────────────────────────── */}

@@ -642,6 +642,29 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.43 — Nutrition sortie du rapport → document HTML dédié « Nutrition & jeûne »)
+
+Retour à un rapport **simple** côté nutrition (comme avant v0.2.42) : la grosse section « Nutrition & jeûne »
+est **retirée du bilan HTML et du PDF** ; seul l'encadré « Votre objectif » (cible + macros) subsiste dans le
+bilan. `ForcesEtPlanSection` PDF revient « Section 7 ».
+
+En remplacement, un **document HTML autonome DÉDIÉ** à la nutrition & au jeûne, distinct du bilan :
+
+- Nouveau composant `NutritionDocument` (même gabarit autonome, hors ligne). Le renderer `main.tsx` monte
+  `NutritionDocument` ou `EditorialReport` selon `data.docType` (`'nutrition'` | `'report'`).
+- Même identité visuelle que le bilan (hero forêt marine + logo Kinésio Conseil, sections crème/blanc, pied
+  signé). Contenu : mot de Marie, jeûne (protocole + horloge 24 h + fenêtre + consignes), hydratation
+  (L / ml / verres), aliments à privilégier/limiter, suppléments. Message doux si rien n'est renseigné.
+- Génération : `generateNutritionDocumentHtml` (refactor partagé avec le bilan) → IPC
+  `reports:generate-nutrition-html` → preload → `reportsService.generateNutritionHtml`.
+- Bouton **« Voir le document »** dans l'onglet Nutrition & jeûne : **enregistre d'abord** (le document lit la
+  base) puis ouvre le HTML dans le navigateur.
+
+Vérifié en headless : le document nutrition rend son propre hero + contenu (sans le bilan), et le bilan ne
+contient plus la section nutrition (objectif conservé).
+
+Version : 0.2.42 → 0.2.43.
+
 ## ✅ Fait (v0.2.42 — Section « Nutrition & jeûne » dans le rapport client (HTML + PDF))
 
 Les réglages de l'onglet Nutrition & jeûne s'affichent maintenant dans le **rapport client**, à la fois

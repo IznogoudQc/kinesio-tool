@@ -36,6 +36,23 @@ async function avatarDataUrl(filename: string | null): Promise<string | null> {
  * ni signaux à surveiller (voir ADR 0019).
  */
 export async function generateInteractiveReportHtml(clientId: string): Promise<string> {
+  return buildStandaloneHtml(clientId, 'report', 'Bilan-interactif')
+}
+
+/**
+ * Écrit un document HTML **autonome** DÉDIÉ à la nutrition & au jeûne (distinct du
+ * bilan). Même gabarit, mais `docType: 'nutrition'` → le renderer monte
+ * `NutritionDocument` au lieu du bilan interactif.
+ */
+export async function generateNutritionDocumentHtml(clientId: string): Promise<string> {
+  return buildStandaloneHtml(clientId, 'nutrition', 'Nutrition-jeune')
+}
+
+async function buildStandaloneHtml(
+  clientId: string,
+  docType: 'report' | 'nutrition',
+  filePrefix: string
+): Promise<string> {
   const tpl = templatePath()
   if (!existsSync(tpl)) {
     throw new Error(
@@ -63,6 +80,7 @@ export async function generateInteractiveReportHtml(clientId: string): Promise<s
   const kinesiologist = readSetting('profile.name') ?? 'Marie-Eve Riendeau'
 
   const data = {
+    docType,
     client: {
       name: client.name,
       sex: client.sex,
@@ -108,7 +126,7 @@ Kinésiologue`,
     () => `<script>window.__REPORT_DATA__=${payload}</script>`
   )
 
-  const outPath = join(tmpdir(), `Bilan-interactif-${safeClientFileName(client.name)}-${todayISODate()}.html`)
+  const outPath = join(tmpdir(), `${filePrefix}-${safeClientFileName(client.name)}-${todayISODate()}.html`)
   await writeFile(outPath, html, 'utf-8')
   return outPath
 }

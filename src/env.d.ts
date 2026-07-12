@@ -431,6 +431,8 @@ interface Window {
       generateBaremes(): Promise<string>
       /** Génère le document HTML interactif du client — retourne le chemin du fichier. */
       generateInteractiveHtml(clientId: string): Promise<string>
+      /** Génère le document HTML nutrition & jeûne du client — retourne le chemin du fichier. */
+      generateNutritionHtml(clientId: string): Promise<string>
       /** Ouvre un fichier local avec l'application par défaut du système. */
       openPath(filePath: string): Promise<void>
       /** Génère le rapport PDF, l'attache et l'envoie au client par courriel, puis supprime le fichier temp. */

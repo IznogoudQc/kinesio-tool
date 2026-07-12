@@ -112,6 +112,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('reports:generate-baremes'),
     generateInteractiveHtml: (clientId: string) =>
       ipcRenderer.invoke('reports:generate-html', clientId),
+    generateNutritionHtml: (clientId: string) =>
+      ipcRenderer.invoke('reports:generate-nutrition-html', clientId),
     openPath: (filePath: string) =>
       ipcRenderer.invoke('reports:open-path', filePath),
     sendEmail: (data: { clientId: string; subject: string; body: string }) =>

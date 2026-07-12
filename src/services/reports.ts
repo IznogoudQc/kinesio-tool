@@ -19,6 +19,11 @@ export const reportsService = {
     return window.api.reports.generateInteractiveHtml(clientId)
   },
 
+  /** Génère le document HTML autonome dédié à la nutrition & au jeûne du client. */
+  async generateNutritionHtml(clientId: string): Promise<string> {
+    return window.api.reports.generateNutritionHtml(clientId)
+  },
+
   /** Ouvre un PDF (ou tout autre fichier) avec l'application par défaut du système. */
   async openPdf(filePath: string): Promise<void> {
     return window.api.reports.openPath(filePath)

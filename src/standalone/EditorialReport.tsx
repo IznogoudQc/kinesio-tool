@@ -37,6 +37,9 @@ import logoConseil from '../assets/logo-conseil.png'
  *  tout élément privé : ni notes cliniques, ni conseils IA, ni signaux
  *  cliniques à surveiller (voir ADR 0019). */
 export interface StandaloneData {
+  /** Type de document rendu par le gabarit autonome. `'report'` (défaut) = bilan
+   *  interactif ; `'nutrition'` = document dédié nutrition & jeûne. */
+  docType?: 'report' | 'nutrition'
   client: {
     name: string
     sex: 'F' | 'M' | null
@@ -575,7 +578,8 @@ function EdBullets({ text }: { text: string }) {
   )
 }
 
-function NutritionSection({ client }: { client: StandaloneData['client'] }) {
+/** Corps de la section nutrition (cartes). `null` si aucune brique n'est remplie. */
+function NutritionBody({ client }: { client: StandaloneData['client'] }) {
   const jeuneDebut = client.jeuneFenetreDebut ?? ''
   const jeuneFin = client.jeuneFenetreFin ?? ''
   const hasJeune = !!client.jeuneType || (!!jeuneDebut && !!jeuneFin)
@@ -593,7 +597,7 @@ function NutritionSection({ client }: { client: StandaloneData['client'] }) {
   const verres = hasHydra ? Math.round((hydra as number) / 250) : null
 
   return (
-    <Section eyebrow="Nutrition & jeûne" title="Votre plan alimentaire" tone="white" backTop>
+    <>
       {mot && (
         <div className="mb-10 rounded-xl bg-cream p-8 sm:p-10">
           <p className="ed-eyebrow text-gold-dark">Le mot de votre kinésiologue</p>
@@ -665,7 +669,70 @@ function NutritionSection({ client }: { client: StandaloneData['client'] }) {
           </div>
         </div>
       )}
-    </Section>
+    </>
+  )
+}
+
+/** Document HTML autonome DÉDIÉ à la nutrition & au jeûne — distinct du bilan.
+ *  Même identité visuelle (marine / or / crème) que le bilan interactif. */
+export function NutritionDocument({ data }: { data: StandaloneData }) {
+  const { client } = data
+  const firstName = client.name.trim().split(/\s+/)[0]
+  const hasAny =
+    !!client.jeuneType ||
+    (!!client.jeuneFenetreDebut && !!client.jeuneFenetreFin) ||
+    (typeof client.hydratationMlParJour === 'number' && client.hydratationMlParJour > 0) ||
+    !!(client.alimentsPrivilegier ?? '').trim() ||
+    !!(client.alimentsEviter ?? '').trim() ||
+    !!(client.supplementsNotes ?? '').trim() ||
+    !!(client.nutritionMot ?? '').trim()
+
+  return (
+    <div className="overflow-x-hidden bg-cream text-marine">
+      <header className="ed-hero relative flex min-h-[65svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
+        <div className="ed-hero-forest ed-no-print" aria-hidden="true" style={{ backgroundImage: FOREST_BG }} />
+        <div className="ed-hero-veil ed-no-print" aria-hidden="true" />
+
+        <div className="relative z-10 flex items-center justify-between gap-4">
+          <img src={logoConseil} alt="Kinésio Conseil" className="ed-no-print h-14 w-auto sm:h-16" />
+          {data.avatarDataUrl && (
+            <img src={data.avatarDataUrl} alt="" className="h-12 w-12 rounded-full object-cover ring-1 ring-gold/40" />
+          )}
+        </div>
+
+        <div className="relative z-10 mx-auto w-full max-w-4xl py-12">
+          <p className="ed-eyebrow text-gold">Nutrition &amp; jeûne</p>
+          <h1 className="ed-display ed-headline mt-3 text-cream">{firstName}, votre plan alimentaire.</h1>
+          <p className="ed-prose mt-10 text-lg text-cream/75 sm:text-xl">
+            Vos repères nutrition et jeûne, réunis en un seul endroit — à ajuster avec votre kinésiologue.
+          </p>
+        </div>
+        <div aria-hidden="true" />
+      </header>
+
+      <Section eyebrow="Votre plan" title="Nutrition & jeûne" tone="white">
+        {hasAny ? (
+          <NutritionBody client={client} />
+        ) : (
+          <p className="ed-prose text-base text-marine/60">
+            Aucune consigne nutrition n’a encore été renseignée par votre kinésiologue.
+          </p>
+        )}
+      </Section>
+
+      <footer className="bg-marine px-6 pb-16 pt-14 text-cream sm:px-8">
+        <div className="mx-auto max-w-5xl">
+          <p className="ed-eyebrow text-gold">Préparé pour vous par</p>
+          <p className="ed-display mt-3 text-3xl">{data.kinesiologist}</p>
+          <p className="mt-6 max-w-xl text-sm leading-relaxed text-cream/50">
+            Document généré le{' '}
+            {new Date(data.generatedAt).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })}. Il
+            fonctionne hors ligne et aucune de vos données n’est transmise à qui que ce soit — tout est contenu dans ce
+            fichier. Ces conseils ne remplacent pas l’avis d’une nutritionniste ou d’un médecin.
+          </p>
+        </div>
+      </footer>
+    </div>
   )
 }
 
@@ -1088,8 +1155,6 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
           )}
         </Section>
       )}
-
-      <NutritionSection client={client} />
 
       {(plan.forces.length > 0 || motDuKine) && (
         <Section eyebrow="Et maintenant ?" title={plan.forces.length > 0 ? 'Vos forces' : 'En terminant'} tone="white" backTop>
