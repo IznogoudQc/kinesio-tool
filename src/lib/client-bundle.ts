@@ -8,9 +8,34 @@
  *  évite une archive .zip et donc une dépendance de plus.
  */
 
+import { z } from 'zod'
+
 export const BUNDLE_FORMAT = 'kinesio-clients'
 /** Incrémenter si la forme du fichier change de façon non rétrocompatible. */
 export const BUNDLE_VERSION = 1
+
+/**
+ * Validation d'une ligne client dans un bundle. Volontairement PERMISSIVE : un
+ * `record` conserve **toutes** les colonnes (on exige seulement id/name/email).
+ * ⚠️ Ne jamais remplacer par un `z.object({...})` limité à une liste de champs —
+ * sinon tout nouveau champ ajouté au schéma se perdrait silencieusement à
+ * l'export/import. Le test de non-régression `client-bundle.test.ts` le vérifie.
+ */
+export const clientRowSchema = z
+  .record(z.unknown())
+  .and(z.object({ id: z.string().min(1), name: z.string(), email: z.string() }))
+
+/**
+ * Prépare la ligne client pour l'écriture à l'import : on garde TOUT le contenu
+ * du fichier (toutes les colonnes) et on force seulement l'`id` cible (cas d'un
+ * client existant réapparié qui conserve son id).
+ */
+export function mergeClientForImport(
+  client: Record<string, unknown>,
+  targetId: string
+): Record<string, unknown> {
+  return { ...client, id: targetId }
+}
 
 export interface ExportedClient {
   client: Record<string, unknown>

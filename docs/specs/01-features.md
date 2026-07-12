@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.56 — Test de non-régression export/import (toutes les colonnes client))
+
+L'export/import `.kinesio` transporte déjà **la ligne client complète** (toutes les colonnes) — donc tous les
+champs récents (nutrition, jeûne planning, macros manuelles, goûts, idées de menu…) voyagent
+automatiquement. Ajout d'un **test de non-régression** pour verrouiller cette garantie :
+
+- Extraction de deux fonctions pures testables : `clientRowSchema` (validation permissive qui conserve
+  toutes les colonnes) et `mergeClientForImport` (fusion qui garde tout, force l'id cible), désormais
+  utilisées par le handler `transfer.ts`.
+- Le test est **piloté par le vrai schéma Drizzle** (`getTableColumns(clients)`) : il construit une ligne
+  pleine, fait l'aller-retour JSON + validation + fusion, et vérifie qu'**aucune colonne n'est perdue** (avec
+  garde-fous explicites sur les champs nutrition/jeûne). Ajouter une colonne au schéma est couvert d'office.
+
+Version : 0.2.55 → 0.2.56.
+
 ## ✅ Fait (v0.2.55 — Goûts du client (aime / n'aime pas) → alimentent le menu IA)
 
 Nouvelle sous-section **« Goûts du client »** dans l'onglet Nutrition : deux champs — **ce que la personne

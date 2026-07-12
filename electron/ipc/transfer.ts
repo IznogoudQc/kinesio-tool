@@ -10,7 +10,9 @@ import { ensureAvatarsDir, getAvatarPath } from '../lib/avatars'
 import {
   BUNDLE_FORMAT,
   BUNDLE_VERSION,
+  clientRowSchema,
   matchExistingClient,
+  mergeClientForImport,
   planImport,
   summarizeBundle,
   type ClientBundle,
@@ -29,7 +31,7 @@ const BundleSchema = z.object({
   appVersion: z.string(),
   clients: z.array(
     z.object({
-      client: RowSchema.and(z.object({ id: z.string().min(1), name: z.string(), email: z.string() })),
+      client: clientRowSchema,
       bilans: z.array(RowSchema),
       circonferences: z.array(RowSchema),
       plis: z.array(RowSchema),
@@ -247,7 +249,7 @@ export function registerTransferHandlers(): void {
 
         if (match) {
           tx.update(clients)
-            .set({ ...(c.client as object), id: targetId } as never)
+            .set(mergeClientForImport(c.client, targetId) as never)
             .where(eq(clients.id, targetId))
             .run()
           updated++

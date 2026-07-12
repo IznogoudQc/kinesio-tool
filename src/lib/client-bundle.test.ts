@@ -1,14 +1,18 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { getTableColumns } from 'drizzle-orm'
 import {
   BUNDLE_FORMAT,
   BUNDLE_VERSION,
+  clientRowSchema,
   matchExistingClient,
+  mergeClientForImport,
   planImport,
   summarizeBundle,
   type ClientBundle,
   type ExportedClient
 } from './client-bundle.ts'
+import { clients } from '../../db/schema.ts'
 
 function exported(id: string, name: string, email: string, extra: Partial<ExportedClient> = {}): ExportedClient {
   return {
@@ -85,4 +89,56 @@ test('un client de la base absent du fichier n’est jamais listé (aucun import
 
 test('fichier vide → plan vide', () => {
   assert.deepEqual(planImport(bundle([]), [{ id: 'a', email: 'a@x.ca' }]), { toAdd: [], toUpdate: [] })
+})
+
+/**
+ * NON-RÉGRESSION export/import : le fichier `.kinesio` doit transporter TOUTES les
+ * colonnes de la table `clients` — y compris tous les champs nutrition/jeûne
+ * ajoutés récemment. Le test est piloté par le VRAI schéma Drizzle : ajouter une
+ * colonne au schéma la couvre automatiquement. Si quelqu'un restreint la
+ * validation du bundle ou la fusion d'import à une liste de champs, ça casse ici.
+ */
+test('export/import : toutes les colonnes de clients survivent (validation + fusion)', () => {
+  const cols = Object.keys(getTableColumns(clients))
+
+  // Garde-fou explicite : les champs récents doivent bien exister dans le schéma.
+  for (const k of [
+    'jeunePlanning',
+    'nutritionMenu',
+    'alimentsAimes',
+    'alimentsPasAimes',
+    'nutritionMacroManual',
+    'nutritionManualProteinG',
+    'nutritionManualFatG',
+    'nutritionManualCarbG',
+    'hydratationMlParJour',
+    'supplementsNotes',
+    'alimentsPrivilegier',
+    'alimentsEviter',
+    'nutritionMot',
+    'principePersoTitre',
+    'principePersoTexte'
+  ]) {
+    assert.ok(cols.includes(k), `colonne « ${k} » absente du schéma clients`)
+  }
+
+  // Ligne client "pleine" : une valeur factice pour chaque colonne du schéma.
+  const fullRow: Record<string, unknown> = {}
+  for (const k of cols) {
+    fullRow[k] = k === 'id' ? 'c1' : k === 'name' ? 'Denise' : k === 'email' ? 'd@x.ca' : `val-${k}`
+  }
+
+  // 1) Aller-retour fichier (JSON) + validation du bundle : aucune colonne perdue.
+  const parsed = JSON.parse(JSON.stringify(fullRow))
+  const validated = clientRowSchema.parse(parsed) as Record<string, unknown>
+  for (const k of cols) {
+    assert.ok(k in validated, `colonne « ${k} » perdue à la validation du bundle`)
+  }
+
+  // 2) Fusion d'import : garde tout le contenu, force seulement l'id cible.
+  const merged = mergeClientForImport(validated, 'target-id')
+  for (const k of cols) {
+    assert.ok(k in merged, `colonne « ${k} » perdue à la fusion d'import`)
+  }
+  assert.equal(merged.id, 'target-id')
 })
