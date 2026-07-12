@@ -55,7 +55,10 @@ export function FastingCalendar({
             >
               <span className={`text-xs tabular-nums ${marks ? 'font-semibold text-marine' : 'text-marine/45'}`}>{day}</span>
               {startMark && (
-                <span className="mt-auto truncate text-[9px] font-semibold leading-tight text-gold-dark">{startMark.label}</span>
+                <span className="mt-auto truncate text-[9px] font-semibold leading-tight text-gold-dark">
+                  {startMark.label}
+                  {startMark.startTime ? ` · ${startMark.startTime}` : ''}
+                </span>
               )}
               {marks && !startMark && ext && (
                 <span className="mt-auto text-[9px] leading-tight text-gold-dark/70">↳ jeûne</span>

@@ -3,6 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from 'l
 import { FastingCalendar } from '../../../components/FastingCalendar'
 import {
   describeProgram,
+  extendedWindow,
   FREQ_LABELS,
   toISO,
   type FastingFreq,
@@ -25,7 +26,7 @@ function todayISO(): string {
 }
 
 function blankProgram(): FastingProgram {
-  return { id: crypto.randomUUID(), label: '', kind: 'extended', durationHours: 48, freq: 'weekly', weekday: 1, anchorDate: todayISO() }
+  return { id: crypto.randomUUID(), label: '', kind: 'extended', durationHours: 48, startTime: '08:00', freq: 'weekly', weekday: 1, anchorDate: todayISO() }
 }
 
 /** Étiquette par défaut si Marie laisse le champ vide. */
@@ -135,6 +136,29 @@ function ProgramEditor({
               className="w-20 px-2 py-1 border border-cream-dark rounded-md bg-white text-marine text-sm"
             />
             <span className="text-marine/50 text-sm">heures</span>
+          </div>
+
+          <div className="mt-3">
+            <label className="text-sm font-medium text-marine">
+              Heure de début
+              <input
+                type="time"
+                value={p.startTime ?? ''}
+                onChange={e => set({ startTime: e.target.value || undefined })}
+                className={`${field} mt-1 max-w-[10rem]`}
+              />
+            </label>
+            {(() => {
+              const win = extendedWindow(p)
+              return win ? (
+                <p className="text-marine/50 text-xs mt-1.5">
+                  Se termine <strong className="text-marine/70">{WEEKDAYS[win.endDay]} à {win.endTime}</strong> (
+                  {p.durationHours} h plus tard).
+                </p>
+              ) : (
+                <p className="text-marine/40 text-xs mt-1.5">Laissez vide pour un jeûne à partir de minuit.</p>
+              )
+            })()}
           </div>
         </div>
       )}

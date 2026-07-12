@@ -9,6 +9,7 @@ import {
   weekdayOfISO,
   addDaysISO,
   describeProgram,
+  extendedWindow,
   type FastingProgram
 } from './fasting-planning.ts'
 
@@ -108,4 +109,30 @@ test('addDaysISO gère le passage de mois', () => {
 test('describeProgram : résumé lisible', () => {
   const p = prog({ kind: 'extended', durationHours: 48, freq: 'biweekly', weekday: 1 })
   assert.equal(describeProgram(p), 'Jeûne 48 h · Aux 2 semaines · lundi')
+})
+
+test('spanDaysOf : l’heure de début décale la portée', () => {
+  // 48 h à minuit → 2 jours ; 48 h à 19:00 → 3 jours (soir + lendemain + surlendemain).
+  assert.equal(spanDaysOf(prog({ kind: 'extended', durationHours: 48 })), 2)
+  assert.equal(spanDaysOf(prog({ kind: 'extended', durationHours: 48, startTime: '19:00' })), 3)
+  // 24 h à 12:00 → 2 jours ; 24 h à minuit → 1 jour.
+  assert.equal(spanDaysOf(prog({ kind: 'extended', durationHours: 24, startTime: '12:00' })), 2)
+  assert.equal(spanDaysOf(prog({ kind: 'extended', durationHours: 24, startTime: '00:00' })), 1)
+})
+
+test('extendedWindow : dimanche 19:00 + 48 h → mardi 19:00', () => {
+  // 2026-01-04 est un dimanche (weekday 0).
+  const p = prog({ kind: 'extended', durationHours: 48, startTime: '19:00', freq: 'weekly', weekday: 0, anchorDate: '2026-01-04' })
+  assert.deepEqual(extendedWindow(p), { startDay: 0, startTime: '19:00', endDay: 2, endTime: '19:00' })
+  assert.equal(describeProgram(p), 'Jeûne 48 h · Chaque semaine · dimanche 19:00 → mardi 19:00')
+})
+
+test('fastingDaysInRange : 48 h dimanche 19:00 couvre dim + lun + mar', () => {
+  const p = prog({ id: 'j', label: 'Jeûne 48 h', kind: 'extended', durationHours: 48, startTime: '19:00', freq: 'weekly', weekday: 0, anchorDate: '2026-01-04' })
+  const map = fastingDaysInRange([p], '2026-01-01', '2026-01-10')
+  // Dimanche 4 → dim 4, lun 5, mar 6.
+  assert.ok(map['2026-01-04'] && map['2026-01-05'] && map['2026-01-06'])
+  assert.equal(map['2026-01-04'][0].startTime, '19:00')
+  assert.equal(map['2026-01-04'][0].isStart, true)
+  assert.equal(map['2026-01-06'][0].dayNo, 3)
 })

@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.46 — Jeûne prolongé : heure de début (et fin déduite))
+
+Un jeûne prolongé peut désormais avoir une **heure de début** (l'heure de fin se déduit de la durée). Ex.
+« 48 h à partir du dimanche 19:00 » → fin **mardi 19:00**, ce qui touche **3 journées** au calendrier (dimanche
+soir, lundi plein, mardi jusqu'à 19:00) au lieu de 2.
+
+- `spanDaysOf` tient compte de l'heure de début : `floor((minutesDébut + durée·60 − 1) / 1440) + 1`.
+- `extendedWindow(program)` calcule jour+heure de début → jour+heure de fin ; `describeProgram` l'affiche
+  (« dimanche 19:00 → mardi 19:00 »).
+- Éditeur (`FastingPlanner`) : champ **Heure de début** pour le jeûne prolongé + aperçu de l'heure de fin.
+- Calendrier : l'heure de début est portée sur la case du 1er jour ; la légende affiche la fenêtre complète.
+- 3 nouveaux tests (portée horodatée, fenêtre, couverture dim→mar). Rendu vérifié en headless.
+
+Version : 0.2.45 → 0.2.46.
+
 ## ✅ Fait (v0.2.45 — Planning de jeûne flexible + calendrier (app + document))
 
 Le jeûne rigide (un protocole + une fenêtre fixe) devient un **planning flexible** : une liste de

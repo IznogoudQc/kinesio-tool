@@ -22,6 +22,9 @@ export interface FastingProgram {
   windowEnd?: string
   /** Durée du jeûne prolongé en heures — pour `kind: 'extended'` (24, 36, 48, 96…). */
   durationHours?: number
+  /** Heure de début (HH:MM) du jeûne prolongé. `undefined` = minuit. L'heure de fin
+   *  se déduit de `durationHours`. */
+  startTime?: string
   /** Récurrence. `daily` ne s'applique qu'aux fenêtres quotidiennes. */
   freq: FastingFreq
   /** Jour de la semaine (0 = dimanche … 6 = samedi) pour `weekly`/`biweekly`. `undefined` = jour de `anchorDate`. */
@@ -42,6 +45,8 @@ export interface CoveredDay {
   dayNo: number
   /** Nombre total de jours couverts par l'occurrence. */
   spanDays: number
+  /** Heure de début (HH:MM) — présent sur le 1er jour d'un jeûne prolongé horodaté. */
+  startTime?: string
 }
 
 // ── Utilitaires de date (UTC) ────────────────────────────────────────────────
@@ -76,10 +81,36 @@ export function weekdayOfISO(d: string): number {
   return parseISO(d).getUTCDay()
 }
 
-/** Nombre de jours couverts par un jeûne prolongé (48 h → 2 jours, 96 h → 4). */
+/** Minutes depuis minuit de l'heure de début d'un jeûne prolongé (0 si non précisée). */
+function startMinutesOf(program: FastingProgram): number {
+  if (program.kind !== 'extended' || !program.startTime) return 0
+  const [h, m] = program.startTime.split(':').map(Number)
+  return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : 0
+}
+
+/**
+ * Nombre de journées calendaires touchées par un jeûne prolongé, en tenant compte
+ * de l'heure de début. Ex. 48 h à 00:00 → 2 jours ; 48 h à 19:00 → 3 jours (le soir
+ * de départ, le lendemain plein, et la fin le surlendemain).
+ */
 export function spanDaysOf(program: FastingProgram): number {
   if (program.kind !== 'extended' || !program.durationHours || program.durationHours <= 0) return 1
-  return Math.max(1, Math.ceil(program.durationHours / 24))
+  const totalMin = startMinutesOf(program) + program.durationHours * 60
+  return Math.max(1, Math.floor((totalMin - 1) / 1440) + 1)
+}
+
+/** Décrit la fenêtre d'un jeûne prolongé horodaté : jour+heure de début → jour+heure de fin. */
+export function extendedWindow(
+  program: FastingProgram
+): { startDay: number; startTime: string; endDay: number; endTime: string } | null {
+  if (program.kind !== 'extended' || !program.durationHours || !program.startTime) return null
+  const startDay = program.weekday ?? weekdayOfISO(program.anchorDate)
+  const startMin = startMinutesOf(program)
+  const total = startMin + program.durationHours * 60
+  const endDay = (startDay + Math.floor(total / 1440)) % 7
+  const endMin = total % 1440
+  const fmt = (min: number) => `${String(Math.floor(min / 60)).padStart(2, '0')}:${String(min % 60).padStart(2, '0')}`
+  return { startDay, startTime: fmt(startMin), endDay, endTime: fmt(endMin) }
 }
 
 const STEP_MONTHS: Partial<Record<FastingFreq, number>> = { monthly: 1, seasonal: 3 }
@@ -154,7 +185,8 @@ export function fastingDaysInRange(
           kind: p.kind,
           isStart: i === 0,
           dayNo: i + 1,
-          spanDays: span
+          spanDays: span,
+          startTime: i === 0 && p.kind === 'extended' ? p.startTime : undefined
         })
       }
     }
@@ -198,15 +230,21 @@ export const FREQ_LABELS: Record<FastingFreq, string> = {
   once: 'Une seule fois'
 }
 
-/** Résumé lisible d'un programme (ex. « Jeûne 48 h · Aux 2 semaines · lundi »). */
+const WEEKDAYS_LONG = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi']
+
+/** Résumé lisible d'un programme (ex. « Jeûne 48 h · Aux 2 semaines · dimanche 19:00 → mardi 19:00 »). */
 export function describeProgram(p: FastingProgram): string {
   const parts: string[] = []
   if (p.kind === 'window' && p.windowStart && p.windowEnd) parts.push(`Fenêtre ${p.windowStart}–${p.windowEnd}`)
   else if (p.kind === 'extended' && p.durationHours) parts.push(`Jeûne ${p.durationHours} h`)
   parts.push(FREQ_LABELS[p.freq])
-  if ((p.freq === 'weekly' || p.freq === 'biweekly')) {
-    const wd = p.weekday ?? weekdayOfISO(p.anchorDate)
-    parts.push(['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'][wd])
+
+  const win = extendedWindow(p)
+  if (win) {
+    // Jeûne prolongé horodaté : « dimanche 19:00 → mardi 19:00 ».
+    parts.push(`${WEEKDAYS_LONG[win.startDay]} ${win.startTime} → ${WEEKDAYS_LONG[win.endDay]} ${win.endTime}`)
+  } else if (p.freq === 'weekly' || p.freq === 'biweekly') {
+    parts.push(WEEKDAYS_LONG[p.weekday ?? weekdayOfISO(p.anchorDate)])
   }
   return parts.join(' · ')
 }
