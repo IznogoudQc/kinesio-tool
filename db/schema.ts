@@ -36,6 +36,12 @@ export const clients = sqliteTable('clients', {
   nutritionFatMaxG: real('nutrition_fat_max_g'),
   // Calories cibles fixées manuellement (kcal). `null` = calcul automatique.
   nutritionTargetKcal: real('nutrition_target_kcal'),
+  // Macros en saisie manuelle : Marie tape directement les grammes (glucides déduits).
+  // `nutritionMacroManual` actif → on utilise `nutritionTargetKcal` (calories),
+  // `nutritionManualProteinG` et `nutritionManualFatG` au lieu de la formule.
+  nutritionMacroManual: integer('nutrition_macro_manual', { mode: 'boolean' }).notNull().default(false),
+  nutritionManualProteinG: real('nutrition_manual_protein_g'),
+  nutritionManualFatG: real('nutrition_manual_fat_g'),
   // Principe personnalisé optionnel (6e pilier) montré en clôture du rapport
   // client. Si `principePersoTitre` est rempli, un principe supplémentaire
   // s'affiche (HTML + PDF). Éditable par Marie, par client.

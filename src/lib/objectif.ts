@@ -11,9 +11,31 @@ import {
   dailyDeficitForRate,
   estimateMacros,
   weeklyLossFromDeficit,
-  weeksToGoal
+  weeksToGoal,
+  type MacroEstimate
 } from './nutrition.ts'
 import { estimatedGoalDate } from './objectif-format.ts'
+
+/** Macros en saisie manuelle : glucides déduits des calories. `null` si incomplet. */
+export function manualMacros(client: {
+  nutritionTargetKcal?: number | null
+  nutritionManualProteinG?: number | null
+  nutritionManualFatG?: number | null
+}): MacroEstimate | null {
+  const kcal = client.nutritionTargetKcal
+  const proteinG = client.nutritionManualProteinG
+  const fatG = client.nutritionManualFatG
+  if (![kcal, proteinG, fatG].every(v => typeof v === 'number' && Number.isFinite(v))) return null
+  const carbsG = Math.max(0, Math.round(((kcal as number) - (proteinG as number) * 4 - (fatG as number) * 9) / 4))
+  return {
+    bmr: 0,
+    tdee: 0,
+    targetKcal: Math.round(kcal as number),
+    proteinG: Math.round(proteinG as number),
+    fatG: Math.round(fatG as number),
+    carbsG
+  }
+}
 
 /** Le sous-ensemble du client dont l'objectif dépend — évite de traîner tout `Client`. */
 export interface ObjectifClient {
@@ -25,6 +47,10 @@ export interface ObjectifClient {
   nutritionProteinPerLbLean: number | null
   nutritionFatMaxG: number | null
   nutritionTargetKcal: number | null
+  /** Macros en saisie manuelle (Marie tape les grammes). */
+  nutritionMacroManual?: boolean | null
+  nutritionManualProteinG?: number | null
+  nutritionManualFatG?: number | null
 }
 
 export type Objectif = NonNullable<ReturnType<typeof buildObjectif>>
@@ -46,20 +72,22 @@ export function buildObjectif(
   if (!goal) return null
 
   const rate = client.nutritionRateKgPerWeek ?? DEFAULT_RATE_KG_PER_WEEK
-  const macros = client.nutritionActivityLevel
-    ? estimateMacros({
-        weightKg,
-        heightCm: typeof data.taille_cm === 'number' ? data.taille_cm : null,
-        age,
-        sex: client.sex,
-        activity: client.nutritionActivityLevel,
-        leanKg: goal.leanKg,
-        dailyDeficitKcal: dailyDeficitForRate(rate),
-        proteinPerLbLean: client.nutritionProteinPerLbLean,
-        fatMaxG: client.nutritionFatMaxG,
-        targetKcalOverride: client.nutritionTargetKcal
-      })
-    : null
+  const macros = client.nutritionMacroManual
+    ? manualMacros(client)
+    : client.nutritionActivityLevel
+      ? estimateMacros({
+          weightKg,
+          heightCm: typeof data.taille_cm === 'number' ? data.taille_cm : null,
+          age,
+          sex: client.sex,
+          activity: client.nutritionActivityLevel,
+          leanKg: goal.leanKg,
+          dailyDeficitKcal: dailyDeficitForRate(rate),
+          proteinPerLbLean: client.nutritionProteinPerLbLean,
+          fatMaxG: client.nutritionFatMaxG,
+          targetKcalOverride: client.nutritionTargetKcal
+        })
+      : null
 
   // Calories fixées à la main : le rythme réel se déduit du déficit obtenu.
   const manualKcal = client.nutritionTargetKcal

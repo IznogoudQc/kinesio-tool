@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Apple, Ban, CalendarClock, Check, Droplet, ExternalLink, MessageSquareQuote, Pill, Target } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
+import { bilansService } from '../../../services/bilans'
 import {
   ACTIVITY_LABELS,
   ACTIVITY_ORDER,
@@ -10,8 +11,16 @@ import {
   DEFAULT_RATE_KG_PER_WEEK,
   DEFAULT_PROTEIN_PER_LB_LEAN,
   DEFAULT_FAT_MAX_G,
-  type ActivityLevel
+  bodyFatGoal,
+  dailyDeficitForRate,
+  estimateMacros,
+  type ActivityLevel,
+  type MacroEstimate
 } from '../../../lib/nutrition'
+import { manualMacros } from '../../../lib/objectif'
+import { buildSynthesisBilan } from '../../../lib/synthesisBilan'
+import { computeBilan } from '../../../lib/bilan-computed'
+import { computeAge } from '../../../lib/norms'
 import { kgToLb } from '../../../lib/units'
 import { FastingPlanner } from './FastingPlanner'
 import type { FastingProgram } from '../../../lib/fasting-planning'
@@ -29,6 +38,8 @@ function parseInitialPrograms(raw: string | null | undefined): FastingProgram[] 
 
 const fieldClass =
   'w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors'
+const macroInput =
+  'w-24 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold'
 
 function Section({
   icon: Icon,
@@ -122,11 +133,16 @@ export function NutritionTab() {
     String(client.nutritionProteinPerLbLean ?? DEFAULT_PROTEIN_PER_LB_LEAN)
   )
   const [fatMaxG, setFatMaxG] = useState<string>(String(client.nutritionFatMaxG ?? DEFAULT_FAT_MAX_G))
-  const [caloriesMode, setCaloriesMode] = useState<'auto' | 'manual'>(
-    client.nutritionTargetKcal != null ? 'manual' : 'auto'
-  )
+  // Mode des macros : `false` = calculées par la formule (auto) ; `true` = Marie tape les grammes.
+  const [macroManual, setMacroManual] = useState(client.nutritionMacroManual ?? false)
   const [manualKcal, setManualKcal] = useState<string>(
     client.nutritionTargetKcal != null ? String(client.nutritionTargetKcal) : ''
+  )
+  const [manualProteinG, setManualProteinG] = useState<string>(
+    client.nutritionManualProteinG != null ? String(client.nutritionManualProteinG) : ''
+  )
+  const [manualFatG, setManualFatG] = useState<string>(
+    client.nutritionManualFatG != null ? String(client.nutritionManualFatG) : ''
   )
 
   // ── Planning de jeûne flexible ────────────────────────────────────────────────
@@ -151,6 +167,57 @@ export function NutritionTab() {
   const mlNum = hydratationMl.trim() !== '' ? Number(hydratationMl) : null
   const verres = mlNum != null && Number.isFinite(mlNum) ? Math.round(mlNum / 250) : null
 
+  // Dernières valeurs du client (synthèse des bilans) — sert au calcul auto des macros.
+  const [latestData, setLatestData] = useState<BilanData | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    bilansService
+      .list(client.id)
+      .then(list => {
+        if (cancelled) return
+        const synth = list.length > 0 ? buildSynthesisBilan(list) : null
+        setLatestData(synth?.data ?? null)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [client.id])
+
+  // Résultat des macros en direct (grammes réels), calculé au fil des changements.
+  const age = computeAge(client.birthdate)
+  const liveMacros: MacroEstimate | null = useMemo(() => {
+    if (!nutritionEnabled) return null
+    if (macroManual) {
+      return manualMacros({
+        nutritionTargetKcal: manualKcal.trim() !== '' ? Number(manualKcal) : null,
+        nutritionManualProteinG: manualProteinG.trim() !== '' ? Number(manualProteinG) : null,
+        nutritionManualFatG: manualFatG.trim() !== '' ? Number(manualFatG) : null
+      })
+    }
+    const data = latestData
+    const weightKg = data && typeof data.poids_kg === 'number' ? data.poids_kg : null
+    const target = targetBodyFat.trim() !== '' ? Number(targetBodyFat) : null
+    if (!data || weightKg == null || target == null || activityLevel === '') return null
+    const computed = computeBilan(data, { age, sex: client.sex, norms: 'acsm' })
+    const bodyFatPct =
+      computed.pourcentageGrasDurnin ?? (typeof data.pourcentage_gras === 'number' ? data.pourcentage_gras : null)
+    const goal = bodyFatGoal(weightKg, bodyFatPct, target)
+    if (!goal) return null
+    return estimateMacros({
+      weightKg,
+      heightCm: typeof data.taille_cm === 'number' ? data.taille_cm : null,
+      age,
+      sex: client.sex,
+      activity: activityLevel,
+      leanKg: goal.leanKg,
+      dailyDeficitKcal: dailyDeficitForRate(rateKgPerWeek),
+      proteinPerLbLean: proteinPerLb.trim() !== '' ? Number(proteinPerLb) : null,
+      fatMaxG: fatMaxG.trim() !== '' ? Number(fatMaxG) : null,
+      targetKcalOverride: null
+    })
+  }, [nutritionEnabled, macroManual, manualKcal, manualProteinG, manualFatG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerLb, fatMaxG])
+
   /** Valide + enregistre. Retourne `true` si la sauvegarde a réussi. */
   async function persist(): Promise<boolean> {
     setError(null)
@@ -170,13 +237,25 @@ export function NutritionTab() {
       setError('Le plafond de lipides doit être compris entre 20 et 200 g.')
       return false
     }
-    const kcalVal = nutritionEnabled && caloriesMode === 'manual' && manualKcal.trim() !== '' ? Number(manualKcal) : null
+    // Mode manuel des macros : Marie tape calories + protéines (g) + lipides (g).
+    const macroOn = nutritionEnabled && macroManual
+    const kcalVal = macroOn && manualKcal.trim() !== '' ? Number(manualKcal) : null
+    const protGVal = macroOn && manualProteinG.trim() !== '' ? Number(manualProteinG) : null
+    const fatGVal = macroOn && manualFatG.trim() !== '' ? Number(manualFatG) : null
     if (kcalVal !== null && (!Number.isFinite(kcalVal) || kcalVal < 800 || kcalVal > 6000)) {
-      setError('Les calories manuelles doivent être comprises entre 800 et 6000.')
+      setError('Les calories doivent être comprises entre 800 et 6000.')
       return false
     }
-    if (nutritionEnabled && caloriesMode === 'manual' && manualKcal.trim() === '') {
-      setError('Indiquez les calories cibles, ou choisissez « Automatique ».')
+    if (protGVal !== null && (!Number.isFinite(protGVal) || protGVal < 0 || protGVal > 500)) {
+      setError('Les protéines (g) doivent être comprises entre 0 et 500.')
+      return false
+    }
+    if (fatGVal !== null && (!Number.isFinite(fatGVal) || fatGVal < 0 || fatGVal > 400)) {
+      setError('Les lipides (g) doivent être compris entre 0 et 400.')
+      return false
+    }
+    if (macroOn && (kcalVal === null || protGVal === null || fatGVal === null)) {
+      setError('En mode manuel, indiquez les calories, les protéines et les lipides.')
       return false
     }
     const mlVal = hydratationMl.trim() !== '' ? Number(hydratationMl) : null
@@ -194,7 +273,10 @@ export function NutritionTab() {
         nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null,
         nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
         nutritionFatMaxG: nutritionEnabled ? fatVal : null,
+        nutritionMacroManual: macroOn,
         nutritionTargetKcal: kcalVal,
+        nutritionManualProteinG: protGVal,
+        nutritionManualFatG: fatGVal,
         // Ancien modèle de jeûne (type unique + fenêtre) remplacé par le planning.
         jeuneType: null,
         jeuneFenetreDebut: null,
@@ -328,76 +410,96 @@ export function NutritionTab() {
             </div>
 
             <div className="rounded-md border border-cream-dark bg-cream/50 p-4">
-              <p className="text-sm font-medium text-marine mb-2">Formule des macros</p>
-              <div className="flex items-start gap-2 mb-2 text-marine text-sm">
-                <span className="w-20 pt-1.5">Calories</span>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-4">
-                    {([
-                      { value: 'auto', label: 'Automatique' },
-                      { value: 'manual', label: 'Manuel' }
-                    ] as const).map(opt => (
-                      <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="calories-mode"
-                          checked={caloriesMode === opt.value}
-                          onChange={() => setCaloriesMode(opt.value)}
-                          className="accent-gold"
-                        />
-                        {opt.label}
-                      </label>
-                    ))}
-                  </div>
-                  {caloriesMode === 'manual' ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={800}
-                        max={6000}
-                        step={50}
-                        value={manualKcal}
-                        onChange={e => setManualKcal(e.target.value)}
-                        placeholder="2000"
-                        className="w-24 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
-                      />
-                      <span className="text-marine/60">kcal / jour</span>
-                    </div>
-                  ) : (
-                    <span className="text-marine/50 text-xs">Calculées à partir du métabolisme et du rythme.</span>
-                  )}
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium text-marine">Macros</p>
+                <div className="flex rounded-md border border-cream-dark overflow-hidden text-sm">
+                  {([
+                    { v: false, label: 'Automatique' },
+                    { v: true, label: 'Manuel' }
+                  ] as const).map(o => (
+                    <button
+                      key={String(o.v)}
+                      type="button"
+                      onClick={() => setMacroManual(o.v)}
+                      className={`px-3 py-1.5 transition-colors ${macroManual === o.v ? 'bg-gold text-marine font-semibold' : 'bg-white text-marine/60 hover:text-marine'}`}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
                 </div>
               </div>
-              <div className="flex items-center gap-2 mb-2 text-marine text-sm">
-                <span className="w-20">Protéines</span>
-                <input
-                  type="number"
-                  min={0.3}
-                  max={2.5}
-                  step={0.1}
-                  value={proteinPerLb}
-                  onChange={e => setProteinPerLb(e.target.value)}
-                  className="w-20 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
-                />
-                <span className="text-marine/60">g par lb de masse maigre</span>
-              </div>
-              <div className="flex items-center gap-2 mb-2 text-marine text-sm">
-                <span className="w-20">Lipides</span>
-                <span className="text-marine/60">max</span>
-                <input
-                  type="number"
-                  min={20}
-                  max={200}
-                  step={5}
-                  value={fatMaxG}
-                  onChange={e => setFatMaxG(e.target.value)}
-                  className="w-20 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
-                />
-                <span className="text-marine/60">g</span>
-              </div>
-              <div className="flex items-center gap-2 text-marine text-sm">
-                <span className="w-20">Glucides</span>
-                <span className="text-marine/60">le reste des calories cibles</span>
+
+              {macroManual ? (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Calories</span>
+                    <input type="number" min={800} max={6000} step={50} value={manualKcal} onChange={e => setManualKcal(e.target.value)} placeholder="2000" className={macroInput} />
+                    <span className="text-marine/60">kcal / jour</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Protéines</span>
+                    <input type="number" min={0} max={500} step={5} value={manualProteinG} onChange={e => setManualProteinG(e.target.value)} placeholder="150" className={macroInput} />
+                    <span className="text-marine/60">g</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Lipides</span>
+                    <input type="number" min={0} max={400} step={5} value={manualFatG} onChange={e => setManualFatG(e.target.value)} placeholder="60" className={macroInput} />
+                    <span className="text-marine/60">g</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Glucides</span>
+                    <span className="text-marine/60">le reste des calories{liveMacros ? ` — ${liveMacros.carbsG.toLocaleString('fr-CA')} g` : ''}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Calories</span>
+                    <span className="text-marine/60">calculées (métabolisme + rythme)</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Protéines</span>
+                    <input type="number" min={0.3} max={2.5} step={0.1} value={proteinPerLb} onChange={e => setProteinPerLb(e.target.value)} className={macroInput} />
+                    <span className="text-marine/60">g par lb de masse maigre</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Lipides</span>
+                    <span className="text-marine/60">max</span>
+                    <input type="number" min={20} max={200} step={5} value={fatMaxG} onChange={e => setFatMaxG(e.target.value)} className={macroInput} />
+                    <span className="text-marine/60">g</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Glucides</span>
+                    <span className="text-marine/60">le reste des calories cibles</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Résultat en direct */}
+              <div className="mt-4 border-t border-cream-dark pt-3">
+                <p className="text-[11px] uppercase tracking-wide text-gold-dark font-semibold mb-2">Résultat</p>
+                {liveMacros ? (
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    {[
+                      { l: 'Calories', v: liveMacros.targetKcal, u: 'kcal' },
+                      { l: 'Protéines', v: liveMacros.proteinG, u: 'g' },
+                      { l: 'Lipides', v: liveMacros.fatG, u: 'g' },
+                      { l: 'Glucides', v: liveMacros.carbsG, u: 'g' }
+                    ].map(m => (
+                      <div key={m.l} className="rounded-md bg-white border border-cream-dark py-2">
+                        <p className="text-[10px] uppercase tracking-wide text-marine/40">{m.l}</p>
+                        <p className="text-lg font-semibold tabular-nums text-marine leading-tight">{m.v.toLocaleString('fr-CA')}</p>
+                        <p className="text-[10px] text-marine/40">{m.u}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-marine/45 text-xs">
+                    {macroManual
+                      ? 'Indiquez calories, protéines et lipides pour voir le résultat.'
+                      : 'Renseignez le % de gras visé, le niveau d’activité et un poids récent (bilan) pour calculer les macros.'}
+                  </p>
+                )}
               </div>
             </div>
           </div>

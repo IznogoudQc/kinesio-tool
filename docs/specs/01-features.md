@@ -642,6 +642,26 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.48 — Macros : résultat en direct + saisie manuelle des grammes)
+
+L'onglet Nutrition affiche maintenant le **résultat calculé des macros** (Calories · Protéines · Lipides ·
+Glucides, en grammes), mis à jour en direct à partir du dernier poids saisi (synthèse des bilans) et des
+réglages. Auparavant le résultat n'apparaissait que dans le document.
+
+Nouvelle bascule **Automatique / Manuel** :
+- **Automatique** : macros calculées par la formule (protéines par lb de masse maigre, plafond lipides,
+  calories métabolisme + rythme).
+- **Manuel** : Marie **tape directement** les calories, les protéines (g) et les lipides (g) ; les
+  **glucides se déduisent** (`(kcal − P×4 − L×9) / 4`, jamais négatifs). Le résultat affiché devient sa
+  saisie.
+
+DB : `nutrition_macro_manual` (bool) + `nutrition_manual_protein_g` / `nutrition_manual_fat_g` (migration
+0018), câblés bout en bout (types, IPC, document). `buildObjectif` utilise `manualMacros()` en mode manuel →
+le **document client reflète** aussi les macros manuelles. 3 tests (`manualMacros`). Vérifié en headless
+(2000 kcal / 180 P / 55 L → 196 g glucides).
+
+Version : 0.2.47 → 0.2.48.
+
 ## ✅ Fait (v0.2.47 — Nutrition : propositions pré-remplies (Marie garde ou modifie))
 
 Les champs libres de l'onglet Nutrition proposent maintenant des **suggestions cliquables** que Marie

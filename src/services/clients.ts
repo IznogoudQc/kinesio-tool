@@ -30,6 +30,9 @@ export const clientsService = {
       nutritionProteinPerLbLean?: number | null
       nutritionFatMaxG?: number | null
       nutritionTargetKcal?: number | null
+      nutritionMacroManual?: boolean
+      nutritionManualProteinG?: number | null
+      nutritionManualFatG?: number | null
       principePersoTitre?: string | null
       principePersoTexte?: string | null
       jeuneType?: '16:8' | '18:6' | '20:4' | 'omad' | '5:2' | null

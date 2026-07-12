@@ -33,6 +33,10 @@ interface Client {
   nutritionFatMaxG: number | null
   /** Calories cibles fixées manuellement (kcal). `null` = calcul automatique. */
   nutritionTargetKcal: number | null
+  /** Macros saisies à la main (grammes) plutôt que calculées par la formule. */
+  nutritionMacroManual: boolean
+  nutritionManualProteinG: number | null
+  nutritionManualFatG: number | null
   /** Principe personnalisé (6e pilier) affiché en clôture du rapport si rempli. `null`/vide = non affiché. */
   principePersoTitre: string | null
   /** Texte du principe personnalisé. */
@@ -354,6 +358,9 @@ interface Window {
           nutritionProteinPerLbLean?: number | null
           nutritionFatMaxG?: number | null
           nutritionTargetKcal?: number | null
+          nutritionMacroManual?: boolean
+          nutritionManualProteinG?: number | null
+          nutritionManualFatG?: number | null
           principePersoTitre?: string | null
           principePersoTexte?: string | null
           jeuneType?: '16:8' | '18:6' | '20:4' | 'omad' | '5:2' | null
