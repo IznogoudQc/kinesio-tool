@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.50 — Document nutrition : objectif identique au bilan (même texte))
+
+Le bloc « Votre objectif » du **document nutrition** est maintenant **strictement identique** à celui du
+bilan : sa propre section (fond crème), l'intro « Une cible chiffrée, une échéance réaliste… », l'objectif
+libre du client en citation, poids visé / à perdre / durée / échéance, le bloc **« D'où vient ce calcul ? »**,
+le disclaimer « C'est une estimation… », et les repères alimentaires. Composant **partagé** `ObjectifBody`
+(+ `objectifHeading`) extrait et utilisé par le bilan ET le document nutrition → un seul code, textes
+garantis identiques. L'objectif quitte la carte de la section « Nutrition & jeûne » pour devenir une section
+à part entière. Vérifié en headless (bilan et document nutrition rendent le même contenu ; aucune
+régression du bilan).
+
+Version : 0.2.49 → 0.2.50.
+
 ## ✅ Fait (v0.2.49 — Macros manuelles : P/L/G saisis, calories déduites)
 
 En mode **Manuel**, Marie saisit maintenant **Protéines, Lipides ET Glucides** (en grammes) ; les
