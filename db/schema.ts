@@ -66,6 +66,10 @@ export const clients = sqliteTable('clients', {
   nutritionMot: text('nutrition_mot'),
   // Idées de menu (journées types) — souvent générées par l'IA puis ajustées par Marie.
   nutritionMenu: text('nutrition_menu'),
+  // Goûts du client (préférences personnelles, ≠ des recommandations cliniques
+  // « privilégier / éviter »). Alimentent la génération IA des idées de menu.
+  alimentsAimes: text('aliments_aimes'),
+  alimentsPasAimes: text('aliments_pas_aimes'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

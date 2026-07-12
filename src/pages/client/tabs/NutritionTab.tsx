@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Apple, Ban, CalendarClock, Check, Droplet, ExternalLink, MessageSquareQuote, Pill, Sparkles, Target, Utensils } from 'lucide-react'
+import { Apple, Ban, CalendarClock, Check, Droplet, ExternalLink, Heart, MessageSquareQuote, Pill, Sparkles, Target, ThumbsDown, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
@@ -215,6 +215,8 @@ export function NutritionTab() {
   // ── Aliments & mot de Marie ──────────────────────────────────────────────────
   const [alimentsPrivilegier, setAlimentsPrivilegier] = useState(client.alimentsPrivilegier ?? '')
   const [alimentsEviter, setAlimentsEviter] = useState(client.alimentsEviter ?? '')
+  const [alimentsAimes, setAlimentsAimes] = useState(client.alimentsAimes ?? '')
+  const [alimentsPasAimes, setAlimentsPasAimes] = useState(client.alimentsPasAimes ?? '')
   const [nutritionMot, setNutritionMot] = useState(client.nutritionMot ?? '')
   const [nutritionMenu, setNutritionMenu] = useState(client.nutritionMenu ?? '')
 
@@ -358,7 +360,9 @@ export function NutritionTab() {
         alimentsPrivilegier: alimentsPrivilegier.trim() || null,
         alimentsEviter: alimentsEviter.trim() || null,
         nutritionMot: nutritionMot.trim() || null,
-        nutritionMenu: nutritionMenu.trim() || null
+        nutritionMenu: nutritionMenu.trim() || null,
+        alimentsAimes: alimentsAimes.trim() || null,
+        alimentsPasAimes: alimentsPasAimes.trim() || null
       })
       onClientUpdated?.(updated)
       return true
@@ -418,7 +422,9 @@ export function NutritionTab() {
         fatG: liveMacros?.fatG ?? null,
         carbsG: liveMacros?.carbsG ?? null,
         foodsGood: alimentsPrivilegier,
-        foodsBad: alimentsEviter
+        foodsBad: alimentsEviter,
+        foodsLiked: alimentsAimes,
+        foodsDisliked: alimentsPasAimes
       })
       setNutritionMenu(text)
     } catch (err) {
@@ -724,6 +730,28 @@ export function NutritionTab() {
             onChange={e => setAlimentsEviter(e.target.value)}
             rows={5}
             placeholder="Ex. Sucres ajoutés, boissons sucrées, aliments ultra-transformés, alcool."
+            className={`${fieldClass} resize-y`}
+          />
+        </Section>
+      </div>
+
+      {/* ── Goûts du client (préférences) ───────────────────────────────────── */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Section icon={Heart} title="Ce que la personne aime" desc="Préférences personnelles — pris en compte par l'IA du menu.">
+          <textarea
+            value={alimentsAimes}
+            onChange={e => setAlimentsAimes(e.target.value)}
+            rows={4}
+            placeholder="Ex. Poulet, patate douce, avocat, fromage, café, chocolat noir."
+            className={`${fieldClass} resize-y`}
+          />
+        </Section>
+        <Section icon={ThumbsDown} title="Ce que la personne n'aime pas" desc="À exclure des idées de menu (goûts, intolérances).">
+          <textarea
+            value={alimentsPasAimes}
+            onChange={e => setAlimentsPasAimes(e.target.value)}
+            rows={4}
+            placeholder="Ex. Poisson, brocoli, champignons, lait, tofu."
             className={`${fieldClass} resize-y`}
           />
         </Section>

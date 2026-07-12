@@ -64,6 +64,10 @@ interface Client {
   nutritionMot: string | null
   /** Idées de menu (journées types) — texte libre, souvent généré par l'IA. */
   nutritionMenu: string | null
+  /** Goûts du client — aliments aimés (préférences personnelles). */
+  alimentsAimes: string | null
+  /** Goûts du client — aliments non aimés / à exclure. */
+  alimentsPasAimes: string | null
   createdAt: string
   updatedAt: string
 }
@@ -378,6 +382,8 @@ interface Window {
           alimentsEviter?: string | null
           nutritionMot?: string | null
           nutritionMenu?: string | null
+          alimentsAimes?: string | null
+          alimentsPasAimes?: string | null
         }
       ): Promise<Client>
       delete(id: string): Promise<void>
@@ -493,6 +499,8 @@ interface Window {
         supplements?: string
         foodsGood?: string
         foodsBad?: string
+        foodsLiked?: string
+        foodsDisliked?: string
       }): Promise<{ ok: boolean; text?: string; error?: string; code?: string }>
     }
     app: {

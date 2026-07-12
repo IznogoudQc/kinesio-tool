@@ -72,7 +72,9 @@ const UpdateClientSchema = z.object({
   alimentsEviter: TexteLibreOrNull,
   nutritionMot: TexteLibreOrNull,
   // Idées de menu — texte plus long (généré par l'IA), on relève le plafond.
-  nutritionMenu: z.union([z.string().max(8000).trim(), z.null()]).optional()
+  nutritionMenu: z.union([z.string().max(8000).trim(), z.null()]).optional(),
+  alimentsAimes: TexteLibreOrNull,
+  alimentsPasAimes: TexteLibreOrNull
 })
 
 const ClientId = z.string().uuid()

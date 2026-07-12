@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.55 — Goûts du client (aime / n'aime pas) → alimentent le menu IA)
+
+Nouvelle sous-section **« Goûts du client »** dans l'onglet Nutrition : deux champs — **ce que la personne
+aime** et **ce qu'elle n'aime pas / à exclure** (préférences personnelles, distinctes des recommandations
+cliniques « à privilégier / à éviter » de Marie). Ces goûts sont **passés à l'IA des idées de menu** :
+priorise les aliments aimés, exclut ceux non aimés (meilleure adhésion). Le menu utilisait déjà les listes
+privilégier/éviter ; il combine maintenant les quatre.
+
+DB : `aliments_aimes` / `aliments_pas_aimes` (migration 0021), câblés types/IPC. Payload IA + prompt menu
+étendus (`foodsLiked` / `foodsDisliked`). Champs propres au travail interne (non affichés dans le document
+client).
+
+Version : 0.2.54 → 0.2.55.
+
 ## ✅ Fait (v0.2.54 — IA nutrition : plan de suppléments + idées de menu)
 
 Deux générateurs IA (Anthropic, via l'infra existante — clé dans le trousseau OS) dans l'onglet Nutrition,

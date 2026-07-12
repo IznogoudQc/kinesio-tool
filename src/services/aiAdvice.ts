@@ -88,6 +88,8 @@ export const aiAdviceService = {
     supplements?: string
     foodsGood?: string
     foodsBad?: string
+    foodsLiked?: string
+    foodsDisliked?: string
   }): Promise<string> {
     const res = await window.api.ai.generateNutrition(payload)
     if (!res.ok || typeof res.text !== 'string') {

@@ -47,6 +47,8 @@ export const clientsService = {
       alimentsEviter?: string | null
       nutritionMot?: string | null
       nutritionMenu?: string | null
+      alimentsAimes?: string | null
+      alimentsPasAimes?: string | null
     }
   ): Promise<Client> {
     return window.api.clients.update(id, data)

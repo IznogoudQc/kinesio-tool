@@ -79,7 +79,9 @@ const NutritionPayloadSchema = z.object({
   carbsG: z.number().nullable().optional(),
   supplements: z.string().max(3000).optional(),
   foodsGood: z.string().max(3000).optional(),
-  foodsBad: z.string().max(3000).optional()
+  foodsBad: z.string().max(3000).optional(),
+  foodsLiked: z.string().max(3000).optional(),
+  foodsDisliked: z.string().max(3000).optional()
 })
 
 const SUPPLEMENTS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
@@ -103,6 +105,7 @@ Format (texte simple, français) :
 - À la fin de chaque journée, un total approximatif : calories, protéines, lipides, glucides.
 - Ce sont des IDÉES / EXEMPLES, jamais un plan nutritionnel individualisé.
 - N'invente aucune allergie ni restriction non fournie. Respecte les aliments à éviter indiqués.
+- PRIORISE les aliments que la personne AIME et EXCLUS ceux qu'elle n'aime pas / à exclure (préférences personnelles) — c'est important pour l'adhésion.
 - Termine par : « Idées générales à titre d'exemple — pour un plan personnalisé, consultez une nutritionniste. »`
 
 function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): string {
@@ -114,10 +117,13 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
   if (typeof p.proteinG === 'number') macros.push(`${Math.round(p.proteinG)} g de protéines`)
   if (typeof p.fatG === 'number') macros.push(`${Math.round(p.fatG)} g de lipides`)
   if (typeof p.carbsG === 'number') macros.push(`${Math.round(p.carbsG)} g de glucides`)
+  const clean = (s?: string) => (s ?? '').trim().replace(/\n/g, ', ') || 'non précisés'
   const lines = [
     `Cibles quotidiennes : ${macros.length ? macros.join(', ') : 'non précisées'}.`,
-    `Aliments à privilégier : ${(p.foodsGood ?? '').trim().replace(/\n/g, ', ') || 'non précisés'}.`,
-    `Aliments à éviter : ${(p.foodsBad ?? '').trim().replace(/\n/g, ', ') || 'non précisés'}.`
+    `Aliments à privilégier (recommandation) : ${clean(p.foodsGood)}.`,
+    `Aliments à éviter (recommandation) : ${clean(p.foodsBad)}.`,
+    `Aliments que la personne AIME : ${clean(p.foodsLiked)}.`,
+    `Aliments que la personne N'AIME PAS / à exclure : ${clean(p.foodsDisliked)}.`
   ]
   return lines.join('\n')
 }
