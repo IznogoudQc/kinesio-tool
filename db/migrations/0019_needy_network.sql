@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `nutrition_manual_carb_g` real;

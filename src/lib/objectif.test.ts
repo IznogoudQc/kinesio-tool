@@ -2,23 +2,18 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { manualMacros } from './objectif.ts'
 
-test('manualMacros : glucides déduits des calories', () => {
-  const m = manualMacros({ nutritionTargetKcal: 2000, nutritionManualProteinG: 180, nutritionManualFatG: 55 })
+test('manualMacros : calories déduites des grammes (P×4 + G×4 + L×9)', () => {
+  const m = manualMacros({ nutritionManualProteinG: 180, nutritionManualFatG: 55, nutritionManualCarbG: 200 })
   assert.ok(m)
-  assert.equal(m.targetKcal, 2000)
   assert.equal(m.proteinG, 180)
   assert.equal(m.fatG, 55)
-  // (2000 − 180×4 − 55×9) / 4 = (2000 − 720 − 495) / 4 = 196.25 → 196
-  assert.equal(m.carbsG, 196)
-})
-
-test('manualMacros : glucides jamais négatifs', () => {
-  const m = manualMacros({ nutritionTargetKcal: 800, nutritionManualProteinG: 200, nutritionManualFatG: 60 })
-  assert.ok(m)
-  assert.equal(m.carbsG, 0)
+  assert.equal(m.carbsG, 200)
+  // 180×4 + 200×4 + 55×9 = 720 + 800 + 495 = 2015
+  assert.equal(m.targetKcal, 2015)
 })
 
 test('manualMacros : null si une valeur manque', () => {
-  assert.equal(manualMacros({ nutritionTargetKcal: 2000, nutritionManualProteinG: null, nutritionManualFatG: 55 }), null)
-  assert.equal(manualMacros({ nutritionTargetKcal: null, nutritionManualProteinG: 180, nutritionManualFatG: 55 }), null)
+  assert.equal(manualMacros({ nutritionManualProteinG: 180, nutritionManualFatG: null, nutritionManualCarbG: 200 }), null)
+  assert.equal(manualMacros({ nutritionManualProteinG: null, nutritionManualFatG: 55, nutritionManualCarbG: 200 }), null)
+  assert.equal(manualMacros({ nutritionManualProteinG: 180, nutritionManualFatG: 55, nutritionManualCarbG: null }), null)
 })

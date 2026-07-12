@@ -16,24 +16,25 @@ import {
 } from './nutrition.ts'
 import { estimatedGoalDate } from './objectif-format.ts'
 
-/** Macros en saisie manuelle : glucides déduits des calories. `null` si incomplet. */
+/** Macros en saisie manuelle : Marie tape protéines / lipides / glucides, les
+ *  calories se déduisent (P×4 + G×4 + L×9). `null` si une valeur manque. */
 export function manualMacros(client: {
-  nutritionTargetKcal?: number | null
   nutritionManualProteinG?: number | null
   nutritionManualFatG?: number | null
+  nutritionManualCarbG?: number | null
 }): MacroEstimate | null {
-  const kcal = client.nutritionTargetKcal
   const proteinG = client.nutritionManualProteinG
   const fatG = client.nutritionManualFatG
-  if (![kcal, proteinG, fatG].every(v => typeof v === 'number' && Number.isFinite(v))) return null
-  const carbsG = Math.max(0, Math.round(((kcal as number) - (proteinG as number) * 4 - (fatG as number) * 9) / 4))
+  const carbsG = client.nutritionManualCarbG
+  if (![proteinG, fatG, carbsG].every(v => typeof v === 'number' && Number.isFinite(v))) return null
+  const targetKcal = Math.round((proteinG as number) * 4 + (carbsG as number) * 4 + (fatG as number) * 9)
   return {
     bmr: 0,
     tdee: 0,
-    targetKcal: Math.round(kcal as number),
+    targetKcal,
     proteinG: Math.round(proteinG as number),
     fatG: Math.round(fatG as number),
-    carbsG
+    carbsG: Math.round(carbsG as number)
   }
 }
 
@@ -47,10 +48,11 @@ export interface ObjectifClient {
   nutritionProteinPerLbLean: number | null
   nutritionFatMaxG: number | null
   nutritionTargetKcal: number | null
-  /** Macros en saisie manuelle (Marie tape les grammes). */
+  /** Macros en saisie manuelle (Marie tape les grammes P/L/G ; calories déduites). */
   nutritionMacroManual?: boolean | null
   nutritionManualProteinG?: number | null
   nutritionManualFatG?: number | null
+  nutritionManualCarbG?: number | null
 }
 
 export type Objectif = NonNullable<ReturnType<typeof buildObjectif>>

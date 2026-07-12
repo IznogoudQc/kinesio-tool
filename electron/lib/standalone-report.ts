@@ -109,6 +109,7 @@ async function buildStandaloneHtml(
       nutritionMacroManual: client.nutritionMacroManual,
       nutritionManualProteinG: client.nutritionManualProteinG,
       nutritionManualFatG: client.nutritionManualFatG,
+      nutritionManualCarbG: client.nutritionManualCarbG,
       principePersoTitre: client.principePersoTitre,
       principePersoTexte: client.principePersoTexte,
       jeuneType: client.jeuneType,

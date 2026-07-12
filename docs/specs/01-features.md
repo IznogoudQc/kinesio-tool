@@ -642,6 +642,17 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.49 — Macros manuelles : P/L/G saisis, calories déduites)
+
+En mode **Manuel**, Marie saisit maintenant **Protéines, Lipides ET Glucides** (en grammes) ; les
+**calories se calculent** automatiquement (`P×4 + G×4 + L×9`) au lieu de l'inverse. Nouvelle colonne
+`nutrition_manual_carb_g` (migration 0019). `manualMacros()` déduit désormais les calories des trois
+macros. En basculant Auto → Manuel, les champs se **pré-remplissent avec le résultat auto** (point de
+départ modifiable). Le document client reflète le calcul. `manualMacros` re-testé (P/L/G → kcal). Vérifié
+en headless (180 P / 55 L / 200 G → 2015 kcal).
+
+Version : 0.2.48 → 0.2.49.
+
 ## ✅ Fait (v0.2.48 — Macros : résultat en direct + saisie manuelle des grammes)
 
 L'onglet Nutrition affiche maintenant le **résultat calculé des macros** (Calories · Protéines · Lipides ·

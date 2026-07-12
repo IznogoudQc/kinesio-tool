@@ -133,16 +133,17 @@ export function NutritionTab() {
     String(client.nutritionProteinPerLbLean ?? DEFAULT_PROTEIN_PER_LB_LEAN)
   )
   const [fatMaxG, setFatMaxG] = useState<string>(String(client.nutritionFatMaxG ?? DEFAULT_FAT_MAX_G))
-  // Mode des macros : `false` = calculées par la formule (auto) ; `true` = Marie tape les grammes.
+  // Mode des macros : `false` = calculées par la formule (auto) ; `true` = Marie tape
+  // les grammes (protéines/lipides/glucides) et les calories se déduisent.
   const [macroManual, setMacroManual] = useState(client.nutritionMacroManual ?? false)
-  const [manualKcal, setManualKcal] = useState<string>(
-    client.nutritionTargetKcal != null ? String(client.nutritionTargetKcal) : ''
-  )
   const [manualProteinG, setManualProteinG] = useState<string>(
     client.nutritionManualProteinG != null ? String(client.nutritionManualProteinG) : ''
   )
   const [manualFatG, setManualFatG] = useState<string>(
     client.nutritionManualFatG != null ? String(client.nutritionManualFatG) : ''
+  )
+  const [manualCarbG, setManualCarbG] = useState<string>(
+    client.nutritionManualCarbG != null ? String(client.nutritionManualCarbG) : ''
   )
 
   // ── Planning de jeûne flexible ────────────────────────────────────────────────
@@ -190,9 +191,9 @@ export function NutritionTab() {
     if (!nutritionEnabled) return null
     if (macroManual) {
       return manualMacros({
-        nutritionTargetKcal: manualKcal.trim() !== '' ? Number(manualKcal) : null,
         nutritionManualProteinG: manualProteinG.trim() !== '' ? Number(manualProteinG) : null,
-        nutritionManualFatG: manualFatG.trim() !== '' ? Number(manualFatG) : null
+        nutritionManualFatG: manualFatG.trim() !== '' ? Number(manualFatG) : null,
+        nutritionManualCarbG: manualCarbG.trim() !== '' ? Number(manualCarbG) : null
       })
     }
     const data = latestData
@@ -216,7 +217,7 @@ export function NutritionTab() {
       fatMaxG: fatMaxG.trim() !== '' ? Number(fatMaxG) : null,
       targetKcalOverride: null
     })
-  }, [nutritionEnabled, macroManual, manualKcal, manualProteinG, manualFatG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerLb, fatMaxG])
+  }, [nutritionEnabled, macroManual, manualProteinG, manualFatG, manualCarbG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerLb, fatMaxG])
 
   /** Valide + enregistre. Retourne `true` si la sauvegarde a réussi. */
   async function persist(): Promise<boolean> {
@@ -237,15 +238,12 @@ export function NutritionTab() {
       setError('Le plafond de lipides doit être compris entre 20 et 200 g.')
       return false
     }
-    // Mode manuel des macros : Marie tape calories + protéines (g) + lipides (g).
+    // Mode manuel des macros : Marie tape protéines + lipides + glucides (g) ;
+    // les calories se déduisent (P×4 + G×4 + L×9).
     const macroOn = nutritionEnabled && macroManual
-    const kcalVal = macroOn && manualKcal.trim() !== '' ? Number(manualKcal) : null
     const protGVal = macroOn && manualProteinG.trim() !== '' ? Number(manualProteinG) : null
     const fatGVal = macroOn && manualFatG.trim() !== '' ? Number(manualFatG) : null
-    if (kcalVal !== null && (!Number.isFinite(kcalVal) || kcalVal < 800 || kcalVal > 6000)) {
-      setError('Les calories doivent être comprises entre 800 et 6000.')
-      return false
-    }
+    const carbGVal = macroOn && manualCarbG.trim() !== '' ? Number(manualCarbG) : null
     if (protGVal !== null && (!Number.isFinite(protGVal) || protGVal < 0 || protGVal > 500)) {
       setError('Les protéines (g) doivent être comprises entre 0 et 500.')
       return false
@@ -254,8 +252,12 @@ export function NutritionTab() {
       setError('Les lipides (g) doivent être compris entre 0 et 400.')
       return false
     }
-    if (macroOn && (kcalVal === null || protGVal === null || fatGVal === null)) {
-      setError('En mode manuel, indiquez les calories, les protéines et les lipides.')
+    if (carbGVal !== null && (!Number.isFinite(carbGVal) || carbGVal < 0 || carbGVal > 800)) {
+      setError('Les glucides (g) doivent être compris entre 0 et 800.')
+      return false
+    }
+    if (macroOn && (protGVal === null || fatGVal === null || carbGVal === null)) {
+      setError('En mode manuel, indiquez les protéines, les lipides et les glucides.')
       return false
     }
     const mlVal = hydratationMl.trim() !== '' ? Number(hydratationMl) : null
@@ -274,9 +276,11 @@ export function NutritionTab() {
         nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
         nutritionFatMaxG: nutritionEnabled ? fatVal : null,
         nutritionMacroManual: macroOn,
-        nutritionTargetKcal: kcalVal,
+        // Calories déduites des grammes en mode manuel ; `null` en auto.
+        nutritionTargetKcal: macroOn && liveMacros ? liveMacros.targetKcal : null,
         nutritionManualProteinG: protGVal,
         nutritionManualFatG: fatGVal,
+        nutritionManualCarbG: carbGVal,
         // Ancien modèle de jeûne (type unique + fenêtre) remplacé par le planning.
         jeuneType: null,
         jeuneFenetreDebut: null,
@@ -420,7 +424,15 @@ export function NutritionTab() {
                     <button
                       key={String(o.v)}
                       type="button"
-                      onClick={() => setMacroManual(o.v)}
+                      onClick={() => {
+                        // Passer en Manuel : partir du résultat auto (s'il est calculable et que rien n'est saisi).
+                        if (o.v && !manualProteinG && !manualFatG && !manualCarbG && liveMacros) {
+                          setManualProteinG(String(liveMacros.proteinG))
+                          setManualFatG(String(liveMacros.fatG))
+                          setManualCarbG(String(liveMacros.carbsG))
+                        }
+                        setMacroManual(o.v)
+                      }}
                       className={`px-3 py-1.5 transition-colors ${macroManual === o.v ? 'bg-gold text-marine font-semibold' : 'bg-white text-marine/60 hover:text-marine'}`}
                     >
                       {o.label}
@@ -431,11 +443,6 @@ export function NutritionTab() {
 
               {macroManual ? (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-marine text-sm">
-                    <span className="w-20">Calories</span>
-                    <input type="number" min={800} max={6000} step={50} value={manualKcal} onChange={e => setManualKcal(e.target.value)} placeholder="2000" className={macroInput} />
-                    <span className="text-marine/60">kcal / jour</span>
-                  </div>
                   <div className="flex items-center gap-2 text-marine text-sm">
                     <span className="w-20">Protéines</span>
                     <input type="number" min={0} max={500} step={5} value={manualProteinG} onChange={e => setManualProteinG(e.target.value)} placeholder="150" className={macroInput} />
@@ -448,7 +455,14 @@ export function NutritionTab() {
                   </div>
                   <div className="flex items-center gap-2 text-marine text-sm">
                     <span className="w-20">Glucides</span>
-                    <span className="text-marine/60">le reste des calories{liveMacros ? ` — ${liveMacros.carbsG.toLocaleString('fr-CA')} g` : ''}</span>
+                    <input type="number" min={0} max={800} step={5} value={manualCarbG} onChange={e => setManualCarbG(e.target.value)} placeholder="200" className={macroInput} />
+                    <span className="text-marine/60">g</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Calories</span>
+                    <span className="text-marine/60">
+                      calculées{liveMacros ? ` — ${liveMacros.targetKcal.toLocaleString('fr-CA')} kcal / jour` : ' (P×4 + G×4 + L×9)'}
+                    </span>
                   </div>
                 </div>
               ) : (

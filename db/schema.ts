@@ -42,6 +42,7 @@ export const clients = sqliteTable('clients', {
   nutritionMacroManual: integer('nutrition_macro_manual', { mode: 'boolean' }).notNull().default(false),
   nutritionManualProteinG: real('nutrition_manual_protein_g'),
   nutritionManualFatG: real('nutrition_manual_fat_g'),
+  nutritionManualCarbG: real('nutrition_manual_carb_g'),
   // Principe personnalisé optionnel (6e pilier) montré en clôture du rapport
   // client. Si `principePersoTitre` est rempli, un principe supplémentaire
   // s'affiche (HTML + PDF). Éditable par Marie, par client.
