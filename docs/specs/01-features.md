@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.52 — Objectif : métrique « Rythme visé » (livres à perdre / semaine))
+
+Ajout d'une métrique **« Rythme visé »** dans la grille de l'objectif — les livres (et kg) à perdre **par
+semaine**, ex. « 1,7 lb (0,8 kg) / sem » (unité principale en gros, l'autre + « / sem » en petit ; précision
+1 décimale, cohérente avec le texte « D'où vient ce calcul ? »). Rendu par le composant partagé
+`ObjectifBody` → présent dans le **document nutrition ET le bilan**. Vérifié en headless.
+
+Version : 0.2.51 → 0.2.52.
+
 ## ✅ Fait (v0.2.51 — Hydratation : calcul automatique d'après le poids)
 
 Bouton **« Calculer d'après le poids »** dans la section Hydratation : remplit la cible à partir du dernier

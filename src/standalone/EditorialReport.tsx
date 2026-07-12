@@ -703,6 +703,19 @@ function ObjectifBody({
                 <p className="ed-eyebrow text-marine/40">À perdre</p>
                 <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{dualWeight(objectif.goal.toLoseKg, unitWeight)}</p>
               </div>
+              {objectif.rate !== null && (
+                <div>
+                  <p className="ed-eyebrow text-marine/40">Rythme visé</p>
+                  <p className="ed-display mt-1 text-4xl tabular-nums text-marine">
+                    {(unitWeight === 'lb' ? kgToLb(objectif.rate) : objectif.rate).toLocaleString('fr-CA', { maximumFractionDigits: 1 })}{' '}
+                    {unitWeight === 'lb' ? 'lb' : 'kg'}
+                    <span className="text-lg text-marine/40">
+                      {' '}({(unitWeight === 'lb' ? objectif.rate : kgToLb(objectif.rate)).toLocaleString('fr-CA', { maximumFractionDigits: 1 })}{' '}
+                      {unitWeight === 'lb' ? 'kg' : 'lb'}) / sem
+                    </span>
+                  </p>
+                </div>
+              )}
               {objectif.weeks !== null && (
                 <div>
                   <p className="ed-eyebrow text-marine/40">Durée estimée</p>
