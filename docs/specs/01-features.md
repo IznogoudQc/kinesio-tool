@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.53 — Suppléments : liste étendue + moment de prise recommandé)
+
+Liste de suppléments enrichie (Vitamine D3 + K2, Zinc, Fer, Vitamine C, Probiotiques, Oméga-3 EPA/DHA,
+Magnésium, Créatine, Multivitamine, Protéine). Chaque proposition insère le **moment généralement
+recommandé** (« Vitamine D3 + K2 — avec un repas contenant du gras », « Magnésium — le soir », « Zinc — au
+coucher, à distance du calcium/fer »…). Nouveau composant `SupplementChips`. Marie garde, modifie ou retire.
+
+Version : 0.2.52 → 0.2.53.
+
 ## ✅ Fait (v0.2.52 — Objectif : métrique « Rythme visé » (livres à perdre / semaine))
 
 Ajout d'une métrique **« Rythme visé »** dans la grille de l'objectif — les livres (et kg) à perdre **par

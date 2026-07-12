@@ -77,7 +77,19 @@ const FOODS_BAD = [
   'Sucres ajoutés', 'Boissons sucrées', 'Aliments ultra-transformés', 'Alcool', 'Fritures',
   'Charcuteries', 'Grignotage le soir'
 ]
-const SUPPLEMENTS = ['Vitamine D 1000 UI', 'Oméga-3', 'Créatine 5 g/jour', 'Magnésium', 'Multivitamine', 'Protéine en poudre']
+// Suppléments courants avec le moment généralement recommandé pour la prise.
+const SUPPLEMENTS: { label: string; timing: string }[] = [
+  { label: 'Vitamine D3 + K2', timing: 'avec un repas contenant du gras' },
+  { label: 'Oméga-3 (EPA/DHA)', timing: 'au repas' },
+  { label: 'Magnésium', timing: 'le soir (souper ou coucher)' },
+  { label: 'Zinc', timing: 'au coucher, à distance du calcium/fer' },
+  { label: 'Créatine 5 g', timing: 'tous les jours, n’importe quand' },
+  { label: 'Multivitamine', timing: 'au déjeuner' },
+  { label: 'Vitamine C', timing: 'le matin' },
+  { label: 'Probiotiques', timing: 'à jeun, le matin' },
+  { label: 'Fer', timing: 'à jeun avec vitamine C, loin du café/thé' },
+  { label: 'Protéine (whey)', timing: 'après l’entraînement ou en collation' }
+]
 const HYDRATION_PRESETS = [2000, 2500, 3000]
 const MOT_PRESETS = [
   'On vise le progrès, pas la perfection. Un repas à la fois.',
@@ -111,6 +123,42 @@ function SuggestChips({ items, current, onPick }: { items: string[]; current: st
             >
               {used ? '✓ ' : '+ '}
               {it}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+/** Comme SuggestChips, mais insère « nom — moment recommandé » (pour les suppléments). */
+function SupplementChips({
+  items,
+  current,
+  onPick
+}: {
+  items: { label: string; timing: string }[]
+  current: string
+  onPick: (line: string) => void
+}) {
+  const present = current.toLowerCase()
+  return (
+    <div className="mb-2.5">
+      <p className="text-marine/40 text-xs mb-1.5">Propositions (avec le moment recommandé) — cliquez pour ajouter :</p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map(it => {
+          const used = present.includes(it.label.toLowerCase())
+          return (
+            <button
+              key={it.label}
+              type="button"
+              onClick={() => onPick(`${it.label} — ${it.timing}`)}
+              disabled={used}
+              title={`${it.label} — ${it.timing}`}
+              className={`px-2.5 py-1 rounded-full border text-sm transition-colors ${used ? 'border-cream-dark text-marine/30 cursor-default' : 'border-gold/40 text-marine/70 hover:border-gold hover:bg-gold/10'}`}
+            >
+              {used ? '✓ ' : '+ '}
+              {it.label}
             </button>
           )
         })}
@@ -582,13 +630,13 @@ export function NutritionTab() {
         </p>
       </Section>
 
-      <Section icon={Pill} title="Suppléments" desc="Recommandations libres.">
-        <SuggestChips items={SUPPLEMENTS} current={supplementsNotes} onPick={it => setSupplementsNotes(c => appendLine(c, it))} />
+      <Section icon={Pill} title="Suppléments" desc="Recommandations libres, avec le moment de prise.">
+        <SupplementChips items={SUPPLEMENTS} current={supplementsNotes} onPick={line => setSupplementsNotes(c => appendLine(c, line))} />
         <textarea
           value={supplementsNotes}
           onChange={e => setSupplementsNotes(e.target.value)}
-          rows={3}
-          placeholder="Ex. Vitamine D 1000 UI le matin. Créatine 5 g/jour. Oméga-3."
+          rows={4}
+          placeholder="Ex. Vitamine D3 + K2 — avec un repas contenant du gras&#10;Créatine 5 g — tous les jours"
           className={`${fieldClass} resize-y`}
         />
       </Section>
