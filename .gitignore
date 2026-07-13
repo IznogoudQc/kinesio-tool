@@ -57,6 +57,9 @@ dev-out.txt
 # Fichiers de test (peuvent contenir des donnees client reelles)
 test-files/
 
+# Documents clients exportes par l'app (generes, donnees client reelles)
+docs_clients/
+
 # Compilation artifacts TypeScript polluees (jamais dans src/ ni electron/)
 src/**/*.js
 src/**/*.d.ts
