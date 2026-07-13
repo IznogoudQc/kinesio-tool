@@ -22,8 +22,10 @@ import {
   suppPlanHasSchedule,
   SUPP_MOMENTS,
   SUPP_MENTION,
-  MENU_MENTION
+  MENU_MENTION,
+  type SuppMomentKey
 } from '../lib/nutrition-plan'
+import { Sunrise, Coffee, Dumbbell, UtensilsCrossed, Moon, Info, type LucideIcon } from 'lucide-react'
 import { useCountUp } from '../lib/useCountUp'
 import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
@@ -527,6 +529,29 @@ function Hero({
 // ── Nutrition & jeûne ────────────────────────────────────────────────────────
 
 /** Liste à puces à partir d'un texte multi-lignes (une puce par ligne non vide). */
+/** Icône par moment de prise, pour aérer et illustrer le document nutrition. */
+const SUPP_ICONS: Record<SuppMomentKey, LucideIcon> = {
+  reveil: Sunrise,
+  dejeuner: Coffee,
+  apresEntrainement: Dumbbell,
+  souper: UtensilsCrossed,
+  coucher: Moon
+}
+
+/** Lignes d'un champ texte, aérées, sans puce (l'icône du moment sert d'ancre). */
+function EdLines({ text, className = 'text-marine/80' }: { text: string; className?: string }) {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean)
+  return (
+    <div className="space-y-1.5">
+      {lines.map((l, i) => (
+        <p key={i} className={`text-[15px] leading-relaxed ${className}`}>
+          {l}
+        </p>
+      ))}
+    </div>
+  )
+}
+
 function EdBullets({ text }: { text: string }) {
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean)
   if (lines.length <= 1) return <p className="ed-prose whitespace-pre-line text-base leading-relaxed text-marine/75">{text}</p>
@@ -742,28 +767,43 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
       )}
 
       {supp && (
-        <div className="nut-supp mt-6 rounded-xl border border-marine/10 p-6">
+        <div className="nut-supp mt-6 rounded-xl border border-marine/10 p-6 sm:p-8">
           <p className="ed-eyebrow text-gold-dark">Suppléments</p>
           {suppPlanHasSchedule(suppPlan) ? (
             <>
-              {SUPP_MOMENTS.filter((m) => suppPlan[m.key].trim()).map((m) => (
-                <div key={m.key} className="mt-4">
-                  <p className="text-sm font-semibold text-marine">{m.label}</p>
-                  <div className="mt-2">
-                    <EdBullets text={suppPlan[m.key]} />
-                  </div>
-                </div>
-              ))}
+              <div className="mt-6 space-y-7">
+                {SUPP_MOMENTS.filter((m) => suppPlan[m.key].trim()).map((m) => {
+                  const Icon = SUPP_ICONS[m.key]
+                  return (
+                    <div key={m.key} className="flex gap-4">
+                      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold-dark">
+                        <Icon size={20} />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="ed-eyebrow text-gold-dark">{m.label}</p>
+                        <div className="mt-2">
+                          <EdLines text={suppPlan[m.key]} />
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
               {suppPlan.interactions.trim() && (
                 /* Filet de séparation avant les consignes « À espacer / interactions ». */
-                <div className="mt-6 border-t border-marine/10 pt-6">
-                  <p className="text-sm font-semibold text-marine">À espacer / interactions</p>
-                  <div className="mt-2">
-                    <EdBullets text={suppPlan.interactions} />
+                <div className="mt-7 flex gap-4 border-t border-marine/10 pt-7">
+                  <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-marine/5 text-marine/50">
+                    <Info size={20} />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="ed-eyebrow text-marine/40">À espacer / interactions</p>
+                    <div className="mt-2">
+                      <EdLines text={suppPlan.interactions} className="text-marine/70" />
+                    </div>
                   </div>
                 </div>
               )}
-              <p className="mt-6 text-xs italic leading-relaxed text-marine/50">{SUPP_MENTION}</p>
+              <p className="mt-7 text-xs italic leading-relaxed text-marine/50">{SUPP_MENTION}</p>
             </>
           ) : (
             <div className="mt-4">
@@ -788,8 +828,13 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
                       key={i}
                       className={`rounded-xl bg-cream p-8 sm:p-10${i > 0 ? ' nut-menu-day' : ''}`}
                     >
-                      <p className="ed-display text-xl text-marine">Journée {i + 1}</p>
-                      <div className="mt-3 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold-dark">
+                          <UtensilsCrossed size={20} />
+                        </span>
+                        <p className="ed-display text-2xl text-marine">Journée {i + 1}</p>
+                      </div>
+                      <div className="mt-5 space-y-3">
                         {jour
                           .split('\n')
                           .map((l) => l.trim())
@@ -797,7 +842,7 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
                           .map((line, j) => {
                             const m = /^([^:]{1,40}):\s*(.*)$/.exec(line)
                             return (
-                              <p key={j} className="ed-prose text-base leading-relaxed text-marine/75">
+                              <p key={j} className="ed-prose text-[15px] leading-relaxed text-marine/75">
                                 {m ? (
                                   <>
                                     <span className="font-semibold text-marine">{m[1]}</span> : {m[2]}

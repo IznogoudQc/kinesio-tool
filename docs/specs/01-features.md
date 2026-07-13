@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.79 — Document nutrition : suppléments & menu aérés + icônes par moment)
+
+Le document PDF était trop compact et dur à lire. Refonte visuelle des sections Suppléments et Menu :
+
+- **Suppléments** : chaque moment de prise a désormais une **icône** dans une pastille dorée (lever ☀️ ·
+  déjeuner ☕ · après l'entraînement 🏋️ · souper 🍽️ · coucher 🌙), un libellé doré, et des lignes **aérées**
+  (plus d'interligne, plus d'espace entre les moments). « À espacer / interactions » a son icône (ⓘ) après le
+  filet de séparation.
+- **Menu** : chaque journée a une **icône couverts** + un titre plus grand, et les repas sont plus espacés.
+- Icônes via `lucide-react` (SVG en ligne, rendues fidèlement dans le PDF).
+
+Vérifié en headless (`--print-to-pdf` fidèle electron + rendu pymupdf).
+
+Version : 0.2.78 → 0.2.79.
+
 ## ✅ Fait (v0.2.78 — Onglet Nutrition : liste de suppléments plus haute + moments sur 2 colonnes)
 
 - Champ **« liste des suppléments »** agrandi (`rows` 4 → 7) pour éviter la barre de défilement.
