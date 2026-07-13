@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.74 — Document nutrition : suppléments coupés avant « À espacer » + menu 1 journée par page)
+
+- **Suppléments** : la carte est coupée en deux par un **filet de séparation** juste avant la section
+  « À espacer / interactions » — l'horaire quotidien au-dessus, les consignes d'espacement/interactions en
+  dessous. Détection tolérante (ligne contenant « espacer » ou « interaction »).
+- **Idées de menu** : le texte est regroupé par **journées** (`parseMenuDays` : en-têtes « Jour / Journée /
+  Exemple N », lignes rattachées à la journée courante). Chaque journée devient sa **propre carte crème**, et à
+  l'impression chaque journée (sauf la première) démarre sur une **nouvelle page** (`break-before: page`). La
+  mention finale reste rattachée à la dernière journée (pas de page perdue).
+
+Sans en-tête de journée détecté, tout reste dans une seule carte (aucun saut de page). Vérifié en headless
+(`--print-to-pdf` fidèle electron + rendu pymupdf) avec un menu IA à deux journées.
+
+Version : 0.2.73 → 0.2.74.
+
 ## ✅ Fait (v0.2.73 — Document nutrition : menu mieux séparé + pied de page en crème)
 
 Ajustements visuels du document nutrition (HTML + PDF) :

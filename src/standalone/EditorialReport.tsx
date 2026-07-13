@@ -534,6 +534,33 @@ function EdBullets({ text }: { text: string }) {
   )
 }
 
+/** Découpe un texte de menu libre en journées. Une nouvelle journée démarre à un
+ *  en-tête « Jour / Journée / Exemple N » (isolé, ou en début de ligne suivi de
+ *  « — »). Les lignes sans en-tête (repas, total, mention finale) sont rattachées
+ *  à la journée courante. Robuste aux menus générés par l'IA comme au texte saisi
+ *  à la main ; sans en-tête détecté, tout reste dans une seule journée. */
+function parseMenuDays(menu: string): { header: string | null; lines: string[] }[] {
+  const dayRe = /^((?:jours?|journ[ée]es?|exemples?)\s*n?[°o]?\s*\d+)\s*[:—–-]?\s*(.*)$/i
+  const days: { header: string | null; lines: string[] }[] = []
+  let cur: { header: string | null; lines: string[] } | null = null
+  for (const raw of menu.split('\n')) {
+    const line = raw.trim()
+    if (!line) continue
+    const m = dayRe.exec(line)
+    if (m) {
+      cur = { header: m[1], lines: m[2] ? [m[2]] : [] }
+      days.push(cur)
+    } else {
+      if (!cur) {
+        cur = { header: null, lines: [] }
+        days.push(cur)
+      }
+      cur.lines.push(line)
+    }
+  }
+  return days.length ? days : [{ header: null, lines: [menu.trim()] }]
+}
+
 /** Choisit jusqu'à `max` mois (à partir de `startY/startM0`) contenant au moins une
  *  occurrence de jeûne ; sinon au moins le mois de départ. */
 function monthsWithFasts(
@@ -707,37 +734,57 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
       {supp && (
         <div className="nut-supp mt-6 rounded-xl border border-marine/10 p-6">
           <p className="ed-eyebrow text-gold-dark">Suppléments</p>
-          <div className="mt-4">
-            <EdBullets text={supp} />
-          </div>
+          {(() => {
+            const lines = supp.split('\n').map((l) => l.trim()).filter(Boolean)
+            const idx = lines.findIndex((l) => /espacer|interaction/i.test(l))
+            if (idx <= 0) {
+              return (
+                <div className="mt-4">
+                  <EdBullets text={supp} />
+                </div>
+              )
+            }
+            return (
+              <>
+                <div className="mt-4">
+                  <EdBullets text={lines.slice(0, idx).join('\n')} />
+                </div>
+                {/* Filet de séparation avant les consignes « À espacer / interactions ». */}
+                <div className="mt-6 border-t border-marine/10 pt-6">
+                  <EdBullets text={lines.slice(idx).join('\n')} />
+                </div>
+              </>
+            )
+          })()}
         </div>
       )}
 
-      {menu && (
-        <div className="mt-10 rounded-xl bg-cream p-8 sm:p-10">
-          <p className="ed-eyebrow text-gold-dark">Idées de menu</p>
-          <div className="mt-4 space-y-3">
-            {menu
-              .split('\n')
-              .map((l) => l.trim())
-              .filter(Boolean)
-              .map((line, i) => {
-                const m = /^(Jour\s*\d+)\s*[—–-]\s*(.*)$/i.exec(line)
-                return (
-                  <p key={i} className="ed-prose text-base leading-relaxed text-marine/75">
-                    {m ? (
-                      <>
-                        <span className="font-semibold text-marine">{m[1]}</span> — {m[2]}
-                      </>
-                    ) : (
-                      line
-                    )}
-                  </p>
-                )
-              })}
-          </div>
-        </div>
-      )}
+      {menu &&
+        (() => {
+          const days = parseMenuDays(menu)
+          return (
+            <div className="mt-10">
+              <p className="ed-eyebrow text-gold-dark">Idées de menu</p>
+              <div className="mt-4 space-y-6">
+                {days.map((day, i) => (
+                  <div
+                    key={i}
+                    className={`rounded-xl bg-cream p-8 sm:p-10${i > 0 ? ' nut-menu-day' : ''}`}
+                  >
+                    {day.header && <p className="ed-display text-xl text-marine">{day.header}</p>}
+                    <div className={day.header ? 'mt-3 space-y-2' : 'space-y-2'}>
+                      {day.lines.map((line, j) => (
+                        <p key={j} className="ed-prose text-base leading-relaxed text-marine/75">
+                          {line}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
     </>
   )
 }
@@ -1022,6 +1069,8 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
           /* La carte Suppléments reste d'un seul tenant : on évite qu'elle soit
              orpheline en bas de page et on la garde entière. */
           .nut-supp { break-inside: avoid; break-before: auto; }
+          /* Chaque journée de menu (sauf la première) démarre sur une nouvelle page. */
+          .nut-menu-day { break-before: page; }
         }
       `}</style>
       <header className="ed-hero relative flex min-h-[65svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
