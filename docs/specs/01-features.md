@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.76 — Onglet Nutrition : largeur élargie + moments sur 3 colonnes)
+
+L'onglet Nutrition & jeûne restait coincé dans une colonne étroite à gauche (`max-w-3xl`), laissant beaucoup
+d'espace vide à droite. Conteneur élargi à `max-w-6xl` (cohérent avec les autres onglets — le Dashboard est en
+`max-w-7xl`). Les champs de suppléments par moment passent à **3 colonnes** sur grand écran
+(`sm:grid-cols-2 lg:grid-cols-3`, « À espacer / interactions » sur toute la largeur). Aucun changement de logique.
+
+Version : 0.2.75 → 0.2.76.
+
 ## ✅ Fait (v0.2.75 — Nutrition IA structurée : champs séparés par moment / journée (fini le Markdown))
 
 **Problème** : l'IA renvoyait un gros bloc de texte Markdown (`**`, `#`, `---`, tableaux `| |`, `>`, émojis) stocké

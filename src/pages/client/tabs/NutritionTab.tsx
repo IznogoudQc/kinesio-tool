@@ -578,7 +578,7 @@ export function NutritionTab() {
   }
 
   return (
-    <div className="p-6 lg:p-8 pb-28 max-w-3xl space-y-6">
+    <div className="p-6 lg:p-8 pb-28 max-w-6xl space-y-6">
       <div className="space-y-3">
         <div>
           <h1 className="text-marine font-semibold text-2xl">Nutrition &amp; jeûne</h1>
@@ -1003,7 +1003,7 @@ export function NutritionTab() {
         </div>
 
         {/* Un champ éditable par moment de prise (rempli par l’IA), + interactions. */}
-        <div className="mt-4 grid sm:grid-cols-2 gap-4">
+        <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {SUPP_MOMENTS.map(m => (
             <div key={m.key}>
               <label className="block text-marine/70 text-sm font-medium mb-1">{m.label}</label>
@@ -1016,7 +1016,7 @@ export function NutritionTab() {
               />
             </div>
           ))}
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-2 lg:col-span-3">
             <label className="block text-marine/70 text-sm font-medium mb-1">À espacer / interactions</label>
             <textarea
               value={supp.interactions}
