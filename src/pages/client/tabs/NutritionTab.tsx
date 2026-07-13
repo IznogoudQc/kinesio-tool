@@ -23,6 +23,14 @@ import {
   type MacroEstimate
 } from '../../../lib/nutrition'
 import { manualMacros } from '../../../lib/objectif'
+import {
+  parseSuppPlan,
+  serializeSuppPlan,
+  parseMenuPlan,
+  serializeMenuPlan,
+  SUPP_MOMENTS,
+  type SuppPlan
+} from '../../../lib/nutrition-plan'
 import { buildSynthesisBilan } from '../../../lib/synthesisBilan'
 import { computeBilan } from '../../../lib/bilan-computed'
 import { computeAge } from '../../../lib/norms'
@@ -215,7 +223,9 @@ export function NutritionTab() {
   const [hydratationMl, setHydratationMl] = useState(
     client.hydratationMlParJour != null ? String(client.hydratationMlParJour) : ''
   )
-  const [supplementsNotes, setSupplementsNotes] = useState(client.supplementsNotes ?? '')
+  // Suppléments : plan structuré (liste brute `input` + un champ par moment de prise).
+  const [supp, setSupp] = useState<SuppPlan>(() => parseSuppPlan(client.supplementsNotes))
+  const setSuppField = (k: keyof SuppPlan, v: string) => setSupp(s => ({ ...s, [k]: v }))
 
   // ── Aliments & mot de Marie ──────────────────────────────────────────────────
   const [alimentsPrivilegier, setAlimentsPrivilegier] = useState(client.alimentsPrivilegier ?? '')
@@ -223,7 +233,14 @@ export function NutritionTab() {
   const [alimentsAimes, setAlimentsAimes] = useState(client.alimentsAimes ?? '')
   const [alimentsPasAimes, setAlimentsPasAimes] = useState(client.alimentsPasAimes ?? '')
   const [nutritionMot, setNutritionMot] = useState(client.nutritionMot ?? '')
-  const [nutritionMenu, setNutritionMenu] = useState(client.nutritionMenu ?? '')
+  // Menu : jusqu'à 2 journées, chacune un champ texte (repas + total).
+  const [menuJours, setMenuJours] = useState<string[]>(() => {
+    const m = parseMenuPlan(client.nutritionMenu)
+    if (m) return [m.jours[0] ?? '', m.jours[1] ?? '']
+    // Rétro-compat : ancien texte libre → placé dans la journée 1 (régénérable).
+    return [client.nutritionMenu ?? '', '']
+  })
+  const setMenuJour = (i: number, v: string) => setMenuJours(js => js.map((j, k) => (k === i ? v : j)))
 
   // Génération IA (plan de suppléments / idées de menu).
   const [aiBusy, setAiBusy] = useState<'supp' | 'menu' | null>(null)
@@ -371,11 +388,11 @@ export function NutritionTab() {
         jeuneNotes: null,
         jeunePlanning: programs.length > 0 ? JSON.stringify(programs) : null,
         hydratationMlParJour: mlVal,
-        supplementsNotes: supplementsNotes.trim() || null,
+        supplementsNotes: serializeSuppPlan(supp),
         alimentsPrivilegier: alimentsPrivilegier.trim() || null,
         alimentsEviter: alimentsEviter.trim() || null,
         nutritionMot: nutritionMot.trim() || null,
-        nutritionMenu: nutritionMenu.trim() || null,
+        nutritionMenu: serializeMenuPlan(menuJours),
         alimentsAimes: alimentsAimes.trim() || null,
         alimentsPasAimes: alimentsPasAimes.trim() || null
       })
@@ -430,13 +447,22 @@ export function NutritionTab() {
     }
   }
 
-  /** IA : organise les suppléments saisis en horaire (remplace le champ, éditable). */
+  /** IA : répartit les suppléments saisis dans les 5 moments + interactions (éditable). */
   async function generateSupplementsPlan() {
     setAiError(null)
     setAiBusy('supp')
     try {
-      const text = await aiAdviceService.generateNutrition({ type: 'supplements', supplements: supplementsNotes })
-      setSupplementsNotes(text)
+      const plan = await aiAdviceService.generateSupplementsPlan(supp.input)
+      const join = (a: string[]) => a.join('\n')
+      setSupp(s => ({
+        ...s,
+        reveil: join(plan.reveil),
+        dejeuner: join(plan.dejeuner),
+        apresEntrainement: join(plan.apresEntrainement),
+        souper: join(plan.souper),
+        coucher: join(plan.coucher),
+        interactions: join(plan.interactions)
+      }))
     } catch (err) {
       setAiError(aiErrorMessage(err))
     } finally {
@@ -444,13 +470,12 @@ export function NutritionTab() {
     }
   }
 
-  /** IA : idées de menu (journées types) selon les macros + aliments. */
+  /** IA : idées de menu (jusqu'à 2 journées) selon les macros + aliments. */
   async function generateMenuIdeas() {
     setAiError(null)
     setAiBusy('menu')
     try {
-      const text = await aiAdviceService.generateNutrition({
-        type: 'menu',
+      const plan = await aiAdviceService.generateMenuPlan({
         kcal: liveMacros?.targetKcal ?? null,
         proteinG: liveMacros?.proteinG ?? null,
         fatG: liveMacros?.fatG ?? null,
@@ -460,7 +485,8 @@ export function NutritionTab() {
         foodsLiked: alimentsAimes,
         foodsDisliked: alimentsPasAimes
       })
-      setNutritionMenu(text)
+      const days = plan.journees.map(j => j.lignes.join('\n'))
+      setMenuJours([days[0] ?? '', days[1] ?? ''])
     } catch (err) {
       setAiError(aiErrorMessage(err))
     } finally {
@@ -488,7 +514,7 @@ export function NutritionTab() {
       nutritionRepasParJour: repasParJour,
       jeunePlanning: programs,
       hydratationMlParJour: hydratationMl.trim() !== '' ? Number(hydratationMl) : null,
-      supplementsNotes: supplementsNotes.trim() || null,
+      supplementsNotes: serializeSuppPlan(supp),
       alimentsPrivilegier: alimentsPrivilegier.trim() || null,
       alimentsEviter: alimentsEviter.trim() || null
     }
@@ -518,7 +544,7 @@ export function NutritionTab() {
     if (num(d.nutritionRepasParJour) != null) setRepasParJour(Number(d.nutritionRepasParJour))
     if (Array.isArray(d.jeunePlanning)) setPrograms(d.jeunePlanning as FastingProgram[])
     if ('hydratationMlParJour' in d) setHydratationMl(num(d.hydratationMlParJour) != null ? String(d.hydratationMlParJour) : '')
-    if ('supplementsNotes' in d) setSupplementsNotes(str(d.supplementsNotes))
+    if ('supplementsNotes' in d) setSupp(parseSuppPlan(str(d.supplementsNotes)))
     if ('alimentsPrivilegier' in d) setAlimentsPrivilegier(str(d.alimentsPrivilegier))
     if ('alimentsEviter' in d) setAlimentsEviter(str(d.alimentsEviter))
     setShowTemplates(false)
@@ -953,27 +979,53 @@ export function NutritionTab() {
         </p>
       </Section>
 
-      <Section icon={Pill} title="Suppléments" desc="Recommandations libres, avec le moment de prise.">
-        <SupplementChips items={SUPPLEMENTS} current={supplementsNotes} onPick={line => setSupplementsNotes(c => appendLine(c, line))} />
+      <Section icon={Pill} title="Suppléments" desc="Listez les suppléments, puis l’IA les répartit par moment de prise.">
+        <SupplementChips items={SUPPLEMENTS} current={supp.input} onPick={line => setSuppField('input', appendLine(supp.input, line))} />
         <textarea
-          value={supplementsNotes}
-          onChange={e => setSupplementsNotes(e.target.value)}
-          rows={5}
-          placeholder="Ex. Vitamine D3 + K2 — avec un repas contenant du gras&#10;Créatine 5 g — tous les jours"
+          value={supp.input}
+          onChange={e => setSuppField('input', e.target.value)}
+          rows={4}
+          placeholder="Suppléments du client, un par ligne. Ex. Vitamine D3 + K2&#10;Créatine 5 g&#10;Magnésium bisglycinate"
           className={`${fieldClass} resize-y`}
         />
         <div className="mt-2 flex items-center gap-3 flex-wrap">
           <button
             type="button"
             onClick={generateSupplementsPlan}
-            disabled={aiBusy !== null || supplementsNotes.trim() === ''}
-            title={supplementsNotes.trim() === '' ? 'Ajoutez d’abord des suppléments.' : 'Organiser en horaire avec l’IA'}
+            disabled={aiBusy !== null || supp.input.trim() === ''}
+            title={supp.input.trim() === '' ? 'Ajoutez d’abord des suppléments.' : 'Répartir par moment de prise avec l’IA'}
             className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-gold/50 text-marine/80 text-sm hover:border-gold hover:bg-gold/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Sparkles size={15} className="text-gold-dark" />
-            {aiBusy === 'supp' ? 'Génération…' : 'Organiser en horaire (IA)'}
+            {aiBusy === 'supp' ? 'Génération…' : 'Répartir par moment (IA)'}
           </button>
-          <span className="text-marine/40 text-xs">L’IA classe par moment de prise. Vous pouvez ensuite modifier le texte.</span>
+          <span className="text-marine/40 text-xs">L’IA remplit chaque moment ci-dessous. Vous pouvez les ajuster.</span>
+        </div>
+
+        {/* Un champ éditable par moment de prise (rempli par l’IA), + interactions. */}
+        <div className="mt-4 grid sm:grid-cols-2 gap-4">
+          {SUPP_MOMENTS.map(m => (
+            <div key={m.key}>
+              <label className="block text-marine/70 text-sm font-medium mb-1">{m.label}</label>
+              <textarea
+                value={supp[m.key]}
+                onChange={e => setSuppField(m.key, e.target.value)}
+                rows={3}
+                placeholder="—"
+                className={`${fieldClass} resize-y`}
+              />
+            </div>
+          ))}
+          <div className="sm:col-span-2">
+            <label className="block text-marine/70 text-sm font-medium mb-1">À espacer / interactions</label>
+            <textarea
+              value={supp.interactions}
+              onChange={e => setSuppField('interactions', e.target.value)}
+              rows={3}
+              placeholder="Consignes d’espacement / interactions"
+              className={`${fieldClass} resize-y`}
+            />
+          </div>
         </div>
       </Section>
 
@@ -1045,13 +1097,20 @@ export function NutritionTab() {
             </span>
           )}
         </div>
-        <textarea
-          value={nutritionMenu}
-          onChange={e => setNutritionMenu(e.target.value)}
-          rows={8}
-          placeholder="Cliquez « Générer des idées » ou écrivez vos propres exemples de journées (déjeuner, dîner, souper, collations)."
-          className={`${fieldClass} resize-y`}
-        />
+        <div className="grid sm:grid-cols-2 gap-4">
+          {menuJours.map((jour, i) => (
+            <div key={i}>
+              <label className="block text-marine/70 text-sm font-medium mb-1">Journée {i + 1}</label>
+              <textarea
+                value={jour}
+                onChange={e => setMenuJour(i, e.target.value)}
+                rows={8}
+                placeholder={`Journée ${i + 1} — un repas par ligne. Ex. Déjeuner : ...&#10;Dîner : ...&#10;Souper : ...&#10;Collations : ...&#10;Total approximatif : ...`}
+                className={`${fieldClass} resize-y`}
+              />
+            </div>
+          ))}
+        </div>
         <p className="text-marine/40 text-xs mt-1.5">
           Idées génériques à titre d’exemple — un plan nutritionnel personnalisé relève d’une nutritionniste.
         </p>

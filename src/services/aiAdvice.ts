@@ -78,28 +78,53 @@ export const aiAdviceService = {
     return res.advice as AIAdvice
   },
 
-  /** Génère un texte nutrition (plan de suppléments ou idées de menu) — Marie l'ajuste ensuite. */
-  async generateNutrition(payload: {
-    type: 'supplements' | 'menu'
-    kcal?: number | null
-    proteinG?: number | null
-    fatG?: number | null
-    carbsG?: number | null
-    supplements?: string
-    foodsGood?: string
-    foodsBad?: string
-    foodsLiked?: string
-    foodsDisliked?: string
-  }): Promise<string> {
-    const res = await window.api.ai.generateNutrition(payload)
-    if (!res.ok || typeof res.text !== 'string') {
+  /** IA : répartit les suppléments saisis dans les moments de prise (structuré). */
+  async generateSupplementsPlan(supplements: string): Promise<AiSuppPlan> {
+    const res = await window.api.ai.generateNutrition({ type: 'supplements', supplements })
+    if (!res.ok || !res.plan) {
       throw new AIAdviceError(
         (res.code as AIErrorCode) ?? 'BAD_RESPONSE',
         res.error ?? 'Erreur inconnue lors de la génération.'
       )
     }
-    return res.text
+    return res.plan as AiSuppPlan
+  },
+
+  /** IA : idées de menu structurées (jusqu'à 2 journées) selon macros + aliments. */
+  async generateMenuPlan(payload: {
+    kcal?: number | null
+    proteinG?: number | null
+    fatG?: number | null
+    carbsG?: number | null
+    foodsGood?: string
+    foodsBad?: string
+    foodsLiked?: string
+    foodsDisliked?: string
+  }): Promise<AiMenuPlan> {
+    const res = await window.api.ai.generateNutrition({ type: 'menu', ...payload })
+    if (!res.ok || !res.plan) {
+      throw new AIAdviceError(
+        (res.code as AIErrorCode) ?? 'BAD_RESPONSE',
+        res.error ?? 'Erreur inconnue lors de la génération.'
+      )
+    }
+    return res.plan as AiMenuPlan
   }
+}
+
+/** Plan de suppléments renvoyé par l'IA : lignes par moment de prise. */
+export interface AiSuppPlan {
+  reveil: string[]
+  dejeuner: string[]
+  apresEntrainement: string[]
+  souper: string[]
+  coucher: string[]
+  interactions: string[]
+}
+
+/** Idées de menu renvoyées par l'IA : journées, chacune une liste de lignes. */
+export interface AiMenuPlan {
+  journees: { lignes: string[] }[]
 }
 
 /** Formate une `AIAdvice` (forces & à travailler) en markdown — bouton « Copier ». */

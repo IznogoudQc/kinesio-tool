@@ -511,7 +511,7 @@ interface Window {
           deltaPct?: number
         }>
       }): Promise<{ ok: boolean; advice?: unknown; error?: string; code?: string }>
-      /** Génère un texte nutrition (plan de suppléments ou idées de menu) — éditable ensuite. */
+      /** Génère un plan nutrition STRUCTURÉ (suppléments par moment / menu par journée). */
       generateNutrition(payload: {
         type: 'supplements' | 'menu'
         kcal?: number | null
@@ -523,7 +523,7 @@ interface Window {
         foodsBad?: string
         foodsLiked?: string
         foodsDisliked?: string
-      }): Promise<{ ok: boolean; text?: string; error?: string; code?: string }>
+      }): Promise<{ ok: boolean; plan?: unknown; error?: string; code?: string }>
     }
     nutritionTemplates: {
       list(): Promise<NutritionTemplate[]>

@@ -16,6 +16,14 @@ import { buildActionPlan } from '../lib/action-plan'
 import { buildObjectif, type Objectif } from '../lib/objectif'
 import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
 import { ACTIVITY_LABELS, DEFAULT_MEALS_PER_DAY, macrosPerMeal } from '../lib/nutrition'
+import {
+  parseSuppPlan,
+  parseMenuPlan,
+  suppPlanHasSchedule,
+  SUPP_MOMENTS,
+  SUPP_MENTION,
+  MENU_MENTION
+} from '../lib/nutrition-plan'
 import { useCountUp } from '../lib/useCountUp'
 import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
@@ -679,8 +687,10 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
   const privil = (client.alimentsPrivilegier ?? '').trim()
   const eviter = (client.alimentsEviter ?? '').trim()
   const supp = (client.supplementsNotes ?? '').trim()
+  const suppPlan = parseSuppPlan(client.supplementsNotes)
   const mot = (client.nutritionMot ?? '').trim()
   const menu = (client.nutritionMenu ?? '').trim()
+  const menuPlan = parseMenuPlan(client.nutritionMenu)
 
   if (!hasJeune && !hasHydra && !privil && !eviter && !supp && !mot && !menu) return null
 
@@ -734,33 +744,79 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
       {supp && (
         <div className="nut-supp mt-6 rounded-xl border border-marine/10 p-6">
           <p className="ed-eyebrow text-gold-dark">Suppléments</p>
-          {(() => {
-            const lines = supp.split('\n').map((l) => l.trim()).filter(Boolean)
-            const idx = lines.findIndex((l) => /espacer|interaction/i.test(l))
-            if (idx <= 0) {
-              return (
-                <div className="mt-4">
-                  <EdBullets text={supp} />
+          {suppPlanHasSchedule(suppPlan) ? (
+            <>
+              {SUPP_MOMENTS.filter((m) => suppPlan[m.key].trim()).map((m) => (
+                <div key={m.key} className="mt-4">
+                  <p className="text-sm font-semibold text-marine">{m.label}</p>
+                  <div className="mt-2">
+                    <EdBullets text={suppPlan[m.key]} />
+                  </div>
                 </div>
-              )
-            }
-            return (
-              <>
-                <div className="mt-4">
-                  <EdBullets text={lines.slice(0, idx).join('\n')} />
-                </div>
-                {/* Filet de séparation avant les consignes « À espacer / interactions ». */}
+              ))}
+              {suppPlan.interactions.trim() && (
+                /* Filet de séparation avant les consignes « À espacer / interactions ». */
                 <div className="mt-6 border-t border-marine/10 pt-6">
-                  <EdBullets text={lines.slice(idx).join('\n')} />
+                  <p className="text-sm font-semibold text-marine">À espacer / interactions</p>
+                  <div className="mt-2">
+                    <EdBullets text={suppPlan.interactions} />
+                  </div>
                 </div>
-              </>
-            )
-          })()}
+              )}
+              <p className="mt-6 text-xs italic leading-relaxed text-marine/50">{SUPP_MENTION}</p>
+            </>
+          ) : (
+            <div className="mt-4">
+              <EdBullets text={suppPlan.input || supp} />
+            </div>
+          )}
         </div>
       )}
 
       {menu &&
         (() => {
+          // Journées structurées (nouveau modèle) : une carte crème par journée,
+          // libellé « Journée N » implicite, étiquette de repas en gras.
+          const structured = menuPlan?.jours.filter((j) => j.trim()) ?? null
+          if (structured && structured.length > 0) {
+            return (
+              <div className="mt-10">
+                <p className="ed-eyebrow text-gold-dark">Idées de menu</p>
+                <div className="mt-4 space-y-6">
+                  {structured.map((jour, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-xl bg-cream p-8 sm:p-10${i > 0 ? ' nut-menu-day' : ''}`}
+                    >
+                      <p className="ed-display text-xl text-marine">Journée {i + 1}</p>
+                      <div className="mt-3 space-y-2">
+                        {jour
+                          .split('\n')
+                          .map((l) => l.trim())
+                          .filter(Boolean)
+                          .map((line, j) => {
+                            const m = /^([^:]{1,40}):\s*(.*)$/.exec(line)
+                            return (
+                              <p key={j} className="ed-prose text-base leading-relaxed text-marine/75">
+                                {m ? (
+                                  <>
+                                    <span className="font-semibold text-marine">{m[1]}</span> : {m[2]}
+                                  </>
+                                ) : (
+                                  line
+                                )}
+                              </p>
+                            )
+                          })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-xs italic leading-relaxed text-marine/50">{MENU_MENTION}</p>
+              </div>
+            )
+          }
+          // Rétro-compatibilité : ancien texte libre → découpage heuristique par jour.
           const days = parseMenuDays(menu)
           return (
             <div className="mt-10">

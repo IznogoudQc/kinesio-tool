@@ -642,6 +642,31 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.75 — Nutrition IA structurée : champs séparés par moment / journée (fini le Markdown))
+
+**Problème** : l'IA renvoyait un gros bloc de texte Markdown (`**`, `#`, `---`, tableaux `| |`, `>`, émojis) stocké
+tel quel → puces sur les titres, « --- » affichés, tableaux cassés et pagination bancale dans le PDF.
+
+**Solution** : l'IA renvoie désormais des **données structurées** (JSON, comme l'analyse des bilans), rangées
+dans des **champs séparés** — plus fiable et facile à paginer.
+
+- **Suppléments** : 5 moments fixes (`src/lib/nutrition-plan.ts` `SUPP_MOMENTS` : Au réveil/à jeun · Déjeuner ·
+  Après l'entraînement · Souper · Au coucher) + « À espacer / interactions ». L'IA répartit chaque supplément
+  dans le bon moment. Onglet : une zone **éditable** par moment (remplie par l'IA, ajustable). PDF : un
+  sous-bloc titré par moment (moments vides omis), filet avant « À espacer / interactions », mention auto.
+- **Menu** : jusqu'à 2 **journées**, chacune son champ éditable. PDF : une carte crème par journée + saut de
+  page entre elles, étiquettes de repas en gras, mention auto.
+- **Stockage** : JSON dans les colonnes existantes `supplementsNotes` / `nutritionMenu` (aucune migration).
+  **Rétro-compatible** : un ancien texte libre est détecté (`parseSuppPlan` → champ liste ; `parseMenuPlan` →
+  `null` → ancien rendu heuristique conservé).
+- Nouveau module partagé `src/lib/nutrition-plan.ts` (+ tests) : parse/sérialise, utilisé par l'onglet ET le
+  document. Service IA : `generateSupplementsPlan` / `generateMenuPlan` (schémas zod stricts).
+
+Vérifié en headless (`--print-to-pdf` fidèle electron + rendu pymupdf) avec des données structurées : PDF propre,
+sans Markdown, suppléments par moment et menu 1 journée / page.
+
+Version : 0.2.74 → 0.2.75.
+
 ## ✅ Fait (v0.2.74 — Document nutrition : suppléments coupés avant « À espacer » + menu 1 journée par page)
 
 - **Suppléments** : la carte est coupée en deux par un **filet de séparation** juste avant la section

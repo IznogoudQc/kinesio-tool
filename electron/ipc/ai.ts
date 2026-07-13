@@ -84,30 +84,66 @@ const NutritionPayloadSchema = z.object({
   foodsDisliked: z.string().max(3000).optional()
 })
 
+/** Plan de suppléments structuré : une liste de lignes par moment de prise. */
+const SuppPlanSchema = z.object({
+  reveil: z.array(z.string()).default([]),
+  dejeuner: z.array(z.string()).default([]),
+  apresEntrainement: z.array(z.string()).default([]),
+  souper: z.array(z.string()).default([]),
+  coucher: z.array(z.string()).default([]),
+  interactions: z.array(z.string()).default([])
+})
+
+/** Idées de menu structurées : jusqu'à quelques journées, chacune une liste de lignes. */
+const MenuPlanSchema = z.object({
+  journees: z.array(z.object({ lignes: z.array(z.string()) })).max(3).default([])
+})
+
 const SUPPLEMENTS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
-On te donne la liste des suppléments qu'un client prévoit prendre. Organise-les en un HORAIRE QUOTIDIEN clair et sécuritaire.
+On te donne la liste des suppléments qu'un client prévoit prendre. Répartis CHAQUE supplément dans le bon MOMENT de prise, et rédige de courtes consignes d'espacement / interactions.
 
-Format de réponse (texte simple, français, pas de Markdown lourd) :
-- Regroupe par moment : « Matin (à jeun) », « Déjeuner », « Midi », « Après-midi », « Souper », « Au coucher ».
-- Sous chaque moment, une puce par supplément, en précisant AVEC ou SANS nourriture.
-- Ajoute une courte section « À espacer / interactions » (ex. zinc et calcium/fer à distance ; fer avec vitamine C mais loin du café/thé ; magnésium le soir).
-- Base-toi UNIQUEMENT sur les suppléments fournis. N'ajoute rien qui n'a pas été demandé et n'invente pas de dosages.
-- Reste bref et pratique.
-- Termine par : « Horaire indicatif — validez avec votre pharmacien ou professionnel de la santé, surtout en cas de médication. »`
+Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suivant exactement ce schéma :
+
+{
+  "reveil": ["suppléments à prendre au réveil / à jeun"],
+  "dejeuner": ["suppléments au déjeuner (préciser AVEC ou SANS nourriture)"],
+  "apresEntrainement": ["suppléments après l'entraînement"],
+  "souper": ["suppléments au souper"],
+  "coucher": ["suppléments au coucher"],
+  "interactions": ["consignes d'espacement / interactions (ex. zinc et calcium/fer à distance ; fer avec vitamine C mais loin du café/thé)"]
+}
+
+Règles :
+- Chaque élément de tableau = UNE ligne courte, en français, SANS puce et SANS Markdown (pas de #, *, -, >, tableaux, émojis).
+- Base-toi UNIQUEMENT sur les suppléments fournis. N'invente ni supplément ni dosage.
+- Laisse un tableau VIDE [] pour un moment sans supplément. Place chaque supplément dans UN SEUL moment (le plus pertinent).
+- N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
 
 const MENU_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
-Propose 1 à 2 EXEMPLES de journées (IDÉES DE MENU génériques, NON prescriptives) qui respectent approximativement les cibles de calories et de macros fournies, en tenant compte des aliments à privilégier et à éviter.
+Propose 1 à 2 EXEMPLES de journées (IDÉES DE MENU génériques, NON prescriptives) qui respectent approximativement les cibles de calories et de macros fournies, en tenant compte des aliments à privilégier / à éviter / aimés / non aimés.
 
-Format (texte simple, français) :
-- Pour chaque journée : « Déjeuner », « Dîner », « Souper », « Collations » avec des aliments simples et des portions approximatives.
-- À la fin de chaque journée, un total approximatif : calories, protéines, lipides, glucides.
-- Ce sont des IDÉES / EXEMPLES, jamais un plan nutritionnel individualisé.
-- N'invente aucune allergie ni restriction non fournie. Respecte les aliments à éviter indiqués.
-- PRIORISE les aliments que la personne AIME et EXCLUS ceux qu'elle n'aime pas / à exclure (préférences personnelles) — c'est important pour l'adhésion.
-- VARIE les journées : chaque journée doit être DISTINCTE. Ne répète pas les mêmes aliments principaux ni les mêmes repas d'une journée à l'autre (ex. si œufs au déjeuner du jour 1, propose une autre source de protéines au jour 2). L'objectif est d'offrir de la diversité.
-- Termine par : « Idées générales à titre d'exemple — pour un plan personnalisé, consultez une nutritionniste. »`
+Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suivant exactement ce schéma :
+
+{
+  "journees": [
+    { "lignes": [
+      "Déjeuner : aliments et portions approximatives",
+      "Dîner : ...",
+      "Souper : ...",
+      "Collations : ...",
+      "Total approximatif : X kcal, X g protéines, X g lipides, X g glucides"
+    ] }
+  ]
+}
+
+Règles :
+- 1 à 2 journées. Chaque « lignes » = des lignes « Repas : aliments », SANS puce et SANS Markdown (pas de #, *, tableaux, émojis).
+- Ne mets PAS d'en-tête « Journée N » dans les lignes : la numérotation est ajoutée par l'application.
+- VARIE les journées : aliments principaux DIFFÉRENTS d'une journée à l'autre.
+- PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
+- N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
 
 function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): string {
   if (p.type === 'supplements') {
@@ -319,10 +355,16 @@ export function registerAIHandlers(): void {
         system: payload.type === 'supplements' ? SUPPLEMENTS_SYSTEM : MENU_SYSTEM,
         messages: [{ role: 'user', content: buildNutritionMessage(payload) }]
       })
-      const text = extractText(response).trim()
-      return { ok: true, text }
+      const parsed = parseAdviceJson(extractText(response))
+      if (payload.type === 'supplements') {
+        return { ok: true, plan: SuppPlanSchema.parse(parsed) }
+      }
+      return { ok: true, plan: MenuPlanSchema.parse(parsed) }
     } catch (err) {
       if (err instanceof AIError) return { ok: false, error: err.message, code: err.code }
+      if (err instanceof z.ZodError) {
+        return { ok: false, error: 'Le JSON Anthropic ne correspond pas au schéma attendu.', code: 'BAD_RESPONSE' as AIErrorCode }
+      }
       return { ok: false, error: err instanceof Error ? err.message : 'Erreur inconnue', code: 'BAD_RESPONSE' as AIErrorCode }
     }
   })
