@@ -553,14 +553,14 @@ export function NutritionTab() {
 
   return (
     <div className="max-w-3xl mx-auto p-8 pb-28 space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="space-y-3">
         <div>
           <h1 className="text-marine font-semibold text-2xl">Nutrition &amp; jeûne</h1>
           <p className="text-marine/50 text-base mt-1">
             Ces réglages composent le document nutrition remis à {client.name.split(' ')[0]}.
           </p>
         </div>
-        <div className="shrink-0 flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setShowTemplates(v => !v)}

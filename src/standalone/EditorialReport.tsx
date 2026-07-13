@@ -891,7 +891,7 @@ export function FoodJournal({ data }: { data: StandaloneData }) {
 
   return (
     <div style={{ background: '#fff', color: '#111', minHeight: '100vh', padding: '20px 24px', fontFamily: 'system-ui, sans-serif' }}>
-      <style>{`@media print { @page { size: A4 landscape; margin: 9mm } .fj-noprint { display: none !important } } body { background:#fff }`}</style>
+      <style>{`@media print { @page { size: A4 landscape; margin: 9mm } .fj-noprint { display: none !important } } body { background:#fff } * { -webkit-print-color-adjust: exact; print-color-adjust: exact }`}</style>
 
       <div className="fj-noprint" style={{ textAlign: 'right', marginBottom: '8px' }}>
         <button
@@ -905,7 +905,9 @@ export function FoodJournal({ data }: { data: StandaloneData }) {
 
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '2px solid #001331', paddingBottom: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <img src={logoConseil} alt="Kinésio Conseil" style={{ height: '44px', width: 'auto' }} />
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#001331', borderRadius: '10px', padding: '10px 16px' }}>
+            <img src={logoConseil} alt="Kinésio Conseil" style={{ height: '58px', width: 'auto' }} />
+          </span>
           <div>
             <h1 style={{ fontSize: '21px', fontWeight: 700, color: '#001331', margin: 0 }}>Journal alimentaire</h1>
             <p style={{ margin: '3px 0 0', fontSize: '13px', color: '#444' }}>

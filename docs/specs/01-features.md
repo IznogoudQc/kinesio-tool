@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.67 — Onglet Nutrition : en-tête corrigé + logo du journal agrandi)
+
+- **Correctif d'affichage** de l'en-tête de l'onglet Nutrition : le titre + description était écrasé par les 4
+  boutons (Modèles / Journal / Voir le document / Courriel). Le titre passe pleine largeur et les boutons
+  s'alignent dessous dans une rangée qui peut passer à la ligne (`flex-wrap`).
+- **Logo du journal alimentaire** plus grand et **plus contrasté** : posé dans une pastille marine (le logo
+  blanc/or ressort maintenant sur fond blanc). `print-color-adjust: exact` pour que la couleur s'imprime.
+
+Version : 0.2.66 → 0.2.67.
+
 ## ✅ Fait (v0.2.66 — Journal alimentaire : jours en colonnes + logo)
 
 Journal alimentaire retravaillé selon la demande : **jours en colonnes** (Lundi→Dimanche en tête), **repas
