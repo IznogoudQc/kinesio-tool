@@ -984,7 +984,7 @@ export function NutritionTab() {
         <textarea
           value={supp.input}
           onChange={e => setSuppField('input', e.target.value)}
-          rows={4}
+          rows={7}
           placeholder="Suppléments du client, un par ligne. Ex. Vitamine D3 + K2&#10;Créatine 5 g&#10;Magnésium bisglycinate"
           className={`${fieldClass} resize-y`}
         />
@@ -1003,7 +1003,7 @@ export function NutritionTab() {
         </div>
 
         {/* Un champ éditable par moment de prise (rempli par l’IA), + interactions. */}
-        <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="mt-4 grid sm:grid-cols-2 gap-4">
           {SUPP_MOMENTS.map(m => (
             <div key={m.key}>
               <label className="block text-marine/70 text-sm font-medium mb-1">{m.label}</label>
@@ -1016,7 +1016,7 @@ export function NutritionTab() {
               />
             </div>
           ))}
-          <div className="sm:col-span-2 lg:col-span-3">
+          <div className="sm:col-span-2">
             <label className="block text-marine/70 text-sm font-medium mb-1">À espacer / interactions</label>
             <textarea
               value={supp.interactions}

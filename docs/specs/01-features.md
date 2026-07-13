@@ -642,6 +642,13 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.78 — Onglet Nutrition : liste de suppléments plus haute + moments sur 2 colonnes)
+
+- Champ **« liste des suppléments »** agrandi (`rows` 4 → 7) pour éviter la barre de défilement.
+- Champs par moment de prise : retour à **2 colonnes maximum** (`sm:grid-cols-2`, plus de 3e colonne).
+
+Version : 0.2.77 → 0.2.78.
+
 ## ✅ Fait (v0.2.77 — Onglet Nutrition : largeur `max-w-7xl` (comme le Dashboard))
 
 Conteneur de l'onglet Nutrition & jeûne porté de `max-w-6xl` à **`max-w-7xl`**, identique au Dashboard, pour
