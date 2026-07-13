@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown } from 'lucide-react'
+import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder } from 'lucide-react'
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { settingsService } from '../services/settings'
@@ -24,6 +24,7 @@ export function SettingsPage() {
         {/* Colonne gauche : sections de configuration */}
         <div className="lg:col-span-2 space-y-6">
           <ProfileCard />
+          <DocumentsFolderCard />
           <NormsCard />
           <AIProviderCard />
           <SmtpCard />
@@ -71,6 +72,53 @@ function Card({ title, icon: Icon, children, description }: CardProps) {
       )}
       <div className={description ? '' : 'mt-5'}>{children}</div>
     </section>
+  )
+}
+
+function DocumentsFolderCard() {
+  const [folder, setFolder] = useState<string | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    settingsService
+      .getDocumentsFolder()
+      .then(f => setFolder(f))
+      .catch(() => undefined)
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function choose() {
+    setBusy(true)
+    try {
+      const f = await settingsService.pickDocumentsFolder()
+      if (f) setFolder(f)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card
+      title="Dossier des documents clients"
+      icon={Folder}
+      description="Où l'app enregistre les documents exportés (un sous-dossier par client). Depuis le tableau de bord d'un client, « Télécharger tous les documents » y dépose les bilans et la nutrition."
+    >
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex-1 min-w-0 px-3 py-2 rounded-md border border-cream-dark bg-cream/40 text-marine text-base truncate">
+          {loading ? 'Chargement…' : (folder ?? 'Aucun dossier choisi')}
+        </div>
+        <button
+          type="button"
+          onClick={choose}
+          disabled={busy}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Folder size={15} />
+          {busy ? '…' : 'Choisir un dossier'}
+        </button>
+      </div>
+    </Card>
   )
 }
 

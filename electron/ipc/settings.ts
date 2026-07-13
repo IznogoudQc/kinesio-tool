@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { dialog, ipcMain } from 'electron'
 import keytar from 'keytar'
 import nodemailer from 'nodemailer'
 import { z } from 'zod'
@@ -15,7 +15,8 @@ const KEYS = {
   smtp: 'smtp.config',
   emailTemplate: 'email.template',
   categorizationNorms: 'categorization_norms',
-  mesureFields: 'mesures.fields'
+  mesureFields: 'mesures.fields',
+  documentsFolder: 'documents.folder'
 } as const
 
 const CategorizationNormsSchema = z.enum(['acsm', 'cpafla'])
@@ -204,6 +205,27 @@ export function registerSettingsHandlers(): void {
     const validated = MesureFieldsSchema.parse(value)
     await writeKey(KEYS.mesureFields, JSON.stringify(validated))
   })
+
+  // ── Dossier des documents clients ──────────────────────────────────────────
+  ipcMain.handle('settings:documentsFolder:get', async () => readKey(KEYS.documentsFolder))
+
+  ipcMain.handle('settings:documentsFolder:pick', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Choisir le dossier des documents clients',
+      buttonLabel: 'Choisir ce dossier',
+      properties: ['openDirectory', 'createDirectory']
+    })
+    if (result.canceled || result.filePaths.length === 0) return null
+    const folder = result.filePaths[0]
+    await writeKey(KEYS.documentsFolder, folder)
+    return folder
+  })
+}
+
+/** Dossier configuré pour l'export des documents clients (ou `null`). Le dossier
+ *  peut avoir été déplacé depuis — l'export le (re)crée au besoin. */
+export async function getDocumentsFolder(): Promise<string | null> {
+  return readKey(KEYS.documentsFolder)
 }
 
 export async function getSmtpCredentials(): Promise<

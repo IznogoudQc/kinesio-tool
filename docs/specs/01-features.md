@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.70 — Dossier des documents + export « tous les documents » par client)
+
+- **Paramètres** : nouveau réglage **« Dossier des documents clients »** (sélecteur de dossier natif). Stocké
+  dans `settings` (`documents.folder`).
+- **Dashboard client** : bouton **« Télécharger tous les documents »** → génère et dépose, dans
+  `{dossier}/{Nom du client}/`, le **bilan (PDF + HTML)**, la **nutrition (PDF + HTML)** et le **journal
+  alimentaire (HTML)**. Chaque étape est indépendante (un client sans bilan exporte quand même la nutrition).
+- Bouton **« Ouvrir le dossier »** → ouvre le sous-dossier du client dans l'explorateur (le crée au besoin).
+- **PDF nutrition** produit en imprimant le HTML autonome (`htmlFileToPdf`, fenêtre cachée + `printToPDF`).
+- IPC `settings:documentsFolder:*`, `reports:export-client-documents`, `reports:open-client-folder` + preload
+  + services + types.
+
+Version : 0.2.69 → 0.2.70.
+
 ## ✅ Fait (v0.2.69 — Courriel nutrition : modèle propre + journal joint)
 
 - Le courriel du document nutrition utilisait le **modèle du bilan** (sujet/corps parlant de « bilan de forme

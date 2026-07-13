@@ -34,6 +34,16 @@ export const reportsService = {
     return window.api.reports.openPath(filePath)
   },
 
+  /** Génère et exporte tous les documents du client dans le dossier configuré (Paramètres). */
+  async exportClientDocuments(clientId: string): Promise<{ dir: string; count: number }> {
+    return window.api.reports.exportClientDocuments(clientId)
+  },
+
+  /** Ouvre le sous-dossier du client dans l'explorateur (le crée au besoin). */
+  async openClientFolder(clientId: string): Promise<void> {
+    return window.api.reports.openClientFolder(clientId)
+  },
+
   /** Génère le(s) document(s), les attache et les envoie au client par courriel (SMTP des
    *  Paramètres). `kind` : `bilan` (PDF + interactif) ou `nutrition` (document nutrition). */
   async sendReportByEmail(

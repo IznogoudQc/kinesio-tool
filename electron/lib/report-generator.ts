@@ -107,6 +107,31 @@ async function waitForReportReady(win: BrowserWindow, timeoutMs = 10000): Promis
 }
 
 /**
+ * Imprime un document HTML **autonome** (fichier local, données inline) en PDF.
+ * Sert pour le document nutrition, qui n'a pas de route React dédiée.
+ */
+export async function htmlFileToPdf(htmlPath: string): Promise<Buffer> {
+  const win = new BrowserWindow({
+    show: false,
+    width: 1100,
+    height: 1400,
+    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true }
+  })
+  try {
+    await win.loadFile(htmlPath)
+    // Le document monte React au chargement — on laisse le rendu se stabiliser.
+    await new Promise(resolve => setTimeout(resolve, 700))
+    return await win.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'A4',
+      margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 }
+    })
+  } finally {
+    if (!win.isDestroyed()) win.destroy()
+  }
+}
+
+/**
  * Génère le rapport PDF d'un client en chargeant la route React dédiée
  * `/report/:id` dans une fenêtre cachée, puis `webContents.printToPDF()`.
  * Retourne le chemin du PDF écrit dans le dossier temporaire.

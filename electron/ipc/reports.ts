@@ -1,5 +1,6 @@
 import { ipcMain, shell } from 'electron'
 import { promises as fs } from 'fs'
+import { join } from 'path'
 import nodemailer from 'nodemailer'
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
@@ -8,11 +9,12 @@ import { clients } from '../../db/schema'
 import {
   generateBaremesPdf,
   generateClientReportPdf,
+  htmlFileToPdf,
   safeClientFileName,
   todayISODate
 } from '../lib/report-generator'
 import { generateFoodJournalHtml, generateInteractiveReportHtml, generateNutritionDocumentHtml } from '../lib/standalone-report'
-import { getSmtpCredentials } from './settings'
+import { getDocumentsFolder, getSmtpCredentials } from './settings'
 
 const ClientIdSchema = z.string().uuid()
 
@@ -58,6 +60,90 @@ export function registerReportsHandlers(): void {
   ipcMain.handle('reports:open-path', async (_e, filePath: unknown) => {
     const p = z.string().min(1).parse(filePath)
     const err = await shell.openPath(p)
+    if (err) throw new Error(err)
+  })
+
+  // ── Export de TOUS les documents d'un client dans le dossier configuré ───────
+  // Structure : {dossier}/{Nom Client}/ avec Bilan PDF+HTML, Nutrition PDF+HTML,
+  // Journal alimentaire HTML. Chaque étape est tentée indépendamment (un client
+  // sans bilan n'empêche pas d'exporter la nutrition).
+  ipcMain.handle('reports:export-client-documents', async (_e, clientId: unknown) => {
+    const id = ClientIdSchema.parse(clientId)
+    const client = getDb().select().from(clients).where(eq(clients.id, id)).get()
+    if (!client) throw new Error('Client introuvable.')
+    const folder = await getDocumentsFolder()
+    if (!folder) throw new Error('Aucun dossier configuré. Choisissez-le dans les Paramètres.')
+
+    const clientDir = join(folder, safeClientFileName(client.name))
+    await fs.mkdir(clientDir, { recursive: true })
+    const stem = `${safeClientFileName(client.name)}-${todayISODate()}`
+
+    const temps: string[] = []
+    let written = 0
+    const step = async (fn: () => Promise<void>): Promise<void> => {
+      try {
+        await fn()
+      } catch {
+        // Étape ignorée (ex. aucun bilan pour le PDF) — on continue.
+      }
+    }
+
+    await step(async () => {
+      const p = await generateClientReportPdf(id)
+      temps.push(p)
+      await fs.copyFile(p, join(clientDir, `Bilan-${stem}.pdf`))
+      written++
+    })
+    await step(async () => {
+      const p = await generateInteractiveReportHtml(id)
+      temps.push(p)
+      await fs.copyFile(p, join(clientDir, `Bilan-interactif-${stem}.html`))
+      written++
+    })
+
+    let nutriHtml: string | null = null
+    await step(async () => {
+      const p = await generateNutritionDocumentHtml(id)
+      temps.push(p)
+      nutriHtml = p
+      await fs.copyFile(p, join(clientDir, `Nutrition-${stem}.html`))
+      written++
+    })
+    await step(async () => {
+      if (!nutriHtml) return
+      const buf = await htmlFileToPdf(nutriHtml)
+      await fs.writeFile(join(clientDir, `Nutrition-${stem}.pdf`), buf)
+      written++
+    })
+
+    await step(async () => {
+      const p = await generateFoodJournalHtml(id)
+      temps.push(p)
+      await fs.copyFile(p, join(clientDir, `Journal-alimentaire-${stem}.html`))
+      written++
+    })
+
+    for (const t of temps) {
+      try {
+        await fs.unlink(t)
+      } catch {
+        // best effort
+      }
+    }
+    if (written === 0) throw new Error("Aucun document n'a pu être généré. Le client a-t-il un bilan ?")
+    return { dir: clientDir, count: written }
+  })
+
+  // Ouvre le sous-dossier du client dans l'explorateur (le crée au besoin).
+  ipcMain.handle('reports:open-client-folder', async (_e, clientId: unknown) => {
+    const id = ClientIdSchema.parse(clientId)
+    const client = getDb().select().from(clients).where(eq(clients.id, id)).get()
+    if (!client) throw new Error('Client introuvable.')
+    const folder = await getDocumentsFolder()
+    if (!folder) throw new Error('Aucun dossier configuré. Choisissez-le dans les Paramètres.')
+    const clientDir = join(folder, safeClientFileName(client.name))
+    await fs.mkdir(clientDir, { recursive: true })
+    const err = await shell.openPath(clientDir)
     if (err) throw new Error(err)
   })
 

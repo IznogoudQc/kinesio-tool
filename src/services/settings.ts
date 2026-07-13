@@ -55,5 +55,15 @@ export const settingsService = {
 
   async setMesureFields(value: MesureFieldKey[]): Promise<void> {
     return window.api.settings.setMesureFields(value)
+  },
+
+  /** Dossier configuré pour l'export des documents clients (`null` si non défini). */
+  async getDocumentsFolder(): Promise<string | null> {
+    return window.api.settings.getDocumentsFolder()
+  },
+
+  /** Ouvre un sélecteur natif ; enregistre et retourne le dossier choisi, ou `null` si annulé. */
+  async pickDocumentsFolder(): Promise<string | null> {
+    return window.api.settings.pickDocumentsFolder()
   }
 }

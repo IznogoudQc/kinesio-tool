@@ -95,7 +95,11 @@ contextBridge.exposeInMainWorld('api', {
     getMesureFields: () =>
       ipcRenderer.invoke('settings:mesureFields:get'),
     setMesureFields: (value: string[]) =>
-      ipcRenderer.invoke('settings:mesureFields:set', value)
+      ipcRenderer.invoke('settings:mesureFields:set', value),
+    getDocumentsFolder: () =>
+      ipcRenderer.invoke('settings:documentsFolder:get'),
+    pickDocumentsFolder: () =>
+      ipcRenderer.invoke('settings:documentsFolder:pick')
   },
   transfer: {
     exportClients: (clientIds: string[]) =>
@@ -118,6 +122,10 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('reports:generate-foodlog-html', clientId),
     openPath: (filePath: string) =>
       ipcRenderer.invoke('reports:open-path', filePath),
+    exportClientDocuments: (clientId: string) =>
+      ipcRenderer.invoke('reports:export-client-documents', clientId),
+    openClientFolder: (clientId: string) =>
+      ipcRenderer.invoke('reports:open-client-folder', clientId),
     sendEmail: (data: { clientId: string; subject: string; body: string; kind?: 'bilan' | 'nutrition' }) =>
       ipcRenderer.invoke('reports:send-email', data)
   },

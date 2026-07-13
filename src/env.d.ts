@@ -449,6 +449,10 @@ interface Window {
       /** `null` = réglage jamais enregistré → afficher toutes les circonférences. */
       getMesureFields(): Promise<MesureFieldKey[] | null>
       setMesureFields(value: MesureFieldKey[]): Promise<void>
+      /** Dossier configuré pour l'export des documents clients (`null` si non défini). */
+      getDocumentsFolder(): Promise<string | null>
+      /** Ouvre un sélecteur de dossier natif ; enregistre et retourne le chemin, ou `null` si annulé. */
+      pickDocumentsFolder(): Promise<string | null>
     }
     transfer: {
       /** Ouvre « Enregistrer sous ». `null` si Marie-Eve annule. */
@@ -470,6 +474,10 @@ interface Window {
       generateFoodlogHtml(clientId: string): Promise<string>
       /** Ouvre un fichier local avec l'application par défaut du système. */
       openPath(filePath: string): Promise<void>
+      /** Génère et exporte tous les documents du client dans le dossier configuré. */
+      exportClientDocuments(clientId: string): Promise<{ dir: string; count: number }>
+      /** Ouvre le sous-dossier du client dans l'explorateur (le crée au besoin). */
+      openClientFolder(clientId: string): Promise<void>
       /** Génère le(s) document(s), les attache et les envoie au client par courriel, puis supprime les fichiers temp. */
       sendEmail(data: { clientId: string; subject: string; body: string; kind?: 'bilan' | 'nutrition' }): Promise<{ sentTo: string }>
     }

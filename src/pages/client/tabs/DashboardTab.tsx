@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Calculator, FileText, FileUp, Globe, Info, Mail, PartyPopper, Ruler } from 'lucide-react'
+import { Calculator, Download, FileText, FileUp, FolderOpen, Globe, Info, Mail, PartyPopper, Ruler } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
 import { ClientAvatar } from '../../../components/ClientAvatar'
 import { bilansService } from '../../../services/bilans'
@@ -72,6 +72,7 @@ export function DashboardTab() {
   const [showModal, setShowModal] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [generatingHtml, setGeneratingHtml] = useState(false)
+  const [exportingAll, setExportingAll] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
   const setSelectedBilanId = useCallback(
@@ -243,6 +244,27 @@ export function DashboardTab() {
     }
   }
 
+  /** Exporte tous les documents (bilan + nutrition) dans le dossier configuré, sous-dossier du client. */
+  async function handleExportAll() {
+    setExportingAll(true)
+    try {
+      const { count: n } = await reportsService.exportClientDocuments(client.id)
+      setToast(`${n} document${n > 1 ? 's' : ''} enregistré${n > 1 ? 's' : ''} dans le dossier.`)
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Erreur lors de l'export.")
+    } finally {
+      setExportingAll(false)
+    }
+  }
+
+  async function handleOpenFolder() {
+    try {
+      await reportsService.openClientFolder(client.id)
+    } catch (err) {
+      setToast(err instanceof Error ? err.message : "Impossible d'ouvrir le dossier.")
+    }
+  }
+
   // ── État A : aucun bilan ──────────────────────────────────────────────────
   if (count === 0 || !latest) {
     return (
@@ -409,6 +431,25 @@ export function DashboardTab() {
           >
             <Mail size={15} />
             Envoyer
+          </button>
+          <button
+            type="button"
+            onClick={handleExportAll}
+            disabled={exportingAll}
+            title="Enregistre bilan (PDF + HTML) et nutrition (PDF + HTML + journal) dans le dossier configuré"
+            className="inline-flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={15} />
+            {exportingAll ? 'Export…' : 'Télécharger tous les documents'}
+          </button>
+          <button
+            type="button"
+            onClick={handleOpenFolder}
+            title="Ouvre le dossier du client dans l'explorateur"
+            className="inline-flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors"
+          >
+            <FolderOpen size={15} />
+            Ouvrir le dossier
           </button>
         </div>
       )}
