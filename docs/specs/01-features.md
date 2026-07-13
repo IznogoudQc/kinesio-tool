@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.73 — Document nutrition : menu mieux séparé + pied de page en crème)
+
+Ajustements visuels du document nutrition (HTML + PDF) :
+
+- **« Idées de menu » distinct des « Suppléments »** : la carte menu passe sur fond **crème** (comme « Le mot de
+  votre kinésiologue »), avec plus d'espace au-dessus, pour ne plus se confondre avec la carte Suppléments
+  (blanche, bordée). À l'intérieur, chaque jour est désormais **aéré** (une entrée par ligne, espacée) avec
+  l'étiquette « Jour N » en gras.
+- **Pied de page « Préparé pour vous par » sans fond bleu** : le bloc marine devient **crème** avec un fin filet
+  de séparation en haut ; nom en marine, sur-titre en doré, mention légale en gris-bleu atténué. Ne concerne que
+  le document nutrition (le pied de page du bilan reste inchangé).
+
+Vérifié en headless (`--print-to-pdf` fidèle electron + rendu pymupdf).
+
+Version : 0.2.72 → 0.2.73.
+
 ## ✅ Fait (v0.2.72 — PDF nutrition : saut de page avant le plan + suppléments d'un seul tenant)
 
 Suite du travail de pagination du PDF nutrition. Deux règles `@media print` ajoutées au document :

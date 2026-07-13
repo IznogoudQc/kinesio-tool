@@ -714,9 +714,28 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
       )}
 
       {menu && (
-        <div className="mt-6 rounded-xl border border-marine/10 p-6">
+        <div className="mt-10 rounded-xl bg-cream p-8 sm:p-10">
           <p className="ed-eyebrow text-gold-dark">Idées de menu</p>
-          <p className="ed-prose mt-4 whitespace-pre-line text-base leading-relaxed text-marine/75">{menu}</p>
+          <div className="mt-4 space-y-3">
+            {menu
+              .split('\n')
+              .map((l) => l.trim())
+              .filter(Boolean)
+              .map((line, i) => {
+                const m = /^(Jour\s*\d+)\s*[—–-]\s*(.*)$/i.exec(line)
+                return (
+                  <p key={i} className="ed-prose text-base leading-relaxed text-marine/75">
+                    {m ? (
+                      <>
+                        <span className="font-semibold text-marine">{m[1]}</span> — {m[2]}
+                      </>
+                    ) : (
+                      line
+                    )}
+                  </p>
+                )
+              })}
+          </div>
         </div>
       )}
     </>
@@ -1053,11 +1072,11 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
         )
       )}
 
-      <footer className="bg-marine px-6 pb-16 pt-14 text-cream sm:px-8">
+      <footer className="border-t border-marine/10 bg-cream px-6 pb-16 pt-14 text-marine sm:px-8">
         <div className="mx-auto max-w-5xl">
-          <p className="ed-eyebrow text-gold">Préparé pour vous par</p>
-          <p className="ed-display mt-3 text-3xl">{data.kinesiologist}</p>
-          <p className="mt-6 max-w-xl text-sm leading-relaxed text-cream/50">
+          <p className="ed-eyebrow text-gold-dark">Préparé pour vous par</p>
+          <p className="ed-display mt-3 text-3xl text-marine">{data.kinesiologist}</p>
+          <p className="mt-6 max-w-xl text-sm leading-relaxed text-marine/60">
             Document généré le{' '}
             {new Date(data.generatedAt).toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })}. Il
             fonctionne hors ligne et aucune de vos données n’est transmise à qui que ce soit — tout est contenu dans ce
