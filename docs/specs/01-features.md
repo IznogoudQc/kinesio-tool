@@ -642,6 +642,14 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.68 — Onglet Nutrition : contenu aligné à gauche (comme les autres onglets))
+
+L'onglet Nutrition était **centré** (`mx-auto`) alors que les autres onglets (Notes, Mesures…) sont alignés à
+gauche — d'où un grand vide à gauche. Retrait du `mx-auto` : le contenu s'aligne à gauche comme le reste de
+l'app (`p-6 lg:p-8 max-w-3xl`).
+
+Version : 0.2.67 → 0.2.68.
+
 ## ✅ Fait (v0.2.67 — Onglet Nutrition : en-tête corrigé + logo du journal agrandi)
 
 - **Correctif d'affichage** de l'en-tête de l'onglet Nutrition : le titre + description était écrasé par les 4

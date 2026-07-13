@@ -552,7 +552,7 @@ export function NutritionTab() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-8 pb-28 space-y-6">
+    <div className="p-6 lg:p-8 pb-28 max-w-3xl space-y-6">
       <div className="space-y-3">
         <div>
           <h1 className="text-marine font-semibold text-2xl">Nutrition &amp; jeûne</h1>
