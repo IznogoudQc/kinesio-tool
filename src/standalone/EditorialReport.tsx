@@ -876,16 +876,24 @@ export function FoodJournal({ data }: { data: StandaloneData }) {
   const dayWindow = dailyWindows(programs).find(p => p.windowStart && p.windowEnd)
   const extended = programs.filter(p => p.freq !== 'daily' && p.kind === 'extended')
   const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
-  const cols = ['Déjeuner', 'Dîner', 'Souper', 'Collations', 'Eau', 'Notes']
+  // Repas en LIGNES, jours en COLONNES. Hauteurs généreuses pour écrire.
+  const rows: { label: string; height: string }[] = [
+    { label: 'Déjeuner', height: '92px' },
+    { label: 'Dîner', height: '92px' },
+    { label: 'Souper', height: '92px' },
+    { label: 'Collations', height: '80px' },
+    { label: 'Eau', height: '40px' },
+    { label: 'Notes', height: '80px' }
+  ]
 
   const cell: React.CSSProperties = { border: '1px solid #444', padding: '4px 6px', verticalAlign: 'top' }
-  const th: React.CSSProperties = { ...cell, background: '#f0ede6', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#333', textAlign: 'left' }
+  const th: React.CSSProperties = { ...cell, background: '#f0ede6', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#333', textAlign: 'center' }
 
   return (
-    <div style={{ background: '#fff', color: '#111', minHeight: '100vh', padding: '22px 26px', fontFamily: 'system-ui, sans-serif' }}>
-      <style>{`@media print { @page { size: A4 landscape; margin: 10mm } .fj-noprint { display: none !important } } body { background:#fff }`}</style>
+    <div style={{ background: '#fff', color: '#111', minHeight: '100vh', padding: '20px 24px', fontFamily: 'system-ui, sans-serif' }}>
+      <style>{`@media print { @page { size: A4 landscape; margin: 9mm } .fj-noprint { display: none !important } } body { background:#fff }`}</style>
 
-      <div className="fj-noprint" style={{ textAlign: 'right', marginBottom: '10px' }}>
+      <div className="fj-noprint" style={{ textAlign: 'right', marginBottom: '8px' }}>
         <button
           type="button"
           onClick={() => window.print()}
@@ -895,12 +903,16 @@ export function FoodJournal({ data }: { data: StandaloneData }) {
         </button>
       </div>
 
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px', borderBottom: '2px solid #001331', paddingBottom: '8px' }}>
-        <div>
-          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#001331', margin: 0 }}>Journal alimentaire</h1>
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#444' }}>
-            {client.name} · Semaine du <span style={{ borderBottom: '1px solid #999', display: 'inline-block', minWidth: '120px' }}>&nbsp;</span>
-          </p>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', borderBottom: '2px solid #001331', paddingBottom: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <img src={logoConseil} alt="Kinésio Conseil" style={{ height: '44px', width: 'auto' }} />
+          <div>
+            <h1 style={{ fontSize: '21px', fontWeight: 700, color: '#001331', margin: 0 }}>Journal alimentaire</h1>
+            <p style={{ margin: '3px 0 0', fontSize: '13px', color: '#444' }}>
+              {client.name} · Semaine du{' '}
+              <span style={{ borderBottom: '1px solid #999', display: 'inline-block', minWidth: '130px' }}>&nbsp;</span>
+            </p>
+          </div>
         </div>
         {dayWindow && (
           <p style={{ margin: 0, fontSize: '13px', color: '#444' }}>
@@ -909,21 +921,21 @@ export function FoodJournal({ data }: { data: StandaloneData }) {
         )}
       </header>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', tableLayout: 'fixed' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', tableLayout: 'fixed' }}>
         <thead>
           <tr>
-            <th style={{ ...th, width: '70px' }}>Jour</th>
-            {cols.map(c => (
-              <th key={c} style={{ ...th, width: c === 'Eau' ? '60px' : undefined }}>{c}</th>
+            <th style={{ ...th, width: '86px', textAlign: 'left' }}>&nbsp;</th>
+            {days.map(d => (
+              <th key={d} style={th}>{d}</th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {days.map(d => (
-            <tr key={d} style={{ height: '58px' }}>
-              <td style={{ ...cell, fontWeight: 600, color: '#001331', fontSize: '12px' }}>{d}</td>
-              {cols.map(c => (
-                <td key={c} style={cell} />
+          {rows.map(r => (
+            <tr key={r.label} style={{ height: r.height }}>
+              <td style={{ ...cell, fontWeight: 600, color: '#001331', fontSize: '12px', background: '#faf8f3' }}>{r.label}</td>
+              {days.map(d => (
+                <td key={d} style={cell} />
               ))}
             </tr>
           ))}
@@ -931,11 +943,11 @@ export function FoodJournal({ data }: { data: StandaloneData }) {
       </table>
 
       {extended.length > 0 && (
-        <p style={{ marginTop: '10px', fontSize: '12px', color: '#555' }}>
+        <p style={{ marginTop: '9px', fontSize: '12px', color: '#555' }}>
           Jeûnes prévus : {extended.map(p => p.label || `Jeûne ${p.durationHours} h`).join(' · ')} — notez « jeûne » les jours concernés.
         </p>
       )}
-      <p style={{ marginTop: '8px', fontSize: '11px', color: '#888' }}>
+      <p style={{ marginTop: '7px', fontSize: '11px', color: '#888' }}>
         Notez ce que vous mangez et buvez au fil de la journée. Rapportez ce journal à votre prochaine rencontre.
       </p>
     </div>

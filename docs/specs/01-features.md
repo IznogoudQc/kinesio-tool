@@ -642,6 +642,14 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.66 — Journal alimentaire : jours en colonnes + logo)
+
+Journal alimentaire retravaillé selon la demande : **jours en colonnes** (Lundi→Dimanche en tête), **repas
+en lignes** (Déjeuner / Dîner / Souper / Collations / Eau / Notes) avec des **cases plus hautes** pour
+écrire, et le **logo Kinésio Conseil** en tête. Toujours A4 paysage, imprimable. Vérifié en headless.
+
+Version : 0.2.65 → 0.2.66.
+
 ## ✅ Fait (v0.2.65 — Envoyer le document nutrition par courriel)
 
 Bouton **« Courriel »** dans l'onglet Nutrition : enregistre puis ouvre le compositeur (sujet/corps depuis le
