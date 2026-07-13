@@ -470,8 +470,8 @@ interface Window {
       generateFoodlogHtml(clientId: string): Promise<string>
       /** Ouvre un fichier local avec l'application par défaut du système. */
       openPath(filePath: string): Promise<void>
-      /** Génère le rapport PDF, l'attache et l'envoie au client par courriel, puis supprime le fichier temp. */
-      sendEmail(data: { clientId: string; subject: string; body: string }): Promise<{ sentTo: string }>
+      /** Génère le(s) document(s), les attache et les envoie au client par courriel, puis supprime les fichiers temp. */
+      sendEmail(data: { clientId: string; subject: string; body: string; kind?: 'bilan' | 'nutrition' }): Promise<{ sentTo: string }>
     }
     bilans: {
       pickDocxFile(): Promise<PickedDocx>

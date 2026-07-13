@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, MessageSquareQuote, Pill, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
+import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pill, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
 import { bilansService } from '../../../services/bilans'
 import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
 import { nutritionTemplatesService } from '../../../services/nutritionTemplates'
+import { SendBilanModal } from '../SendBilanModal'
 import {
   ACTIVITY_LABELS,
   ACTIVITY_ORDER,
@@ -239,6 +240,8 @@ export function NutritionTab() {
   const [saved, setSaved] = useState(false)
   const [opening, setOpening] = useState(false)
   const [openingFoodlog, setOpeningFoodlog] = useState(false)
+  const [showSendEmail, setShowSendEmail] = useState(false)
+  const [sentMsg, setSentMsg] = useState<string | null>(null)
 
   const mlNum = hydratationMl.trim() !== '' ? Number(hydratationMl) : null
   const verres = mlNum != null && Number.isFinite(mlNum) ? Math.round(mlNum / 250) : null
@@ -406,6 +409,11 @@ export function NutritionTab() {
     } finally {
       setOpening(false)
     }
+  }
+
+  /** Enregistre d'abord (le courriel joint le document en base), puis ouvre le compositeur. */
+  async function openSendEmail() {
+    if (await persist()) setShowSendEmail(true)
   }
 
   /** Enregistre puis ouvre le journal alimentaire vierge imprimable. */
@@ -580,8 +588,37 @@ export function NutritionTab() {
             <ExternalLink size={15} />
             {opening ? 'Ouverture…' : 'Voir le document'}
           </button>
+          <button
+            type="button"
+            onClick={openSendEmail}
+            disabled={saving}
+            title="Envoyer le document nutrition au client par courriel"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-marine/70 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Mail size={15} />
+            Courriel
+          </button>
         </div>
       </div>
+
+      {showSendEmail && (
+        <SendBilanModal
+          client={client}
+          kind="nutrition"
+          onCancel={() => setShowSendEmail(false)}
+          onSent={to => {
+            setShowSendEmail(false)
+            setSentMsg(`Document nutrition envoyé à ${to}.`)
+            setTimeout(() => setSentMsg(null), 4000)
+          }}
+        />
+      )}
+
+      {sentMsg && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
+          {sentMsg}
+        </div>
+      )}
 
       {showTemplates && (
         <div className="rounded-lg border border-gold/40 bg-cream/40 p-5 space-y-4">

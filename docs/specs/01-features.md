@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.65 — Envoyer le document nutrition par courriel)
+
+Bouton **« Courriel »** dans l'onglet Nutrition : enregistre puis ouvre le compositeur (sujet/corps depuis le
+modèle de courriel, comme pour le bilan) et envoie le **document nutrition (.html)** au client via le SMTP
+des Paramètres. `SendBilanModal` généralisé (prop `kind: 'bilan' | 'nutrition'`) ; handler `reports:send-email`
+étendu (`kind` → pièces jointes : bilan = PDF + interactif, nutrition = document nutrition). Service + preload
++ types mis à jour.
+
+Version : 0.2.64 → 0.2.65.
+
 ## ✅ Fait (v0.2.64 — Journal alimentaire vierge imprimable)
 
 Nouveau **journal alimentaire** : une grille vierge (7 jours × Déjeuner / Dîner / Souper / Collations / Eau /

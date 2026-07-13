@@ -7,6 +7,8 @@ interface SendBilanModalProps {
   client: Client
   onCancel: () => void
   onSent: (recipientEmail: string) => void
+  /** `bilan` (défaut) = PDF + document interactif ; `nutrition` = document nutrition seul. */
+  kind?: 'bilan' | 'nutrition'
 }
 
 function formatDate(): string {
@@ -21,7 +23,8 @@ function applyVariables(text: string, vars: Record<string, string>): string {
   return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) => vars[key] ?? `{{${key}}}`)
 }
 
-export function SendBilanModal({ client, onCancel, onSent }: SendBilanModalProps) {
+export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: SendBilanModalProps) {
+  const isNutrition = kind === 'nutrition'
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [loading, setLoading] = useState(true)
@@ -62,7 +65,7 @@ export function SendBilanModal({ client, onCancel, onSent }: SendBilanModalProps
     }
     try {
       setSending(true)
-      await reportsService.sendReportByEmail(client.id, subject, body)
+      await reportsService.sendReportByEmail(client.id, subject, body, kind)
       onSent(client.email)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur lors de l\'envoi.'
@@ -75,7 +78,9 @@ export function SendBilanModal({ client, onCancel, onSent }: SendBilanModalProps
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
       <div className="bg-cream rounded-lg shadow-2xl w-full max-w-2xl border border-cream-dark max-h-[90vh] flex flex-col">
         <form onSubmit={handleSend} className="p-6 flex flex-col min-h-0 flex-1">
-          <h2 className="text-marine font-semibold text-xl mb-1">Envoyer le bilan</h2>
+          <h2 className="text-marine font-semibold text-xl mb-1">
+            {isNutrition ? 'Envoyer le document nutrition' : 'Envoyer le bilan'}
+          </h2>
           <p className="text-marine/55 text-base mb-5">
             Destinataire&nbsp;: <span className="text-marine font-medium">{client.email}</span>
           </p>
@@ -112,14 +117,25 @@ export function SendBilanModal({ client, onCancel, onSent }: SendBilanModalProps
 
               <div className="flex items-start gap-2 text-marine/65 text-sm bg-cream/70 border border-cream-dark rounded-md px-3 py-2">
                 <Paperclip size={15} className="text-gold shrink-0 mt-0.5" />
-                <span>
-                  Deux pièces jointes seront ajoutées : le <span className="font-medium text-marine">rapport PDF</span> et une{' '}
-                  <span className="font-medium text-marine">version interactive (.html)</span> que le client ouvre dans son
-                  navigateur, hors ligne.
-                  <span className="block text-marine/45 text-xs mt-0.5">
-                    Certains services de courriel bloquent les pièces jointes .html — le PDF, lui, passe toujours.
+                {isNutrition ? (
+                  <span>
+                    Le <span className="font-medium text-marine">document nutrition (.html)</span> sera joint — le client
+                    l’ouvre dans son navigateur, hors ligne.
+                    <span className="block text-marine/45 text-xs mt-0.5">
+                      Certains services de courriel bloquent les pièces jointes .html ; le client peut aussi l’enregistrer
+                      en PDF depuis son navigateur.
+                    </span>
                   </span>
-                </span>
+                ) : (
+                  <span>
+                    Deux pièces jointes seront ajoutées : le <span className="font-medium text-marine">rapport PDF</span> et une{' '}
+                    <span className="font-medium text-marine">version interactive (.html)</span> que le client ouvre dans son
+                    navigateur, hors ligne.
+                    <span className="block text-marine/45 text-xs mt-0.5">
+                      Certains services de courriel bloquent les pièces jointes .html — le PDF, lui, passe toujours.
+                    </span>
+                  </span>
+                )}
               </div>
             </div>
           )}

@@ -118,7 +118,7 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('reports:generate-foodlog-html', clientId),
     openPath: (filePath: string) =>
       ipcRenderer.invoke('reports:open-path', filePath),
-    sendEmail: (data: { clientId: string; subject: string; body: string }) =>
+    sendEmail: (data: { clientId: string; subject: string; body: string; kind?: 'bilan' | 'nutrition' }) =>
       ipcRenderer.invoke('reports:send-email', data)
   },
   bilans: {

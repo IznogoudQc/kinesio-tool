@@ -34,8 +34,14 @@ export const reportsService = {
     return window.api.reports.openPath(filePath)
   },
 
-  /** Génère le rapport PDF, l'attache et l'envoie au client par courriel (SMTP des Paramètres). */
-  async sendReportByEmail(clientId: string, subject: string, body: string): Promise<void> {
-    await window.api.reports.sendEmail({ clientId, subject, body })
+  /** Génère le(s) document(s), les attache et les envoie au client par courriel (SMTP des
+   *  Paramètres). `kind` : `bilan` (PDF + interactif) ou `nutrition` (document nutrition). */
+  async sendReportByEmail(
+    clientId: string,
+    subject: string,
+    body: string,
+    kind: 'bilan' | 'nutrition' = 'bilan'
+  ): Promise<void> {
+    await window.api.reports.sendEmail({ clientId, subject, body, kind })
   }
 }

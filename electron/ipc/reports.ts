@@ -19,7 +19,9 @@ const ClientIdSchema = z.string().uuid()
 const SendReportSchema = z.object({
   clientId: ClientIdSchema,
   subject: z.string().min(1).max(500),
-  body: z.string().min(1).max(20000)
+  body: z.string().min(1).max(20000),
+  /** `bilan` (défaut) = PDF + document interactif ; `nutrition` = document nutrition seul. */
+  kind: z.enum(['bilan', 'nutrition']).optional()
 })
 
 export function registerReportsHandlers(): void {
@@ -61,7 +63,7 @@ export function registerReportsHandlers(): void {
 
   // ── Envoi du rapport par courriel (génère + attache + nettoie) ──────────────
   ipcMain.handle('reports:send-email', async (_e, payload: unknown) => {
-    const { clientId, subject, body } = SendReportSchema.parse(payload)
+    const { clientId, subject, body, kind } = SendReportSchema.parse(payload)
     const client = getDb().select().from(clients).where(eq(clients.id, clientId)).get()
     if (!client) throw new Error('Client introuvable.')
 
@@ -70,15 +72,26 @@ export function registerReportsHandlers(): void {
       throw new Error('Configuration SMTP incomplète. Configurez votre SMTP dans Paramètres.')
     }
 
-    let pdfPath: string | null = null
-    let htmlPath: string | null = null
+    const stem = `${safeClientFileName(client.name)}-${todayISODate()}`
+    const paths: string[] = []
+    let attachments: { filename: string; path: string }[] = []
     try {
-      pdfPath = await generateClientReportPdf(clientId)
-      // Document interactif : autonome, hors ligne. Le PDF reste la pièce jointe
-      // fiable — certains filtres courriel suppriment les pièces jointes .html.
-      htmlPath = await generateInteractiveReportHtml(clientId)
+      if (kind === 'nutrition') {
+        const nutriPath = await generateNutritionDocumentHtml(clientId)
+        paths.push(nutriPath)
+        attachments = [{ filename: `Nutrition-${stem}.html`, path: nutriPath }]
+      } else {
+        const pdfPath = await generateClientReportPdf(clientId)
+        // Document interactif : autonome, hors ligne. Le PDF reste la pièce jointe
+        // fiable — certains filtres courriel suppriment les pièces jointes .html.
+        const htmlPath = await generateInteractiveReportHtml(clientId)
+        paths.push(pdfPath, htmlPath)
+        attachments = [
+          { filename: `Bilan-${stem}.pdf`, path: pdfPath },
+          { filename: `Bilan-interactif-${stem}.html`, path: htmlPath }
+        ]
+      }
 
-      const stem = `${safeClientFileName(client.name)}-${todayISODate()}`
       const transporter = nodemailer.createTransport({
         host: credentials.host,
         port: credentials.port,
@@ -90,15 +103,11 @@ export function registerReportsHandlers(): void {
         to: client.email,
         subject,
         text: body,
-        attachments: [
-          { filename: `Bilan-${stem}.pdf`, path: pdfPath },
-          { filename: `Bilan-interactif-${stem}.html`, path: htmlPath }
-        ]
+        attachments
       })
       return { sentTo: client.email }
     } finally {
-      for (const path of [pdfPath, htmlPath]) {
-        if (!path) continue
+      for (const path of paths) {
         try {
           await fs.unlink(path)
         } catch {
