@@ -642,6 +642,13 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.77 — Onglet Nutrition : largeur `max-w-7xl` (comme le Dashboard))
+
+Conteneur de l'onglet Nutrition & jeûne porté de `max-w-6xl` à **`max-w-7xl`**, identique au Dashboard, pour
+occuper toute la largeur disponible. Aucun autre changement.
+
+Version : 0.2.76 → 0.2.77.
+
 ## ✅ Fait (v0.2.76 — Onglet Nutrition : largeur élargie + moments sur 3 colonnes)
 
 L'onglet Nutrition & jeûne restait coincé dans une colonne étroite à gauche (`max-w-3xl`), laissant beaucoup
