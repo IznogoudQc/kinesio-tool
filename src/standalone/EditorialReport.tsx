@@ -989,6 +989,17 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
 
   return (
     <div className="overflow-x-hidden bg-cream text-marine">
+      {/* Impression / PDF : évite de couper les cartes entre deux pages, réduit le
+          hero, et force le rendu des fonds. Sans effet à l'écran. */}
+      <style>{`
+        * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        @media print {
+          @page { margin: 12mm; }
+          .ed-hero { min-height: 0 !important; }
+          .ed-anchor { padding-top: 16px !important; padding-bottom: 16px !important; }
+          .rounded-xl, .rounded-lg { break-inside: avoid; }
+        }
+      `}</style>
       <header className="ed-hero relative flex min-h-[65svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
         <div className="ed-hero-forest ed-no-print" aria-hidden="true" style={{ backgroundImage: FOREST_BG }} />
         <div className="ed-hero-veil ed-no-print" aria-hidden="true" />

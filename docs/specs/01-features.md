@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.71 — PDF nutrition : pagination corrigée (cartes non coupées))
+
+Le PDF nutrition (imprimé depuis le HTML) coupait des cartes entre deux pages (ex. « Mot de votre
+kinésiologue » : encadré vide sur une page, texte rejeté à la suivante). Ajout de règles `@media print` au
+document : `break-inside: avoid` sur les cartes (`.rounded-xl`/`.rounded-lg`), hero réduit (`min-height: 0`),
+padding de section réduit, `print-color-adjust: exact`. Sans effet à l'écran. Vérifié en headless
+(`--print-to-pdf` + rendu pymupdf) : les cartes restent entières.
+
+Version : 0.2.70 → 0.2.71.
+
 ## ✅ Fait (v0.2.70 — Dossier des documents + export « tous les documents » par client)
 
 - **Paramètres** : nouveau réglage **« Dossier des documents clients »** (sélecteur de dossier natif). Stocké
