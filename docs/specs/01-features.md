@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.72 — PDF nutrition : saut de page avant le plan + suppléments d'un seul tenant)
+
+Suite du travail de pagination du PDF nutrition. Deux règles `@media print` ajoutées au document :
+
+- **Saut de page avant « Votre plan / Nutrition »** : la section du plan (`#nutrition-plan`) démarre toujours
+  sur une nouvelle page (`break-before: page`), séparée nettement de la section « Votre objectif ».
+- **Carte Suppléments d'un seul tenant** : la carte `.nut-supp` conserve `break-inside: avoid` — si elle ne
+  tient pas dans l'espace restant en bas de page, elle est reportée entière sur la page suivante au lieu
+  d'être coupée.
+
+Sans effet à l'écran. Vérifié en headless (`--print-to-pdf` fidèle à electron — A4, marges 0,4 po — + rendu
+pymupdf) avec un horaire de suppléments complet : le plan démarre en tête de page et la carte Suppléments
+reste entière sur une seule page.
+
+Version : 0.2.71 → 0.2.72.
+
 ## ✅ Fait (v0.2.71 — PDF nutrition : pagination corrigée (cartes non coupées))
 
 Le PDF nutrition (imprimé depuis le HTML) coupait des cartes entre deux pages (ex. « Mot de votre

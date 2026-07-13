@@ -705,7 +705,7 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
       )}
 
       {supp && (
-        <div className="mt-6 rounded-xl border border-marine/10 p-6">
+        <div className="nut-supp mt-6 rounded-xl border border-marine/10 p-6">
           <p className="ed-eyebrow text-gold-dark">Suppléments</p>
           <div className="mt-4">
             <EdBullets text={supp} />
@@ -998,6 +998,11 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
           .ed-hero { min-height: 0 !important; }
           .ed-anchor { padding-top: 16px !important; padding-bottom: 16px !important; }
           .rounded-xl, .rounded-lg { break-inside: avoid; }
+          /* Le plan « Nutrition » démarre toujours sur une nouvelle page. */
+          #nutrition-plan { break-before: page; }
+          /* La carte Suppléments reste d'un seul tenant : on évite qu'elle soit
+             orpheline en bas de page et on la garde entière. */
+          .nut-supp { break-inside: avoid; break-before: auto; }
         }
       `}</style>
       <header className="ed-hero relative flex min-h-[65svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
@@ -1035,7 +1040,7 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
       )}
 
       {hasBricks ? (
-        <Section eyebrow="Votre plan" title={planTitle} tone="white">
+        <Section eyebrow="Votre plan" title={planTitle} tone="white" id="nutrition-plan">
           <NutritionBody client={client} generatedAt={data.generatedAt} />
         </Section>
       ) : (
