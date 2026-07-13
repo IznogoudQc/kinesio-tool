@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.64 — Journal alimentaire vierge imprimable)
+
+Nouveau **journal alimentaire** : une grille vierge (7 jours × Déjeuner / Dîner / Souper / Collations / Eau /
+Notes) que le client imprime et remplit à la main pour noter ce qu'il mange. Optimisé pour l'impression
+(noir sur blanc, A4 paysage, bouton « Imprimer » masqué à l'impression). Affiche la fenêtre d'alimentation
+(si 16:8…) et rappelle les jeûnes prévus. Bouton **« Journal à imprimer »** dans l'onglet Nutrition.
+
+Nouveau `docType: 'foodlog'` (composant `FoodJournal`, monté par `main.tsx`), `generateFoodJournalHtml` →
+IPC `reports:generate-foodlog-html` → preload → `reportsService.generateFoodlogHtml`. Rendu vérifié en
+headless.
+
+Version : 0.2.63 → 0.2.64.
+
 ## ✅ Fait (v0.2.63 — Document : titre « Nutrition » sans « & jeûne » si aucun jeûne)
 
 Dans le document client, si le client **n'a aucun programme de jeûne** planifié, le titre devient

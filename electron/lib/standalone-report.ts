@@ -59,9 +59,14 @@ export async function generateNutritionDocumentHtml(clientId: string): Promise<s
   return buildStandaloneHtml(clientId, 'nutrition', 'Nutrition-jeune')
 }
 
+/** Journal alimentaire vierge imprimable (grille 7 jours). */
+export async function generateFoodJournalHtml(clientId: string): Promise<string> {
+  return buildStandaloneHtml(clientId, 'foodlog', 'Journal-alimentaire')
+}
+
 async function buildStandaloneHtml(
   clientId: string,
-  docType: 'report' | 'nutrition',
+  docType: 'report' | 'nutrition' | 'foodlog',
   filePrefix: string
 ): Promise<string> {
   const tpl = templatePath()

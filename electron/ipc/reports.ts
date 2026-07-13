@@ -11,7 +11,7 @@ import {
   safeClientFileName,
   todayISODate
 } from '../lib/report-generator'
-import { generateInteractiveReportHtml, generateNutritionDocumentHtml } from '../lib/standalone-report'
+import { generateFoodJournalHtml, generateInteractiveReportHtml, generateNutritionDocumentHtml } from '../lib/standalone-report'
 import { getSmtpCredentials } from './settings'
 
 const ClientIdSchema = z.string().uuid()
@@ -40,6 +40,12 @@ export function registerReportsHandlers(): void {
   ipcMain.handle('reports:generate-nutrition-html', async (_e, clientId: unknown) => {
     const id = ClientIdSchema.parse(clientId)
     return generateNutritionDocumentHtml(id)
+  })
+
+  // Journal alimentaire vierge imprimable.
+  ipcMain.handle('reports:generate-foodlog-html', async (_e, clientId: unknown) => {
+    const id = ClientIdSchema.parse(clientId)
+    return generateFoodJournalHtml(id)
   })
 
   ipcMain.handle('reports:generate-baremes', async () => {

@@ -40,8 +40,9 @@ import logoConseil from '../assets/logo-conseil.png'
  *  cliniques à surveiller (voir ADR 0019). */
 export interface StandaloneData {
   /** Type de document rendu par le gabarit autonome. `'report'` (défaut) = bilan
-   *  interactif ; `'nutrition'` = document dédié nutrition & jeûne. */
-  docType?: 'report' | 'nutrition'
+   *  interactif ; `'nutrition'` = document nutrition & jeûne ; `'foodlog'` = journal
+   *  alimentaire vierge imprimable. */
+  docType?: 'report' | 'nutrition' | 'foodlog'
   client: {
     name: string
     sex: 'F' | 'M' | null
@@ -865,6 +866,80 @@ function objectifHeading(objectif: Objectif | null): { title: string; lead: stri
         : 'Une cible chiffrée, une échéance réaliste, et de quoi vous y rendre sans perdre de muscle.'
       : undefined
   }
+}
+
+/** Journal alimentaire imprimable — grille vierge (7 jours × repas) que le client
+ *  imprime et remplit à la main. Optimisé pour l'impression (noir sur blanc, paysage). */
+export function FoodJournal({ data }: { data: StandaloneData }) {
+  const { client } = data
+  const programs = client.jeunePlanning ?? []
+  const dayWindow = dailyWindows(programs).find(p => p.windowStart && p.windowEnd)
+  const extended = programs.filter(p => p.freq !== 'daily' && p.kind === 'extended')
+  const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
+  const cols = ['Déjeuner', 'Dîner', 'Souper', 'Collations', 'Eau', 'Notes']
+
+  const cell: React.CSSProperties = { border: '1px solid #444', padding: '4px 6px', verticalAlign: 'top' }
+  const th: React.CSSProperties = { ...cell, background: '#f0ede6', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#333', textAlign: 'left' }
+
+  return (
+    <div style={{ background: '#fff', color: '#111', minHeight: '100vh', padding: '22px 26px', fontFamily: 'system-ui, sans-serif' }}>
+      <style>{`@media print { @page { size: A4 landscape; margin: 10mm } .fj-noprint { display: none !important } } body { background:#fff }`}</style>
+
+      <div className="fj-noprint" style={{ textAlign: 'right', marginBottom: '10px' }}>
+        <button
+          type="button"
+          onClick={() => window.print()}
+          style={{ padding: '8px 16px', border: '1px solid #001331', borderRadius: '6px', background: '#001331', color: '#fff', cursor: 'pointer', fontSize: '14px' }}
+        >
+          Imprimer
+        </button>
+      </div>
+
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px', borderBottom: '2px solid #001331', paddingBottom: '8px' }}>
+        <div>
+          <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#001331', margin: 0 }}>Journal alimentaire</h1>
+          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#444' }}>
+            {client.name} · Semaine du <span style={{ borderBottom: '1px solid #999', display: 'inline-block', minWidth: '120px' }}>&nbsp;</span>
+          </p>
+        </div>
+        {dayWindow && (
+          <p style={{ margin: 0, fontSize: '13px', color: '#444' }}>
+            Fenêtre d’alimentation : <strong>{dayWindow.windowStart}–{dayWindow.windowEnd}</strong>
+          </p>
+        )}
+      </header>
+
+      <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px', tableLayout: 'fixed' }}>
+        <thead>
+          <tr>
+            <th style={{ ...th, width: '70px' }}>Jour</th>
+            {cols.map(c => (
+              <th key={c} style={{ ...th, width: c === 'Eau' ? '60px' : undefined }}>{c}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {days.map(d => (
+            <tr key={d} style={{ height: '58px' }}>
+              <td style={{ ...cell, fontWeight: 600, color: '#001331', fontSize: '12px' }}>{d}</td>
+              {cols.map(c => (
+                <td key={c} style={cell} />
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {extended.length > 0 && (
+        <p style={{ marginTop: '10px', fontSize: '12px', color: '#555' }}>
+          Jeûnes prévus : {extended.map(p => p.label || `Jeûne ${p.durationHours} h`).join(' · ')} — notez « jeûne » les jours concernés.
+        </p>
+      )}
+      <p style={{ marginTop: '8px', fontSize: '11px', color: '#888' }}>
+        Notez ce que vous mangez et buvez au fil de la journée. Rapportez ce journal à votre prochaine rencontre.
+      </p>
+    </div>
+  )
 }
 
 /** Document HTML autonome DÉDIÉ à la nutrition & au jeûne — distinct du bilan.
