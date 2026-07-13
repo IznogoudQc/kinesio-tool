@@ -23,6 +23,22 @@ function applyVariables(text: string, vars: Record<string, string>): string {
   return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) => vars[key] ?? `{{${key}}}`)
 }
 
+/** Modèle de courriel propre au document nutrition (distinct du modèle « bilan »). */
+const NUTRITION_EMAIL = {
+  subject: 'Votre plan nutrition & jeûne - {{client_name}}',
+  body: `Bonjour {{client_name}},
+
+Vous trouverez ci-joint votre plan nutrition & jeûne, en deux fichiers :
+
+1. Le document nutrition (.html) — ouvrez-le dans votre navigateur en double-cliquant dessus. Il rassemble votre objectif, vos macros, votre planning de jeûne, l'hydratation, les aliments à privilégier et vos idées de menu. Il fonctionne sans connexion.
+
+2. Le journal alimentaire (.html) — à imprimer et à remplir au fil de la semaine pour noter ce que vous mangez, puis à rapporter à votre prochaine rencontre.
+
+Au plaisir de suivre vos progrès,
+
+{{signature}}`
+}
+
 export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: SendBilanModalProps) {
   const isNutrition = kind === 'nutrition'
   const [subject, setSubject] = useState('')
@@ -42,11 +58,13 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
         coach_name: profile.name,
         signature: profile.signature
       }
-      setSubject(applyVariables(template.subject, vars))
-      setBody(applyVariables(template.body, vars))
+      // Le document nutrition a son propre modèle de courriel (≠ celui du bilan).
+      const tpl = kind === 'nutrition' ? NUTRITION_EMAIL : template
+      setSubject(applyVariables(tpl.subject, vars))
+      setBody(applyVariables(tpl.body, vars))
       setLoading(false)
     })
-  }, [client])
+  }, [client, kind])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -119,10 +137,10 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
                 <Paperclip size={15} className="text-gold shrink-0 mt-0.5" />
                 {isNutrition ? (
                   <span>
-                    Le <span className="font-medium text-marine">document nutrition (.html)</span> sera joint — le client
-                    l’ouvre dans son navigateur, hors ligne.
+                    Deux pièces jointes : le <span className="font-medium text-marine">document nutrition (.html)</span> et le{' '}
+                    <span className="font-medium text-marine">journal alimentaire (.html)</span> à imprimer.
                     <span className="block text-marine/45 text-xs mt-0.5">
-                      Certains services de courriel bloquent les pièces jointes .html ; le client peut aussi l’enregistrer
+                      Certains services de courriel bloquent les pièces jointes .html ; le client peut aussi les enregistrer
                       en PDF depuis son navigateur.
                     </span>
                   </span>

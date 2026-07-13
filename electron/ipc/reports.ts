@@ -78,8 +78,12 @@ export function registerReportsHandlers(): void {
     try {
       if (kind === 'nutrition') {
         const nutriPath = await generateNutritionDocumentHtml(clientId)
-        paths.push(nutriPath)
-        attachments = [{ filename: `Nutrition-${stem}.html`, path: nutriPath }]
+        const foodlogPath = await generateFoodJournalHtml(clientId)
+        paths.push(nutriPath, foodlogPath)
+        attachments = [
+          { filename: `Nutrition-${stem}.html`, path: nutriPath },
+          { filename: `Journal-alimentaire-${stem}.html`, path: foodlogPath }
+        ]
       } else {
         const pdfPath = await generateClientReportPdf(clientId)
         // Document interactif : autonome, hors ligne. Le PDF reste la pièce jointe

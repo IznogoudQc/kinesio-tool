@@ -642,6 +642,17 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.69 — Courriel nutrition : modèle propre + journal joint)
+
+- Le courriel du document nutrition utilisait le **modèle du bilan** (sujet/corps parlant de « bilan de forme
+  physique »). Il a maintenant son **propre modèle** (`NUTRITION_EMAIL`) : sujet « Votre plan nutrition &
+  jeûne », corps décrivant le document nutrition + le journal.
+- Le **journal alimentaire** est désormais **joint au même courriel** : le handler `reports:send-email`
+  (kind `nutrition`) attache **deux fichiers** — le document nutrition (.html) et le journal alimentaire
+  (.html). Encadré des pièces jointes mis à jour.
+
+Version : 0.2.68 → 0.2.69.
+
 ## ✅ Fait (v0.2.68 — Onglet Nutrition : contenu aligné à gauche (comme les autres onglets))
 
 L'onglet Nutrition était **centré** (`mx-auto`) alors que les autres onglets (Notes, Mesures…) sont alignés à
