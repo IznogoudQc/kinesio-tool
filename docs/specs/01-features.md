@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.80 — Renommage « Nutrition & jeûne » → « Nutrition »)
+
+À la demande de Marie-Eve, la fonctionnalité s'appelle désormais simplement **« Nutrition »** partout côté
+utilisateur : onglet client, titre de l'onglet, titre du document (hero + section, plus de variante « & jeûne »),
+et modèle de courriel (« Votre plan nutrition »). Le jeûne reste une **section interne** du document. Les noms de
+colonnes/commentaires internes sont inchangés.
+
+Version : 0.2.79 → 0.2.80.
+
 ## ✅ Fait (v0.2.79 — Document nutrition : suppléments & menu aérés + icônes par moment)
 
 Le document PDF était trop compact et dur à lire. Refonte visuelle des sections Suppléments et Menu :

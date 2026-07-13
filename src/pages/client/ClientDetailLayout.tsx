@@ -36,7 +36,7 @@ const TABS: TabDef[] = [
   { to: 'dashboard', label: 'Dashboard', enabled: true },
   { to: 'bilans', label: 'Bilans', enabled: true },
   { to: 'mesures', label: 'Mesures', enabled: true },
-  { to: 'nutrition', label: 'Nutrition & jeûne', enabled: true },
+  { to: 'nutrition', label: 'Nutrition', enabled: true },
   { to: 'notes', label: 'Notes', enabled: true }
 ]
 

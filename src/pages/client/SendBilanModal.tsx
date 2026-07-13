@@ -25,10 +25,10 @@ function applyVariables(text: string, vars: Record<string, string>): string {
 
 /** Modèle de courriel propre au document nutrition (distinct du modèle « bilan »). */
 const NUTRITION_EMAIL = {
-  subject: 'Votre plan nutrition & jeûne - {{client_name}}',
+  subject: 'Votre plan nutrition - {{client_name}}',
   body: `Bonjour {{client_name}},
 
-Vous trouverez ci-joint votre plan nutrition & jeûne, en deux fichiers :
+Vous trouverez ci-joint votre plan nutrition, en deux fichiers :
 
 1. Le document nutrition (.html) — ouvrez-le dans votre navigateur en double-cliquant dessus. Il rassemble votre objectif, vos macros, votre planning de jeûne, l'hydratation, les aliments à privilégier et vos idées de menu. Il fonctionne sans connexion.
 

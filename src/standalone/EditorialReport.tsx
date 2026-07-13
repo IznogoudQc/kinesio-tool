@@ -1142,8 +1142,8 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
   const hasObjectif = !!objectif || objectifText !== ''
 
   const hasJeune = (client.jeunePlanning?.length ?? 0) > 0
-  // Sans planning de jeûne, on retire « & jeûne » du titre (hero + section).
-  const planTitle = hasJeune ? 'Nutrition & jeûne' : 'Nutrition'
+  // Le document s'intitule toujours « Nutrition » (le jeûne reste une section interne).
+  const planTitle = 'Nutrition'
 
   const hasBricks =
     hasJeune ||

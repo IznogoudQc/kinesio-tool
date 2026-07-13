@@ -581,7 +581,7 @@ export function NutritionTab() {
     <div className="p-6 lg:p-8 pb-28 max-w-7xl space-y-6">
       <div className="space-y-3">
         <div>
-          <h1 className="text-marine font-semibold text-2xl">Nutrition &amp; jeûne</h1>
+          <h1 className="text-marine font-semibold text-2xl">Nutrition</h1>
           <p className="text-marine/50 text-base mt-1">
             Ces réglages composent le document nutrition remis à {client.name.split(' ')[0]}.
           </p>
