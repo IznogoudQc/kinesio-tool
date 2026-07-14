@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pill, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
@@ -78,6 +78,42 @@ function Section({
       </div>
       {children}
     </section>
+  )
+}
+
+/** Zone de texte qui s'ajuste automatiquement à la hauteur de son contenu :
+ *  plus de barre de défilement, quelle que soit la longueur (utile pour les
+ *  champs remplis par l'IA). `minRows` fixe la hauteur minimale. */
+function AutoTextarea({
+  value,
+  onChange,
+  minRows = 3,
+  className,
+  placeholder
+}: {
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  minRows?: number
+  className?: string
+  placeholder?: string
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [value])
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      onChange={onChange}
+      rows={minRows}
+      placeholder={placeholder}
+      className={className}
+      style={{ overflow: 'hidden', resize: 'none' }}
+    />
   )
 }
 
@@ -981,12 +1017,12 @@ export function NutritionTab() {
 
       <Section icon={Pill} title="Suppléments" desc="Listez les suppléments, puis l’IA les répartit par moment de prise.">
         <SupplementChips items={SUPPLEMENTS} current={supp.input} onPick={line => setSuppField('input', appendLine(supp.input, line))} />
-        <textarea
+        <AutoTextarea
           value={supp.input}
           onChange={e => setSuppField('input', e.target.value)}
-          rows={7}
+          minRows={5}
           placeholder="Suppléments du client, un par ligne. Ex. Vitamine D3 + K2&#10;Créatine 5 g&#10;Magnésium bisglycinate"
-          className={`${fieldClass} resize-y`}
+          className={fieldClass}
         />
         <div className="mt-2 flex items-center gap-3 flex-wrap">
           <button
@@ -1007,23 +1043,23 @@ export function NutritionTab() {
           {SUPP_MOMENTS.map(m => (
             <div key={m.key}>
               <label className="block text-marine/70 text-sm font-medium mb-1">{m.label}</label>
-              <textarea
+              <AutoTextarea
                 value={supp[m.key]}
                 onChange={e => setSuppField(m.key, e.target.value)}
-                rows={3}
+                minRows={3}
                 placeholder="—"
-                className={`${fieldClass} resize-y`}
+                className={fieldClass}
               />
             </div>
           ))}
           <div className="sm:col-span-2">
             <label className="block text-marine/70 text-sm font-medium mb-1">À espacer / interactions</label>
-            <textarea
+            <AutoTextarea
               value={supp.interactions}
               onChange={e => setSuppField('interactions', e.target.value)}
-              rows={3}
+              minRows={3}
               placeholder="Consignes d’espacement / interactions"
-              className={`${fieldClass} resize-y`}
+              className={fieldClass}
             />
           </div>
         </div>
@@ -1101,12 +1137,12 @@ export function NutritionTab() {
           {menuJours.map((jour, i) => (
             <div key={i}>
               <label className="block text-marine/70 text-sm font-medium mb-1">Journée {i + 1}</label>
-              <textarea
+              <AutoTextarea
                 value={jour}
                 onChange={e => setMenuJour(i, e.target.value)}
-                rows={8}
+                minRows={8}
                 placeholder={`Journée ${i + 1} — un repas par ligne. Ex. Déjeuner : ...&#10;Dîner : ...&#10;Souper : ...&#10;Collations : ...&#10;Total approximatif : ...`}
-                className={`${fieldClass} resize-y`}
+                className={fieldClass}
               />
             </div>
           ))}

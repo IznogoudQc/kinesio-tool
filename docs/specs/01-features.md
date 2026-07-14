@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.82 — Onglet Nutrition : champs suppléments/menu auto-ajustés (fini les barres de défilement))
+
+Les champs remplis par l'IA (liste de suppléments, 5 moments, « À espacer / interactions », les 2 journées de
+menu) affichaient une barre de défilement dès que le texte dépassait. Nouveau composant `AutoTextarea` : la zone
+**s'ajuste automatiquement à la hauteur de son contenu** (hauteur = `scrollHeight` à chaque changement de
+valeur), donc **plus de barre de défilement**, quelle que soit la longueur — y compris après génération IA.
+
+Version : 0.2.81 → 0.2.82.
+
 ## ✅ Fait (v0.2.81 — Document nutrition : saut de page avant « Idées de menu »)
 
 Le titre « Idées de menu » restait orphelin en bas d'une page, séparé de la première journée (rejetée à la page
