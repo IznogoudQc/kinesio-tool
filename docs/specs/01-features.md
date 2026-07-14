@@ -642,6 +642,13 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.87 — Suppléments : ajout de « Collagène » aux propositions)
+
+Nouvelle puce de suggestion dans l'onglet Nutrition : **Collagène**, moment recommandé « tous les jours, avec ou
+sans nourriture (idéalement avec la vitamine C) ».
+
+Version : 0.2.86 → 0.2.87.
+
 ## ✅ Fait (v0.2.86 — Suppléments : ajout de « Psyllium (fibres) » aux propositions)
 
 Nouvelle puce de suggestion dans l'onglet Nutrition : **Psyllium (fibres)**, moment recommandé « avec beaucoup

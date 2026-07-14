@@ -138,7 +138,8 @@ const SUPPLEMENTS: { label: string; timing: string }[] = [
   { label: 'Probiotiques', timing: 'à jeun, le matin' },
   { label: 'Fer', timing: 'à jeun avec vitamine C, loin du café/thé' },
   { label: 'Protéine (whey)', timing: 'après l’entraînement ou en collation' },
-  { label: 'Psyllium (fibres)', timing: 'avec beaucoup d’eau, à distance des médicaments et autres suppléments' }
+  { label: 'Psyllium (fibres)', timing: 'avec beaucoup d’eau, à distance des médicaments et autres suppléments' },
+  { label: 'Collagène', timing: 'tous les jours, avec ou sans nourriture (idéalement avec la vitamine C)' }
 ]
 const HYDRATION_PRESETS = [2000, 2500, 3000]
 const MOT_PRESETS = [
