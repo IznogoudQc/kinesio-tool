@@ -642,6 +642,14 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.85 — Désactivation du correcteur orthographique (plus de soulignés rouges))
+
+Les champs de saisie affichaient des soulignés rouges (correcteur de Chromium/Electron) sous les noms d'aliments,
+suppléments, etc. Désactivé à deux niveaux : `webPreferences.spellcheck: false` sur la fenêtre principale
+(`electron/main.ts`) + `spellcheck="false"` sur `<body>` (`index.html`). Plus aucun souligné rouge dans l'app.
+
+Version : 0.2.84 → 0.2.85.
+
 ## ✅ Fait (v0.2.84 — Onglet Nutrition : repas séparés par une ligne vide (menu plus lisible))
 
 Dans les champs « Journée » de l'onglet, les repas (Déjeuner / Dîner / Souper / Collations) se suivaient sans
