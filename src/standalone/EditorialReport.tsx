@@ -820,7 +820,7 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
           const structured = menuPlan?.jours.filter((j) => j.trim()) ?? null
           if (structured && structured.length > 0) {
             return (
-              <div className="mt-10">
+              <div className="nut-menu mt-10">
                 <p className="ed-eyebrow text-gold-dark">Idées de menu</p>
                 <div className="mt-4 space-y-6">
                   {structured.map((jour, i) => (
@@ -864,7 +864,7 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
           // Rétro-compatibilité : ancien texte libre → découpage heuristique par jour.
           const days = parseMenuDays(menu)
           return (
-            <div className="mt-10">
+            <div className="nut-menu mt-10">
               <p className="ed-eyebrow text-gold-dark">Idées de menu</p>
               <div className="mt-4 space-y-6">
                 {days.map((day, i) => (
@@ -1170,6 +1170,9 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
           /* La carte Suppléments reste d'un seul tenant : on évite qu'elle soit
              orpheline en bas de page et on la garde entière. */
           .nut-supp { break-inside: avoid; break-before: auto; }
+          /* La section « Idées de menu » démarre sur une nouvelle page (évite le
+             titre orphelin en bas de page, séparé de la première journée). */
+          .nut-menu { break-before: page; }
           /* Chaque journée de menu (sauf la première) démarre sur une nouvelle page. */
           .nut-menu-day { break-before: page; }
         }

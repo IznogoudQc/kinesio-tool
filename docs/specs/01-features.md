@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.81 — Document nutrition : saut de page avant « Idées de menu »)
+
+Le titre « Idées de menu » restait orphelin en bas d'une page, séparé de la première journée (rejetée à la page
+suivante par `break-inside: avoid`). Ajout d'un **saut de page avant la section menu** (`.nut-menu {
+break-before: page }`) : le titre et « Journée 1 » démarrent désormais ensemble en haut d'une nouvelle page.
+Appliqué au rendu structuré ET au fallback texte libre. Vérifié en headless.
+
+Version : 0.2.80 → 0.2.81.
+
 ## ✅ Fait (v0.2.80 — Renommage « Nutrition & jeûne » → « Nutrition »)
 
 À la demande de Marie-Eve, la fonctionnalité s'appelle désormais simplement **« Nutrition »** partout côté
