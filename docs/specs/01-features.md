@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.84 — Onglet Nutrition : repas séparés par une ligne vide (menu plus lisible))
+
+Dans les champs « Journée » de l'onglet, les repas (Déjeuner / Dîner / Souper / Collations) se suivaient sans
+espace. À la génération IA, les repas sont désormais séparés par une **ligne vide** (`lignes.join('\n\n')`) →
+séparation visuelle nette dans la zone de texte, plus facile à lire. Le document PDF filtre les lignes vides :
+son rendu est **inchangé**. Vérifié en headless.
+
+Version : 0.2.83 → 0.2.84.
+
 ## ✅ Fait (v0.2.83 — Menu IA : retrait des totaux de calories/macros (fiabilité + champ de pratique))
 
 Les menus générés affichaient un « Total approximatif : X kcal, X g protéines… » **estimé par l'IA** — un calcul

@@ -521,7 +521,9 @@ export function NutritionTab() {
         foodsLiked: alimentsAimes,
         foodsDisliked: alimentsPasAimes
       })
-      const days = plan.journees.map(j => j.lignes.join('\n'))
+      // Ligne vide entre chaque repas → séparation visuelle lisible dans le champ.
+      // (Le document filtre les lignes vides : PDF inchangé.)
+      const days = plan.journees.map(j => j.lignes.join('\n\n'))
       setMenuJours([days[0] ?? '', days[1] ?? ''])
     } catch (err) {
       setAiError(aiErrorMessage(err))
