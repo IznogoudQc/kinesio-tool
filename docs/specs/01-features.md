@@ -642,6 +642,17 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.83 — Menu IA : retrait des totaux de calories/macros (fiabilité + champ de pratique))
+
+Les menus générés affichaient un « Total approximatif : X kcal, X g protéines… » **estimé par l'IA** — un calcul
+que les modèles de langage font mal (chiffres potentiellement faux) et qui relève de la **nutritionniste**
+(OPDQ). Retiré : (1) le prompt `MENU_SYSTEM` n'inclut plus de total ; (2) le document masque toute ligne
+commençant par « Total » (`/^total\b/i`), y compris pour les menus déjà générés. Les idées de repas restent
+(exemples concrets), sans chiffres trompeurs. Les **cibles** de macros (calcul par formules de l'app) restent
+affichées dans l'onglet et l'objectif — elles, sont fiables. Voir [[nutrition_ai_scope]].
+
+Version : 0.2.82 → 0.2.83.
+
 ## ✅ Fait (v0.2.82 — Onglet Nutrition : champs suppléments/menu auto-ajustés (fini les barres de défilement))
 
 Les champs remplis par l'IA (liste de suppléments, 5 moments, « À espacer / interactions », les 2 journées de

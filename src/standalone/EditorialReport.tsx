@@ -838,7 +838,8 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
                         {jour
                           .split('\n')
                           .map((l) => l.trim())
-                          .filter(Boolean)
+                          // Masque les totaux de macros/calories (calcul non fiable, réservé à la nutritionniste).
+                          .filter((l) => l && !/^total\b/i.test(l))
                           .map((line, j) => {
                             const m = /^([^:]{1,40}):\s*(.*)$/.exec(line)
                             return (
@@ -874,7 +875,7 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
                   >
                     {day.header && <p className="ed-display text-xl text-marine">{day.header}</p>}
                     <div className={day.header ? 'mt-3 space-y-2' : 'space-y-2'}>
-                      {day.lines.map((line, j) => (
+                      {day.lines.filter((l) => !/^total\b/i.test(l)).map((line, j) => (
                         <p key={j} className="ed-prose text-base leading-relaxed text-marine/75">
                           {line}
                         </p>

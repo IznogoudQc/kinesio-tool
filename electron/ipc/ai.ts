@@ -132,8 +132,7 @@ Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suiv
       "Déjeuner : aliments et portions approximatives",
       "Dîner : ...",
       "Souper : ...",
-      "Collations : ...",
-      "Total approximatif : X kcal, X g protéines, X g lipides, X g glucides"
+      "Collations : ..."
     ] }
   ]
 }
@@ -141,6 +140,7 @@ Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suiv
 Règles :
 - 1 à 2 journées. Chaque « lignes » = des lignes « Repas : aliments », SANS puce et SANS Markdown (pas de #, *, tableaux, émojis).
 - Ne mets PAS d'en-tête « Journée N » dans les lignes : la numérotation est ajoutée par l'application.
+- N'ajoute AUCUN total de calories ou de macros : ces calculs relèvent d'une nutritionniste et ne doivent pas figurer.
 - VARIE les journées : aliments principaux DIFFÉRENTS d'une journée à l'autre.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
