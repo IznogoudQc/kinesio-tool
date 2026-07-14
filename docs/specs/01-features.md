@@ -642,6 +642,24 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.88 — Export/import : rendre visible que la nutrition est incluse)
+
+**Diagnostic** : l'export/import inclut DÉJÀ toutes les données nutrition — elles voyagent dans la ligne client
+(l'export fait `select()` sur toutes les colonnes, l'import réécrit tout ; comportement « colonne-agnostique »
+verrouillé par `client-bundle.test.ts`). Vérifié sur la base réelle : 18 champs nutrition remplis pour un client
+sont bien capturés. **Rien n'était perdu** — mais le récapitulatif (« Le fichier contient … bilans, mesures,
+plis, notes, photos ») ne mentionnait pas la nutrition, d'où le doute.
+
+**Correctif (visibilité)** : `summarizeBundle` calcule désormais `nutritionCount` (clients avec au moins une
+donnée nutrition renseignée, via `clientHasNutrition`), affiché « X avec nutrition » dans la fenêtre d'import,
+et la note d'export liste maintenant « … photos et données nutrition (objectif, jeûne, suppléments, menu…) ».
+Tests ajoutés (`clientHasNutrition`, `nutritionCount`).
+
+Note : un import en mode **Remplacer** avec un fichier ancien (exporté avant que la nutrition soit saisie) écrase
+l'état courant par celui du fichier — ce n'est pas une perte du transfert mais un choix de mode.
+
+Version : 0.2.87 → 0.2.88.
+
 ## ✅ Fait (v0.2.87 — Suppléments : ajout de « Collagène » aux propositions)
 
 Nouvelle puce de suggestion dans l'onglet Nutrition : **Collagène**, moment recommandé « tous les jours, avec ou

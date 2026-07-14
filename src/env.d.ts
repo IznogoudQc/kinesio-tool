@@ -230,6 +230,7 @@ interface BundleSummary {
   plisCount: number
   noteCount: number
   avatarCount: number
+  nutritionCount: number
   exportedAt: string
   appVersion: string
   clientNames: string[]

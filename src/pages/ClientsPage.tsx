@@ -440,8 +440,9 @@ function ExportClientsModal({
         <div className="p-6 pb-3">
           <h2 className="text-marine font-semibold text-xl">Exporter des clients</h2>
           <p className="text-marine/55 text-sm mt-1">
-            Le fichier contiendra les clients cochés et tout ce qui leur appartient : bilans, mesures, plis, notes
-            et photos. Ni les autres clients, ni vos réglages, ni votre compte courriel.
+            Le fichier contiendra les clients cochés et tout ce qui leur appartient : bilans, mesures, plis, notes,
+            photos et données nutrition (objectif, jeûne, suppléments, menu…). Ni les autres clients, ni vos
+            réglages, ni votre compte courriel.
           </p>
         </div>
 
@@ -538,7 +539,8 @@ function ImportPreviewModal({
               {summary.clientCount} client{summary.clientCount > 1 ? 's' : ''} · {summary.bilanCount} bilan
               {summary.bilanCount > 1 ? 's' : ''} · {summary.mesureCount} prise
               {summary.mesureCount > 1 ? 's' : ''} de mesures · {summary.plisCount} plis · {summary.noteCount} note
-              {summary.noteCount > 1 ? 's' : ''} · {summary.avatarCount} photo{summary.avatarCount > 1 ? 's' : ''}
+              {summary.noteCount > 1 ? 's' : ''} · {summary.avatarCount} photo{summary.avatarCount > 1 ? 's' : ''} ·{' '}
+              {summary.nutritionCount} avec nutrition
             </p>
             <p className="text-marine/50 mt-1.5">{summary.clientNames.join(', ')}</p>
           </div>

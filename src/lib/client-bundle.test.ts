@@ -4,6 +4,7 @@ import { getTableColumns } from 'drizzle-orm'
 import {
   BUNDLE_FORMAT,
   BUNDLE_VERSION,
+  clientHasNutrition,
   clientRowSchema,
   matchExistingClient,
   mergeClientForImport,
@@ -49,7 +50,27 @@ test('summarizeBundle additionne tout ce qui appartient aux clients', () => {
   assert.equal(s.plisCount, 2)
   assert.equal(s.noteCount, 1)
   assert.equal(s.avatarCount, 1)
+  assert.equal(s.nutritionCount, 0)
   assert.deepEqual(s.clientNames, ['Denise', 'Sabrina'])
+})
+
+test('clientHasNutrition : détecte une donnée nutrition renseignée', () => {
+  assert.equal(clientHasNutrition({ id: 'a', name: 'X', email: 'x@x.ca' }), false)
+  assert.equal(clientHasNutrition({ supplementsNotes: '' }), false)
+  assert.equal(clientHasNutrition({ nutritionEnabled: false }), false)
+  assert.equal(clientHasNutrition({ supplementsNotes: '{"v":2}' }), true)
+  assert.equal(clientHasNutrition({ hydratationMlParJour: 3200 }), true)
+  assert.equal(clientHasNutrition({ jeunePlanning: [{ freq: 'daily' }] }), true)
+})
+
+test('summarizeBundle compte les clients avec nutrition', () => {
+  const s = summarizeBundle(
+    bundle([
+      exported('a', 'Avec', 'a@x.ca', { client: { id: 'a', name: 'Avec', email: 'a@x.ca', nutritionMenu: '{"v":2}' } }),
+      exported('b', 'Sans', 'b@x.ca')
+    ])
+  )
+  assert.equal(s.nutritionCount, 1)
 })
 
 test('matchExistingClient : l’identifiant prime sur le courriel', () => {

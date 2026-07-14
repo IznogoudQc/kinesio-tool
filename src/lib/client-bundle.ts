@@ -57,6 +57,44 @@ export interface ClientBundle {
   clients: ExportedClient[]
 }
 
+/**
+ * Champs « Nutrition » (objectif, jeûne, hydratation, suppléments, aliments, menu,
+ * principe perso). Ils voyagent DANS la ligne client — donc toujours exportés et
+ * importés — mais n'apparaissaient nulle part dans le récapitulatif. Sert à afficher
+ * « X avec nutrition » pour que Marie voie que c'est bien inclus.
+ */
+const NUTRITION_KEYS = [
+  'nutritionEnabled',
+  'nutritionTargetBodyFat',
+  'nutritionActivityLevel',
+  'nutritionRepasParJour',
+  'jeuneType',
+  'jeuneNotes',
+  'jeunePlanning',
+  'hydratationMlParJour',
+  'supplementsNotes',
+  'alimentsPrivilegier',
+  'alimentsEviter',
+  'alimentsAimes',
+  'alimentsPasAimes',
+  'nutritionMot',
+  'nutritionMenu',
+  'principePersoTitre',
+  'principePersoTexte'
+]
+
+function isFilled(v: unknown): boolean {
+  if (v === null || v === undefined || v === false) return false
+  if (typeof v === 'string') return v.trim() !== ''
+  if (Array.isArray(v)) return v.length > 0
+  return true
+}
+
+/** Le client transporte-t-il au moins une donnée nutrition renseignée ? */
+export function clientHasNutrition(client: Record<string, unknown>): boolean {
+  return NUTRITION_KEYS.some(k => isFilled(client[k]))
+}
+
 export interface BundleSummary {
   clientCount: number
   bilanCount: number
@@ -64,6 +102,8 @@ export interface BundleSummary {
   plisCount: number
   noteCount: number
   avatarCount: number
+  /** Nombre de clients du fichier qui contiennent des données nutrition. */
+  nutritionCount: number
   exportedAt: string
   appVersion: string
   /** Noms des clients, pour que Marie reconnaisse le fichier avant d'importer. */
@@ -78,6 +118,7 @@ export function summarizeBundle(bundle: ClientBundle): BundleSummary {
     plisCount: bundle.clients.reduce((n, c) => n + c.plis.length, 0),
     noteCount: bundle.clients.reduce((n, c) => n + c.notes.length, 0),
     avatarCount: bundle.clients.reduce((n, c) => n + Object.keys(c.avatars).length, 0),
+    nutritionCount: bundle.clients.reduce((n, c) => n + (clientHasNutrition(c.client) ? 1 : 0), 0),
     exportedAt: bundle.exportedAt,
     appVersion: bundle.appVersion,
     clientNames: bundle.clients.map(c => String(c.client.name ?? '—'))
