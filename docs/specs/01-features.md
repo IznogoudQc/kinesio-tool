@@ -642,6 +642,13 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.86 — Suppléments : ajout de « Psyllium (fibres) » aux propositions)
+
+Nouvelle puce de suggestion dans l'onglet Nutrition : **Psyllium (fibres)**, moment recommandé « avec beaucoup
+d'eau, à distance des médicaments et autres suppléments » (le psyllium peut gêner l'absorption).
+
+Version : 0.2.85 → 0.2.86.
+
 ## ✅ Fait (v0.2.85 — Désactivation du correcteur orthographique (plus de soulignés rouges))
 
 Les champs de saisie affichaient des soulignés rouges (correcteur de Chromium/Electron) sous les noms d'aliments,
