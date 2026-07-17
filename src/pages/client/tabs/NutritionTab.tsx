@@ -179,13 +179,20 @@ function SupplementChips({
   current: string
   onPick: (line: string) => void
 }) {
-  const present = current.toLowerCase()
+  // Un supplément est « déjà présent » seulement si une LIGNE commence par son nom
+  // (le clic insère « Nom — moment »). Éviter un `includes` global qui marquait à
+  // tort « Fer » présent parce que « …calcium/fer » contient « fer ».
+  const lines = current.split('\n').map(l => l.trim().toLowerCase())
+  const isUsed = (label: string): boolean => {
+    const lab = label.toLowerCase()
+    return lines.some(l => l === lab || l.startsWith(`${lab} —`) || l.startsWith(`${lab} -`))
+  }
   return (
     <div className="mb-2.5">
       <p className="text-marine/40 text-xs mb-1.5">Propositions (avec le moment recommandé) — cliquez pour ajouter :</p>
       <div className="flex flex-wrap gap-1.5">
         {items.map(it => {
-          const used = present.includes(it.label.toLowerCase())
+          const used = isUsed(it.label)
           return (
             <button
               key={it.label}

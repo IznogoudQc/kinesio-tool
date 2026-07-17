@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.93 — Correctif : puce de supplément marquée « déjà présent » à tort)
+
+Une puce (ex. « Fer ») pouvait apparaître grisée/cochée alors que le supplément n'était PAS dans la liste : la
+détection « déjà présent » cherchait le nom **n'importe où** dans le texte (`includes`), et « fer » se trouvait
+dans « …à distance du calcium/**fer** » (moment du Zinc). Résultat : impossible de cliquer la puce. Corrigé : un
+supplément n'est « présent » que si une **ligne commence par son nom** (`Nom — moment`).
+
+Version : 0.2.92 → 0.2.93.
+
 ## ✅ Fait (v0.2.92 — Listes « À privilégier » / « À éviter » globales et éditables)
 
 Même principe que la bibliothèque de suppléments, appliqué aux aliments : les puces « À privilégier » et « À
