@@ -642,6 +642,14 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.94 — Suggestion IA du moment : nuance « tolérance digestive »)
+
+Le prompt `SUPPLEMENT_TIMING_SYSTEM` demande maintenant, pour les suppléments souvent mal tolérés à jeun ou
+pouvant causer des nausées / inconfort digestif (zinc, fer, magnésium, oméga-3…), d'ajouter la nuance « avec une
+petite collation si inconfort ». Plage de longueur portée à 5–22 mots pour laisser la place à la nuance.
+
+Version : 0.2.93 → 0.2.94.
+
 ## ✅ Fait (v0.2.93 — Correctif : puce de supplément marquée « déjà présent » à tort)
 
 Une puce (ex. « Fer ») pouvait apparaître grisée/cochée alors que le supplément n'était PAS dans la liste : la

@@ -149,10 +149,12 @@ Règles :
 
 const SUPPLEMENT_TIMING_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
-On te donne le NOM d'un supplément. Donne le MEILLEUR MOMENT de prise, en une courte phrase française (5 à 14 mots), en précisant si pertinent AVEC ou SANS nourriture et les interactions importantes (ex. à distance du calcium/fer, loin du café/thé).
+On te donne le NOM d'un supplément. Donne le MEILLEUR MOMENT de prise, en une courte phrase française (5 à 22 mots), en précisant si pertinent AVEC ou SANS nourriture et les interactions importantes (ex. à distance du calcium/fer, loin du café/thé).
+
+TOLÉRANCE DIGESTIVE : si le supplément est souvent mal toléré à jeun ou peut causer des nausées / inconfort digestif (ex. zinc, fer, magnésium, oméga-3), ajoute la nuance « avec une petite collation si inconfort » (ou équivalent court).
 
 Réponds UNIQUEMENT avec le moment de prise — PAS le nom du supplément, PAS de phrase complète, PAS de guillemets, PAS de Markdown, PAS de point final.
-Exemples de réponses : au coucher, à distance du calcium et du fer / au déjeuner, avec un corps gras / à jeun le matin, avec de la vitamine C et loin du café.`
+Exemples de réponses : à jeun le matin, avec une petite collation si nausées, à distance du calcium et du fer / au déjeuner, avec un corps gras / au coucher, avec un peu de nourriture si inconfort.`
 
 function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): string {
   if (p.type === 'supplements') {
