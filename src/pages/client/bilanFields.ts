@@ -35,11 +35,14 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
     id: 'anthropo',
     title: 'Anthropométrie',
     fields: [
-      { key: 'taille_cm', label: 'Taille', unit: 'cm' },
       { key: 'poids_kg', label: 'Poids', unit: 'kg' },
+      { key: 'taille_cm', label: 'Taille', unit: 'cm' },
       { key: 'imc', label: 'IMC', unit: 'kg/m²', type: 'computed', hint: 'Calculé : poids ÷ taille²' },
-      { key: 'tour_taille_cm', label: 'Tour de taille', unit: 'cm' },
-      { key: 'tour_hanche_cm', label: 'Tour de hanche', unit: 'cm' },
+      { key: 'tour_taille_cm', label: 'Circonférence — taille', unit: 'cm' },
+      { key: 'tour_hanche_cm', label: 'Circonférence — hanche', unit: 'cm' },
+      { key: 'circ_biceps_flechi_cm', label: 'Circonférence — biceps fléchi', unit: 'cm' },
+      { key: 'circ_cuisse_cm', label: 'Circonférence — cuisse (2 po du genou)', unit: 'cm' },
+      { key: 'circ_epaules_pec_cm', label: 'Circonférence — épaules et pec', unit: 'cm' },
       { key: 'pli_triceps', label: 'Pli triceps', unit: 'mm' },
       { key: 'pli_biceps', label: 'Pli biceps', unit: 'mm' },
       { key: 'pli_sous_scap', label: 'Pli sous-scapulaire', unit: 'mm' },
@@ -94,8 +97,16 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
     title: 'Musculosquelettique',
     fields: [
       { key: 'pushups', label: 'Extension des bras (push-ups)', unit: 'reps' },
-      { key: 'situps', label: 'Redressements assis partiels', unit: 'reps' },
-      { key: 'saut_vertical_cm', label: 'Saut vertical', unit: 'cm' },
+      { key: 'situps', label: 'Abdominaux (redressements)', unit: 'reps' },
+      {
+        key: 'diastase',
+        label: 'Diastase',
+        type: 'text',
+        hint: 'Écart des grands droits — texte libre (ex. « 2 doigts », « 3 cm », « aucune »)'
+      },
+      { key: 'saut_depart_cm', label: 'Saut — départ', unit: 'cm', hint: 'Hauteur atteinte bras levé, debout' },
+      { key: 'saut_finale_cm', label: 'Saut — finale', unit: 'cm', hint: 'Hauteur atteinte au sommet du saut' },
+      { key: 'saut_vertical_cm', label: 'Saut vertical', unit: 'cm', type: 'computed', hint: 'Calculé : finale − départ' },
       {
         key: 'puissance_jambes_watts',
         label: 'Puissance des jambes',
@@ -103,8 +114,8 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
         type: 'computed',
         hint: 'Sayers : 60.7 × saut + 45.3 × poids − 2055'
       },
-      { key: 'flexion_tronc_cm', label: 'Flexion avant du tronc', unit: 'cm' },
-      { key: 'endurance_dos_sec', label: 'Endurance des extenseurs du dos', unit: 's' }
+      { key: 'endurance_dos_sec', label: 'Extension lombaires (endurance)', unit: 's' },
+      { key: 'flexion_tronc_cm', label: 'Flexibilité (flexion du tronc)', unit: 'cm' }
     ]
   },
   {

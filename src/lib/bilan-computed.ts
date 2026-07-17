@@ -59,6 +59,7 @@ export interface BilanComputed {
   fcMaxPredite: number | null
   fcZones: FcZones | null
   // ── Musculo
+  sautVerticalCm: number | null
   puissanceJambesW: number | null
   // ── Scores composites (échelle 0.5-4.5)
   composition: CompositeScore
@@ -220,12 +221,20 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
   const fcZones = computeFcZones(fcMaxPredite)
 
   // Musculo
+  // Saut vertical : finale − départ si les deux sont saisis (feuille papier),
+  // sinon la valeur directe (rétro-compatibilité des anciens bilans / imports).
+  const sautVerticalCm = (() => {
+    if (typeof raw.saut_depart_cm === 'number' && typeof raw.saut_finale_cm === 'number') {
+      return Math.max(0, Math.round((raw.saut_finale_cm - raw.saut_depart_cm) * 10) / 10)
+    }
+    return typeof raw.saut_vertical_cm === 'number' ? raw.saut_vertical_cm : null
+  })()
   const puissanceJambesW = (() => {
     // Préserver les valeurs importées du logiciel d'origine.
     if (raw.puissance_calculated_auto === false && typeof raw.puissance_jambes_watts === 'number') {
       return raw.puissance_jambes_watts
     }
-    const computed = sayersLegPower(raw.saut_vertical_cm, raw.poids_kg)
+    const computed = sayersLegPower(sautVerticalCm ?? undefined, raw.poids_kg)
     if (computed !== null) return computed
     return typeof raw.puissance_jambes_watts === 'number' ? raw.puissance_jambes_watts : null
   })()
@@ -238,6 +247,7 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     imc: imc ?? raw.imc,
     vo2max: vo2max ?? raw.vo2max,
     pourcentage_gras: pourcentageGrasDurnin ?? raw.pourcentage_gras,
+    saut_vertical_cm: sautVerticalCm ?? raw.saut_vertical_cm,
     puissance_jambes_watts: puissanceJambesW ?? raw.puissance_jambes_watts
   }
 
@@ -265,6 +275,7 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     metEquivalent,
     fcMaxPredite,
     fcZones,
+    sautVerticalCm,
     puissanceJambesW,
     composition,
     bodyFat,
@@ -283,6 +294,10 @@ export function mergeComputedIntoBilan(raw: BilanData, computed: BilanComputed):
   if (computed.metEquivalent !== null) next.met_equivalent = computed.metEquivalent
   if (computed.fcMaxPredite !== null) next.fc_max_predite = computed.fcMaxPredite
   if (computed.pourcentageGrasDurnin !== null) next.pourcentage_gras = computed.pourcentageGrasDurnin
+  // Saut vertical dérivé de départ/finale (si les deux sont saisis).
+  if (typeof raw.saut_depart_cm === 'number' && typeof raw.saut_finale_cm === 'number' && computed.sautVerticalCm !== null) {
+    next.saut_vertical_cm = computed.sautVerticalCm
+  }
   // Puissance : ne pas écraser une valeur importée (flag === false).
   if (
     computed.puissanceJambesW !== null &&

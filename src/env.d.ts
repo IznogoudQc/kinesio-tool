@@ -112,6 +112,10 @@ interface BilanData {
   imc?: number
   tour_taille_cm?: number
   tour_hanche_cm?: number
+  /** Circonférences additionnelles (feuille de résultats papier). */
+  circ_biceps_flechi_cm?: number
+  circ_cuisse_cm?: number
+  circ_epaules_pec_cm?: number
   pli_triceps?: number
   pli_biceps?: number
   pli_sous_scap?: number
@@ -148,6 +152,12 @@ interface BilanData {
   recup_5min_fc?: number
   pushups?: number
   situps?: number
+  /** Diastase des grands droits — texte libre (ex. « 2 doigts », « 3 cm »). */
+  diastase?: string
+  /** Saut vertical : hauteur bras levé debout (départ) et sommet du saut (finale).
+   *  `saut_vertical_cm` = finale − départ (calculé). */
+  saut_depart_cm?: number
+  saut_finale_cm?: number
   saut_vertical_cm?: number
   /** Puissance maximale des jambes (Watts) — calculée via Sayers ou importée du logiciel d'origine. */
   puissance_jambes_watts?: number

@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.98 — Saisie manuelle des bilans « comme la feuille » — étape 1/3 : champs + réorg)
+
+Alignement du formulaire de saisie manuelle sur la feuille de résultats papier de Marie-Eve. **Étape 1** :
+- **Nouveaux champs** (données JSON → aucune migration) : circonférences **Biceps fléchi**, **Cuisse (2 po du
+  genou)**, **Épaules et pec** ; **Diastase** (texte libre) ; **Saut — Départ** + **Saut — Finale**.
+- **Saut vertical** devient **calculé** = Finale − Départ (`computeBilan`/`mergeComputedIntoBilan`) ; la puissance
+  (Sayers) s'appuie dessus. Rétro-compatible : anciens bilans avec valeur directe conservés. Tests ajoutés.
+- **Réorganisation** des sections dans l'ordre de la feuille (Poids avant Taille, circonférences regroupées ;
+  musculo : bras, abdominaux, diastase, saut départ/finale, extension lombaires, flexibilité).
+- Champs ajoutés au validateur IPC (`.strip()` aurait sinon supprimé les nouvelles clés à l'enregistrement).
+
+Reste : **étape 2** — sélecteurs d'unités (cm/pouce, kg/lb, saisie convertie en métrique) ; **étape 3** — tableau
+du protocole cardio (FC + perception par palier).
+
+Version : 0.2.97 → 0.2.98.
+
 ## ✅ Fait (v0.2.97 — Modales « Gérer la liste » : le texte long n'est plus coupé)
 
 Les champs « Moment » (suppléments) et « aliment » étaient des champs d'**une seule ligne** qui **tronquaient**

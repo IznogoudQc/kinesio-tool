@@ -13,7 +13,7 @@
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { computeBilan, type BilanProfile } from './bilan-computed.ts'
+import { computeBilan, mergeComputedIntoBilan, type BilanProfile } from './bilan-computed.ts'
 
 const NICHOLAS: BilanProfile = { age: 48, sex: 'M', norms: 'acsm' }
 
@@ -30,6 +30,20 @@ const RAW: BilanData = {
   bruce_duration_sec: 13 * 60 + 33,
   saut_vertical_cm: 48
 }
+
+test('Saut vertical = finale − départ (feuille papier)', () => {
+  const r = computeBilan({ saut_depart_cm: 220, saut_finale_cm: 265, poids_kg: 80 }, NICHOLAS)
+  assert.equal(r.sautVerticalCm, 45)
+  // La puissance (Sayers) est calculée sur le saut dérivé (45 cm), pas 0.
+  assert.ok(r.puissanceJambesW !== null && r.puissanceJambesW > 0)
+  const merged = mergeComputedIntoBilan({ saut_depart_cm: 220, saut_finale_cm: 265, poids_kg: 80 }, r)
+  assert.equal(merged.saut_vertical_cm, 45)
+})
+
+test('Saut vertical — rétro-compat : valeur directe si pas de départ/finale', () => {
+  const r = computeBilan({ saut_vertical_cm: 48, poids_kg: 80 }, NICHOLAS)
+  assert.equal(r.sautVerticalCm, 48)
+})
 
 test('Nicholas — IMC 32.2', () => {
   const r = computeBilan(RAW, NICHOLAS)
