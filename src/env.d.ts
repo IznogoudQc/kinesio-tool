@@ -458,6 +458,13 @@ interface Window {
       getSupplements(): Promise<{ label: string; timing: string }[]>
       setSupplements(value: { label: string; timing: string }[]): Promise<void>
       getDefaultSupplements(): Promise<{ label: string; timing: string }[]>
+      /** Listes globales d'aliments proposés (à privilégier / à éviter). */
+      getFoodsGood(): Promise<string[]>
+      setFoodsGood(value: string[]): Promise<void>
+      getDefaultFoodsGood(): Promise<string[]>
+      getFoodsBad(): Promise<string[]>
+      setFoodsBad(value: string[]): Promise<void>
+      getDefaultFoodsBad(): Promise<string[]>
     }
     transfer: {
       /** Ouvre « Enregistrer sous ». `null` si Marie-Eve annule. */

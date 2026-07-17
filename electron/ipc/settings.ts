@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { settings } from '../../db/schema'
 import { DEFAULT_SUPPLEMENTS } from '../../src/lib/supplements'
+import { DEFAULT_FOODS_GOOD, DEFAULT_FOODS_BAD } from '../../src/lib/food-suggestions'
 
 const KEYTAR_SERVICE = 'kinesio-outils'
 const KEYTAR_ACCOUNT = 'smtp-password'
@@ -18,8 +19,13 @@ const KEYS = {
   categorizationNorms: 'categorization_norms',
   mesureFields: 'mesures.fields',
   documentsFolder: 'documents.folder',
-  supplements: 'nutrition.supplements'
+  supplements: 'nutrition.supplements',
+  foodsGood: 'nutrition.foods_good',
+  foodsBad: 'nutrition.foods_bad'
 } as const
+
+/** Listes d'aliments proposés (à privilégier / à éviter), globales et éditables. */
+const FoodListSchema = z.array(z.string().trim().min(1).max(120)).max(200)
 
 /** Bibliothèque de suppléments (globale, éditable par Marie). Absence de réglage
  *  → liste par défaut. Nom obligatoire ; moment facultatif. */
@@ -237,6 +243,30 @@ export function registerSettingsHandlers(): void {
   })
 
   ipcMain.handle('settings:supplements:default', () => DEFAULT_SUPPLEMENTS)
+
+  // ── Listes d'aliments proposés (globales, tous clients) ─────────────────────
+  const readFoodList = async (key: string, fallback: string[]): Promise<string[]> => {
+    const raw = await readKey(key)
+    if (!raw) return fallback
+    try {
+      const parsed = FoodListSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : fallback
+    } catch {
+      return fallback
+    }
+  }
+
+  ipcMain.handle('settings:foodsGood:get', async () => readFoodList(KEYS.foodsGood, DEFAULT_FOODS_GOOD))
+  ipcMain.handle('settings:foodsGood:set', async (_e, value: unknown) => {
+    await writeKey(KEYS.foodsGood, JSON.stringify(FoodListSchema.parse(value)))
+  })
+  ipcMain.handle('settings:foodsGood:default', () => DEFAULT_FOODS_GOOD)
+
+  ipcMain.handle('settings:foodsBad:get', async () => readFoodList(KEYS.foodsBad, DEFAULT_FOODS_BAD))
+  ipcMain.handle('settings:foodsBad:set', async (_e, value: unknown) => {
+    await writeKey(KEYS.foodsBad, JSON.stringify(FoodListSchema.parse(value)))
+  })
+  ipcMain.handle('settings:foodsBad:default', () => DEFAULT_FOODS_BAD)
 
   // ── Dossier des documents clients ──────────────────────────────────────────
   ipcMain.handle('settings:documentsFolder:get', async () => readKey(KEYS.documentsFolder))

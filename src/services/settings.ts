@@ -80,5 +80,25 @@ export const settingsService = {
 
   async getDefaultSupplements(): Promise<SupplementItem[]> {
     return window.api.settings.getDefaultSupplements()
+  },
+
+  /** Listes globales d'aliments proposés (à privilégier / à éviter). */
+  async getFoodsGood(): Promise<string[]> {
+    return window.api.settings.getFoodsGood()
+  },
+  async setFoodsGood(value: string[]): Promise<void> {
+    return window.api.settings.setFoodsGood(value)
+  },
+  async getDefaultFoodsGood(): Promise<string[]> {
+    return window.api.settings.getDefaultFoodsGood()
+  },
+  async getFoodsBad(): Promise<string[]> {
+    return window.api.settings.getFoodsBad()
+  },
+  async setFoodsBad(value: string[]): Promise<void> {
+    return window.api.settings.setFoodsBad(value)
+  },
+  async getDefaultFoodsBad(): Promise<string[]> {
+    return window.api.settings.getDefaultFoodsBad()
   }
 }

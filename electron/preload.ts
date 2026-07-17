@@ -105,7 +105,13 @@ contextBridge.exposeInMainWorld('api', {
     setSupplements: (value: { label: string; timing: string }[]) =>
       ipcRenderer.invoke('settings:supplements:set', value),
     getDefaultSupplements: () =>
-      ipcRenderer.invoke('settings:supplements:default')
+      ipcRenderer.invoke('settings:supplements:default'),
+    getFoodsGood: () => ipcRenderer.invoke('settings:foodsGood:get'),
+    setFoodsGood: (value: string[]) => ipcRenderer.invoke('settings:foodsGood:set', value),
+    getDefaultFoodsGood: () => ipcRenderer.invoke('settings:foodsGood:default'),
+    getFoodsBad: () => ipcRenderer.invoke('settings:foodsBad:get'),
+    setFoodsBad: (value: string[]) => ipcRenderer.invoke('settings:foodsBad:set', value),
+    getDefaultFoodsBad: () => ipcRenderer.invoke('settings:foodsBad:default')
   },
   transfer: {
     exportClients: (clientIds: string[]) =>

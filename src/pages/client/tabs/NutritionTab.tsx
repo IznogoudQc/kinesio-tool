@@ -32,6 +32,7 @@ import {
   type SuppPlan
 } from '../../../lib/nutrition-plan'
 import { DEFAULT_SUPPLEMENTS, type SupplementItem } from '../../../lib/supplements'
+import { DEFAULT_FOODS_GOOD, DEFAULT_FOODS_BAD } from '../../../lib/food-suggestions'
 import { settingsService } from '../../../services/settings'
 import { buildSynthesisBilan } from '../../../lib/synthesisBilan'
 import { computeBilan } from '../../../lib/bilan-computed'
@@ -119,15 +120,6 @@ function AutoTextarea({
   )
 }
 
-// Propositions par défaut — Marie clique pour insérer, puis garde, modifie ou retire.
-const FOODS_GOOD = [
-  'Légumes verts', 'Protéines maigres (poulet, poisson, œufs)', 'Légumineuses', 'Fruits entiers',
-  'Grains entiers', 'Noix et graines', 'Yogourt grec', 'Eau'
-]
-const FOODS_BAD = [
-  'Sucres ajoutés', 'Boissons sucrées', 'Aliments ultra-transformés', 'Alcool', 'Fritures',
-  'Charcuteries', 'Grignotage le soir'
-]
 const HYDRATION_PRESETS = [2000, 2500, 3000]
 const MOT_PRESETS = [
   'On vise le progrès, pas la perfection. Un repas à la fois.',
@@ -208,6 +200,125 @@ function SupplementChips({
             </button>
           )
         })}
+      </div>
+    </div>
+  )
+}
+
+/** Modale de gestion d'une liste d'aliments (globale, tous clients) — à privilégier
+ *  ou à éviter. Simple liste de textes : ajouter / retirer / rétablir. */
+function FoodListModal({
+  title,
+  desc,
+  initial,
+  persist,
+  getDefaults,
+  onClose,
+  onSaved
+}: {
+  title: string
+  desc: string
+  initial: string[]
+  persist: (items: string[]) => Promise<void>
+  getDefaults: () => Promise<string[]>
+  onClose: () => void
+  onSaved: (items: string[]) => void
+}) {
+  const [items, setItems] = useState<string[]>(initial)
+  const [text, setText] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  function add() {
+    const t = text.trim()
+    if (!t) return
+    if (items.some(x => x.toLowerCase() === t.toLowerCase())) return
+    setItems(list => [...list, t])
+    setText('')
+  }
+  async function save() {
+    setSaving(true)
+    try {
+      await persist(items)
+      onSaved(items)
+      onClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+  async function reset() {
+    setItems(await getDefaults())
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 p-4" onClick={onClose}>
+      <div
+        className="bg-cream rounded-lg shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col border border-cream-dark"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between p-5 border-b border-cream-dark">
+          <div>
+            <h2 className="text-marine font-semibold text-lg">{title}</h2>
+            <p className="text-marine/50 text-sm mt-0.5">{desc}</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-marine/40 hover:text-marine" title="Fermer">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto p-5 space-y-2">
+          {items.length === 0 && <p className="text-marine/45 text-sm">Aucun aliment. Ajoutez-en ci-dessous.</p>}
+          {items.map((it, i) => (
+            <div key={i} className="flex items-center gap-2 bg-white border border-cream-dark rounded-md px-3 py-2">
+              <p className="text-marine text-sm min-w-0 flex-1 truncate">{it}</p>
+              <button
+                type="button"
+                onClick={() => setItems(list => list.filter((_, k) => k !== i))}
+                className="text-marine/30 hover:text-red-600 shrink-0"
+                title="Retirer"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-5 border-t border-cream-dark space-y-3">
+          <div className="flex gap-2">
+            <input
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && add()}
+              placeholder="Ajouter un aliment…"
+              className={`${fieldClass} flex-1`}
+            />
+            <button
+              type="button"
+              onClick={add}
+              disabled={text.trim() === ''}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-marine text-cream text-sm hover:bg-marine-light disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            >
+              <Plus size={15} /> Ajouter
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <button type="button" onClick={reset} className="text-marine/50 text-xs hover:text-marine">
+              Rétablir la liste par défaut
+            </button>
+            <div className="flex gap-2">
+              <button type="button" onClick={onClose} className="px-3.5 py-2 rounded-md border border-cream-dark text-marine/70 text-sm hover:bg-white">
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={save}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-gold-dark text-white text-sm hover:opacity-90 disabled:opacity-40"
+              >
+                <Check size={15} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -451,8 +562,14 @@ export function NutritionTab() {
   // Marie. Chargée depuis les réglages ; défaut tant qu'elle n'a rien personnalisé.
   const [suppLibrary, setSuppLibrary] = useState<SupplementItem[]>(DEFAULT_SUPPLEMENTS)
   const [showSuppLib, setShowSuppLib] = useState(false)
+  // Listes d'aliments proposés (à privilégier / à éviter) — GLOBALES, éditables.
+  const [foodsGoodLib, setFoodsGoodLib] = useState<string[]>(DEFAULT_FOODS_GOOD)
+  const [foodsBadLib, setFoodsBadLib] = useState<string[]>(DEFAULT_FOODS_BAD)
+  const [foodModal, setFoodModal] = useState<'good' | 'bad' | null>(null)
   useEffect(() => {
     settingsService.getSupplements().then(setSuppLibrary).catch(() => {})
+    settingsService.getFoodsGood().then(setFoodsGoodLib).catch(() => {})
+    settingsService.getFoodsBad().then(setFoodsBadLib).catch(() => {})
   }, [])
 
   // Génération IA (plan de suppléments / idées de menu).
@@ -870,6 +987,29 @@ export function NutritionTab() {
         />
       )}
 
+      {foodModal === 'good' && (
+        <FoodListModal
+          title="Aliments à privilégier"
+          desc="Vaut pour tous les clients."
+          initial={foodsGoodLib}
+          persist={items => settingsService.setFoodsGood(items)}
+          getDefaults={() => settingsService.getDefaultFoodsGood()}
+          onClose={() => setFoodModal(null)}
+          onSaved={setFoodsGoodLib}
+        />
+      )}
+      {foodModal === 'bad' && (
+        <FoodListModal
+          title="Aliments à éviter"
+          desc="Vaut pour tous les clients."
+          initial={foodsBadLib}
+          persist={items => settingsService.setFoodsBad(items)}
+          getDefaults={() => settingsService.getDefaultFoodsBad()}
+          onClose={() => setFoodModal(null)}
+          onSaved={setFoodsBadLib}
+        />
+      )}
+
       {showTemplates && (
         <div className="rounded-lg border border-gold/40 bg-cream/40 p-5 space-y-4">
           <p className="text-marine font-medium">Modèles de protocole</p>
@@ -1268,7 +1408,17 @@ export function NutritionTab() {
       {/* ── Aliments ────────────────────────────────────────────────────────── */}
       <div className="grid md:grid-cols-2 gap-6">
         <Section icon={Apple} title="À privilégier" desc="Aliments à mettre de l'avant.">
-          <SuggestChips items={FOODS_GOOD} current={alimentsPrivilegier} onPick={it => setAlimentsPrivilegier(c => appendLine(c, it))} />
+          <div className="mb-1 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setFoodModal('good')}
+              className="inline-flex items-center gap-1.5 text-marine/60 text-xs hover:text-marine transition-colors"
+              title="Ajouter ou retirer des aliments proposés (vaut pour tous les clients)"
+            >
+              <Pencil size={13} /> Gérer la liste
+            </button>
+          </div>
+          <SuggestChips items={foodsGoodLib} current={alimentsPrivilegier} onPick={it => setAlimentsPrivilegier(c => appendLine(c, it))} />
           <textarea
             value={alimentsPrivilegier}
             onChange={e => setAlimentsPrivilegier(e.target.value)}
@@ -1278,7 +1428,17 @@ export function NutritionTab() {
           />
         </Section>
         <Section icon={Ban} title="À éviter" desc="Aliments à limiter.">
-          <SuggestChips items={FOODS_BAD} current={alimentsEviter} onPick={it => setAlimentsEviter(c => appendLine(c, it))} />
+          <div className="mb-1 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setFoodModal('bad')}
+              className="inline-flex items-center gap-1.5 text-marine/60 text-xs hover:text-marine transition-colors"
+              title="Ajouter ou retirer des aliments proposés (vaut pour tous les clients)"
+            >
+              <Pencil size={13} /> Gérer la liste
+            </button>
+          </div>
+          <SuggestChips items={foodsBadLib} current={alimentsEviter} onPick={it => setAlimentsEviter(c => appendLine(c, it))} />
           <textarea
             value={alimentsEviter}
             onChange={e => setAlimentsEviter(e.target.value)}

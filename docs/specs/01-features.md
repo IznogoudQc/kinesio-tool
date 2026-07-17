@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.92 — Listes « À privilégier » / « À éviter » globales et éditables)
+
+Même principe que la bibliothèque de suppléments, appliqué aux aliments : les puces « À privilégier » et « À
+éviter » deviennent des **listes globales** (tous les clients), modifiables via un bouton **« Gérer la liste »**
+dans chaque section (modale : ajouter / retirer / rétablir le défaut). Stockées dans les réglages
+(`nutrition.foods_good` / `nutrition.foods_bad`) ; défauts partagés dans `src/lib/food-suggestions.ts`. Nouveau
+composant réutilisable `FoodListModal`.
+
+Version : 0.2.91 → 0.2.92.
+
 ## ✅ Fait (v0.2.91 — Bibliothèque de suppléments : moment de prise suggéré par l'IA)
 
 Dans la modale « Gérer la liste », l'IA peut proposer le **moment de prise** d'un supplément à partir de son nom
