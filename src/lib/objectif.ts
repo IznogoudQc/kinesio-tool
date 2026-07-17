@@ -10,6 +10,7 @@ import {
   bodyFatGoal,
   dailyDeficitForRate,
   estimateMacros,
+  fiberTargetG,
   weeklyLossFromDeficit,
   weeksToGoal,
   type MacroEstimate
@@ -34,7 +35,8 @@ export function manualMacros(client: {
     targetKcal,
     proteinG: Math.round(proteinG as number),
     fatG: Math.round(fatG as number),
-    carbsG: Math.round(carbsG as number)
+    carbsG: Math.round(carbsG as number),
+    fiberG: fiberTargetG(targetKcal)
   }
 }
 

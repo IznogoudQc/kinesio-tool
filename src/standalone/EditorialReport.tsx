@@ -974,12 +974,13 @@ function ObjectifBody({
                 Repères alimentaires
                 {activityLevel ? ` · ${ACTIVITY_LABELS[activityLevel]}` : ''}
               </p>
-              <div className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-4">
+              <div className="mt-4 grid grid-cols-2 gap-6 sm:grid-cols-5">
                 {[
                   { label: 'Calories', value: Math.round(objectif.macros.targetKcal), unit: 'kcal / jour' },
                   { label: 'Protéines', value: Math.round(objectif.macros.proteinG), unit: 'g' },
                   { label: 'Lipides', value: Math.round(objectif.macros.fatG), unit: 'g' },
-                  { label: 'Glucides', value: Math.round(objectif.macros.carbsG), unit: 'g' }
+                  { label: 'Glucides', value: Math.round(objectif.macros.carbsG), unit: 'g' },
+                  { label: 'Fibres', value: Math.round(objectif.macros.fiberG), unit: 'g' }
                 ].map(m => (
                   <div key={m.label}>
                     <p className="ed-eyebrow text-marine/40">{m.label}</p>
@@ -992,14 +993,15 @@ function ObjectifBody({
               {mealsPerDay && mealsPerDay > 1 && (
                 <div className="mt-6 rounded-lg bg-cream/60 p-5">
                   <p className="ed-eyebrow text-marine/40">Répartition par repas · {mealsPerDay} repas / jour</p>
-                  <div className="mt-3 grid grid-cols-2 gap-6 sm:grid-cols-4">
+                  <div className="mt-3 grid grid-cols-2 gap-6 sm:grid-cols-5">
                     {(() => {
                       const pm = macrosPerMeal(objectif.macros, mealsPerDay)
                       return [
                         { label: 'Calories', value: pm.targetKcal, unit: 'kcal' },
                         { label: 'Protéines', value: pm.proteinG, unit: 'g' },
                         { label: 'Lipides', value: pm.fatG, unit: 'g' },
-                        { label: 'Glucides', value: pm.carbsG, unit: 'g' }
+                        { label: 'Glucides', value: pm.carbsG, unit: 'g' },
+                        { label: 'Fibres', value: pm.fiberG, unit: 'g' }
                       ]
                     })().map(m => (
                       <div key={m.label}>

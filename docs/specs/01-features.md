@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.89 — Macros : ajout de la cible « Fibres »)
+
+Ajout d'une cinquième colonne **Fibres** aux macros (onglet + document, par jour et par repas). Cible calculée
+sur **14 g / 1000 kcal** — référence Santé Canada / DRI (Institute of Medicine 2005), ce qui équivaut à ≈ 25 g/j
+(femme) et ≈ 38 g/j (homme). Comme elle s'adosse aux calories, la cible est **personnalisée** par client.
+`MacroEstimate.fiberG` + `fiberTargetG(kcal)` dans `nutrition.ts` (partagé auto/manuel via `objectif.ts`),
+`macrosPerMeal` inclus. Grilles passées à 5 colonnes. Tests ajoutés.
+
+Contexte scientifique (fibres) : la population en consomme ~15 g/j pour une cible de 25–38 g/j ; bénéfices
+démontrés sur la satiété, la glycémie, le cholestérol, le microbiote et le risque cardiovasculaire/colorectal.
+Reste indicatif — la planification nutritionnelle relève de la nutritionniste. Voir [[nutrition_ai_scope]].
+
+Version : 0.2.88 → 0.2.89.
+
 ## ✅ Fait (v0.2.88 — Export/import : rendre visible que la nutrition est incluse)
 
 **Diagnostic** : l'export/import inclut DÉJÀ toutes les données nutrition — elles voyagent dans la ligne client

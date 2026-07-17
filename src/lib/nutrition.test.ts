@@ -20,6 +20,7 @@ import {
   bodyFatGoal,
   mifflinBmr,
   estimateMacros,
+  fiberTargetG,
   dailyDeficitForRate,
   weeklyLossFromDeficit,
   weeksToGoal
@@ -81,6 +82,15 @@ test('estimateMacros — Nicholas : protéines = masse maigre (lb) × 1, lipides
   assert.equal(m!.proteinG, 154)
   assert.equal(m!.fatG, 60)
   assert.equal(m!.carbsG, 289)
+  // Fibres = 14 g / 1000 kcal → round(2310/1000·14) = 32.
+  assert.equal(m!.fiberG, 32)
+})
+
+test('fiberTargetG — 14 g par 1000 kcal (référence Santé Canada / DRI)', () => {
+  assert.equal(fiberTargetG(2000), 28)
+  assert.equal(fiberTargetG(2500), 35)
+  assert.equal(fiberTargetG(1800), 25) // ≈ cible femme adulte
+  assert.equal(fiberTargetG(2700), 38) // ≈ cible homme adulte
 })
 
 test('estimateMacros — formule personnalisée (1.2 g/lb, gras max 50)', () => {

@@ -895,12 +895,13 @@ export function NutritionTab() {
               <div className="mt-4 border-t border-cream-dark pt-3">
                 <p className="text-[11px] uppercase tracking-wide text-gold-dark font-semibold mb-2">Résultat</p>
                 {liveMacros ? (
-                  <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
                     {[
                       { l: 'Calories', v: liveMacros.targetKcal, u: 'kcal' },
                       { l: 'Protéines', v: liveMacros.proteinG, u: 'g' },
                       { l: 'Lipides', v: liveMacros.fatG, u: 'g' },
-                      { l: 'Glucides', v: liveMacros.carbsG, u: 'g' }
+                      { l: 'Glucides', v: liveMacros.carbsG, u: 'g' },
+                      { l: 'Fibres', v: liveMacros.fiberG, u: 'g' }
                     ].map(m => (
                       <div key={m.l} className="rounded-md bg-white border border-cream-dark py-2">
                         <p className="text-[10px] uppercase tracking-wide text-marine/40">{m.l}</p>
@@ -937,14 +938,15 @@ export function NutritionTab() {
                       </select>
                     </label>
                   </div>
-                  <div className="grid grid-cols-4 gap-2 text-center">
+                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
                     {(() => {
                       const pm = macrosPerMeal(liveMacros, repasParJour)
                       return [
                         { l: 'Calories', v: pm.targetKcal, u: 'kcal' },
                         { l: 'Protéines', v: pm.proteinG, u: 'g' },
                         { l: 'Lipides', v: pm.fatG, u: 'g' },
-                        { l: 'Glucides', v: pm.carbsG, u: 'g' }
+                        { l: 'Glucides', v: pm.carbsG, u: 'g' },
+                        { l: 'Fibres', v: pm.fiberG, u: 'g' }
                       ]
                     })().map(m => (
                       <div key={m.l} className="rounded-md bg-white/70 border border-cream-dark py-2">

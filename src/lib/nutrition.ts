@@ -92,6 +92,14 @@ export function weeksToGoal(
 export const DEFAULT_PROTEIN_PER_LB_LEAN = 1.0
 export const DEFAULT_FAT_MAX_G = 60
 
+/** Fibres alimentaires visées : 14 g par 1000 kcal — référence Santé Canada / DRI
+ *  (Institute of Medicine, 2005). Équivaut à ≈ 25 g/j (femme) et ≈ 38 g/j (homme).
+ *  Comme la cible s'adosse aux calories, elle s'adapte à chaque client. */
+export const FIBER_G_PER_1000_KCAL = 14
+export function fiberTargetG(targetKcal: number): number {
+  return Math.round((targetKcal / 1000) * FIBER_G_PER_1000_KCAL)
+}
+
 export interface BodyFatGoal {
   /** Poids à atteindre (kg) pour le % de gras visé, masse maigre constante. */
   goalKg: number
@@ -160,6 +168,8 @@ export interface MacroEstimate {
   proteinG: number
   carbsG: number
   fatG: number
+  /** Fibres visées (g/jour), 14 g par 1000 kcal (référence Santé Canada / DRI). */
+  fiberG: number
 }
 
 /** Nombre de repas par défaut si non précisé. */
@@ -176,7 +186,8 @@ export function macrosPerMeal(macros: MacroEstimate, meals: number): MacroEstima
     targetKcal: per(macros.targetKcal),
     proteinG: per(macros.proteinG),
     carbsG: per(macros.carbsG),
-    fatG: per(macros.fatG)
+    fatG: per(macros.fatG),
+    fiberG: per(macros.fiberG)
   }
 }
 
@@ -234,5 +245,5 @@ export function estimateMacros(params: {
   const fatG = Math.round(fatCap)
   const carbsG = Math.max(0, Math.round((targetKcal - proteinG * 4 - fatG * 9) / 4))
 
-  return { bmr, tdee, targetKcal, proteinG, carbsG, fatG }
+  return { bmr, tdee, targetKcal, proteinG, carbsG, fatG, fiberG: fiberTargetG(targetKcal) }
 }
