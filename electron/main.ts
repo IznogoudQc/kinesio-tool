@@ -71,6 +71,10 @@ function createWindow(): void {
     }
   })
 
+  // Démarre maximisée (remplit l'écran). La fenêtre reste redimensionnable/restaurable ;
+  // `width/height` ci-dessus servent de taille si Marie la restaure.
+  win.maximize()
+
   if (isDev && process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {

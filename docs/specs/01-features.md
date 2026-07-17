@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.96 — Fenêtre maximisée au démarrage + modales encore plus grandes)
+
+- **Démarrage maximisé** : la fenêtre principale s'ouvre en remplissant l'écran (`win.maximize()` dans
+  `electron/main.ts`). Elle reste redimensionnable/restaurable (la taille 1280×800 sert à la restauration).
+- **Modales « Gérer la liste » agrandies** : suppléments `max-w-3xl` → `max-w-5xl`, aliments `max-w-2xl` →
+  `max-w-3xl`.
+
+Version : 0.2.95 → 0.2.96.
+
 ## ✅ Fait (v0.2.95 — Modales « Gérer la liste » : plus grandes + édition en place)
 
 Les modales de gestion (suppléments, aliments) sont **agrandies** (suppléments `max-w-3xl`, aliments

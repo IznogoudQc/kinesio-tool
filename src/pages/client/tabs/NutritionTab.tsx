@@ -260,7 +260,7 @@ function FoodListModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 p-4" onClick={onClose}>
       <div
-        className="bg-cream rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-cream-dark"
+        className="bg-cream rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-cream-dark"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-start justify-between p-5 border-b border-cream-dark">
@@ -413,7 +413,7 @@ function SupplementLibraryModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 p-4" onClick={onClose}>
       <div
-        className="bg-cream rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-cream-dark"
+        className="bg-cream rounded-lg shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col border border-cream-dark"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-start justify-between p-5 border-b border-cream-dark">
