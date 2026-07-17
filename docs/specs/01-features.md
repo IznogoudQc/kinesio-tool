@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.95 — Modales « Gérer la liste » : plus grandes + édition en place)
+
+Les modales de gestion (suppléments, aliments) sont **agrandies** (suppléments `max-w-3xl`, aliments
+`max-w-2xl`, hauteur `90vh`) et chaque entrée est désormais **modifiable directement** : nom + moment (ou
+l'aliment) sont des champs éditables en place, plus besoin de supprimer/re-créer. Le bouton « IA » reste par
+ligne. À l'enregistrement, les lignes vides sont ignorées (un champ vidé ne casse rien).
+
+Version : 0.2.94 → 0.2.95.
+
 ## ✅ Fait (v0.2.94 — Suggestion IA du moment : nuance « tolérance digestive »)
 
 Le prompt `SUPPLEMENT_TIMING_SYSTEM` demande maintenant, pour les suppléments souvent mal tolérés à jeun ou

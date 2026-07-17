@@ -245,8 +245,9 @@ function FoodListModal({
   async function save() {
     setSaving(true)
     try {
-      await persist(items)
-      onSaved(items)
+      const clean = items.map(x => x.trim()).filter(Boolean)
+      await persist(clean)
+      onSaved(clean)
       onClose()
     } finally {
       setSaving(false)
@@ -259,13 +260,13 @@ function FoodListModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 p-4" onClick={onClose}>
       <div
-        className="bg-cream rounded-lg shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col border border-cream-dark"
+        className="bg-cream rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-cream-dark"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-start justify-between p-5 border-b border-cream-dark">
           <div>
             <h2 className="text-marine font-semibold text-lg">{title}</h2>
-            <p className="text-marine/50 text-sm mt-0.5">{desc}</p>
+            <p className="text-marine/50 text-sm mt-0.5">{desc} Modifiable directement.</p>
           </div>
           <button type="button" onClick={onClose} className="text-marine/40 hover:text-marine" title="Fermer">
             <X size={18} />
@@ -275,8 +276,12 @@ function FoodListModal({
         <div className="overflow-y-auto p-5 space-y-2">
           {items.length === 0 && <p className="text-marine/45 text-sm">Aucun aliment. Ajoutez-en ci-dessous.</p>}
           {items.map((it, i) => (
-            <div key={i} className="flex items-center gap-2 bg-white border border-cream-dark rounded-md px-3 py-2">
-              <p className="text-marine text-sm min-w-0 flex-1 truncate">{it}</p>
+            <div key={i} className="flex items-center gap-2 bg-white border border-cream-dark rounded-md p-2">
+              <input
+                value={it}
+                onChange={e => setItems(list => list.map((x, k) => (k === i ? e.target.value : x)))}
+                className={`${fieldClass} min-w-0 flex-1`}
+              />
               <button
                 type="button"
                 onClick={() => setItems(list => list.filter((_, k) => k !== i))}
@@ -386,9 +391,15 @@ function SupplementLibraryModal({
   async function save() {
     setSaving(true)
     try {
-      await settingsService.setSupplements(items)
-      onSaved(items)
+      // Nettoie : trim + retire les lignes sans nom (un champ vidé ne casse rien).
+      const clean = items
+        .map(it => ({ label: it.label.trim(), timing: it.timing.trim() }))
+        .filter(it => it.label !== '')
+      await settingsService.setSupplements(clean)
+      onSaved(clean)
       onClose()
+    } catch (e) {
+      setErr(aiErrorMessage(e))
     } finally {
       setSaving(false)
     }
@@ -402,13 +413,13 @@ function SupplementLibraryModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 p-4" onClick={onClose}>
       <div
-        className="bg-cream rounded-lg shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col border border-cream-dark"
+        className="bg-cream rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-cream-dark"
         onClick={e => e.stopPropagation()}
       >
         <div className="flex items-start justify-between p-5 border-b border-cream-dark">
           <div>
             <h2 className="text-marine font-semibold text-lg">Liste de suppléments</h2>
-            <p className="text-marine/50 text-sm mt-0.5">Vaut pour tous les clients. Nom + moment recommandé.</p>
+            <p className="text-marine/50 text-sm mt-0.5">Vaut pour tous les clients. Nom + moment — modifiables ; « IA » propose le moment.</p>
           </div>
           <button type="button" onClick={onClose} className="text-marine/40 hover:text-marine" title="Fermer">
             <X size={18} />
@@ -418,19 +429,25 @@ function SupplementLibraryModal({
         <div className="overflow-y-auto p-5 space-y-2">
           {items.length === 0 && <p className="text-marine/45 text-sm">Aucun supplément. Ajoutez-en ci-dessous.</p>}
           {items.map((it, i) => (
-            <div key={i} className="flex items-center gap-2 bg-white border border-cream-dark rounded-md px-3 py-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-marine text-sm font-medium truncate">{it.label}</p>
-                {it.timing ? (
-                  <p className="text-marine/50 text-xs truncate">{it.timing}</p>
-                ) : (
-                  <p className="text-marine/30 text-xs italic">moment non précisé</p>
-                )}
+            <div key={i} className="flex items-center gap-2 bg-white border border-cream-dark rounded-md p-2">
+              <div className="min-w-0 flex-1 grid sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] gap-1.5">
+                <input
+                  value={it.label}
+                  onChange={e => setItems(list => list.map((x, k) => (k === i ? { ...x, label: e.target.value } : x)))}
+                  placeholder="Nom"
+                  className={`${fieldClass} font-medium`}
+                />
+                <input
+                  value={it.timing}
+                  onChange={e => setItems(list => list.map((x, k) => (k === i ? { ...x, timing: e.target.value } : x)))}
+                  placeholder="Moment (ou « IA »)"
+                  className={fieldClass}
+                />
               </div>
               <button
                 type="button"
                 onClick={() => suggestRow(i)}
-                disabled={busy !== null}
+                disabled={busy !== null || it.label.trim() === ''}
                 className="inline-flex items-center gap-1 text-gold-dark/80 hover:text-gold-dark text-xs shrink-0 disabled:opacity-40"
                 title="Suggérer le moment avec l’IA"
               >
