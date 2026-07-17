@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.91 — Bibliothèque de suppléments : moment de prise suggéré par l'IA)
+
+Dans la modale « Gérer la liste », l'IA peut proposer le **moment de prise** d'un supplément à partir de son nom
+(utile quand Marie ne le connaît pas — ex. « Fer »). Bouton **« IA »** à l'ajout (remplit le champ Moment,
+**modifiable** avant d'ajouter) et **par ligne** (pour les suppléments déjà ajoutés sans moment — le libellé
+« moment non précisé » les signale). Nouveau handler `ai:supplement-timing` (nom → phrase courte de moment),
+`aiAdviceService.suggestSupplementTiming`. Le moment reste toujours éditable à la main.
+
+Version : 0.2.90 → 0.2.91.
+
 ## ✅ Fait (v0.2.90 — Menu riche en fibres + bibliothèque de suppléments globale éditable)
 
 **1. Fibres dans les idées de menu (sans chiffre).** La cible de fibres (`liveMacros.fiberG`) est transmise à

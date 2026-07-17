@@ -147,6 +147,13 @@ Règles :
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
 
+const SUPPLEMENT_TIMING_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
+
+On te donne le NOM d'un supplément. Donne le MEILLEUR MOMENT de prise, en une courte phrase française (5 à 14 mots), en précisant si pertinent AVEC ou SANS nourriture et les interactions importantes (ex. à distance du calcium/fer, loin du café/thé).
+
+Réponds UNIQUEMENT avec le moment de prise — PAS le nom du supplément, PAS de phrase complète, PAS de guillemets, PAS de Markdown, PAS de point final.
+Exemples de réponses : au coucher, à distance du calcium et du fer / au déjeuner, avec un corps gras / à jeun le matin, avec de la vitamine C et loin du café.`
+
 function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): string {
   if (p.type === 'supplements') {
     return `Suppléments à organiser en horaire :\n${(p.supplements ?? '').trim() || '(aucun supplément fourni)'}`
@@ -372,6 +379,34 @@ export function registerAIHandlers(): void {
       if (err instanceof z.ZodError) {
         return { ok: false, error: 'Le JSON Anthropic ne correspond pas au schéma attendu.', code: 'BAD_RESPONSE' as AIErrorCode }
       }
+      return { ok: false, error: err instanceof Error ? err.message : 'Erreur inconnue', code: 'BAD_RESPONSE' as AIErrorCode }
+    }
+  })
+
+  // ── Moment de prise recommandé pour un supplément (bibliothèque) ────────────
+  ipcMain.handle('ai:supplement-timing', async (_e, rawPayload: unknown) => {
+    const apiKey = await getApiKey()
+    if (!apiKey) {
+      return { ok: false, error: 'Aucune clé API Anthropic configurée.', code: 'NO_API_KEY' as AIErrorCode }
+    }
+    let name: string
+    try {
+      name = z.object({ name: z.string().min(1).max(120) }).parse(rawPayload).name
+    } catch {
+      return { ok: false, error: 'Nom de supplément invalide.', code: 'BAD_RESPONSE' as AIErrorCode }
+    }
+    try {
+      const response = await callAnthropic(apiKey, {
+        model: MODEL_GENERATE,
+        max_tokens: 80,
+        system: SUPPLEMENT_TIMING_SYSTEM,
+        messages: [{ role: 'user', content: `Supplément : ${name}` }]
+      })
+      // Nettoie guillemets et point final éventuels renvoyés par le modèle.
+      const timing = extractText(response).trim().replace(/^[«»"']+|[«»"'.\s]+$/g, '').trim()
+      return { ok: true, timing }
+    } catch (err) {
+      if (err instanceof AIError) return { ok: false, error: err.message, code: err.code }
       return { ok: false, error: err instanceof Error ? err.message : 'Erreur inconnue', code: 'BAD_RESPONSE' as AIErrorCode }
     }
   })

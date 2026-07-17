@@ -530,6 +530,8 @@ interface Window {
         foodsLiked?: string
         foodsDisliked?: string
       }): Promise<{ ok: boolean; plan?: unknown; error?: string; code?: string }>
+      /** Propose le moment de prise recommandé pour un supplément (nom → moment court). */
+      supplementTiming(name: string): Promise<{ ok: boolean; timing?: string; error?: string; code?: string }>
     }
     nutritionTemplates: {
       list(): Promise<NutritionTemplate[]>

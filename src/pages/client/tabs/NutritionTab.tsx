@@ -227,6 +227,34 @@ function SupplementLibraryModal({
   const [label, setLabel] = useState('')
   const [timing, setTiming] = useState('')
   const [saving, setSaving] = useState(false)
+  // `busy` = ligne dont on suggère le moment (index), ou 'new' pour la ligne d'ajout.
+  const [busy, setBusy] = useState<number | 'new' | null>(null)
+  const [err, setErr] = useState<string | null>(null)
+
+  async function suggest(name: string): Promise<string | null> {
+    try {
+      return await aiAdviceService.suggestSupplementTiming(name)
+    } catch (e) {
+      setErr(aiErrorMessage(e))
+      return null
+    }
+  }
+  async function suggestNew() {
+    const l = label.trim()
+    if (!l) return
+    setErr(null)
+    setBusy('new')
+    const t = await suggest(l)
+    if (t !== null) setTiming(t)
+    setBusy(null)
+  }
+  async function suggestRow(i: number) {
+    setErr(null)
+    setBusy(i)
+    const t = await suggest(items[i].label)
+    if (t !== null) setItems(list => list.map((it, k) => (k === i ? { ...it, timing: t } : it)))
+    setBusy(null)
+  }
 
   function add() {
     const l = label.trim()
@@ -272,11 +300,25 @@ function SupplementLibraryModal({
         <div className="overflow-y-auto p-5 space-y-2">
           {items.length === 0 && <p className="text-marine/45 text-sm">Aucun supplément. Ajoutez-en ci-dessous.</p>}
           {items.map((it, i) => (
-            <div key={i} className="flex items-center gap-3 bg-white border border-cream-dark rounded-md px-3 py-2">
+            <div key={i} className="flex items-center gap-2 bg-white border border-cream-dark rounded-md px-3 py-2">
               <div className="min-w-0 flex-1">
                 <p className="text-marine text-sm font-medium truncate">{it.label}</p>
-                {it.timing && <p className="text-marine/50 text-xs truncate">{it.timing}</p>}
+                {it.timing ? (
+                  <p className="text-marine/50 text-xs truncate">{it.timing}</p>
+                ) : (
+                  <p className="text-marine/30 text-xs italic">moment non précisé</p>
+                )}
               </div>
+              <button
+                type="button"
+                onClick={() => suggestRow(i)}
+                disabled={busy !== null}
+                className="inline-flex items-center gap-1 text-gold-dark/80 hover:text-gold-dark text-xs shrink-0 disabled:opacity-40"
+                title="Suggérer le moment avec l’IA"
+              >
+                <Sparkles size={13} />
+                {busy === i ? '…' : 'IA'}
+              </button>
               <button
                 type="button"
                 onClick={() => setItems(list => list.filter((_, k) => k !== i))}
@@ -290,6 +332,7 @@ function SupplementLibraryModal({
         </div>
 
         <div className="p-5 border-t border-cream-dark space-y-3">
+          {err && <p className="text-red-700 text-xs bg-red-50 border border-red-200 rounded-md px-3 py-2">{err}</p>}
           <div className="flex flex-col sm:flex-row gap-2">
             <input
               value={label}
@@ -298,13 +341,25 @@ function SupplementLibraryModal({
               placeholder="Nom (ex. Ashwagandha)"
               className={`${fieldClass} sm:flex-1`}
             />
-            <input
-              value={timing}
-              onChange={e => setTiming(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && add()}
-              placeholder="Moment (ex. au coucher)"
-              className={`${fieldClass} sm:flex-1`}
-            />
+            <div className="flex gap-1 sm:flex-1">
+              <input
+                value={timing}
+                onChange={e => setTiming(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && add()}
+                placeholder="Moment (ex. au coucher)"
+                className={`${fieldClass} flex-1`}
+              />
+              <button
+                type="button"
+                onClick={suggestNew}
+                disabled={label.trim() === '' || busy !== null}
+                title="Proposer le moment avec l’IA (à partir du nom)"
+                className="inline-flex items-center gap-1 px-2.5 rounded-md border border-gold/50 text-gold-dark text-sm hover:bg-gold/10 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+              >
+                <Sparkles size={14} />
+                {busy === 'new' ? '…' : 'IA'}
+              </button>
+            </div>
             <button
               type="button"
               onClick={add}

@@ -110,6 +110,18 @@ export const aiAdviceService = {
       )
     }
     return res.plan as AiMenuPlan
+  },
+
+  /** IA : moment de prise recommandé pour un supplément (nom → phrase courte). */
+  async suggestSupplementTiming(name: string): Promise<string> {
+    const res = await window.api.ai.supplementTiming(name)
+    if (!res.ok || typeof res.timing !== 'string') {
+      throw new AIAdviceError(
+        (res.code as AIErrorCode) ?? 'BAD_RESPONSE',
+        res.error ?? 'Erreur inconnue lors de la suggestion.'
+      )
+    }
+    return res.timing
   }
 }
 
