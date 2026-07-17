@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.90 — Menu riche en fibres + bibliothèque de suppléments globale éditable)
+
+**1. Fibres dans les idées de menu (sans chiffre).** La cible de fibres (`liveMacros.fiberG`) est transmise à
+l'IA du menu, et `MENU_SYSTEM` demande de PRIORISER les aliments riches en fibres (légumes, fruits, légumineuses,
+grains entiers) pour s'en approcher — **sans écrire de total de fibres** (cohérent avec le retrait des totaux
+calories/macros, calcul IA peu fiable).
+
+**2. Bibliothèque de suppléments GLOBALE et éditable.** La liste des puces de suppléments (avec le moment
+recommandé) était codée en dur. Elle devient une **bibliothèque globale** (vaut pour TOUS les clients), stockée
+dans les réglages (`nutrition.supplements`), modifiable par Marie via un bouton **« Gérer la liste »** dans
+l'onglet Nutrition (modale : ajouter nom + moment, retirer, rétablir le défaut). Défauts partagés dans
+`src/lib/supplements.ts` (`DEFAULT_SUPPLEMENTS`), servis tant que rien n'est personnalisé. L'IA continue de
+placer chaque supplément au bon moment (le moment saisi est transmis via la puce).
+
+Version : 0.2.89 → 0.2.90.
+
 ## ✅ Fait (v0.2.89 — Macros : ajout de la cible « Fibres »)
 
 Ajout d'une cinquième colonne **Fibres** aux macros (onglet + document, par jour et par repas). Cible calculée

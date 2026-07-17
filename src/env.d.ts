@@ -454,6 +454,10 @@ interface Window {
       getDocumentsFolder(): Promise<string | null>
       /** Ouvre un sélecteur de dossier natif ; enregistre et retourne le chemin, ou `null` si annulé. */
       pickDocumentsFolder(): Promise<string | null>
+      /** Bibliothèque globale de suppléments (défaut si jamais personnalisée). */
+      getSupplements(): Promise<{ label: string; timing: string }[]>
+      setSupplements(value: { label: string; timing: string }[]): Promise<void>
+      getDefaultSupplements(): Promise<{ label: string; timing: string }[]>
     }
     transfer: {
       /** Ouvre « Enregistrer sous ». `null` si Marie-Eve annule. */
@@ -519,6 +523,7 @@ interface Window {
         proteinG?: number | null
         fatG?: number | null
         carbsG?: number | null
+        fiberG?: number | null
         supplements?: string
         foodsGood?: string
         foodsBad?: string

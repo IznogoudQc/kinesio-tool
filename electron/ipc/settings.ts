@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { settings } from '../../db/schema'
+import { DEFAULT_SUPPLEMENTS } from '../../src/lib/supplements'
 
 const KEYTAR_SERVICE = 'kinesio-outils'
 const KEYTAR_ACCOUNT = 'smtp-password'
@@ -16,8 +17,20 @@ const KEYS = {
   emailTemplate: 'email.template',
   categorizationNorms: 'categorization_norms',
   mesureFields: 'mesures.fields',
-  documentsFolder: 'documents.folder'
+  documentsFolder: 'documents.folder',
+  supplements: 'nutrition.supplements'
 } as const
+
+/** Bibliothèque de suppléments (globale, éditable par Marie). Absence de réglage
+ *  → liste par défaut. Nom obligatoire ; moment facultatif. */
+const SupplementsSchema = z
+  .array(
+    z.object({
+      label: z.string().trim().min(1).max(80),
+      timing: z.string().trim().max(200)
+    })
+  )
+  .max(100)
 
 const CategorizationNormsSchema = z.enum(['acsm', 'cpafla'])
 const DEFAULT_CATEGORIZATION_NORMS = 'acsm' as const
@@ -205,6 +218,25 @@ export function registerSettingsHandlers(): void {
     const validated = MesureFieldsSchema.parse(value)
     await writeKey(KEYS.mesureFields, JSON.stringify(validated))
   })
+
+  // ── Bibliothèque de suppléments (globale, tous clients) ─────────────────────
+  ipcMain.handle('settings:supplements:get', async () => {
+    const raw = await readKey(KEYS.supplements)
+    if (!raw) return DEFAULT_SUPPLEMENTS
+    try {
+      const parsed = SupplementsSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : DEFAULT_SUPPLEMENTS
+    } catch {
+      return DEFAULT_SUPPLEMENTS
+    }
+  })
+
+  ipcMain.handle('settings:supplements:set', async (_e, value: unknown) => {
+    const validated = SupplementsSchema.parse(value)
+    await writeKey(KEYS.supplements, JSON.stringify(validated))
+  })
+
+  ipcMain.handle('settings:supplements:default', () => DEFAULT_SUPPLEMENTS)
 
   // ── Dossier des documents clients ──────────────────────────────────────────
   ipcMain.handle('settings:documentsFolder:get', async () => readKey(KEYS.documentsFolder))

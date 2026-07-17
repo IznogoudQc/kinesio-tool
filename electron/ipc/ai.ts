@@ -77,6 +77,7 @@ const NutritionPayloadSchema = z.object({
   proteinG: z.number().nullable().optional(),
   fatG: z.number().nullable().optional(),
   carbsG: z.number().nullable().optional(),
+  fiberG: z.number().nullable().optional(),
   supplements: z.string().max(3000).optional(),
   foodsGood: z.string().max(3000).optional(),
   foodsBad: z.string().max(3000).optional(),
@@ -141,6 +142,7 @@ Règles :
 - 1 à 2 journées. Chaque « lignes » = des lignes « Repas : aliments », SANS puce et SANS Markdown (pas de #, *, tableaux, émojis).
 - Ne mets PAS d'en-tête « Journée N » dans les lignes : la numérotation est ajoutée par l'application.
 - N'ajoute AUCUN total de calories ou de macros : ces calculs relèvent d'une nutritionniste et ne doivent pas figurer.
+- PRIORISE les aliments RICHES EN FIBRES (légumes, fruits avec pelure, légumineuses, grains entiers, noix/graines) pour t'approcher de la cible de fibres indiquée. N'écris AUCUN total de fibres en grammes.
 - VARIE les journées : aliments principaux DIFFÉRENTS d'une journée à l'autre.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
@@ -155,8 +157,13 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
   if (typeof p.fatG === 'number') macros.push(`${Math.round(p.fatG)} g de lipides`)
   if (typeof p.carbsG === 'number') macros.push(`${Math.round(p.carbsG)} g de glucides`)
   const clean = (s?: string) => (s ?? '').trim().replace(/\n/g, ', ') || 'non précisés'
+  const fiberLine =
+    typeof p.fiberG === 'number'
+      ? `Cible de fibres : environ ${Math.round(p.fiberG)} g/jour — construis des journées RICHES EN FIBRES pour t'en approcher (sans écrire de total de fibres).`
+      : `Vise des journées riches en fibres (légumes, fruits, légumineuses, grains entiers).`
   const lines = [
     `Cibles quotidiennes : ${macros.length ? macros.join(', ') : 'non précisées'}.`,
+    fiberLine,
     `Aliments à privilégier (recommandation) : ${clean(p.foodsGood)}.`,
     `Aliments à éviter (recommandation) : ${clean(p.foodsBad)}.`,
     `Aliments que la personne AIME : ${clean(p.foodsLiked)}.`,

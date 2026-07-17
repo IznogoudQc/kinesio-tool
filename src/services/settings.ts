@@ -1,3 +1,5 @@
+import type { SupplementItem } from '../lib/supplements'
+
 export const settingsService = {
   async getProfile(): Promise<ProfileSettings> {
     return window.api.settings.getProfile()
@@ -65,5 +67,18 @@ export const settingsService = {
   /** Ouvre un sélecteur natif ; enregistre et retourne le dossier choisi, ou `null` si annulé. */
   async pickDocumentsFolder(): Promise<string | null> {
     return window.api.settings.pickDocumentsFolder()
+  },
+
+  /** Bibliothèque globale de suppléments (défaut si jamais personnalisée). */
+  async getSupplements(): Promise<SupplementItem[]> {
+    return window.api.settings.getSupplements()
+  },
+
+  async setSupplements(value: SupplementItem[]): Promise<void> {
+    return window.api.settings.setSupplements(value)
+  },
+
+  async getDefaultSupplements(): Promise<SupplementItem[]> {
+    return window.api.settings.getDefaultSupplements()
   }
 }

@@ -96,6 +96,7 @@ export const aiAdviceService = {
     proteinG?: number | null
     fatG?: number | null
     carbsG?: number | null
+    fiberG?: number | null
     foodsGood?: string
     foodsBad?: string
     foodsLiked?: string

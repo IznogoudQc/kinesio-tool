@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pill, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
+import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pencil, Pill, Plus, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils, X } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
@@ -31,6 +31,8 @@ import {
   SUPP_MOMENTS,
   type SuppPlan
 } from '../../../lib/nutrition-plan'
+import { DEFAULT_SUPPLEMENTS, type SupplementItem } from '../../../lib/supplements'
+import { settingsService } from '../../../services/settings'
 import { buildSynthesisBilan } from '../../../lib/synthesisBilan'
 import { computeBilan } from '../../../lib/bilan-computed'
 import { computeAge } from '../../../lib/norms'
@@ -126,21 +128,6 @@ const FOODS_BAD = [
   'Sucres ajoutés', 'Boissons sucrées', 'Aliments ultra-transformés', 'Alcool', 'Fritures',
   'Charcuteries', 'Grignotage le soir'
 ]
-// Suppléments courants avec le moment généralement recommandé pour la prise.
-const SUPPLEMENTS: { label: string; timing: string }[] = [
-  { label: 'Vitamine D3 + K2', timing: 'avec un repas contenant du gras' },
-  { label: 'Oméga-3 (EPA/DHA)', timing: 'au repas' },
-  { label: 'Magnésium', timing: 'le soir (souper ou coucher)' },
-  { label: 'Zinc', timing: 'au coucher, à distance du calcium/fer' },
-  { label: 'Créatine 5 g', timing: 'tous les jours, n’importe quand' },
-  { label: 'Multivitamine', timing: 'au déjeuner' },
-  { label: 'Vitamine C', timing: 'le matin' },
-  { label: 'Probiotiques', timing: 'à jeun, le matin' },
-  { label: 'Fer', timing: 'à jeun avec vitamine C, loin du café/thé' },
-  { label: 'Protéine (whey)', timing: 'après l’entraînement ou en collation' },
-  { label: 'Psyllium (fibres)', timing: 'avec beaucoup d’eau, à distance des médicaments et autres suppléments' },
-  { label: 'Collagène', timing: 'tous les jours, avec ou sans nourriture (idéalement avec la vitamine C)' }
-]
 const HYDRATION_PRESETS = [2000, 2500, 3000]
 const MOT_PRESETS = [
   'On vise le progrès, pas la perfection. Un repas à la fois.',
@@ -226,6 +213,131 @@ function SupplementChips({
   )
 }
 
+/** Modale de gestion de la bibliothèque de suppléments (globale, tous clients). */
+function SupplementLibraryModal({
+  initial,
+  onClose,
+  onSaved
+}: {
+  initial: SupplementItem[]
+  onClose: () => void
+  onSaved: (items: SupplementItem[]) => void
+}) {
+  const [items, setItems] = useState<SupplementItem[]>(initial)
+  const [label, setLabel] = useState('')
+  const [timing, setTiming] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  function add() {
+    const l = label.trim()
+    if (!l) return
+    if (items.some(it => it.label.toLowerCase() === l.toLowerCase())) return
+    setItems(list => [...list, { label: l, timing: timing.trim() }])
+    setLabel('')
+    setTiming('')
+  }
+
+  async function save() {
+    setSaving(true)
+    try {
+      await settingsService.setSupplements(items)
+      onSaved(items)
+      onClose()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function resetDefaults() {
+    const def = await settingsService.getDefaultSupplements()
+    setItems(def)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 p-4" onClick={onClose}>
+      <div
+        className="bg-cream rounded-lg shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col border border-cream-dark"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between p-5 border-b border-cream-dark">
+          <div>
+            <h2 className="text-marine font-semibold text-lg">Liste de suppléments</h2>
+            <p className="text-marine/50 text-sm mt-0.5">Vaut pour tous les clients. Nom + moment recommandé.</p>
+          </div>
+          <button type="button" onClick={onClose} className="text-marine/40 hover:text-marine" title="Fermer">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto p-5 space-y-2">
+          {items.length === 0 && <p className="text-marine/45 text-sm">Aucun supplément. Ajoutez-en ci-dessous.</p>}
+          {items.map((it, i) => (
+            <div key={i} className="flex items-center gap-3 bg-white border border-cream-dark rounded-md px-3 py-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-marine text-sm font-medium truncate">{it.label}</p>
+                {it.timing && <p className="text-marine/50 text-xs truncate">{it.timing}</p>}
+              </div>
+              <button
+                type="button"
+                onClick={() => setItems(list => list.filter((_, k) => k !== i))}
+                className="text-marine/30 hover:text-red-600 shrink-0"
+                title="Retirer"
+              >
+                <Trash2 size={15} />
+              </button>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-5 border-t border-cream-dark space-y-3">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              value={label}
+              onChange={e => setLabel(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && add()}
+              placeholder="Nom (ex. Ashwagandha)"
+              className={`${fieldClass} sm:flex-1`}
+            />
+            <input
+              value={timing}
+              onChange={e => setTiming(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && add()}
+              placeholder="Moment (ex. au coucher)"
+              className={`${fieldClass} sm:flex-1`}
+            />
+            <button
+              type="button"
+              onClick={add}
+              disabled={label.trim() === ''}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-marine text-cream text-sm hover:bg-marine-light disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            >
+              <Plus size={15} /> Ajouter
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <button type="button" onClick={resetDefaults} className="text-marine/50 text-xs hover:text-marine">
+              Rétablir la liste par défaut
+            </button>
+            <div className="flex gap-2">
+              <button type="button" onClick={onClose} className="px-3.5 py-2 rounded-md border border-cream-dark text-marine/70 text-sm hover:bg-white">
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={save}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-gold-dark text-white text-sm hover:opacity-90 disabled:opacity-40"
+              >
+                <Check size={15} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function NutritionTab() {
   const { client, onClientUpdated } = useClientContext()
 
@@ -279,6 +391,14 @@ export function NutritionTab() {
     return [client.nutritionMenu ?? '', '']
   })
   const setMenuJour = (i: number, v: string) => setMenuJours(js => js.map((j, k) => (k === i ? v : j)))
+
+  // Bibliothèque de suppléments proposés — GLOBALE (tous les clients), éditable par
+  // Marie. Chargée depuis les réglages ; défaut tant qu'elle n'a rien personnalisé.
+  const [suppLibrary, setSuppLibrary] = useState<SupplementItem[]>(DEFAULT_SUPPLEMENTS)
+  const [showSuppLib, setShowSuppLib] = useState(false)
+  useEffect(() => {
+    settingsService.getSupplements().then(setSuppLibrary).catch(() => {})
+  }, [])
 
   // Génération IA (plan de suppléments / idées de menu).
   const [aiBusy, setAiBusy] = useState<'supp' | 'menu' | null>(null)
@@ -518,6 +638,7 @@ export function NutritionTab() {
         proteinG: liveMacros?.proteinG ?? null,
         fatG: liveMacros?.fatG ?? null,
         carbsG: liveMacros?.carbsG ?? null,
+        fiberG: liveMacros?.fiberG ?? null,
         foodsGood: alimentsPrivilegier,
         foodsBad: alimentsEviter,
         foodsLiked: alimentsAimes,
@@ -684,6 +805,14 @@ export function NutritionTab() {
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
           {sentMsg}
         </div>
+      )}
+
+      {showSuppLib && (
+        <SupplementLibraryModal
+          initial={suppLibrary}
+          onClose={() => setShowSuppLib(false)}
+          onSaved={setSuppLibrary}
+        />
       )}
 
       {showTemplates && (
@@ -1022,7 +1151,17 @@ export function NutritionTab() {
       </Section>
 
       <Section icon={Pill} title="Suppléments" desc="Listez les suppléments, puis l’IA les répartit par moment de prise.">
-        <SupplementChips items={SUPPLEMENTS} current={supp.input} onPick={line => setSuppField('input', appendLine(supp.input, line))} />
+        <div className="mb-1 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setShowSuppLib(true)}
+            className="inline-flex items-center gap-1.5 text-marine/60 text-xs hover:text-marine transition-colors"
+            title="Ajouter ou retirer des suppléments proposés (vaut pour tous les clients)"
+          >
+            <Pencil size={13} /> Gérer la liste
+          </button>
+        </div>
+        <SupplementChips items={suppLibrary} current={supp.input} onPick={line => setSuppField('input', appendLine(supp.input, line))} />
         <AutoTextarea
           value={supp.input}
           onChange={e => setSuppField('input', e.target.value)}

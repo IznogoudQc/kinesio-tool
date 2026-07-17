@@ -99,7 +99,13 @@ contextBridge.exposeInMainWorld('api', {
     getDocumentsFolder: () =>
       ipcRenderer.invoke('settings:documentsFolder:get'),
     pickDocumentsFolder: () =>
-      ipcRenderer.invoke('settings:documentsFolder:pick')
+      ipcRenderer.invoke('settings:documentsFolder:pick'),
+    getSupplements: () =>
+      ipcRenderer.invoke('settings:supplements:get'),
+    setSupplements: (value: { label: string; timing: string }[]) =>
+      ipcRenderer.invoke('settings:supplements:set', value),
+    getDefaultSupplements: () =>
+      ipcRenderer.invoke('settings:supplements:default')
   },
   transfer: {
     exportClients: (clientIds: string[]) =>
