@@ -642,6 +642,14 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.97 — Modales « Gérer la liste » : le texte long n'est plus coupé)
+
+Les champs « Moment » (suppléments) et « aliment » étaient des champs d'**une seule ligne** qui **tronquaient**
+le texte long (ex. Psyllium, Fer). Remplacés par des zones `AutoTextarea` (`minRows=1`) qui **s'agrandissent et
+reviennent à la ligne** pour afficher **tout le texte**. Alignement des lignes passé en `items-start`.
+
+Version : 0.2.96 → 0.2.97.
+
 ## ✅ Fait (v0.2.96 — Fenêtre maximisée au démarrage + modales encore plus grandes)
 
 - **Démarrage maximisé** : la fenêtre principale s'ouvre en remplissant l'écran (`win.maximize()` dans

@@ -276,16 +276,17 @@ function FoodListModal({
         <div className="overflow-y-auto p-5 space-y-2">
           {items.length === 0 && <p className="text-marine/45 text-sm">Aucun aliment. Ajoutez-en ci-dessous.</p>}
           {items.map((it, i) => (
-            <div key={i} className="flex items-center gap-2 bg-white border border-cream-dark rounded-md p-2">
-              <input
+            <div key={i} className="flex items-start gap-2 bg-white border border-cream-dark rounded-md p-2">
+              <AutoTextarea
                 value={it}
                 onChange={e => setItems(list => list.map((x, k) => (k === i ? e.target.value : x)))}
+                minRows={1}
                 className={`${fieldClass} min-w-0 flex-1`}
               />
               <button
                 type="button"
                 onClick={() => setItems(list => list.filter((_, k) => k !== i))}
-                className="text-marine/30 hover:text-red-600 shrink-0"
+                className="mt-2 text-marine/30 hover:text-red-600 shrink-0"
                 title="Retirer"
               >
                 <Trash2 size={15} />
@@ -429,7 +430,7 @@ function SupplementLibraryModal({
         <div className="overflow-y-auto p-5 space-y-2">
           {items.length === 0 && <p className="text-marine/45 text-sm">Aucun supplément. Ajoutez-en ci-dessous.</p>}
           {items.map((it, i) => (
-            <div key={i} className="flex items-center gap-2 bg-white border border-cream-dark rounded-md p-2">
+            <div key={i} className="flex items-start gap-2 bg-white border border-cream-dark rounded-md p-2">
               <div className="min-w-0 flex-1 grid sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] gap-1.5">
                 <input
                   value={it.label}
@@ -437,9 +438,11 @@ function SupplementLibraryModal({
                   placeholder="Nom"
                   className={`${fieldClass} font-medium`}
                 />
-                <input
+                {/* Zone qui s'agrandit pour afficher TOUT le moment (pas de texte coupé). */}
+                <AutoTextarea
                   value={it.timing}
                   onChange={e => setItems(list => list.map((x, k) => (k === i ? { ...x, timing: e.target.value } : x)))}
+                  minRows={1}
                   placeholder="Moment (ou « IA »)"
                   className={fieldClass}
                 />
@@ -448,7 +451,7 @@ function SupplementLibraryModal({
                 type="button"
                 onClick={() => suggestRow(i)}
                 disabled={busy !== null || it.label.trim() === ''}
-                className="inline-flex items-center gap-1 text-gold-dark/80 hover:text-gold-dark text-xs shrink-0 disabled:opacity-40"
+                className="mt-2 inline-flex items-center gap-1 text-gold-dark/80 hover:text-gold-dark text-xs shrink-0 disabled:opacity-40"
                 title="Suggérer le moment avec l’IA"
               >
                 <Sparkles size={13} />
@@ -457,7 +460,7 @@ function SupplementLibraryModal({
               <button
                 type="button"
                 onClick={() => setItems(list => list.filter((_, k) => k !== i))}
-                className="text-marine/30 hover:text-red-600 shrink-0"
+                className="mt-2 text-marine/30 hover:text-red-600 shrink-0"
                 title="Retirer"
               >
                 <Trash2 size={15} />
