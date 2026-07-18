@@ -9,6 +9,16 @@ import { computeAge } from '../../lib/norms'
 import { computeBilan, mergeComputedIntoBilan, type BilanProfile } from '../../lib/bilan-computed'
 import { BILAN_TO_TEST_KEY } from '../../lib/norms/bilan-keys'
 import { validateBilanField } from '../../lib/bilan-bounds'
+import {
+  cmToLengthInput,
+  kgToWeightInput,
+  lengthInputToCm,
+  weightInputToKg,
+  lengthUnitLabel,
+  weightUnitLabel,
+  type LengthUnit,
+  type WeightUnit
+} from '../../lib/units'
 import { AerobicSection } from './AerobicSection'
 
 interface BilanFormProps {
@@ -21,8 +31,10 @@ interface BilanFormProps {
   variant?: 'light' | 'marine'
   /** Si fournie, affiche la catégorie sous la valeur (mode lecture seule uniquement). */
   categorize?: (key: keyof BilanData, value: number) => Category | null
-  /** Profil client pour les auto-calculs et les scores de synthèse. */
-  client?: Pick<Client, 'birthdate' | 'sex'>
+  /** Profil client pour les auto-calculs, les scores de synthèse et les unités de saisie. */
+  client?: Pick<Client, 'birthdate' | 'sex' | 'unitLength' | 'unitWeight'>
+  /** Appelé quand Marie change une unité (pour la mémoriser sur le client). */
+  onUnitsChange?: (units: { unitLength: LengthUnit; unitWeight: WeightUnit }) => void
   /** Norme à utiliser pour la synthèse. */
   norms?: NormsType
   /** Affiche les cards de synthèse au-dessus du formulaire (saisie manuelle). */
@@ -64,6 +76,7 @@ export function BilanForm({
   variant = 'marine',
   categorize,
   client,
+  onUnitsChange,
   norms = 'acsm',
   showSynthesis = false,
   previousData,
@@ -71,6 +84,16 @@ export function BilanForm({
   visibleSectionIds
 }: BilanFormProps) {
   const isLight = variant === 'light'
+
+  // Unités de SAISIE (l'app stocke et calcule toujours en métrique : cm, kg).
+  // Par défaut = unités du client ; le toggle les mémorise via onUnitsChange.
+  const [lengthUnit, setLengthUnit] = useState<LengthUnit>(client?.unitLength ?? 'cm')
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>(client?.unitWeight ?? 'kg')
+  const applyUnits = (nextLength: LengthUnit, nextWeight: WeightUnit) => {
+    setLengthUnit(nextLength)
+    setWeightUnit(nextWeight)
+    onUnitsChange?.({ unitLength: nextLength, unitWeight: nextWeight })
+  }
   const labelClass = isLight ? 'text-marine/60' : 'text-cream/55'
   const valueClass = isLight ? 'text-marine' : 'text-cream'
   const sectionTitleClass = isLight ? 'text-marine' : 'text-cream'
@@ -135,11 +158,24 @@ export function BilanForm({
 
     const fullWidth = isTextarea ? 'col-span-2 md:col-span-3' : ''
 
+    // Conversion d'unités à la SAISIE : les champs en cm/kg s'affichent et se
+    // saisissent dans l'unité choisie, mais sont stockés en métrique.
+    const isLengthField = def.unit === 'cm'
+    const isWeightField = def.unit === 'kg'
+    const convertible = isLengthField || isWeightField
+    const displayUnit = isLengthField ? lengthUnitLabel(lengthUnit) : isWeightField ? weightUnitLabel(weightUnit) : def.unit
+    const toDisplay = (m: number): number =>
+      isLengthField ? cmToLengthInput(m, lengthUnit) : isWeightField ? kgToWeightInput(m, weightUnit) : m
+    const fromDisplay = (v: number): number =>
+      isLengthField ? lengthInputToCm(v, lengthUnit) : isWeightField ? weightInputToKg(v, weightUnit) : v
+    const displayStr = (v: number | string | boolean | undefined): string =>
+      convertible && typeof v === 'number' ? String(toDisplay(v)) : String(v)
+
     return (
       <div key={def.key} className={`min-w-0 ${fullWidth}`}>
         <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
           {def.label}
-          {def.unit && <span className="lowercase tracking-normal"> ({def.unit})</span>}
+          {def.unit && <span className="lowercase tracking-normal"> ({displayUnit})</span>}
         </label>
         {readOnly ? (
           <>
@@ -149,7 +185,7 @@ export function BilanForm({
               </p>
             ) : (
               <p className={`text-base font-medium ${valueClass}`}>
-                {raw === undefined || raw === '' ? <span className="opacity-40">—</span> : String(raw)}
+                {raw === undefined || raw === '' ? <span className="opacity-40">—</span> : displayStr(raw)}
               </p>
             )}
             {showBadge && (
@@ -168,7 +204,7 @@ export function BilanForm({
               type="text"
               readOnly
               tabIndex={-1}
-              value={raw === undefined ? '—' : String(raw)}
+              value={raw === undefined ? '—' : displayStr(raw)}
               className={computedClass}
             />
             {def.hint && <p className={`text-xs mt-1 ${isLight ? 'text-marine/45' : 'text-cream/45'}`}>{def.hint}</p>}
@@ -208,10 +244,14 @@ export function BilanForm({
             <input
               type="number"
               step="any"
-              value={raw === undefined ? '' : (raw as number)}
+              value={raw === undefined ? '' : toDisplay(raw as number)}
               onChange={e =>
                 onDataChange?.(
-                  setField(data, def.key, Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
+                  setField(
+                    data,
+                    def.key,
+                    Number.isNaN(e.target.valueAsNumber) ? undefined : fromDisplay(e.target.valueAsNumber)
+                  )
                 )
               }
               className={`${inputClass}${boundBorder}`}
@@ -326,18 +366,53 @@ export function BilanForm({
         </section>
       )}
 
-      <div className="min-w-0">
-        <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>Date du bilan</label>
-        {readOnly ? (
-          <p className={`text-base font-medium ${valueClass}`}>{date}</p>
-        ) : (
-          <input
-            type="date"
-            value={date}
-            onChange={e => onDateChange?.(e.target.value)}
-            className={`${inputClass} max-w-[12rem]`}
-          />
-        )}
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
+        <div className="min-w-0">
+          <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>Date du bilan</label>
+          {readOnly ? (
+            <p className={`text-base font-medium ${valueClass}`}>{date}</p>
+          ) : (
+            <input
+              type="date"
+              value={date}
+              onChange={e => onDateChange?.(e.target.value)}
+              className={`${inputClass} max-w-[12rem]`}
+            />
+          )}
+        </div>
+
+        {/* Unités de saisie — la conversion en métrique est automatique. */}
+        {!readOnly && (() => {
+          const pill = (active: boolean) =>
+            `px-2.5 py-1 rounded-md text-sm border transition-colors ${
+              active
+                ? 'border-gold bg-gold/15 text-marine font-medium' + (isLight ? '' : ' !text-cream !bg-gold/25')
+                : isLight
+                  ? 'border-cream-dark text-marine/60 hover:border-gold/60'
+                  : 'border-marine-light/50 text-cream/60 hover:border-gold/60'
+            }`
+          return (
+            <>
+              <div>
+                <span className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>Longueurs</span>
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => applyUnits('cm', weightUnit)} className={pill(lengthUnit === 'cm')}>cm</button>
+                  <button type="button" onClick={() => applyUnits('in', weightUnit)} className={pill(lengthUnit === 'in')}>pouce</button>
+                </div>
+              </div>
+              <div>
+                <span className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>Poids</span>
+                <div className="flex gap-1.5">
+                  <button type="button" onClick={() => applyUnits(lengthUnit, 'kg')} className={pill(weightUnit === 'kg')}>kg</button>
+                  <button type="button" onClick={() => applyUnits(lengthUnit, 'lb')} className={pill(weightUnit === 'lb')}>lb</button>
+                </div>
+              </div>
+              <p className={`text-xs ${isLight ? 'text-marine/45' : 'text-cream/45'} basis-full`}>
+                Les plis restent en mm. Tout est converti en métrique pour les calculs.
+              </p>
+            </>
+          )
+        })()}
       </div>
 
       {(visibleSectionIds

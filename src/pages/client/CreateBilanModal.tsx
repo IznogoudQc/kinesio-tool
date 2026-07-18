@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, ArrowLeft, ArrowRight, ArrowUpCircle, Check, Loader2, PencilLine } from 'lucide-react'
 import { bilansService } from '../../services/bilans'
+import { clientsService } from '../../services/clients'
 import { settingsService } from '../../services/settings'
 import { BilanForm, deriveBilanFields } from './BilanForm'
 import { computeAge, type NormsType } from '../../lib/norms'
@@ -225,6 +226,10 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
               onDataChange={setData}
               variant="light"
               client={client}
+              onUnitsChange={u => {
+                // Mémorise le choix d'unités sur le client (pour les prochains bilans).
+                clientsService.update(client.id, u).catch(() => {})
+              }}
               norms={norms}
               showSynthesis
               previousData={previous?.data}

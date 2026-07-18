@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.2.99 — Saisie manuelle des bilans — étape 2/3 : unités de saisie (cm/pouce, kg/lb))
+
+Sélecteurs d'unités en haut du formulaire de bilan (`BilanForm`) : **Longueurs cm/pouce**, **Poids kg/lb**. Par
+défaut = unités du client. Les champs en cm/kg s'affichent et se saisissent dans l'unité choisie mais sont
+**convertis en métrique** (cm, kg) pour le stockage et **toutes les formules** (via `src/lib/units.ts`). Les plis
+restent en mm. La lecture seule (détail) affiche aussi dans les unités du client. Le choix est **mémorisé sur le
+client** (`onUnitsChange` → `clientsService.update` depuis la saisie manuelle). Bornes/percentiles/catégories
+restent calculés sur la valeur métrique.
+
+Reste : **étape 3** — tableau du protocole Bruce (FC + perception par palier ; retrait du sélecteur de test).
+
+Version : 0.2.98 → 0.2.99.
+
 ## ✅ Fait (v0.2.98 — Saisie manuelle des bilans « comme la feuille » — étape 1/3 : champs + réorg)
 
 Alignement du formulaire de saisie manuelle sur la feuille de résultats papier de Marie-Eve. **Étape 1** :
