@@ -9,6 +9,7 @@ import { parseBilanDocx } from '../lib/bilan-parser'
 import { convertDocToDocx } from '../lib/doc-converter'
 import { BILAN_FIELD_BOUNDS } from '../../src/lib/bilan-bounds'
 import { mergeBilanData } from '../../src/lib/bilan-merge'
+import { syncBilanToMesures } from '../lib/measure-sync'
 
 // Champ numérique optionnel, contraint aux bornes DURES de plausibilité du
 // champ (src/lib/bilan-bounds.ts). Un champ sans bornes reste juste `finite`.
@@ -205,6 +206,8 @@ export function registerBilansHandlers(): void {
       .values({ id, clientId: validId, date, data: JSON.stringify(data), source, createdAt: now })
       .returning()
       .all()
+    // Partage : reporte les mesures du bilan dans l'onglet Mesures (même date).
+    syncBilanToMesures(validId, date, data as Record<string, unknown>)
     return rowToBilan(row)
   })
 
@@ -239,12 +242,14 @@ export function registerBilansHandlers(): void {
             createdAt: now
           })
           .run()
+        syncBilanToMesures(clientId, item.date, item.data as Record<string, unknown>)
         imported++
         continue
       }
       const { data: merged, changedKeys } = mergeBilanData(parseData(existing.data), item.data)
       if (changedKeys.length > 0) {
         db.update(bilans).set({ data: JSON.stringify(merged) }).where(eq(bilans.id, existing.id)).run()
+        syncBilanToMesures(clientId, item.date, merged as Record<string, unknown>)
         updated++
       } else {
         skipped++
@@ -312,6 +317,8 @@ export function registerBilansHandlers(): void {
       data: patch.data ? JSON.stringify(patch.data) : existing.data
     }
     const [row] = db.update(bilans).set(next).where(eq(bilans.id, validId)).returning().all()
+    // Partage : reporte les mesures (fusionnées) dans l'onglet Mesures.
+    syncBilanToMesures(row.clientId, row.date, rowToBilan(row).data as Record<string, unknown>)
     return rowToBilan(row)
   })
 

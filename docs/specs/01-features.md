@@ -2,6 +2,20 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.8.0 — Partage des mesures entre Bilan et onglet Mesures)
+
+Les mesures partagées (poids, grandeur, tour de taille/hanche, biceps fléchi, cuisse, épaules-pec, les 4 plis)
+**se synchronisent à l'enregistrement**, dans les deux sens et pour la même date :
+- **Enregistrer / importer un bilan** → ses mesures alimentent l'onglet Mesures (circonférences + plis, % de gras).
+- **Enregistrer une prise de Mesures** → elle alimente le bilan de cette date (fusion si le bilan existe, sinon
+  **création d'un bilan partiel `source: mesures`** — une prise = « petit bilan »).
+
+Tout est en métrique des deux côtés → **aucune conversion**, juste un renommage de champ
+(`src/lib/measure-sync-map.ts`, testé). Fait dans le main process (`electron/lib/measure-sync.ts`), écritures
+directes en base → **pas de boucle**. Voir ADR 0023. Fin de la double saisie.
+
+Version : 0.7.4 → 0.8.0.
+
 ## ✅ Fait (v0.7.4 — Grandeur : équivalent en cm affiché entre parenthèses)
 
 Sous le champ **Grandeur** (saisi en pouces), l'équivalent en **cm** s'affiche **entre parenthèses**, mis à jour

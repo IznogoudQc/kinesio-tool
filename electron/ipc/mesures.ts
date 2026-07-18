@@ -4,6 +4,7 @@ import { desc, eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { clients, mesuresCirconferences, mesuresPlisCutanes } from '../../db/schema'
 import { calculateAge, calculateBodyFat, type Sex } from '../../src/lib/body-fat-calculator'
+import { syncMesuresToBilan } from '../lib/measure-sync'
 
 // Date ISO `AAAA-MM-JJ` qui ne peut pas être dans le futur. Le contrôle UI
 // (`max={today}` sur l'input) couvre 99 % des cas, mais un copier-coller manuel
@@ -113,6 +114,7 @@ export function registerMesuresHandlers(): void {
       })
       .returning()
       .all()
+    syncMesuresToBilan(row.clientId, row.date)
     return row
   })
 
@@ -134,6 +136,7 @@ export function registerMesuresHandlers(): void {
       .where(eq(mesuresCirconferences.id, validId))
       .returning()
       .all()
+    syncMesuresToBilan(row.clientId, row.date)
     return row
   })
 
@@ -186,6 +189,7 @@ export function registerMesuresHandlers(): void {
       })
       .returning()
       .all()
+    syncMesuresToBilan(row.clientId, row.date)
     return row
   })
 
@@ -222,6 +226,7 @@ export function registerMesuresHandlers(): void {
       .where(eq(mesuresPlisCutanes.id, validId))
       .returning()
       .all()
+    syncMesuresToBilan(row.clientId, row.date)
     return row
   })
 
