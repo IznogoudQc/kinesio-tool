@@ -285,6 +285,9 @@ function MeasureEntryPanel({
   const unitWeight = client.unitWeight ?? 'kg'
   const lenLabel = lengthUnitLabel(unitLength)
   const wLabel = weightUnitLabel(unitWeight)
+  // La grandeur (taille/hauteur) est TOUJOURS saisie en pouces (peu importe l'unité
+  // du client), puis convertie en cm pour le stockage et les calculs (IMC).
+  const grandeurUnit = lengthUnitLabel('in')
 
   const [circList, setCircList] = useState<MesureCirconferences[]>([])
   const [plisList, setPlisList] = useState<MesurePlisCutanes[]>([])
@@ -377,7 +380,7 @@ function MeasureEntryPanel({
   }
   const previousPoids = previousCircRow?.poidsKg != null ? kgToWeightInput(previousCircRow.poidsKg, unitWeight) : undefined
   const previousGrandeur =
-    previousCircRow?.grandeurCm != null ? cmToLengthInput(previousCircRow.grandeurCm, unitLength) : undefined
+    previousCircRow?.grandeurCm != null ? cmToLengthInput(previousCircRow.grandeurCm, 'in') : undefined
 
   const LOWER_IS_BETTER_CIRC: Partial<Record<CircKey, boolean>> = { taille: true, hanche: true, abdomen: true }
 
@@ -458,7 +461,7 @@ function MeasureEntryPanel({
     if (entry.circ) {
       setCircForm(circRowToForm(entry.circ, unitLength))
       setPoids(entry.circ.poidsKg != null ? kgToWeightInput(entry.circ.poidsKg, unitWeight) : undefined)
-      setGrandeur(entry.circ.grandeurCm != null ? cmToLengthInput(entry.circ.grandeurCm, unitLength) : undefined)
+      setGrandeur(entry.circ.grandeurCm != null ? cmToLengthInput(entry.circ.grandeurCm, 'in') : undefined)
       setEditCircId(entry.circ.id)
     } else {
       setCircForm({})
@@ -503,7 +506,7 @@ function MeasureEntryPanel({
           if (v !== undefined) payload[key] = lengthInputToCm(v, unitLength)
         }
         if (poids !== undefined) payload.poidsKg = weightInputToKg(poids, unitWeight)
-        if (grandeur !== undefined) payload.grandeurCm = lengthInputToCm(grandeur, unitLength)
+        if (grandeur !== undefined) payload.grandeurCm = lengthInputToCm(grandeur, 'in')
         if (editCircId) await mesuresService.circonferences.update(editCircId, payload)
         else await mesuresService.circonferences.create(client.id, payload)
       }
@@ -558,7 +561,7 @@ function MeasureEntryPanel({
 
         <DateField value={date} onChange={setDate} />
 
-        {/* Grille compacte : Poids · Grandeur, puis les circonférences choisies. */}
+        {/* Poids · Grandeur sur leur propre ligne (Grandeur saisie en pouces). */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <MeasureField
             label="Poids"
@@ -571,12 +574,16 @@ function MeasureEntryPanel({
           />
           <MeasureField
             label="Grandeur"
-            unit={lenLabel}
+            unit={grandeurUnit}
             value={grandeur}
             onChange={setGrandeur}
             previousValue={previousGrandeur}
             previousDate={previousCircRow?.date}
           />
+        </div>
+
+        {/* Circonférences choisies, à partir de la ligne suivante. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-3">
           {visibleMesureFields(mesureFields).map(f => (
             <Fragment key={f.key}>{circCard(f.key as CircKey, f.label)}</Fragment>
           ))}

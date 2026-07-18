@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.7.3 — Mesures : Poids/Grandeur sur leur ligne, Grandeur en pouces)
+
+Ajustements de la prise de mesures : **Poids et Grandeur** occupent leur **propre ligne**, les circonférences
+(Taille…) commencent à la **ligne suivante**. La **Grandeur se saisit en pouces** (« po ») quelle que soit l'unité
+du client, et est **convertie en cm** pour le stockage et les calculs — l'**IMC** du mini-dashboard utilise
+désormais en priorité la grandeur de la prise (sinon la taille du dernier bilan).
+
+Version : 0.7.2 → 0.7.3.
+
 ## ✅ Fait (v0.7.2 — % de gras : un seul chiffre, méthode Durnin-Womersley)
 
 Le % de gras est présenté **uniquement en Durnin-Womersley** (densité D-W 1974 → conversion Siri, la version

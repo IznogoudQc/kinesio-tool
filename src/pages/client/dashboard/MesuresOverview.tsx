@@ -285,8 +285,11 @@ export function MesuresOverview() {
         source: 'circ',
         group: 'weights',
         accessor: c => {
-          if (!c || typeof c.poidsKg !== 'number' || heightM === null || heightM <= 0) return null
-          return Math.round((c.poidsKg / (heightM * heightM)) * 10) / 10
+          if (!c || typeof c.poidsKg !== 'number') return null
+          // Priorité à la grandeur saisie dans la prise ; sinon la taille du dernier bilan.
+          const hM = typeof c.grandeurCm === 'number' && c.grandeurCm > 0 ? c.grandeurCm / 100 : heightM
+          if (hM === null || hM <= 0) return null
+          return Math.round((c.poidsKg / (hM * hM)) * 10) / 10
         },
         lowerIsBetter: true
       },
