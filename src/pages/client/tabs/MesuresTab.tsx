@@ -41,9 +41,13 @@ type CircKey =
   | 'cou' | 'epaule' | 'bicepsG' | 'bicepsD' | 'poitrine'
   | 'taille' | 'abdomen' | 'hanche' | 'cuisseG' | 'cuisseD' | 'molletG' | 'molletD'
 
-// Toutes les circonférences (clé + libellé), dans l'ordre du catalogue partagé
-// `MESURE_FIELDS` — source unique des libellés/ordre (détail, rapport, préremplissage).
-const CIRC_ALL: { key: CircKey; label: string }[] = MESURE_FIELDS.map(f => ({ key: f.key as CircKey, label: f.label }))
+// TOUTES les colonnes de circonférence (12). Marie n'en saisit que 5 (voir
+// MESURE_FIELDS), mais on charge/réenregistre les 12 à l'édition pour NE PAS
+// effacer d'éventuelles anciennes données (côtés D, cou, mollets, etc.).
+const ALL_CIRC_KEYS: CircKey[] = [
+  'cou', 'epaule', 'bicepsG', 'bicepsD', 'poitrine',
+  'taille', 'abdomen', 'hanche', 'cuisseG', 'cuisseD', 'molletG', 'molletD'
+]
 
 type PlisKey = 'triceps' | 'biceps' | 'sousscapulaire' | 'iliaque'
 const PLIS_FIELDS: { key: PlisKey; label: string }[] = [
@@ -59,7 +63,7 @@ type PlisForm = Partial<Record<PlisKey, number>>
 /** Convertit une ligne (stockée en cm) vers les valeurs à afficher dans les champs, selon l'unité du client. */
 function circRowToForm(row: MesureCirconferences, unit: 'cm' | 'in'): CircForm {
   const f: CircForm = {}
-  for (const { key } of CIRC_ALL) {
+  for (const key of ALL_CIRC_KEYS) {
     const v = row[key]
     if (typeof v === 'number') f[key] = cmToLengthInput(v, unit)
   }
@@ -437,7 +441,8 @@ function MeasureEntryPanel({
     }
   }, [plisAllFilled, plisForm, client.sex, client.birthdate])
 
-  const circHasData = poids !== undefined || grandeur !== undefined || CIRC_ALL.some(c => circForm[c.key] !== undefined)
+  const circHasData =
+    poids !== undefined || grandeur !== undefined || ALL_CIRC_KEYS.some(k => circForm[k] !== undefined)
   const hasAny = circHasData || plisHasAny
 
   const dirty = !editing && hasAny
@@ -501,7 +506,7 @@ function MeasureEntryPanel({
       const notesVal = notes.trim() || undefined
       if (circHasData) {
         const payload: CirconferencesInput = { date, notes: notesVal }
-        for (const { key } of CIRC_ALL) {
+        for (const key of ALL_CIRC_KEYS) {
           const v = circForm[key]
           if (v !== undefined) payload[key] = lengthInputToCm(v, unitLength)
         }

@@ -19,21 +19,18 @@ export interface MesureField {
  *   ligne 1 : Taille · Hanche   ligne 2 : Biceps fléchi · Cuisse   ligne 3 : Épaules et pec.
  * Les colonnes réutilisées : « Biceps fléchi » = `bicepsG`, « Cuisse (2 po du
  * genou) » = `cuisseG`, « Épaules et pec » = `epaule` (pas de migration).
- * Les autres champs restent disponibles (activables dans Paramètres) mais masqués par défaut.
+ *
+ * On ne liste QUE les 5 circonférences utilisées par Marie. Les autres colonnes
+ * existent encore en base (données anciennes préservées, non effacées à l'édition
+ * — voir `ALL_CIRC_KEYS` dans MesuresTab) mais ne sont plus proposées à la saisie
+ * ni dans le sélecteur de champs.
  */
 export const MESURE_FIELDS: MesureField[] = [
   { key: 'taille', label: 'Taille', side: 'left' },
   { key: 'hanche', label: 'Hanche', side: 'right' },
   { key: 'bicepsG', label: 'Biceps fléchi', side: 'left' },
   { key: 'cuisseG', label: 'Cuisse (2 po du genou)', side: 'right' },
-  { key: 'epaule', label: 'Épaules et pec', side: 'left' },
-  { key: 'cou', label: 'Cou', side: 'right' },
-  { key: 'bicepsD', label: 'Biceps D', side: 'left' },
-  { key: 'poitrine', label: 'Poitrine', side: 'right' },
-  { key: 'abdomen', label: 'Abdomen', side: 'left' },
-  { key: 'cuisseD', label: 'Cuisse D', side: 'right' },
-  { key: 'molletG', label: 'Mollet G', side: 'left' },
-  { key: 'molletD', label: 'Mollet D', side: 'right' }
+  { key: 'epaule', label: 'Épaules et pec', side: 'left' }
 ]
 
 export const ALL_MESURE_FIELD_KEYS: MesureFieldKey[] = MESURE_FIELDS.map(f => f.key)

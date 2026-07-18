@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.8.3 — Mesures : ne garder que les champs utilisés par Marie)
+
+Épuration de l'onglet Mesures : le **sélecteur de graphe** (« Évolution dans le temps ») et la fenêtre
+**« Choisir les mesures »** ne proposent plus que les **5 circonférences de Marie** (Taille, Hanche, Biceps
+fléchi, Cuisse (2 po du genou), Épaules et pec) + Poids / Ratio T/H / IMC + composition (% gras Durnin-Womersley,
+somme des plis, 4 plis). Les circonférences non utilisées (cou, biceps D, poitrine, abdomen, cuisse D, mollets)
+disparaissent des vues. **Les anciennes données ne sont pas effacées** : à l'édition d'une prise, les 12 colonnes
+sont rechargées/réenregistrées (`ALL_CIRC_KEYS`) pour ne rien perdre.
+
+Version : 0.8.2 → 0.8.3.
+
 ## ✅ Fait (v0.8.2 — Report des bilans EXISTANTS vers Mesures (backfill))
 
 Correctif : la synchro Bilan → Mesures ne se déclenchait qu'à l'**enregistrement** d'un bilan, donc les bilans

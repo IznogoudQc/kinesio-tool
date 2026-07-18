@@ -251,19 +251,12 @@ export function MesuresOverview() {
     const convertWeight = (raw: number) => kgToWeightInput(raw, unitWeight)
     const heightM = bodyHeightCm ? bodyHeightCm / 100 : null
     return [
-      // ── Circonférences (12) ──────────────────────────────────────────────
-      { key: 'cou', label: 'Cou', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.cou ?? null, convert: convertLen, lowerIsBetter: false },
-      { key: 'epaule', label: 'Épaules et pec', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.epaule ?? null, convert: convertLen, lowerIsBetter: false },
-      { key: 'bicepsG', label: 'Biceps fléchi', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.bicepsG ?? null, convert: convertLen, lowerIsBetter: false },
-      { key: 'bicepsD', label: 'Biceps D', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.bicepsD ?? null, convert: convertLen, lowerIsBetter: false },
-      { key: 'poitrine', label: 'Poitrine', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.poitrine ?? null, convert: convertLen, lowerIsBetter: false },
+      // ── Circonférences (les 5 utilisées par Marie) ───────────────────────
       { key: 'taille', label: 'Tour de taille', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.taille ?? null, convert: convertLen, lowerIsBetter: true },
-      { key: 'abdomen', label: 'Abdomen', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.abdomen ?? null, convert: convertLen, lowerIsBetter: true },
       { key: 'hanche', label: 'Hanche', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.hanche ?? null, convert: convertLen, lowerIsBetter: true },
+      { key: 'bicepsG', label: 'Biceps fléchi', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.bicepsG ?? null, convert: convertLen, lowerIsBetter: false },
       { key: 'cuisseG', label: 'Cuisse (2 po du genou)', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.cuisseG ?? null, convert: convertLen, lowerIsBetter: false },
-      { key: 'cuisseD', label: 'Cuisse D', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.cuisseD ?? null, convert: convertLen, lowerIsBetter: false },
-      { key: 'molletG', label: 'Mollet G', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.molletG ?? null, convert: convertLen, lowerIsBetter: false },
-      { key: 'molletD', label: 'Mollet D', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.molletD ?? null, convert: convertLen, lowerIsBetter: false },
+      { key: 'epaule', label: 'Épaules et pec', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.epaule ?? null, convert: convertLen, lowerIsBetter: false },
       // ── Poids & ratios (3) ───────────────────────────────────────────────
       { key: 'poidsKg', label: 'Poids', unit: wLabel, source: 'circ', group: 'weights', accessor: c => c?.poidsKg ?? null, convert: convertWeight, lowerIsBetter: true },
       {
@@ -305,7 +298,7 @@ export function MesuresOverview() {
 
   // Métrique courante — fallback sur 'taille' si la clé persistée n'existe plus.
   const activeMetric: MetricDef = useMemo(
-    () => METRICS_DEFS.find(m => m.key === selectedMetric) ?? METRICS_DEFS[5],
+    () => METRICS_DEFS.find(m => m.key === selectedMetric) ?? METRICS_DEFS.find(m => m.key === 'taille') ?? METRICS_DEFS[0],
     [METRICS_DEFS, selectedMetric]
   )
 
@@ -1143,14 +1136,7 @@ function AllMeasuresDetails({
     { key: 'hanche', label: 'Tour de hanche' },
     { key: 'bicepsG', label: 'Biceps fléchi' },
     { key: 'cuisseG', label: 'Cuisse (2 po du genou)' },
-    { key: 'epaule', label: 'Épaules et pec' },
-    { key: 'cou', label: 'Cou' },
-    { key: 'bicepsD', label: 'Biceps D' },
-    { key: 'poitrine', label: 'Poitrine' },
-    { key: 'abdomen', label: 'Abdomen' },
-    { key: 'cuisseD', label: 'Cuisse D' },
-    { key: 'molletG', label: 'Mollet G' },
-    { key: 'molletD', label: 'Mollet D' }
+    { key: 'epaule', label: 'Épaules et pec' }
   ]
   const LOWER_BETTER_KEYS = new Set(['taille', 'hanche', 'abdomen'])
 

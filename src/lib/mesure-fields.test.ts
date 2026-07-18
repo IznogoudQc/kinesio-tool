@@ -4,9 +4,13 @@ import { DEFAULT_MESURE_FIELD_KEYS, MESURE_FIELDS, mesureRows, visibleMesureFiel
 
 const keys = (f: { key: MesureFieldKey }[]): MesureFieldKey[] => f.map(x => x.key)
 
-test('réglage absent → défaut = les 5 circonférences du bilan, dans l’ordre', () => {
-  assert.deepEqual(keys(visibleMesureFields(null)), ['taille', 'hanche', 'bicepsG', 'cuisseG', 'epaule'])
+test('catalogue = seulement les 5 circonférences utilisées par Marie', () => {
+  assert.deepEqual(keys(MESURE_FIELDS), ['taille', 'hanche', 'bicepsG', 'cuisseG', 'epaule'])
   assert.deepEqual(DEFAULT_MESURE_FIELD_KEYS, ['taille', 'hanche', 'bicepsG', 'cuisseG', 'epaule'])
+})
+
+test('réglage absent → les 5, dans l’ordre', () => {
+  assert.deepEqual(keys(visibleMesureFields(null)), ['taille', 'hanche', 'bicepsG', 'cuisseG', 'epaule'])
 })
 
 test('libellés du bilan sur les colonnes réutilisées', () => {
@@ -25,26 +29,15 @@ test('mesureRows(null) → tabulation Taille·Hanche / Biceps·Cuisse / Épaules
 })
 
 test('taille et hanche restent affichées même si retirées (ratio T/H)', () => {
-  assert.deepEqual(keys(visibleMesureFields(['cou'])), ['taille', 'hanche', 'cou'])
+  // Ne cocher que « épaules » → taille + hanche réintroduites (requises).
+  assert.deepEqual(keys(visibleMesureFields(['epaule'])), ['taille', 'hanche', 'epaule'])
+  // Rien de coché → juste taille + hanche.
+  assert.deepEqual(keys(visibleMesureFields([])), ['taille', 'hanche'])
 })
 
-test('l’ordre du catalogue est conservé', () => {
-  assert.deepEqual(keys(visibleMesureFields(['molletD', 'cou', 'bicepsG'])), [
-    'taille',
-    'hanche',
-    'bicepsG',
-    'cou',
-    'molletD'
-  ])
-})
-
-test('activer tous les champs → 12, masquer une paire → 10', () => {
-  const all = MESURE_FIELDS.map(f => f.key)
-  assert.equal(visibleMesureFields(all).length, 12)
-  const enabled = all.filter(k => k !== 'molletG' && k !== 'molletD')
-  const visible = keys(visibleMesureFields(enabled))
-  assert.ok(!visible.includes('molletG') && !visible.includes('molletD'))
-  assert.equal(visible.length, 10)
+test('une clé hors catalogue est ignorée', () => {
+  // 'molletD' n'est plus dans le catalogue → absent du résultat.
+  assert.deepEqual(keys(visibleMesureFields(['molletD', 'bicepsG'])), ['taille', 'hanche', 'bicepsG'])
 })
 
 test('masquer un seul côté ne décale pas l’autre colonne', () => {
