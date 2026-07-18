@@ -37,18 +37,30 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
     fields: [
       { key: 'poids_kg', label: 'Poids', unit: 'kg' },
       { key: 'taille_cm', label: 'Taille', unit: 'cm' },
-      { key: 'imc', label: 'IMC', unit: 'kg/m²', type: 'computed', hint: 'Calculé : poids ÷ taille²' },
-      { key: 'tour_taille_cm', label: 'Circonférence — taille', unit: 'cm' },
-      { key: 'tour_hanche_cm', label: 'Circonférence — hanche', unit: 'cm' },
-      { key: 'circ_biceps_flechi_cm', label: 'Circonférence — biceps fléchi', unit: 'cm' },
-      { key: 'circ_cuisse_cm', label: 'Circonférence — cuisse (2 po du genou)', unit: 'cm' },
-      { key: 'circ_epaules_pec_cm', label: 'Circonférence — épaules et pec', unit: 'cm' },
-      { key: 'pli_triceps', label: 'Pli triceps', unit: 'mm' },
-      { key: 'pli_biceps', label: 'Pli biceps', unit: 'mm' },
-      { key: 'pli_sous_scap', label: 'Pli sous-scapulaire', unit: 'mm' },
-      { key: 'pli_iliaque', label: 'Pli crête iliaque', unit: 'mm' },
-      { key: 'pli_mollet', label: 'Pli mollet', unit: 'mm' },
-      { key: 'pli_cuisse', label: 'Pli cuisse', unit: 'mm' },
+      { key: 'imc', label: 'IMC', unit: 'kg/m²', type: 'computed', hint: 'Calculé : poids ÷ taille²' }
+    ]
+  },
+  {
+    id: 'circonferences',
+    title: 'Circonférences',
+    fields: [
+      { key: 'tour_taille_cm', label: 'Taille', unit: 'cm' },
+      { key: 'tour_hanche_cm', label: 'Hanche', unit: 'cm' },
+      { key: 'circ_biceps_flechi_cm', label: 'Biceps fléchi', unit: 'cm' },
+      { key: 'circ_cuisse_cm', label: 'Cuisse (2 po du genou)', unit: 'cm' },
+      { key: 'circ_epaules_pec_cm', label: 'Épaules et pec', unit: 'cm' }
+    ]
+  },
+  {
+    id: 'plis',
+    title: 'Plis cutanés',
+    fields: [
+      { key: 'pli_triceps', label: 'Triceps', unit: 'mm' },
+      { key: 'pli_biceps', label: 'Biceps', unit: 'mm' },
+      { key: 'pli_sous_scap', label: 'Sous-scapulaire', unit: 'mm' },
+      { key: 'pli_iliaque', label: 'Crête iliaque', unit: 'mm' },
+      { key: 'pli_mollet', label: 'Mollet', unit: 'mm' },
+      { key: 'pli_cuisse', label: 'Cuisse', unit: 'mm' },
       {
         key: 'pourcentage_gras',
         label: 'Pourcentage de gras',

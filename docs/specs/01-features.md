@@ -642,6 +642,16 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.3.1 — Bilan : sections « Circonférences » et « Plis cutanés » séparées)
+
+Le groupe « Anthropométrie » mélangeait poids/taille, circonférences et plis. Découpé en **trois sections
+distinctes** (chacune son titre, comme sur la feuille) : **Anthropométrie** (poids, taille, IMC),
+**Circonférences** (taille, hanche, biceps fléchi, cuisse, épaules/pec), **Plis cutanés** (triceps, biceps,
+sous-scap, crête iliaque, mollet, cuisse + % de gras calculé). Libellés simplifiés (le titre de section donne le
+contexte). Le tableau du protocole cardio (v0.3.0) reste dans l'app uniquement (pas sur le rapport client).
+
+Version : 0.3.0 → 0.3.1.
+
 ## ✅ Fait (v0.3.0 — Saisie manuelle des bilans — étape 3/3 : tableau du protocole Bruce)
 
 Fin du chantier « saisie manuelle comme la feuille ». La section aérobie devient **Bruce uniquement** (Marie
