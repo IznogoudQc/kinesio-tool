@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.7.1 — Mesures : une seule prise, un seul bouton)
+
+Suite de v0.7.0 : les circonférences et les plis cutanés sont désormais **une seule prise** — **un seul
+formulaire** (Date · Poids · Grandeur · les 5 circonférences · les 4 plis · % de gras calculé) et **un seul
+bouton Enregistrer** qui écrit les deux tables (circonférences + plis) à la **même date**. L'**historique est
+unifié** : une ligne par date (poids, tour de taille, % gras), et Modifier / Supprimer agissent sur toute la
+prise (circ + plis). `MesuresTab` refondu en un composant `MeasureEntryPanel` ; les anciens sous-panneaux et
+leurs fenêtres de préremplissage / détail sont retirés (les deltas « vs. prise précédente » restent affichés).
+
+Version : 0.7.0 → 0.7.1.
+
 ## ✅ Fait (v0.7.0 — Mesures : version compacte (sans avatar) + Grandeur)
 
 L'onglet Mesures est simplifié : **plus de sous-onglets** — Circonférences et Plis cutanés sont sur **une seule
