@@ -494,7 +494,7 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
 
         <div className="min-w-0">
           <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
-            PA systolique <span className="lowercase tracking-normal">(mmHg)</span>
+            PA systolique (repos) <span className="lowercase tracking-normal">(mmHg)</span>
           </label>
           {readOnly ? (
             <p className={`text-base font-medium ${valueClass}`}>
@@ -521,7 +521,7 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
 
         <div className="min-w-0">
           <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
-            PA diastolique <span className="lowercase tracking-normal">(mmHg)</span>
+            PA diastolique (repos) <span className="lowercase tracking-normal">(mmHg)</span>
           </label>
           {readOnly ? (
             <p className={`text-base font-medium ${valueClass}`}>

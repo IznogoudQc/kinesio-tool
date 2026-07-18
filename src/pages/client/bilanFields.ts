@@ -93,13 +93,8 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
     id: 'recuperation',
     title: 'Récupération',
     fields: [
-      {
-        key: 'pa_recup',
-        label: 'PA récup',
-        unit: 'mmHg',
-        type: 'text',
-        hint: 'Tension pendant la récupération (ex. « 120/80 »)'
-      }
+      { key: 'pa_recup_sys', label: 'PA récup — systolique', unit: 'mmHg' },
+      { key: 'pa_recup_dia', label: 'PA récup — diastolique', unit: 'mmHg' }
     ]
   },
   {

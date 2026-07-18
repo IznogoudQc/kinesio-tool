@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.3.3 — Bilan : PA récup en 2 chiffres (sys/dia) + PA repos clarifiée)
+
+Marie note la tension en **systolique / diastolique** (2 chiffres) autant au repos qu'en récupération. La PA récup
+passe donc de champ texte unique à **deux champs numériques** (`pa_recup_sys`, `pa_recup_dia`) — comme la PA au
+repos. Les PA au repos (déjà présentes dans la section « Aptitude aérobie ») sont relabellées **« PA systolique /
+diastolique (repos) »** pour lever l'ambiguïté ; la **FC au repos** y est aussi. Schéma IPC mis à jour.
+
+Version : 0.3.2 → 0.3.3.
+
 ## ✅ Fait (v0.3.2 — Bilan : « Récupération » réduite à une seule « PA récup » (comme la feuille))
 
 La section « Récupération post-effort » affichait 9 champs (PA sys/dia + FC à 1/3/5 min) qui **ne sont pas sur la
