@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.8.1 — Partage des mesures : sens unique Bilan → Mesures)
+
+Ajustement de v0.8.0 : le partage devient **à sens unique**. Les mesures d'un **bilan** (enregistré ou importé)
+apparaissent dans l'onglet **Mesures**, mais **plus l'inverse** — une prise de Mesures ne modifie plus le bilan et
+ne crée plus de bilan `source: mesures`. Retrait de `syncMesuresToBilan` (les 4 appels côté handlers Mesures) ;
+`syncBilanToMesures` conservé. La suppression n'est pas synchronisée. Voir ADR 0023 (mis à jour).
+
+Version : 0.8.0 → 0.8.1.
+
 ## ✅ Fait (v0.8.0 — Partage des mesures entre Bilan et onglet Mesures)
 
 Les mesures partagées (poids, grandeur, tour de taille/hanche, biceps fléchi, cuisse, épaules-pec, les 4 plis)
