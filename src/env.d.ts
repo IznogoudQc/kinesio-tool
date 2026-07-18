@@ -129,6 +129,8 @@ interface BilanData {
   aerobie_test_type?: 'bruce' | 'cooper' | 'leger' | 'manual'
   /** Bruce : durée totale tenue sur le tapis (secondes). */
   bruce_duration_sec?: number
+  /** Protocole Bruce (feuille papier) : FC + perception saisies à chaque palier. */
+  cardio_paliers?: { fc?: number; perception?: number }[]
   /** Cooper : distance parcourue en 12 min (mètres). */
   cooper_distance_m?: number
   /** Léger : palier atteint (navette 20 m). */

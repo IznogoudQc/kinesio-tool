@@ -642,6 +642,20 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.3.0 — Saisie manuelle des bilans — étape 3/3 : tableau du protocole Bruce)
+
+Fin du chantier « saisie manuelle comme la feuille ». La section aérobie devient **Bruce uniquement** (Marie
+n'utilise que ça) : le **sélecteur de test est retiré** en saisie (toujours « Tapis Roulant de Bruce » ; les
+anciens bilans d'un autre test restent lisibles en lecture seule). La table de référence des stages est
+remplacée par un **tableau à remplir** — 7 paliers fixes (pente / vitesse / temps de la feuille), Marie saisit
+**FC + perception** à chaque palier. Stocké dans `cardio_paliers` (BilanData JSON + schéma IPC). Le **temps
+total** continue de calculer le VO2max (Foster/Pollock). Affiché aussi en lecture seule (détail du bilan).
+
+Chantier complet : étape 1 (champs + réorg) · étape 2 (unités) · étape 3 (tableau Bruce). Reste optionnel : faire
+apparaître le tableau des paliers sur le **rapport PDF client** (à confirmer — donnée technique).
+
+Version : 0.2.99 → 0.3.0.
+
 ## ✅ Fait (v0.2.99 — Saisie manuelle des bilans — étape 2/3 : unités de saisie (cm/pouce, kg/lb))
 
 Sélecteurs d'unités en haut du formulaire de bilan (`BilanForm`) : **Longueurs cm/pouce**, **Poids kg/lb**. Par

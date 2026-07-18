@@ -44,6 +44,10 @@ const BilanDataSchema = z
     test_aerobie: z.string().max(200).optional(),
     aerobie_test_type: z.enum(['bruce', 'cooper', 'leger', 'manual']).optional(),
     bruce_duration_sec: bounded('bruce_duration_sec'),
+    cardio_paliers: z
+      .array(z.object({ fc: z.number().finite().optional(), perception: z.number().finite().optional() }))
+      .max(12)
+      .optional(),
     cooper_distance_m: bounded('cooper_distance_m'),
     leger_palier: bounded('leger_palier'),
     met_equivalent: bounded('met_equivalent'),

@@ -168,7 +168,7 @@ export function BilanForm({
       isLengthField ? cmToLengthInput(m, lengthUnit) : isWeightField ? kgToWeightInput(m, weightUnit) : m
     const fromDisplay = (v: number): number =>
       isLengthField ? lengthInputToCm(v, lengthUnit) : isWeightField ? weightInputToKg(v, weightUnit) : v
-    const displayStr = (v: number | string | boolean | undefined): string =>
+    const displayStr = (v: unknown): string =>
       convertible && typeof v === 'number' ? String(toDisplay(v)) : String(v)
 
     return (

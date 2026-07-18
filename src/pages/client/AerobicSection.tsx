@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import {
-  BRUCE_STAGES,
   bruceStageFor,
   bruceTreadmillVo2max,
   cooperVo2max,
@@ -28,11 +27,16 @@ interface AerobicSectionProps {
   norms?: NormsType
 }
 
-const TEST_TYPE_OPTIONS: { value: AerobicTestType; label: string }[] = [
-  { value: 'bruce', label: 'Tapis Roulant de Bruce' },
-  { value: 'cooper', label: 'Test de Cooper (12 min)' },
-  { value: 'leger', label: 'Test de Léger (navette 20 m)' },
-  { value: 'manual', label: 'Autre / VO2max connu directement' }
+/** Protocole Bruce tel que sur la feuille de résultats de Marie-Eve : paliers
+ *  fixes (pente / vitesse / temps de fin) ; elle saisit FC + perception à chacun. */
+const BRUCE_SHEET_PALIERS: { palier: number; pente: string; vitesse: string; temps: number }[] = [
+  { palier: 1, pente: '5', vitesse: '1,4–2,2', temps: 3 },
+  { palier: 2, pente: '7', vitesse: '2,5–4,0', temps: 6 },
+  { palier: 3, pente: '8', vitesse: '3,4–5,5', temps: 9 },
+  { palier: 4, pente: '9', vitesse: '4,2–6,8', temps: 12 },
+  { palier: 5, pente: '10', vitesse: '5,0–8,0', temps: 15 },
+  { palier: 6, pente: '11', vitesse: '5,5–8,9', temps: 18 },
+  { palier: 7, pente: '12', vitesse: '6,0–9,7', temps: 21 }
 ]
 
 function setFields(data: BilanData, patch: Partial<BilanData>): BilanData {
@@ -77,7 +81,9 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
     ? 'w-full px-2.5 py-1.5 border border-cream-dark/60 rounded-md bg-cream/40 text-marine/80 text-base'
     : 'w-full px-2.5 py-1.5 border border-marine-light/30 rounded-md bg-marine/20 text-cream/70 text-base'
 
-  const testType: AerobicTestType = data.aerobie_test_type ?? 'manual'
+  // Marie n'utilise que le Bruce → en saisie, on force Bruce (plus de sélecteur).
+  // En lecture seule, on respecte le test réellement utilisé (anciens bilans).
+  const testType: AerobicTestType = data.aerobie_test_type ?? (readOnly ? 'manual' : 'bruce')
 
   // VO2max protocolaire — calculé live pendant la saisie ; en read-only, on respecte data.vo2max.
   const protocolVo2max = readOnly ? null : computeVo2maxForProtocol(data, age, sex)
@@ -92,31 +98,37 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
     [testType, data.bruce_duration_sec]
   )
 
-  function changeTestType(next: AerobicTestType) {
-    if (!onDataChange) return
-    // Map le label aussi pour rester compatible avec la table « Source » du parser .docx.
-    const label = TEST_TYPE_OPTIONS.find(o => o.value === next)?.label
-    const cleared: Partial<BilanData> = {
-      aerobie_test_type: next,
-      test_aerobie: label
-    }
-    // En passant à manual, on garde le vo2max actuel. Sinon, on le recalcule.
-    if (next !== 'manual') {
-      const v = computeVo2maxForProtocol({ ...data, aerobie_test_type: next }, age, sex)
-      cleared.vo2max = v ?? undefined
-    }
-    onDataChange(setFields(data, cleared))
-  }
 
   function setBruceDuration(input: string) {
     if (!onDataChange) return
     const seconds = parseMmSs(input)
-    const patch: Partial<BilanData> = { bruce_duration_sec: seconds ?? undefined }
+    const patch: Partial<BilanData> = {
+      bruce_duration_sec: seconds ?? undefined,
+      aerobie_test_type: 'bruce',
+      test_aerobie: 'Tapis Roulant de Bruce'
+    }
     if (seconds !== null && sex !== null) {
       const v = bruceTreadmillVo2max({ durationSeconds: seconds, sex })
       patch.vo2max = Number.isFinite(v) ? Math.round(v * 10) / 10 : undefined
     }
     onDataChange(setFields(data, patch))
+  }
+
+  /** Met à jour FC / perception d'un palier (index 0-based) du protocole Bruce. */
+  function setPalier(index: number, patch: { fc?: number; perception?: number }) {
+    if (!onDataChange) return
+    const arr = BRUCE_SHEET_PALIERS.map((_, i) => ({ ...(data.cardio_paliers?.[i] ?? {}) }))
+    const cell = { ...arr[index], ...patch }
+    if (cell.fc === undefined) delete cell.fc
+    if (cell.perception === undefined) delete cell.perception
+    arr[index] = cell
+    onDataChange(
+      setFields(data, {
+        cardio_paliers: arr,
+        aerobie_test_type: 'bruce',
+        test_aerobie: 'Tapis Roulant de Bruce'
+      })
+    )
   }
 
   function setCooperDistance(value: number | undefined) {
@@ -179,19 +191,11 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
       <div className="grid grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-3">
         <div className="min-w-0 col-span-2 md:col-span-2">
           <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>Test aérobie utilisé</label>
-          {readOnly ? (
-            <p className={`text-base font-medium ${valueClass}`}>
-              {data.test_aerobie ?? <span className="opacity-40">—</span>}
-            </p>
-          ) : (
-            <select value={testType} onChange={e => changeTestType(e.target.value as AerobicTestType)} className={inputClass}>
-              {TEST_TYPE_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          )}
+          <p className={`text-base font-medium ${valueClass}`}>
+            {readOnly
+              ? (data.test_aerobie ?? <span className="opacity-40">—</span>)
+              : 'Tapis Roulant de Bruce'}
+          </p>
         </div>
 
         {/* Inputs spécifiques au protocole */}
@@ -371,35 +375,73 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
         )}
       </div>
 
-      {/* Encart info : table des stages Bruce (édition uniquement) */}
-      {testType === 'bruce' && !readOnly && (
-        <details className={isLight ? 'bg-cream/60 border border-cream-dark rounded-md p-3' : 'bg-marine/30 border border-marine-light/40 rounded-md p-3'}>
-          <summary className={`cursor-pointer text-sm font-medium ${labelClass}`}>
-            Table des paliers Bruce (vitesse · pente · MET)
-          </summary>
-          <table className="w-full text-sm mt-2">
-            <thead>
-              <tr className={mutedClass}>
-                <th className="text-left font-medium pr-3">Stage</th>
-                <th className="text-left font-medium pr-3">Fin (min)</th>
-                <th className="text-left font-medium pr-3">Vitesse</th>
-                <th className="text-left font-medium pr-3">Pente</th>
-                <th className="text-left font-medium">MET</th>
-              </tr>
-            </thead>
-            <tbody className={valueClass}>
-              {BRUCE_STAGES.map(s => (
-                <tr key={s.stage}>
-                  <td className="pr-3 py-0.5">{s.stage}</td>
-                  <td className="pr-3 py-0.5">{s.endMinutes}</td>
-                  <td className="pr-3 py-0.5">{s.speedKmh} km/h</td>
-                  <td className="pr-3 py-0.5">{s.gradePct} %</td>
-                  <td className="py-0.5">{s.mets}</td>
+      {/* Protocole cardio — tableau des paliers Bruce (feuille de résultats).
+          Paliers fixes ; Marie saisit la FC et la perception à chaque palier. */}
+      {testType === 'bruce' && (
+        <div>
+          <label className={`block text-xs uppercase tracking-wide mb-1.5 ${labelClass}`}>
+            Protocole cardio — FC et perception par palier
+          </label>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className={mutedClass}>
+                  <th className="text-left font-medium pr-3 pb-1">Palier</th>
+                  <th className="text-left font-medium pr-3 pb-1">Pente</th>
+                  <th className="text-left font-medium pr-3 pb-1">Vitesse</th>
+                  <th className="text-left font-medium pr-3 pb-1">Temps (min)</th>
+                  <th className="text-left font-medium pr-3 pb-1">FC (bpm)</th>
+                  <th className="text-left font-medium pb-1">Perception</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
+              </thead>
+              <tbody className={valueClass}>
+                {BRUCE_SHEET_PALIERS.map((p, i) => {
+                  const cell = data.cardio_paliers?.[i] ?? {}
+                  return (
+                    <tr key={p.palier}>
+                      <td className="pr-3 py-1 font-medium">{p.palier}</td>
+                      <td className={`pr-3 py-1 ${mutedClass}`}>{p.pente} %</td>
+                      <td className={`pr-3 py-1 ${mutedClass}`}>{p.vitesse}</td>
+                      <td className={`pr-3 py-1 ${mutedClass}`}>{p.temps}</td>
+                      <td className="pr-3 py-1">
+                        {readOnly ? (
+                          cell.fc ?? <span className="opacity-40">—</span>
+                        ) : (
+                          <input
+                            type="number"
+                            step="any"
+                            value={cell.fc ?? ''}
+                            onChange={e =>
+                              setPalier(i, { fc: Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber })
+                            }
+                            className={`${inputClass} max-w-[6rem]`}
+                          />
+                        )}
+                      </td>
+                      <td className="py-1">
+                        {readOnly ? (
+                          cell.perception ?? <span className="opacity-40">—</span>
+                        ) : (
+                          <input
+                            type="number"
+                            step="any"
+                            value={cell.perception ?? ''}
+                            onChange={e =>
+                              setPalier(i, {
+                                perception: Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber
+                              })
+                            }
+                            className={`${inputClass} max-w-[6rem]`}
+                          />
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
 
       {/* FC repos / FC max prédite / PA repos */}
