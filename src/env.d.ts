@@ -355,8 +355,8 @@ interface ClientNoteInput {
   content: string
 }
 
-/** Questionnaire d'admission daté d'un client (Q-AAP pour l'instant). */
-type QuestionnaireType = 'qaap'
+/** Questionnaire d'admission daté d'un client. */
+type QuestionnaireType = 'qaap' | 'objectifs'
 interface Questionnaire {
   id: string
   clientId: string

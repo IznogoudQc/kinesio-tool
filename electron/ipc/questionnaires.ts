@@ -21,11 +21,28 @@ const QaapDataSchema = z
   })
   .strip()
 
+// Objectifs & habitudes de vie : uniquement des champs texte libres, tous optionnels.
+const ObjectifsDataSchema = z
+  .object({
+    objectif: z.string().max(2000).optional(),
+    preferences: z.string().max(2000).optional(),
+    activitePresente: z.string().max(2000).optional(),
+    activitesPassees: z.string().max(2000).optional(),
+    equipement: z.string().max(2000).optional(),
+    sommeil: z.string().max(2000).optional(),
+    alimentation: z.string().max(2000).optional(),
+    travailHoraire: z.string().max(2000).optional(),
+    planification: z.string().max(2000).optional(),
+    notes: z.string().max(5000).optional()
+  })
+  .strip()
+
 const TYPE_SCHEMAS: Record<string, z.ZodTypeAny> = {
-  qaap: QaapDataSchema
+  qaap: QaapDataSchema,
+  objectifs: ObjectifsDataSchema
 }
 
-const QuestionnaireType = z.enum(['qaap'])
+const QuestionnaireType = z.enum(['qaap', 'objectifs'])
 
 /** Valide `data` selon `type`. Rejette un type inconnu. */
 function parseDataForType(type: string, data: unknown): unknown {

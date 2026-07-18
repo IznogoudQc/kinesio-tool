@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useBlocker } from 'react-router-dom'
-import { AlertTriangle, CheckCircle2, ClipboardList, Loader2, PencilLine, Plus, Save, ShieldAlert, Trash2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ClipboardList,
+  Loader2,
+  PencilLine,
+  Plus,
+  Save,
+  ShieldAlert,
+  Target,
+  Trash2
+} from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
 import { questionnairesService } from '../../../services/questionnaires'
 import { formatBilanDate } from '../bilanFields'
@@ -14,6 +25,7 @@ import {
   qaapYesIndices,
   type QaapData
 } from '../../../lib/qaap'
+import { OBJECTIFS_FIELDS, emptyObjectifs, objectifsIsBlank, type ObjectifsData } from '../../../lib/objectifs'
 
 function todayISO(): string {
   const d = new Date()
@@ -30,15 +42,32 @@ function cleanErr(err: unknown, fallback: string): string {
   )
 }
 
+const TYPE_LABEL: Record<QuestionnaireType, string> = {
+  qaap: 'Q-AAP',
+  objectifs: 'Objectifs & habitudes de vie'
+}
+
 /** Normalise les données brutes (unknown) d'un Q-AAP vers une forme sûre. */
 function asQaap(data: unknown): QaapData {
   const d = (data ?? {}) as Partial<QaapData>
   const answers = Array.isArray(d.answers) ? d.answers.slice(0, 7) : []
   while (answers.length < 7) answers.push(null)
-  return { answers: answers.map(a => (a === true ? true : a === false ? false : null)), precision: d.precision, notes: d.notes }
+  return {
+    answers: answers.map(a => (a === true ? true : a === false ? false : null)),
+    precision: d.precision,
+    notes: d.notes
+  }
 }
 
-/** Onglet Questionnaires — admission du client. Pour l'instant : le Q-AAP (PAR-Q). */
+function asObjectifs(data: unknown): ObjectifsData {
+  return { ...((data ?? {}) as ObjectifsData) }
+}
+
+type Draft =
+  | { id: string | null; type: 'qaap'; date: string; data: QaapData }
+  | { id: string | null; type: 'objectifs'; date: string; data: ObjectifsData }
+
+/** Onglet Questionnaires — admission du client : Q-AAP + Objectifs & habitudes de vie. */
 export function QuestionnairesTab() {
   const client = useClient()
   const [list, setList] = useState<Questionnaire[]>([])
@@ -47,8 +76,7 @@ export function QuestionnairesTab() {
   const [toast, setToast] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<Questionnaire | null>(null)
 
-  // Édition : `editing` = questionnaire en cours (null = pas de formulaire ouvert).
-  const [editing, setEditing] = useState<{ id: string | null; date: string; data: QaapData } | null>(null)
+  const [editing, setEditing] = useState<Draft | null>(null)
   const [saving, setSaving] = useState(false)
 
   const reload = useCallback(async () => {
@@ -76,13 +104,21 @@ export function QuestionnairesTab() {
   const dirty = editing !== null
   const blocker = useBlocker(dirty && !saving)
 
-  function startNew() {
-    setEditing({ id: null, date: todayISO(), data: emptyQaap() })
+  function startNew(type: QuestionnaireType) {
+    setEditing(
+      type === 'qaap'
+        ? { id: null, type: 'qaap', date: todayISO(), data: emptyQaap() }
+        : { id: null, type: 'objectifs', date: todayISO(), data: emptyObjectifs() }
+    )
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function startEdit(q: Questionnaire) {
-    setEditing({ id: q.id, date: q.date, data: asQaap(q.data) })
+    setEditing(
+      q.type === 'qaap'
+        ? { id: q.id, type: 'qaap', date: q.date, data: asQaap(q.data) }
+        : { id: q.id, type: 'objectifs', date: q.date, data: asObjectifs(q.data) }
+    )
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -94,11 +130,11 @@ export function QuestionnairesTab() {
       if (editing.id) {
         await questionnairesService.update(editing.id, { date: editing.date, data: editing.data })
       } else {
-        await questionnairesService.create(client.id, { type: 'qaap', date: editing.date, data: editing.data })
+        await questionnairesService.create(client.id, { type: editing.type, date: editing.date, data: editing.data })
       }
       setEditing(null)
       await reload()
-      setToast('Q-AAP enregistré')
+      setToast(`${TYPE_LABEL[editing.type]} enregistré`)
     } catch (err) {
       setError(cleanErr(err, "Erreur lors de l'enregistrement."))
     } finally {
@@ -115,17 +151,26 @@ export function QuestionnairesTab() {
             <h2 className="text-marine font-bold text-2xl leading-tight">Questionnaires</h2>
           </div>
           <p className="text-marine/55 text-sm mt-1">
-            Questionnaire sur l'aptitude à l'activité physique (Q-AAP / PAR-Q) — validité 12 mois.
+            Formulaires d'admission de {client.name.split(' ')[0]} — datés, avec historique.
           </p>
         </div>
         {!editing && (
-          <button
-            type="button"
-            onClick={startNew}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors shadow-sm"
-          >
-            <Plus size={17} /> Nouveau Q-AAP
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={() => startNew('qaap')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors shadow-sm"
+            >
+              <Plus size={17} /> Q-AAP
+            </button>
+            <button
+              type="button"
+              onClick={() => startNew('objectifs')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-marine text-cream font-semibold rounded-md text-base hover:bg-marine-light transition-colors shadow-sm"
+            >
+              <Plus size={17} /> Objectifs &amp; habitudes
+            </button>
+          </div>
         )}
       </header>
 
@@ -133,8 +178,17 @@ export function QuestionnairesTab() {
         <div className="text-red-700 text-base bg-red-50 border border-red-200 rounded-md px-4 py-3">{error}</div>
       )}
 
-      {editing && (
+      {editing?.type === 'qaap' && (
         <QaapForm
+          value={editing}
+          onChange={setEditing}
+          onCancel={() => setEditing(null)}
+          onSave={save}
+          saving={saving}
+        />
+      )}
+      {editing?.type === 'objectifs' && (
+        <ObjectifsForm
           value={editing}
           onChange={setEditing}
           onCancel={() => setEditing(null)}
@@ -153,13 +207,17 @@ export function QuestionnairesTab() {
             <p className="text-marine/40 text-base">Chargement…</p>
           ) : list.length === 0 ? (
             <p className="text-marine/45 text-base">
-              Aucun questionnaire pour ce client. Cliquez « Nouveau Q-AAP » pour en créer un.
+              Aucun questionnaire pour ce client. Utilisez les boutons ci-dessus pour en créer un.
             </p>
           ) : (
             <ul className="space-y-3">
-              {list.map(q => (
-                <QaapHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
-              ))}
+              {list.map(q =>
+                q.type === 'qaap' ? (
+                  <QaapHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
+                ) : (
+                  <ObjectifsHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
+                )
+              )}
             </ul>
           )}
         </section>
@@ -167,14 +225,14 @@ export function QuestionnairesTab() {
 
       {deleting && (
         <ConfirmDialog
-          message={`Supprimer le Q-AAP du ${formatBilanDate(deleting.date)} ?`}
+          message={`Supprimer « ${TYPE_LABEL[deleting.type]} » du ${formatBilanDate(deleting.date)} ?`}
           onCancel={() => setDeleting(null)}
           onConfirm={async () => {
             try {
               await questionnairesService.delete(deleting.id)
               setDeleting(null)
               await reload()
-              setToast('Q-AAP supprimé')
+              setToast('Questionnaire supprimé')
             } catch (err) {
               setError(cleanErr(err, 'Erreur lors de la suppression.'))
               setDeleting(null)
@@ -218,7 +276,23 @@ export function QuestionnairesTab() {
   )
 }
 
-/** Carte d'historique d'un Q-AAP : date, statut (OUI / aucun OUI), validité. */
+/** Petit chip de type affiché sur les cartes d'historique. */
+function TypeChip({ type }: { type: QuestionnaireType }) {
+  const isQaap = type === 'qaap'
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+        isQaap ? 'bg-gold/20 text-gold-dark' : 'bg-marine/10 text-marine'
+      }`}
+    >
+      {isQaap ? <ClipboardList size={11} /> : <Target size={11} />}
+      {TYPE_LABEL[type]}
+    </span>
+  )
+}
+
+// ── Q-AAP ─────────────────────────────────────────────────────────────────────
+
 function QaapHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: () => void; onDelete: () => void }) {
   const data = asQaap(q.data)
   const warn = qaapHasWarning(data)
@@ -229,7 +303,10 @@ function QaapHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: ()
     <li className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-marine font-semibold text-sm">{formatBilanDate(q.date)}</p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <TypeChip type="qaap" />
+            <p className="text-marine font-semibold text-sm">{formatBilanDate(q.date)}</p>
+          </div>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
             {warn ? (
               <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
@@ -249,23 +326,7 @@ function QaapHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: ()
             )}
           </div>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <button
-            type="button"
-            onClick={onEdit}
-            className="inline-flex items-center gap-1 text-gold-dark hover:text-marine text-sm font-medium transition-colors"
-          >
-            <PencilLine size={15} /> Modifier
-          </button>
-          <button
-            type="button"
-            onClick={onDelete}
-            aria-label={`Supprimer le Q-AAP du ${formatBilanDate(q.date)}`}
-            className="text-red-500/70 hover:text-red-600 transition-colors"
-          >
-            <Trash2 size={16} />
-          </button>
-        </div>
+        <HistoryActions label={`Q-AAP du ${formatBilanDate(q.date)}`} onEdit={onEdit} onDelete={onDelete} />
       </div>
       {data.precision?.trim() && (
         <p className="text-marine/70 text-sm mt-2.5 whitespace-pre-wrap leading-relaxed border-t border-cream-dark/40 pt-2.5">
@@ -276,7 +337,6 @@ function QaapHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: ()
   )
 }
 
-/** Formulaire de saisie / édition d'un Q-AAP. */
 function QaapForm({
   value,
   onChange,
@@ -284,8 +344,8 @@ function QaapForm({
   onSave,
   saving
 }: {
-  value: { id: string | null; date: string; data: QaapData }
-  onChange: (v: { id: string | null; date: string; data: QaapData }) => void
+  value: Extract<Draft, { type: 'qaap' }>
+  onChange: (v: Draft) => void
   onCancel: () => void
   onSave: () => void
   saving: boolean
@@ -302,19 +362,7 @@ function QaapForm({
 
   return (
     <section className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <h3 className="text-marine font-semibold text-base">{value.id ? 'Modifier le Q-AAP' : 'Nouveau Q-AAP'}</h3>
-        <div className="flex items-center gap-2">
-          <label className="text-marine/60 text-sm font-medium">Date</label>
-          <input
-            type="date"
-            value={date}
-            max={todayISO()}
-            onChange={e => onChange({ ...value, date: e.target.value || todayISO() })}
-            className="px-3 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
-          />
-        </div>
-      </div>
+      <FormHeader title={value.id ? 'Modifier le Q-AAP' : 'Nouveau Q-AAP'} date={date} onDate={d => onChange({ ...value, date: d })} />
 
       <p className="text-marine/55 text-sm">
         Pour les personnes de 15 à 69 ans. Répondez honnêtement à chacune des questions par OUI ou NON.
@@ -324,10 +372,7 @@ function QaapForm({
         {QAAP_QUESTIONS.map((question, i) => {
           const ans = data.answers[i]
           return (
-            <li
-              key={i}
-              className="flex items-start gap-3 border border-cream-dark/40 rounded-lg p-3 bg-cream/30"
-            >
+            <li key={i} className="flex items-start gap-3 border border-cream-dark/40 rounded-lg p-3 bg-cream/30">
               <span className="shrink-0 w-6 h-6 rounded-full bg-marine/10 text-marine font-semibold text-xs flex items-center justify-center mt-0.5">
                 {i + 1}
               </span>
@@ -368,27 +413,211 @@ function QaapForm({
         />
       </div>
 
-      <div className="flex items-center gap-3 pt-1">
-        <button
-          type="button"
-          onClick={onSave}
-          disabled={saving}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-        >
-          {saving ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}
-          {value.id ? 'Mettre à jour' : 'Enregistrer'}
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={saving}
-          className="px-4 py-2.5 text-marine/60 hover:text-marine border border-cream-dark rounded-md text-base transition-colors"
-        >
-          Annuler
-        </button>
-        {!complete && <span className="text-marine/40 text-sm">Astuce : répondez aux 7 questions.</span>}
-      </div>
+      <FormActions
+        saving={saving}
+        editing={!!value.id}
+        onSave={onSave}
+        onCancel={onCancel}
+        hint={complete ? undefined : 'Astuce : répondez aux 7 questions.'}
+      />
     </section>
+  )
+}
+
+// ── Objectifs & habitudes de vie ──────────────────────────────────────────────
+
+function ObjectifsHistoryCard({
+  q,
+  onEdit,
+  onDelete
+}: {
+  q: Questionnaire
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const data = asObjectifs(q.data)
+  return (
+    <li className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <TypeChip type="objectifs" />
+            <p className="text-marine font-semibold text-sm">{formatBilanDate(q.date)}</p>
+          </div>
+          {data.objectif?.trim() && (
+            <p className="text-marine/85 text-sm mt-1.5">
+              <span className="text-marine/45">Objectif : </span>
+              {data.objectif}
+            </p>
+          )}
+        </div>
+        <HistoryActions
+          label={`Objectifs & habitudes du ${formatBilanDate(q.date)}`}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      </div>
+    </li>
+  )
+}
+
+function ObjectifsForm({
+  value,
+  onChange,
+  onCancel,
+  onSave,
+  saving
+}: {
+  value: Extract<Draft, { type: 'objectifs' }>
+  onChange: (v: Draft) => void
+  onCancel: () => void
+  onSave: () => void
+  saving: boolean
+}) {
+  const { date, data } = value
+  const blank = objectifsIsBlank(data)
+
+  function setField(key: keyof ObjectifsData, v: string) {
+    onChange({ ...value, data: { ...data, [key]: v } })
+  }
+
+  return (
+    <section className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm space-y-4">
+      <FormHeader
+        title={value.id ? 'Modifier « Objectifs & habitudes »' : 'Nouveau « Objectifs & habitudes de vie »'}
+        date={date}
+        onDate={d => onChange({ ...value, date: d })}
+      />
+
+      <div>
+        <label className="text-marine font-semibold text-sm flex items-center gap-1.5 mb-1.5">
+          <Target size={15} className="text-gold-dark" /> Objectif
+        </label>
+        <textarea
+          value={data.objectif ?? ''}
+          onChange={e => setField('objectif', e.target.value)}
+          rows={2}
+          placeholder="Le but principal du client (ex. perdre 10 lbs, courir un 5 km, réduire les douleurs au dos…)"
+          className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors resize-y"
+        />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {OBJECTIFS_FIELDS.map(f => (
+          <div key={f.key}>
+            <label className="text-marine/60 text-sm font-medium block mb-1.5">{f.label}</label>
+            <textarea
+              value={(data[f.key] as string | undefined) ?? ''}
+              onChange={e => setField(f.key, e.target.value)}
+              rows={f.rows}
+              placeholder={f.placeholder}
+              className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-sm placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors resize-y"
+            />
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <label className="text-marine/60 text-sm font-medium block mb-1.5">Note interne (privée)</label>
+        <textarea
+          value={data.notes ?? ''}
+          onChange={e => setField('notes', e.target.value)}
+          rows={2}
+          placeholder="Observations de Marie — jamais montrées au client."
+          className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-sm placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors resize-y"
+        />
+      </div>
+
+      <FormActions
+        saving={saving}
+        editing={!!value.id}
+        onSave={onSave}
+        onCancel={onCancel}
+        disabled={blank}
+        hint={blank ? 'Remplissez au moins un champ pour enregistrer.' : undefined}
+      />
+    </section>
+  )
+}
+
+// ── Éléments partagés ─────────────────────────────────────────────────────────
+
+function FormHeader({ title, date, onDate }: { title: string; date: string; onDate: (d: string) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 flex-wrap">
+      <h3 className="text-marine font-semibold text-base">{title}</h3>
+      <div className="flex items-center gap-2">
+        <label className="text-marine/60 text-sm font-medium">Date</label>
+        <input
+          type="date"
+          value={date}
+          max={todayISO()}
+          onChange={e => onDate(e.target.value || todayISO())}
+          className="px-3 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+        />
+      </div>
+    </div>
+  )
+}
+
+function FormActions({
+  saving,
+  editing,
+  onSave,
+  onCancel,
+  disabled,
+  hint
+}: {
+  saving: boolean
+  editing: boolean
+  onSave: () => void
+  onCancel: () => void
+  disabled?: boolean
+  hint?: string
+}) {
+  return (
+    <div className="flex items-center gap-3 pt-1">
+      <button
+        type="button"
+        onClick={onSave}
+        disabled={saving || disabled}
+        className="inline-flex items-center gap-2 px-5 py-2.5 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+      >
+        {saving ? <Loader2 size={17} className="animate-spin" /> : <Save size={17} />}
+        {editing ? 'Mettre à jour' : 'Enregistrer'}
+      </button>
+      <button
+        type="button"
+        onClick={onCancel}
+        disabled={saving}
+        className="px-4 py-2.5 text-marine/60 hover:text-marine border border-cream-dark rounded-md text-base transition-colors"
+      >
+        Annuler
+      </button>
+      {hint && <span className="text-marine/40 text-sm">{hint}</span>}
+    </div>
+  )
+}
+
+function HistoryActions({ label, onEdit, onDelete }: { label: string; onEdit: () => void; onDelete: () => void }) {
+  return (
+    <div className="flex items-center gap-3 shrink-0">
+      <button
+        type="button"
+        onClick={onEdit}
+        className="inline-flex items-center gap-1 text-gold-dark hover:text-marine text-sm font-medium transition-colors"
+      >
+        <PencilLine size={15} /> Modifier
+      </button>
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label={`Supprimer ${label}`}
+        className="text-red-500/70 hover:text-red-600 transition-colors"
+      >
+        <Trash2 size={16} />
+      </button>
+    </div>
   )
 }
 
@@ -404,10 +633,7 @@ function YesNoButton({
   children: React.ReactNode
 }) {
   const base = 'px-3 py-1.5 rounded-md text-sm font-semibold border transition-colors'
-  const activeCls =
-    tone === 'yes'
-      ? 'bg-amber-500 border-amber-500 text-white'
-      : 'bg-marine border-marine text-cream'
+  const activeCls = tone === 'yes' ? 'bg-amber-500 border-amber-500 text-white' : 'bg-marine border-marine text-cream'
   const idle = 'bg-white border-cream-dark text-marine/60 hover:border-gold/60'
   return (
     <button type="button" onClick={onClick} className={`${base} ${active ? activeCls : idle}`}>

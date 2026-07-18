@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.4.1 — Questionnaires : « Objectifs & habitudes de vie »)
+
+2ᵉ formulaire de la section Questionnaires : **Objectifs & habitudes de vie**. Champs texte libres —
+**objectif** (mis en avant), préférences, activité présente / passée, équipement, sommeil, alimentation,
+travail & horaire, planification (« Quand ? ») + note interne privée. Enregistré daté avec historique, comme
+le Q-AAP. L'onglet Questionnaires propose maintenant **deux boutons** (« + Q-AAP » / « + Objectifs & habitudes »)
+et affiche un **chip de type** sur chaque carte d'historique.
+
+Ajout **sans migration** : nouveau type `objectifs` sur la table `questionnaires` (schéma zod dédié côté IPC),
+logique `src/lib/objectifs.ts` (testée). Reste à faire : questionnaire de santé (zones de tension).
+
+Version : 0.4.0 → 0.4.1.
+
 ## ✅ Fait (v0.4.0 — Nouvelle section Questionnaires : le Q-AAP (PAR-Q))
 
 Nouvel **onglet client « Questionnaires »** pour numériser les formulaires d'admission que Marie remplit à la
