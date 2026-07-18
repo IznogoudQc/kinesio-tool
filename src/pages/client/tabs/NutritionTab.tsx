@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pencil, Pill, Plus, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils, X } from 'lucide-react'
+import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pill, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
@@ -212,325 +212,6 @@ function SupplementChips({
   )
 }
 
-/** Modale de gestion d'une liste d'aliments (globale, tous clients) — à privilégier
- *  ou à éviter. Simple liste de textes : ajouter / retirer / rétablir. */
-function FoodListModal({
-  title,
-  desc,
-  initial,
-  persist,
-  getDefaults,
-  onClose,
-  onSaved
-}: {
-  title: string
-  desc: string
-  initial: string[]
-  persist: (items: string[]) => Promise<void>
-  getDefaults: () => Promise<string[]>
-  onClose: () => void
-  onSaved: (items: string[]) => void
-}) {
-  const [items, setItems] = useState<string[]>(initial)
-  const [text, setText] = useState('')
-  const [saving, setSaving] = useState(false)
-
-  function add() {
-    const t = text.trim()
-    if (!t) return
-    if (items.some(x => x.toLowerCase() === t.toLowerCase())) return
-    setItems(list => [...list, t])
-    setText('')
-  }
-  async function save() {
-    setSaving(true)
-    try {
-      const clean = items.map(x => x.trim()).filter(Boolean)
-      await persist(clean)
-      onSaved(clean)
-      onClose()
-    } finally {
-      setSaving(false)
-    }
-  }
-  async function reset() {
-    setItems(await getDefaults())
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 p-4" onClick={onClose}>
-      <div
-        className="bg-cream rounded-lg shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-cream-dark"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between p-5 border-b border-cream-dark">
-          <div>
-            <h2 className="text-marine font-semibold text-lg">{title}</h2>
-            <p className="text-marine/50 text-sm mt-0.5">{desc} Modifiable directement.</p>
-          </div>
-          <button type="button" onClick={onClose} className="text-marine/40 hover:text-marine" title="Fermer">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="overflow-y-auto p-5 space-y-2">
-          {items.length === 0 && <p className="text-marine/45 text-sm">Aucun aliment. Ajoutez-en ci-dessous.</p>}
-          {items.map((it, i) => (
-            <div key={i} className="flex items-start gap-2 bg-white border border-cream-dark rounded-md p-2">
-              <AutoTextarea
-                value={it}
-                onChange={e => setItems(list => list.map((x, k) => (k === i ? e.target.value : x)))}
-                minRows={1}
-                className={`${fieldClass} min-w-0 flex-1`}
-              />
-              <button
-                type="button"
-                onClick={() => setItems(list => list.filter((_, k) => k !== i))}
-                className="mt-2 text-marine/30 hover:text-red-600 shrink-0"
-                title="Retirer"
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <div className="p-5 border-t border-cream-dark space-y-3">
-          <div className="flex gap-2">
-            <input
-              value={text}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && add()}
-              placeholder="Ajouter un aliment…"
-              className={`${fieldClass} flex-1`}
-            />
-            <button
-              type="button"
-              onClick={add}
-              disabled={text.trim() === ''}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-marine text-cream text-sm hover:bg-marine-light disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-            >
-              <Plus size={15} /> Ajouter
-            </button>
-          </div>
-          <div className="flex items-center justify-between">
-            <button type="button" onClick={reset} className="text-marine/50 text-xs hover:text-marine">
-              Rétablir la liste par défaut
-            </button>
-            <div className="flex gap-2">
-              <button type="button" onClick={onClose} className="px-3.5 py-2 rounded-md border border-cream-dark text-marine/70 text-sm hover:bg-white">
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={save}
-                disabled={saving}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-gold-dark text-white text-sm hover:opacity-90 disabled:opacity-40"
-              >
-                <Check size={15} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/** Modale de gestion de la bibliothèque de suppléments (globale, tous clients). */
-function SupplementLibraryModal({
-  initial,
-  onClose,
-  onSaved
-}: {
-  initial: SupplementItem[]
-  onClose: () => void
-  onSaved: (items: SupplementItem[]) => void
-}) {
-  const [items, setItems] = useState<SupplementItem[]>(initial)
-  const [label, setLabel] = useState('')
-  const [timing, setTiming] = useState('')
-  const [saving, setSaving] = useState(false)
-  // `busy` = ligne dont on suggère le moment (index), ou 'new' pour la ligne d'ajout.
-  const [busy, setBusy] = useState<number | 'new' | null>(null)
-  const [err, setErr] = useState<string | null>(null)
-
-  async function suggest(name: string): Promise<string | null> {
-    try {
-      return await aiAdviceService.suggestSupplementTiming(name)
-    } catch (e) {
-      setErr(aiErrorMessage(e))
-      return null
-    }
-  }
-  async function suggestNew() {
-    const l = label.trim()
-    if (!l) return
-    setErr(null)
-    setBusy('new')
-    const t = await suggest(l)
-    if (t !== null) setTiming(t)
-    setBusy(null)
-  }
-  async function suggestRow(i: number) {
-    setErr(null)
-    setBusy(i)
-    const t = await suggest(items[i].label)
-    if (t !== null) setItems(list => list.map((it, k) => (k === i ? { ...it, timing: t } : it)))
-    setBusy(null)
-  }
-
-  function add() {
-    const l = label.trim()
-    if (!l) return
-    if (items.some(it => it.label.toLowerCase() === l.toLowerCase())) return
-    setItems(list => [...list, { label: l, timing: timing.trim() }])
-    setLabel('')
-    setTiming('')
-  }
-
-  async function save() {
-    setSaving(true)
-    try {
-      // Nettoie : trim + retire les lignes sans nom (un champ vidé ne casse rien).
-      const clean = items
-        .map(it => ({ label: it.label.trim(), timing: it.timing.trim() }))
-        .filter(it => it.label !== '')
-      await settingsService.setSupplements(clean)
-      onSaved(clean)
-      onClose()
-    } catch (e) {
-      setErr(aiErrorMessage(e))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  async function resetDefaults() {
-    const def = await settingsService.getDefaultSupplements()
-    setItems(def)
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 p-4" onClick={onClose}>
-      <div
-        className="bg-cream rounded-lg shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col border border-cream-dark"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between p-5 border-b border-cream-dark">
-          <div>
-            <h2 className="text-marine font-semibold text-lg">Liste de suppléments</h2>
-            <p className="text-marine/50 text-sm mt-0.5">Vaut pour tous les clients. Nom + moment — modifiables ; « IA » propose le moment.</p>
-          </div>
-          <button type="button" onClick={onClose} className="text-marine/40 hover:text-marine" title="Fermer">
-            <X size={18} />
-          </button>
-        </div>
-
-        <div className="overflow-y-auto p-5 space-y-2">
-          {items.length === 0 && <p className="text-marine/45 text-sm">Aucun supplément. Ajoutez-en ci-dessous.</p>}
-          {items.map((it, i) => (
-            <div key={i} className="flex items-start gap-2 bg-white border border-cream-dark rounded-md p-2">
-              <div className="min-w-0 flex-1 grid sm:grid-cols-[minmax(0,12rem)_minmax(0,1fr)] gap-1.5">
-                <input
-                  value={it.label}
-                  onChange={e => setItems(list => list.map((x, k) => (k === i ? { ...x, label: e.target.value } : x)))}
-                  placeholder="Nom"
-                  className={`${fieldClass} font-medium`}
-                />
-                {/* Zone qui s'agrandit pour afficher TOUT le moment (pas de texte coupé). */}
-                <AutoTextarea
-                  value={it.timing}
-                  onChange={e => setItems(list => list.map((x, k) => (k === i ? { ...x, timing: e.target.value } : x)))}
-                  minRows={1}
-                  placeholder="Moment (ou « IA »)"
-                  className={fieldClass}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => suggestRow(i)}
-                disabled={busy !== null || it.label.trim() === ''}
-                className="mt-2 inline-flex items-center gap-1 text-gold-dark/80 hover:text-gold-dark text-xs shrink-0 disabled:opacity-40"
-                title="Suggérer le moment avec l’IA"
-              >
-                <Sparkles size={13} />
-                {busy === i ? '…' : 'IA'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setItems(list => list.filter((_, k) => k !== i))}
-                className="mt-2 text-marine/30 hover:text-red-600 shrink-0"
-                title="Retirer"
-              >
-                <Trash2 size={15} />
-              </button>
-            </div>
-          ))}
-        </div>
-
-        <div className="p-5 border-t border-cream-dark space-y-3">
-          {err && <p className="text-red-700 text-xs bg-red-50 border border-red-200 rounded-md px-3 py-2">{err}</p>}
-          <div className="flex flex-col sm:flex-row gap-2">
-            <input
-              value={label}
-              onChange={e => setLabel(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && add()}
-              placeholder="Nom (ex. Ashwagandha)"
-              className={`${fieldClass} sm:flex-1`}
-            />
-            <div className="flex gap-1 sm:flex-1">
-              <input
-                value={timing}
-                onChange={e => setTiming(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && add()}
-                placeholder="Moment (ex. au coucher)"
-                className={`${fieldClass} flex-1`}
-              />
-              <button
-                type="button"
-                onClick={suggestNew}
-                disabled={label.trim() === '' || busy !== null}
-                title="Proposer le moment avec l’IA (à partir du nom)"
-                className="inline-flex items-center gap-1 px-2.5 rounded-md border border-gold/50 text-gold-dark text-sm hover:bg-gold/10 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-              >
-                <Sparkles size={14} />
-                {busy === 'new' ? '…' : 'IA'}
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={add}
-              disabled={label.trim() === ''}
-              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-md bg-marine text-cream text-sm hover:bg-marine-light disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-            >
-              <Plus size={15} /> Ajouter
-            </button>
-          </div>
-          <div className="flex items-center justify-between">
-            <button type="button" onClick={resetDefaults} className="text-marine/50 text-xs hover:text-marine">
-              Rétablir la liste par défaut
-            </button>
-            <div className="flex gap-2">
-              <button type="button" onClick={onClose} className="px-3.5 py-2 rounded-md border border-cream-dark text-marine/70 text-sm hover:bg-white">
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={save}
-                disabled={saving}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-gold-dark text-white text-sm hover:opacity-90 disabled:opacity-40"
-              >
-                <Check size={15} /> {saving ? 'Enregistrement…' : 'Enregistrer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 export function NutritionTab() {
   const { client, onClientUpdated } = useClientContext()
 
@@ -585,14 +266,11 @@ export function NutritionTab() {
   })
   const setMenuJour = (i: number, v: string) => setMenuJours(js => js.map((j, k) => (k === i ? v : j)))
 
-  // Bibliothèque de suppléments proposés — GLOBALE (tous les clients), éditable par
-  // Marie. Chargée depuis les réglages ; défaut tant qu'elle n'a rien personnalisé.
+  // Bibliothèques proposées (suppléments, aliments) — GLOBALES, chargées depuis
+  // les réglages en lecture seule ici ; leur ÉDITION vit dans Paramètres → Nutrition.
   const [suppLibrary, setSuppLibrary] = useState<SupplementItem[]>(DEFAULT_SUPPLEMENTS)
-  const [showSuppLib, setShowSuppLib] = useState(false)
-  // Listes d'aliments proposés (à privilégier / à éviter) — GLOBALES, éditables.
   const [foodsGoodLib, setFoodsGoodLib] = useState<string[]>(DEFAULT_FOODS_GOOD)
   const [foodsBadLib, setFoodsBadLib] = useState<string[]>(DEFAULT_FOODS_BAD)
-  const [foodModal, setFoodModal] = useState<'good' | 'bad' | null>(null)
   useEffect(() => {
     settingsService.getSupplements().then(setSuppLibrary).catch(() => {})
     settingsService.getFoodsGood().then(setFoodsGoodLib).catch(() => {})
@@ -1006,37 +684,6 @@ export function NutritionTab() {
         </div>
       )}
 
-      {showSuppLib && (
-        <SupplementLibraryModal
-          initial={suppLibrary}
-          onClose={() => setShowSuppLib(false)}
-          onSaved={setSuppLibrary}
-        />
-      )}
-
-      {foodModal === 'good' && (
-        <FoodListModal
-          title="Aliments à privilégier"
-          desc="Vaut pour tous les clients."
-          initial={foodsGoodLib}
-          persist={items => settingsService.setFoodsGood(items)}
-          getDefaults={() => settingsService.getDefaultFoodsGood()}
-          onClose={() => setFoodModal(null)}
-          onSaved={setFoodsGoodLib}
-        />
-      )}
-      {foodModal === 'bad' && (
-        <FoodListModal
-          title="Aliments à éviter"
-          desc="Vaut pour tous les clients."
-          initial={foodsBadLib}
-          persist={items => settingsService.setFoodsBad(items)}
-          getDefaults={() => settingsService.getDefaultFoodsBad()}
-          onClose={() => setFoodModal(null)}
-          onSaved={setFoodsBadLib}
-        />
-      )}
-
       {showTemplates && (
         <div className="rounded-lg border border-gold/40 bg-cream/40 p-5 space-y-4">
           <p className="text-marine font-medium">Modèles de protocole</p>
@@ -1373,16 +1020,6 @@ export function NutritionTab() {
       </Section>
 
       <Section icon={Pill} title="Suppléments" desc="Listez les suppléments, puis l’IA les répartit par moment de prise.">
-        <div className="mb-1 flex justify-end">
-          <button
-            type="button"
-            onClick={() => setShowSuppLib(true)}
-            className="inline-flex items-center gap-1.5 text-marine/60 text-xs hover:text-marine transition-colors"
-            title="Ajouter ou retirer des suppléments proposés (vaut pour tous les clients)"
-          >
-            <Pencil size={13} /> Gérer la liste
-          </button>
-        </div>
         <SupplementChips items={suppLibrary} current={supp.input} onPick={line => setSuppField('input', appendLine(supp.input, line))} />
         <AutoTextarea
           value={supp.input}
@@ -1435,16 +1072,6 @@ export function NutritionTab() {
       {/* ── Aliments ────────────────────────────────────────────────────────── */}
       <div className="grid md:grid-cols-2 gap-6">
         <Section icon={Apple} title="À privilégier" desc="Aliments à mettre de l'avant.">
-          <div className="mb-1 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setFoodModal('good')}
-              className="inline-flex items-center gap-1.5 text-marine/60 text-xs hover:text-marine transition-colors"
-              title="Ajouter ou retirer des aliments proposés (vaut pour tous les clients)"
-            >
-              <Pencil size={13} /> Gérer la liste
-            </button>
-          </div>
           <SuggestChips items={foodsGoodLib} current={alimentsPrivilegier} onPick={it => setAlimentsPrivilegier(c => appendLine(c, it))} />
           <textarea
             value={alimentsPrivilegier}
@@ -1455,16 +1082,6 @@ export function NutritionTab() {
           />
         </Section>
         <Section icon={Ban} title="À éviter" desc="Aliments à limiter.">
-          <div className="mb-1 flex justify-end">
-            <button
-              type="button"
-              onClick={() => setFoodModal('bad')}
-              className="inline-flex items-center gap-1.5 text-marine/60 text-xs hover:text-marine transition-colors"
-              title="Ajouter ou retirer des aliments proposés (vaut pour tous les clients)"
-            >
-              <Pencil size={13} /> Gérer la liste
-            </button>
-          </div>
           <SuggestChips items={foodsBadLib} current={alimentsEviter} onPick={it => setAlimentsEviter(c => appendLine(c, it))} />
           <textarea
             value={alimentsEviter}

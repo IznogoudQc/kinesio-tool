@@ -3,6 +3,7 @@ import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown,
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
+import { SupplementLibraryCard, FoodListCard } from './settings/NutritionSettingsCards'
 import { settingsService } from '../services/settings'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
@@ -16,37 +17,76 @@ const TEMPLATE_VARIABLES: { key: string; description: string }[] = [
   { key: '{{signature}}', description: 'Votre signature (depuis Profil)' }
 ]
 
+const SETTINGS_TABS = [
+  { key: 'general', label: 'Général' },
+  { key: 'bilans', label: 'Bilans' },
+  { key: 'nutrition', label: 'Nutrition' },
+  { key: 'questionnaires', label: 'Questionnaires' },
+  { key: 'courriel', label: 'Courriel' },
+  { key: 'ia', label: 'IA' }
+] as const
+
+type SettingsTab = (typeof SETTINGS_TABS)[number]['key']
+
 export function SettingsPage() {
+  const [tab, setTab] = useState<SettingsTab>('general')
+
   return (
     <div className="p-8 max-w-6xl">
-      <h1 className="text-marine font-semibold text-2xl mb-6">Paramètres</h1>
+      <h1 className="text-marine font-semibold text-2xl mb-5">Paramètres</h1>
+
+      {/* Barre d'onglets */}
+      <div className="flex flex-wrap gap-1 border-b border-cream-dark mb-6">
+        {SETTINGS_TABS.map(t => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setTab(t.key)}
+            className={`px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
+              tab === t.key
+                ? 'border-gold text-marine'
+                : 'border-transparent text-marine/50 hover:text-marine hover:border-cream-dark'
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Colonne gauche : sections de configuration */}
         <div className="lg:col-span-2 space-y-6">
-          <ProfileCard />
-          <DocumentsFolderCard />
-          <NormsCard />
-          <PainSuggestionsCard />
-          <AIProviderCard />
-          <SmtpCard />
-          <TemplateCard />
-          <DummyJeanSeedButton />
+          {tab === 'general' && (
+            <>
+              <ProfileCard />
+              <DocumentsFolderCard />
+              <DummyJeanSeedButton />
+            </>
+          )}
+          {tab === 'bilans' && <NormsCard />}
+          {tab === 'nutrition' && (
+            <>
+              <SupplementLibraryCard />
+              <FoodListCard title="Aliments à privilégier" variant="good" />
+              <FoodListCard title="Aliments à éviter" variant="bad" />
+            </>
+          )}
+          {tab === 'questionnaires' && <PainSuggestionsCard />}
+          {tab === 'courriel' && (
+            <>
+              <SmtpCard />
+              <TemplateCard />
+            </>
+          )}
+          {tab === 'ia' && <AIProviderCard />}
         </div>
 
         {/* Colonne droite : profil Marie-Eve */}
         <aside className="lg:col-span-1">
           <div className="bg-white border border-cream-dark rounded-xl p-6 shadow-sm sticky top-6">
             <div className="w-48 mx-auto aspect-[3/4] rounded-2xl overflow-hidden bg-cream-dark/30">
-              <img
-                src={mEvePhoto}
-                alt="Marie-Eve"
-                className="w-full h-full object-contain"
-              />
+              <img src={mEvePhoto} alt="Marie-Eve" className="w-full h-full object-contain" />
             </div>
-            <h3 className="text-center text-marine text-xl font-semibold mt-4">
-              Marie-Eve
-            </h3>
+            <h3 className="text-center text-marine text-xl font-semibold mt-4">Marie-Eve</h3>
             <p className="text-center text-marine/60 text-sm">Kinésiologue</p>
           </div>
         </aside>

@@ -2,6 +2,20 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.6.0 — Paramètres en onglets + réglages nutrition regroupés)
+
+La page **Paramètres** est réorganisée en **6 onglets** : Général (profil, dossier documents), Bilans (normes),
+Nutrition, Questionnaires (suggestions de douleur), Courriel (SMTP, modèle), IA (clé Anthropic). Plus lisible
+qu'une longue colonne de cartes.
+
+Les **réglages nutrition** (bibliothèque de **suppléments** proposés + listes d'**aliments à privilégier / à
+éviter**) quittent l'onglet Nutrition du client pour l'onglet **Nutrition des Paramètres** (nouvelles cartes
+`SupplementLibraryCard` / `FoodListCard`, avec suggestion IA du moment de prise + réinitialisation). Dans
+l'onglet Nutrition du client, on garde les **puces de sélection** (choix pour ce client) ; les boutons/fenêtres
+« Gérer la liste » sont retirés (édition désormais dans Paramètres). Aucune donnée touchée.
+
+Version : 0.5.2 → 0.6.0.
+
 ## ✅ Fait (v0.1.0 → v0.1.3)
 
 ### v0.1.0 — Scaffolding initial
