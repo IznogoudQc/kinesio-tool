@@ -9,6 +9,7 @@ import { mesuresService } from '../../../services/mesures'
 import { settingsService } from '../../../services/settings'
 import {
   ALL_MESURE_FIELD_KEYS,
+  DEFAULT_MESURE_FIELD_KEYS,
   MESURE_FIELDS,
   REQUIRED_MESURE_FIELD_KEYS,
   mesureRows
@@ -43,21 +44,9 @@ type CircKey =
   | 'cou' | 'epaule' | 'bicepsG' | 'bicepsD' | 'poitrine'
   | 'taille' | 'abdomen' | 'hanche' | 'cuisseG' | 'cuisseD' | 'molletG' | 'molletD'
 
-// Toutes les circonférences, dans l'ordre d'affichage du détail / du rapport.
-const CIRC_ALL: { key: CircKey; label: string }[] = [
-  { key: 'cou', label: 'Cou' },
-  { key: 'epaule', label: 'Épaule' },
-  { key: 'bicepsG', label: 'Biceps G' },
-  { key: 'bicepsD', label: 'Biceps D' },
-  { key: 'poitrine', label: 'Poitrine' },
-  { key: 'taille', label: 'Taille' },
-  { key: 'abdomen', label: 'Abdomen' },
-  { key: 'hanche', label: 'Hanche' },
-  { key: 'cuisseG', label: 'Cuisse G' },
-  { key: 'cuisseD', label: 'Cuisse D' },
-  { key: 'molletG', label: 'Mollet G' },
-  { key: 'molletD', label: 'Mollet D' }
-]
+// Toutes les circonférences (clé + libellé), dans l'ordre du catalogue partagé
+// `MESURE_FIELDS` — source unique des libellés/ordre (détail, rapport, préremplissage).
+const CIRC_ALL: { key: CircKey; label: string }[] = MESURE_FIELDS.map(f => ({ key: f.key as CircKey, label: f.label }))
 
 type PlisKey = 'triceps' | 'biceps' | 'sousscapulaire' | 'iliaque'
 const PLIS_FIELDS: { key: PlisKey; label: string }[] = [
@@ -880,7 +869,7 @@ function MesureFieldsPicker({
   onSave: (next: MesureFieldKey[]) => Promise<void>
 }) {
   const [selected, setSelected] = useState<Set<MesureFieldKey>>(
-    () => new Set(current ?? ALL_MESURE_FIELD_KEYS)
+    () => new Set(current ?? DEFAULT_MESURE_FIELD_KEYS)
   )
   const [saving, setSaving] = useState(false)
 

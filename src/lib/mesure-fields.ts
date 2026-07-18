@@ -9,17 +9,28 @@ export interface MesureField {
   side: 'left' | 'right'
 }
 
-/** Ordre d'affichage : chaque paire gauche/droite occupe une ligne. */
+/**
+ * Ordre d'affichage : chaque paire gauche/droite occupe une ligne.
+ *
+ * Les 5 premiers correspondent aux circonférences du BILAN (celles que Marie-Eve
+ * utilise) — mêmes libellés, même ordre : Taille, Hanche, Biceps fléchi,
+ * Cuisse (2 po du genou), Épaules et pec. Leur appariement gauche/droite est
+ * choisi pour que la tabulation suive cet ordre :
+ *   ligne 1 : Taille · Hanche   ligne 2 : Biceps fléchi · Cuisse   ligne 3 : Épaules et pec.
+ * Les colonnes réutilisées : « Biceps fléchi » = `bicepsG`, « Cuisse (2 po du
+ * genou) » = `cuisseG`, « Épaules et pec » = `epaule` (pas de migration).
+ * Les autres champs restent disponibles (activables dans Paramètres) mais masqués par défaut.
+ */
 export const MESURE_FIELDS: MesureField[] = [
-  { key: 'cou', label: 'Cou', side: 'left' },
-  { key: 'epaule', label: 'Épaule', side: 'right' },
-  { key: 'bicepsG', label: 'Biceps G', side: 'left' },
-  { key: 'bicepsD', label: 'Biceps D', side: 'right' },
-  { key: 'poitrine', label: 'Poitrine', side: 'left' },
-  { key: 'taille', label: 'Taille', side: 'right' },
-  { key: 'abdomen', label: 'Abdomen', side: 'left' },
+  { key: 'taille', label: 'Taille', side: 'left' },
   { key: 'hanche', label: 'Hanche', side: 'right' },
-  { key: 'cuisseG', label: 'Cuisse G', side: 'left' },
+  { key: 'bicepsG', label: 'Biceps fléchi', side: 'left' },
+  { key: 'cuisseG', label: 'Cuisse (2 po du genou)', side: 'right' },
+  { key: 'epaule', label: 'Épaules et pec', side: 'left' },
+  { key: 'cou', label: 'Cou', side: 'right' },
+  { key: 'bicepsD', label: 'Biceps D', side: 'left' },
+  { key: 'poitrine', label: 'Poitrine', side: 'right' },
+  { key: 'abdomen', label: 'Abdomen', side: 'left' },
   { key: 'cuisseD', label: 'Cuisse D', side: 'right' },
   { key: 'molletG', label: 'Mollet G', side: 'left' },
   { key: 'molletD', label: 'Mollet D', side: 'right' }
@@ -27,17 +38,23 @@ export const MESURE_FIELDS: MesureField[] = [
 
 export const ALL_MESURE_FIELD_KEYS: MesureFieldKey[] = MESURE_FIELDS.map(f => f.key)
 
+/**
+ * Champs affichés PAR DÉFAUT (réglage jamais enregistré) = les 5 circonférences
+ * du bilan, dans l'ordre. Marie-Eve peut en activer d'autres dans Paramètres.
+ */
+export const DEFAULT_MESURE_FIELD_KEYS: MesureFieldKey[] = ['taille', 'hanche', 'bicepsG', 'cuisseG', 'epaule']
+
 /** Taille et hanche pilotent le ratio Taille/Hanche — les masquer le ferait disparaître. */
 export const REQUIRED_MESURE_FIELD_KEYS: MesureFieldKey[] = ['taille', 'hanche']
 
 /**
  * Champs à afficher, dans l'ordre du catalogue.
- * `enabled === null` (réglage jamais enregistré) → tout est affiché.
+ * `enabled === null` (réglage jamais enregistré) → les 5 champs par défaut.
  * Les champs obligatoires sont réintroduits même si absents du réglage.
  */
 export function visibleMesureFields(enabled: MesureFieldKey[] | null): MesureField[] {
-  if (enabled === null) return MESURE_FIELDS
-  const set = new Set<MesureFieldKey>([...enabled, ...REQUIRED_MESURE_FIELD_KEYS])
+  const keys = enabled === null ? DEFAULT_MESURE_FIELD_KEYS : enabled
+  const set = new Set<MesureFieldKey>([...keys, ...REQUIRED_MESURE_FIELD_KEYS])
   return MESURE_FIELDS.filter(f => set.has(f.key))
 }
 

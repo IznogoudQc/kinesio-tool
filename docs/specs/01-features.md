@@ -2,6 +2,18 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.6.2 — Mesures : circonférences par défaut alignées sur le bilan)
+
+L'onglet **Mesures** affiche désormais **par défaut** seulement les **5 circonférences que Marie utilise**,
+dans l'ordre du bilan : **Taille · Hanche · Biceps fléchi · Cuisse (2 po du genou) · Épaules et pec** (au lieu
+des 12 champs). La tabulation suit cet ordre. Réalisé **sans migration** : réutilisation des colonnes
+existantes (Biceps fléchi = `bicepsG`, Cuisse = `cuisseG`, Épaules et pec = `epaule`) — juste libellés + ordre +
+défaut dans `src/lib/mesure-fields.ts`. La silhouette centrale est conservée. Les autres champs restent
+**activables** dans le sélecteur (Mesures → « champs ») et **aucune donnée n'est perdue**. Les clients ayant
+déjà personnalisé leurs champs gardent leur réglage.
+
+Version : 0.6.1 → 0.6.2.
+
 ## ✅ Fait (v0.6.1 — Modèle de courriel nutrition éditable (Paramètres → Courriel))
 
 Le courriel du **document nutrition** avait un modèle **codé en dur** (dans `SendBilanModal`). Il devient
