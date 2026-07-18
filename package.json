@@ -1,6 +1,6 @@
 {
   "name": "kinesio-tool",
-  "version": "0.4.4",
+  "version": "0.5.0",
   "description": "Application locale pour Marie-Eve kinésiologue",
   "main": "out/main/index.js",
   "author": "Kinésio Conseil",

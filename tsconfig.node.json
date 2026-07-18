@@ -21,6 +21,7 @@
     "src/lib/bilan-merge.ts",
     "src/lib/client-bundle.ts",
     "src/lib/supplements.ts",
-    "src/lib/food-suggestions.ts"
+    "src/lib/food-suggestions.ts",
+    "src/lib/pain-suggestions.ts"
   ]
 }

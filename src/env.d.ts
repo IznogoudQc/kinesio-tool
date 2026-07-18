@@ -509,6 +509,10 @@ interface Window {
       getFoodsBad(): Promise<string[]>
       setFoodsBad(value: string[]): Promise<void>
       getDefaultFoodsBad(): Promise<string[]>
+      /** Bibliothèque globale de suggestions de douleur (famille → phrases). */
+      getPainSuggestions(): Promise<Record<string, string[]>>
+      setPainSuggestions(value: Record<string, string[]>): Promise<void>
+      getDefaultPainSuggestions(): Promise<Record<string, string[]>>
     }
     transfer: {
       /** Ouvre « Enregistrer sous ». `null` si Marie-Eve annule. */

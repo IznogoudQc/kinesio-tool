@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.5.0 — Douleur : description par zone + suggestions cliquables éditables)
+
+Deux ajouts à la silhouette du questionnaire de santé :
+1. **Description par zone** — sous la silhouette, chaque zone marquée apparaît dans une **liste éditable**
+   (bascule jaune/rouge, description de la douleur, retrait). Stockage enrichi `zonesDetail` (`{ sévérité,
+   description }`), rétro-compatible avec l'ancien format. La carte d'historique affiche les descriptions.
+2. **Suggestions cliquables** — quand une zone est marquée, des **puces** propres à la zone (ex. bas du dos →
+   « Douleur en flexion », genou → « Instabilité »…) ajoutent la phrase à la description en un clic. Les
+   suggestions sont **groupées par famille** de zones + un jeu **commun**.
+
+Les suggestions forment une **bibliothèque globale éditable** par Marie (ajout / retrait par famille) dans une
+nouvelle carte des **Réglages** (« Suggestions de douleur »), sur le patron des listes d'aliments nutrition.
+`src/lib/pain-suggestions.ts` (testé) + IPC/preload/service `settings:painSuggestions:*`. Voir ADR 0022.
+
+Version : 0.4.4 → 0.5.0.
+
 ## ✅ Fait (v0.4.4 — Silhouette de douleur : contour anatomique)
 
 Amélioration graphique de la silhouette du questionnaire de santé : le « bonhomme-capsule » est remplacé par

@@ -118,7 +118,11 @@ contextBridge.exposeInMainWorld('api', {
     getDefaultFoodsGood: () => ipcRenderer.invoke('settings:foodsGood:default'),
     getFoodsBad: () => ipcRenderer.invoke('settings:foodsBad:get'),
     setFoodsBad: (value: string[]) => ipcRenderer.invoke('settings:foodsBad:set', value),
-    getDefaultFoodsBad: () => ipcRenderer.invoke('settings:foodsBad:default')
+    getDefaultFoodsBad: () => ipcRenderer.invoke('settings:foodsBad:default'),
+    getPainSuggestions: () => ipcRenderer.invoke('settings:painSuggestions:get'),
+    setPainSuggestions: (value: Record<string, string[]>) =>
+      ipcRenderer.invoke('settings:painSuggestions:set', value),
+    getDefaultPainSuggestions: () => ipcRenderer.invoke('settings:painSuggestions:default')
   },
   transfer: {
     exportClients: (clientIds: string[]) =>

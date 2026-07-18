@@ -27,7 +27,17 @@ import {
   type QaapData
 } from '../../../lib/qaap'
 import { OBJECTIFS_FIELDS, emptyObjectifs, objectifsIsBlank, type ObjectifsData } from '../../../lib/objectifs'
-import { emptySante, regionLabel, santeIsBlank, type SanteData } from '../../../lib/sante'
+import {
+  emptySante,
+  normalizeZones,
+  regionLabel,
+  santeIsBlank,
+  type PainSeverity,
+  type SanteData,
+  type ZoneMark
+} from '../../../lib/sante'
+import { suggestionsForRegion, type PainSuggestionLib } from '../../../lib/pain-suggestions'
+import { settingsService } from '../../../services/settings'
 import { BodyPainMap } from '../BodyPainMap'
 
 function todayISO(): string {
@@ -71,7 +81,7 @@ function asSante(data: unknown): SanteData {
   const d = { ...((data ?? {}) as SanteData) }
   return {
     ...d,
-    zonesSeverity: d.zonesSeverity && typeof d.zonesSeverity === 'object' ? d.zonesSeverity : {},
+    zonesDetail: normalizeZones(d),
     restrictions: d.restrictions === true ? true : d.restrictions === false ? false : null
   }
 }
@@ -583,12 +593,12 @@ function ObjectifsForm({
 
 function SanteHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: () => void; onDelete: () => void }) {
   const data = asSante(q.data)
-  const sev = data.zonesSeverity ?? {}
-  const ids = Object.keys(sev)
-  const nbRouge = ids.filter(id => sev[id] === 'rouge').length
-  const nbJaune = ids.filter(id => sev[id] === 'jaune').length
+  const zones = data.zonesDetail ?? {}
+  const ids = Object.keys(zones)
+  const nbRouge = ids.filter(id => zones[id].severity === 'rouge').length
+  const nbJaune = ids.filter(id => zones[id].severity === 'jaune').length
   // Zones listées, douleurs (rouge) d'abord.
-  const orderedIds = [...ids].sort((a, b) => (sev[a] === 'rouge' ? 0 : 1) - (sev[b] === 'rouge' ? 0 : 1))
+  const orderedIds = [...ids].sort((a, b) => (zones[a].severity === 'rouge' ? 0 : 1) - (zones[b].severity === 'rouge' ? 0 : 1))
   return (
     <li className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -631,10 +641,12 @@ function SanteHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: (
             <span
               key={id}
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${
-                sev[id] === 'rouge' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                zones[id].severity === 'rouge' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
               }`}
+              title={zones[id].description || undefined}
             >
               {regionLabel(id)}
+              {zones[id].description?.trim() ? ' — ' + zones[id].description : ''}
             </span>
           ))}
         </div>
@@ -663,6 +675,12 @@ function SanteForm({
 }) {
   const { date, data } = value
   const blank = santeIsBlank(data)
+  const [library, setLibrary] = useState<PainSuggestionLib | null>(null)
+  const zones = data.zonesDetail ?? {}
+
+  useEffect(() => {
+    settingsService.getPainSuggestions().then(setLibrary).catch(() => setLibrary(null))
+  }, [])
 
   function patch(p: Partial<SanteData>) {
     onChange({ ...value, data: { ...data, ...p } })
@@ -693,11 +711,9 @@ function SanteForm({
           <span className="text-marine/40 font-normal"> — cliquez sur la silhouette</span>
         </label>
         <div className="border border-cream-dark/50 rounded-lg p-3 bg-cream/20">
-          <BodyPainMap
-            value={data.zonesSeverity ?? {}}
-            onChange={m => patch({ zonesSeverity: m })}
-          />
+          <BodyPainMap value={zones} onChange={m => patch({ zonesDetail: m })} />
         </div>
+        <ZoneDetailsList value={zones} onChange={m => patch({ zonesDetail: m })} library={library} />
         <input
           type="text"
           value={data.zonesAutre ?? ''}
@@ -750,6 +766,132 @@ function SanteForm({
         hint={blank ? 'Remplissez au moins un champ pour enregistrer.' : undefined}
       />
     </section>
+  )
+}
+
+/** Liste éditable des zones marquées : sévérité, description, puces de suggestions. */
+function ZoneDetailsList({
+  value,
+  onChange,
+  library
+}: {
+  value: Record<string, ZoneMark>
+  onChange: (next: Record<string, ZoneMark>) => void
+  library: PainSuggestionLib | null
+}) {
+  const ids = Object.keys(value)
+  if (ids.length === 0) {
+    return <p className="text-marine/40 text-sm mt-2">Aucune zone marquée — cliquez sur la silhouette ci-dessus.</p>
+  }
+  const ordered = [...ids].sort(
+    (a, b) => (value[a].severity === 'rouge' ? 0 : 1) - (value[b].severity === 'rouge' ? 0 : 1)
+  )
+
+  function setMark(id: string, p: Partial<ZoneMark>) {
+    onChange({ ...value, [id]: { ...value[id], ...p } })
+  }
+  function remove(id: string) {
+    const next = { ...value }
+    delete next[id]
+    onChange(next)
+  }
+
+  return (
+    <ul className="mt-3 space-y-2">
+      {ordered.map(id => (
+        <ZoneRow
+          key={id}
+          id={id}
+          mark={value[id]}
+          library={library}
+          onSeverity={s => setMark(id, { severity: s })}
+          onDescription={d => setMark(id, { description: d })}
+          onRemove={() => remove(id)}
+        />
+      ))}
+    </ul>
+  )
+}
+
+function ZoneRow({
+  id,
+  mark,
+  library,
+  onSeverity,
+  onDescription,
+  onRemove
+}: {
+  id: string
+  mark: ZoneMark
+  library: PainSuggestionLib | null
+  onSeverity: (s: PainSeverity) => void
+  onDescription: (d: string) => void
+  onRemove: () => void
+}) {
+  const desc = mark.description ?? ''
+  // Suggestions non déjà présentes dans la description.
+  const suggestions = (library ? suggestionsForRegion(id, library) : suggestionsForRegion(id)).filter(
+    s => !desc.toLowerCase().includes(s.toLowerCase())
+  )
+  function addSuggestion(phrase: string) {
+    const trimmed = desc.trim()
+    onDescription(trimmed ? `${trimmed}, ${phrase}` : phrase)
+  }
+  return (
+    <li className="border border-cream-dark/50 rounded-lg p-2.5 bg-white">
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => onSeverity('jaune')}
+            className={`w-5 h-5 rounded-full border-2 transition-colors ${
+              mark.severity === 'jaune' ? 'bg-amber-400 border-amber-500' : 'bg-amber-100 border-amber-200 hover:border-amber-400'
+            }`}
+            title="Tension légère"
+            aria-label="Tension légère"
+          />
+          <button
+            type="button"
+            onClick={() => onSeverity('rouge')}
+            className={`w-5 h-5 rounded-full border-2 transition-colors ${
+              mark.severity === 'rouge' ? 'bg-red-500 border-red-600' : 'bg-red-100 border-red-200 hover:border-red-400'
+            }`}
+            title="Douleur"
+            aria-label="Douleur"
+          />
+        </div>
+        <span className="text-marine font-medium text-sm flex-1 min-w-[120px]">{regionLabel(id)}</span>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-marine/40 hover:text-red-600 transition-colors"
+          aria-label={`Retirer ${regionLabel(id)}`}
+        >
+          <Trash2 size={15} />
+        </button>
+      </div>
+      <input
+        type="text"
+        value={desc}
+        onChange={e => onDescription(e.target.value)}
+        placeholder="Description de la douleur…"
+        className="w-full mt-2 px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+      />
+      {suggestions.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-1.5">
+          {suggestions.map(s => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => addSuggestion(s)}
+              className="inline-flex items-center gap-1 text-marine/70 bg-cream/60 hover:bg-gold/20 hover:text-marine border border-cream-dark/60 rounded-full px-2 py-0.5 text-[11px] transition-colors"
+            >
+              <Plus size={10} /> {s}
+            </button>
+          ))}
+        </div>
+      )}
+    </li>
   )
 }
 

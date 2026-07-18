@@ -7,6 +7,7 @@ import { getDb } from '../../db/client'
 import { settings } from '../../db/schema'
 import { DEFAULT_SUPPLEMENTS } from '../../src/lib/supplements'
 import { DEFAULT_FOODS_GOOD, DEFAULT_FOODS_BAD } from '../../src/lib/food-suggestions'
+import { DEFAULT_PAIN_SUGGESTIONS } from '../../src/lib/pain-suggestions'
 
 const KEYTAR_SERVICE = 'kinesio-outils'
 const KEYTAR_ACCOUNT = 'smtp-password'
@@ -21,11 +22,18 @@ const KEYS = {
   documentsFolder: 'documents.folder',
   supplements: 'nutrition.supplements',
   foodsGood: 'nutrition.foods_good',
-  foodsBad: 'nutrition.foods_bad'
+  foodsBad: 'nutrition.foods_bad',
+  painSuggestions: 'pain.suggestions'
 } as const
 
 /** Listes d'aliments proposés (à privilégier / à éviter), globales et éditables. */
 const FoodListSchema = z.array(z.string().trim().min(1).max(120)).max(200)
+
+/** Bibliothèque de suggestions de douleur : famille → liste de phrases. */
+const PainSuggestionsSchema = z.record(
+  z.string().min(1).max(40),
+  z.array(z.string().trim().min(1).max(200)).max(100)
+)
 
 /** Bibliothèque de suppléments (globale, éditable par Marie). Absence de réglage
  *  → liste par défaut. Nom obligatoire ; moment facultatif. */
@@ -267,6 +275,22 @@ export function registerSettingsHandlers(): void {
     await writeKey(KEYS.foodsBad, JSON.stringify(FoodListSchema.parse(value)))
   })
   ipcMain.handle('settings:foodsBad:default', () => DEFAULT_FOODS_BAD)
+
+  // ── Bibliothèque de suggestions de douleur (globale, tous clients) ──────────
+  ipcMain.handle('settings:painSuggestions:get', async () => {
+    const raw = await readKey(KEYS.painSuggestions)
+    if (!raw) return DEFAULT_PAIN_SUGGESTIONS
+    try {
+      const parsed = PainSuggestionsSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : DEFAULT_PAIN_SUGGESTIONS
+    } catch {
+      return DEFAULT_PAIN_SUGGESTIONS
+    }
+  })
+  ipcMain.handle('settings:painSuggestions:set', async (_e, value: unknown) => {
+    await writeKey(KEYS.painSuggestions, JSON.stringify(PainSuggestionsSchema.parse(value)))
+  })
+  ipcMain.handle('settings:painSuggestions:default', () => DEFAULT_PAIN_SUGGESTIONS)
 
   // ── Dossier des documents clients ──────────────────────────────────────────
   ipcMain.handle('settings:documentsFolder:get', async () => readKey(KEYS.documentsFolder))

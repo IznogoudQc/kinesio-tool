@@ -100,5 +100,14 @@ export const settingsService = {
   },
   async getDefaultFoodsBad(): Promise<string[]> {
     return window.api.settings.getDefaultFoodsBad()
+  },
+  async getPainSuggestions(): Promise<Record<string, string[]>> {
+    return window.api.settings.getPainSuggestions()
+  },
+  async setPainSuggestions(value: Record<string, string[]>): Promise<void> {
+    return window.api.settings.setPainSuggestions(value)
+  },
+  async getDefaultPainSuggestions(): Promise<Record<string, string[]>> {
+    return window.api.settings.getDefaultPainSuggestions()
   }
 }

@@ -11,16 +11,25 @@
 /** Sévérité d'une zone : tension légère (jaune) ou douleur (rouge). */
 export type PainSeverity = 'jaune' | 'rouge'
 
+/** Une zone marquée sur la silhouette : sévérité + description optionnelle. */
+export interface ZoneMark {
+  severity: PainSeverity
+  description?: string
+}
+
 export interface SanteData {
   /** Conditions de santé signalées par le client (texte libre). */
   conditions?: string
-  /** Zones marquées sur la silhouette : id de région → sévérité. */
-  zonesSeverity?: Record<string, PainSeverity>
+  /** Zones marquées sur la silhouette : id de région → { sévérité, description }. */
+  zonesDetail?: Record<string, ZoneMark>
   /** Zone(s) non listée(s) — texte libre. */
   zonesAutre?: string
   /**
-   * @deprecated ancien format (cases à cocher) — conservé en lecture pour les
-   * questionnaires enregistrés avant la silhouette. Les nouveaux utilisent `zonesSeverity`.
+   * @deprecated ancien format (sévérité seule) — lu et converti en `zonesDetail`.
+   */
+  zonesSeverity?: Record<string, PainSeverity>
+  /**
+   * @deprecated ancien format (cases à cocher) — conservé en lecture seule.
    */
   zones?: string[]
   /** Y a-t-il des restrictions de mouvement à respecter ? (null = non renseigné) */
@@ -102,13 +111,25 @@ export function cyclePain(cur: PainSeverity | undefined): PainSeverity | undefin
 
 /** Crée un questionnaire de santé vierge. */
 export function emptySante(): SanteData {
-  return { restrictions: null, zonesSeverity: {} }
+  return { restrictions: null, zonesDetail: {} }
+}
+
+/**
+ * Normalise les zones vers `zonesDetail` (convertit l'ancien `zonesSeverity`).
+ * Retourne toujours un objet (jamais undefined).
+ */
+export function normalizeZones(data: SanteData): Record<string, ZoneMark> {
+  if (data.zonesDetail && typeof data.zonesDetail === 'object') return data.zonesDetail
+  if (data.zonesSeverity && typeof data.zonesSeverity === 'object') {
+    return Object.fromEntries(Object.entries(data.zonesSeverity).map(([id, sev]) => [id, { severity: sev }]))
+  }
+  return {}
 }
 
 /** `true` si rien n'est renseigné (rien à enregistrer). */
 export function santeIsBlank(data: SanteData): boolean {
   const hasText = (v: string | undefined) => typeof v === 'string' && v.trim() !== ''
-  const zoneCount = data.zonesSeverity ? Object.keys(data.zonesSeverity).length : 0
+  const zoneCount = Object.keys(normalizeZones(data)).length
   const oldZoneCount = data.zones ? data.zones.length : 0
   return (
     !hasText(data.conditions) &&

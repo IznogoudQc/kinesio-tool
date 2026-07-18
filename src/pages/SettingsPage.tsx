@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder } from 'lucide-react'
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
+import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
 import { settingsService } from '../services/settings'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
@@ -26,6 +27,7 @@ export function SettingsPage() {
           <ProfileCard />
           <DocumentsFolderCard />
           <NormsCard />
+          <PainSuggestionsCard />
           <AIProviderCard />
           <SmtpCard />
           <TemplateCard />

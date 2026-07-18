@@ -1,4 +1,4 @@
-import { BODY_REGIONS, cyclePain, type BodyRegion, type PainSeverity } from '../../lib/sante'
+import { BODY_REGIONS, cyclePain, type BodyRegion, type PainSeverity, type ZoneMark } from '../../lib/sante'
 
 /**
  * Silhouette cliquable (face + dos) pour marquer les zones de tension/douleur.
@@ -37,7 +37,7 @@ function Figure({
 }: {
   title: string
   regions: BodyRegion[]
-  value: Record<string, PainSeverity>
+  value: Record<string, ZoneMark>
   onToggle: (id: string) => void
   readOnly?: boolean
 }) {
@@ -47,7 +47,7 @@ function Figure({
       <svg viewBox="0 0 160 380" className="w-[150px] h-auto select-none" role="group" aria-label={title}>
         <Silhouette />
         {regions.map(r => {
-          const sev = value[r.id]
+          const sev = value[r.id]?.severity
           return (
             <ellipse
               key={r.id}
@@ -76,15 +76,15 @@ export function BodyPainMap({
   onChange,
   readOnly
 }: {
-  value: Record<string, PainSeverity>
-  onChange?: (next: Record<string, PainSeverity>) => void
+  value: Record<string, ZoneMark>
+  onChange?: (next: Record<string, ZoneMark>) => void
   readOnly?: boolean
 }) {
   function toggle(id: string) {
     if (!onChange) return
     const next = { ...value }
-    const nx = cyclePain(value[id])
-    if (nx) next[id] = nx
+    const nx = cyclePain(value[id]?.severity)
+    if (nx) next[id] = { ...value[id], severity: nx }
     else delete next[id]
     onChange(next)
   }
