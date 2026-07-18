@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.4.4 — Silhouette de douleur : contour anatomique)
+
+Amélioration graphique de la silhouette du questionnaire de santé : le « bonhomme-capsule » est remplacé par
+un **vrai contour anatomique** (tête + corps d'un seul tenant : épaules tombantes, taille marquée, membres et
+pieds), toujours en SVG maison, toujours cliquable. Les ~35 zones ont été recalées sur la nouvelle silhouette
+(bras, mains, pieds). Rendu identique face/dos. Aucun changement de données ni de comportement — purement visuel.
+
+Version : 0.4.3 → 0.4.4.
+
 ## ✅ Fait (v0.4.3 — Questionnaire de santé : silhouette de douleur cliquable)
 
 Les zones de tension du questionnaire de santé se marquent maintenant sur une **silhouette avant + arrière

@@ -14,21 +14,16 @@ const FILL: Record<PainSeverity, string> = {
 const FACE_REGIONS = BODY_REGIONS.filter(r => r.view === 'face')
 const DOS_REGIONS = BODY_REGIONS.filter(r => r.view === 'dos')
 
-/** Contour de la silhouette (capsules) — identique face et dos. */
+// Contour anatomique (tête + corps d'un seul tenant) — identique face et dos.
+const BODY_PATH =
+  'M 74 48 L 66 55 L 52 58 L 43 72 L 39 104 L 37 138 L 35 165 L 34 182 L 37 191 L 44 188 L 46 166 L 48 140 L 50 98 L 57 150 L 51 186 L 54 206 L 56 250 L 58 298 L 59 338 L 56 361 L 52 373 L 72 374 L 73 360 L 75 300 L 77 216 L 80 207 L 83 216 L 85 300 L 87 360 L 88 374 L 108 373 L 104 361 L 101 338 L 102 298 L 104 250 L 106 206 L 109 186 L 103 150 L 110 98 L 112 140 L 114 166 L 116 188 L 123 191 L 126 182 L 125 165 L 123 138 L 121 104 L 117 72 L 108 58 L 94 55 L 86 48 Z'
+
 function Silhouette() {
   const p = { fill: '#dfe3ee', stroke: '#b9c0d6', strokeWidth: 1.5 }
   return (
     <g>
-      <circle cx={80} cy={30} r={20} {...p} />
-      <rect x={72} y={46} width={16} height={12} rx={5} {...p} />
-      <path d="M44 60 Q80 52 116 60 L112 150 Q80 160 48 150 Z" {...p} />
-      <rect x={28} y={64} width={15} height={120} rx={7.5} {...p} />
-      <rect x={117} y={64} width={15} height={120} rx={7.5} {...p} />
-      <path d="M50 150 Q80 158 110 150 L108 210 Q80 218 52 210 Z" {...p} />
-      <rect x={55} y={205} width={18} height={150} rx={9} {...p} />
-      <rect x={87} y={205} width={18} height={150} rx={9} {...p} />
-      <ellipse cx={60} cy={360} rx={12} ry={8} {...p} />
-      <ellipse cx={100} cy={360} rx={12} ry={8} {...p} />
+      <ellipse cx={80} cy={27} rx={16} ry={19} {...p} />
+      <path d={BODY_PATH} strokeLinejoin="round" {...p} />
     </g>
   )
 }
