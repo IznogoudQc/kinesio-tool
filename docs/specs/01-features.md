@@ -642,6 +642,21 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.4.0 — Nouvelle section Questionnaires : le Q-AAP (PAR-Q))
+
+Nouvel **onglet client « Questionnaires »** pour numériser les formulaires d'admission que Marie remplit à la
+main. Premier formulaire : le **Q-AAP** (Questionnaire sur l'aptitude à l'activité physique, standard SCPE) —
+les 7 questions officielles en Oui/Non, **alerte automatique** dès qu'un « OUI » (recommandation de consulter
+un médecin avant l'activité), champ précisions, et suivi de la **validité 12 mois** (badge « valide jusqu'au… »
+/ « expiré »). Questionnaires **datés avec historique** (comme les bilans).
+
+Sous le capot : nouvelle table `questionnaires` (un `type` discrimine le formulaire → `sante` et `objectifs`
+s'ajouteront sans migration), logique pure testée `src/lib/qaap.ts`, IPC/preload/service API-ready, onglet
+`QuestionnairesTab`. Voir ADR 0020. À venir : questionnaire de santé (zones de tension) + objectifs & habitudes
+de vie.
+
+Version : 0.3.8 → 0.4.0.
+
 ## ✅ Fait (v0.3.8 — Indice de santé du dos ré-affiché (retour au comportement v0.3.6))
 
 `SHOW_BACK_HEALTH` repassé à `true` : l'indice du dos réapparaît partout (carte de synthèse, dashboard,

@@ -67,6 +67,13 @@ contextBridge.exposeInMainWorld('api', {
     update: (id: string, data: unknown) => ipcRenderer.invoke('notes:update', id, data),
     delete: (id: string) => ipcRenderer.invoke('notes:delete', id)
   },
+  questionnaires: {
+    list: (clientId: string) => ipcRenderer.invoke('questionnaires:list', clientId),
+    create: (clientId: string, payload: unknown) => ipcRenderer.invoke('questionnaires:create', clientId, payload),
+    update: (id: string, payload: unknown) => ipcRenderer.invoke('questionnaires:update', id, payload),
+    delete: (id: string) => ipcRenderer.invoke('questionnaires:delete', id),
+    getById: (id: string) => ipcRenderer.invoke('questionnaires:get-by-id', id)
+  },
   settings: {
     getProfile: () =>
       ipcRenderer.invoke('settings:profile:get'),

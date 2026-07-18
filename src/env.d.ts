@@ -355,6 +355,28 @@ interface ClientNoteInput {
   content: string
 }
 
+/** Questionnaire d'admission daté d'un client (Q-AAP pour l'instant). */
+type QuestionnaireType = 'qaap'
+interface Questionnaire {
+  id: string
+  clientId: string
+  type: QuestionnaireType
+  date: string
+  /** Données typées selon `type` (ex. QaapData pour 'qaap'). */
+  data: unknown
+  createdAt: string
+  updatedAt: string
+}
+interface QuestionnaireCreateInput {
+  type: QuestionnaireType
+  date: string
+  data: unknown
+}
+interface QuestionnaireUpdateInput {
+  date?: string
+  data?: unknown
+}
+
 /** Modèle de protocole nutrition réutilisable (app-level). */
 interface NutritionTemplate {
   id: string
@@ -447,6 +469,13 @@ interface Window {
       create(clientId: string, data: ClientNoteInput): Promise<ClientNote>
       update(id: string, data: ClientNoteInput): Promise<ClientNote>
       delete(id: string): Promise<void>
+    }
+    questionnaires: {
+      list(clientId: string): Promise<Questionnaire[]>
+      create(clientId: string, payload: QuestionnaireCreateInput): Promise<Questionnaire>
+      update(id: string, payload: QuestionnaireUpdateInput): Promise<Questionnaire>
+      delete(id: string): Promise<void>
+      getById(id: string): Promise<Questionnaire | null>
     }
     settings: {
       getProfile(): Promise<ProfileSettings>

@@ -169,6 +169,13 @@
       "when": 1783893298487,
       "tag": "0023_cuddly_miss_america",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1784346850547,
+      "tag": "0024_moaning_havok",
+      "breakpoints": true
     }
   ]
 }

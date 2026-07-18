@@ -164,6 +164,22 @@ export const clientNotes = sqliteTable('client_notes', {
 export type ClientNote = typeof clientNotes.$inferSelect
 export type NewClientNote = typeof clientNotes.$inferInsert
 
+// Questionnaires d'admission d'un client — datés, avec historique (comme les
+// bilans). `type` discrimine le formulaire ('qaap' pour l'instant ; 'sante' et
+// 'objectifs' à venir) ; `data` = JSON propre à chaque type. Voir docs/decisions/0020.
+export const questionnaires = sqliteTable('questionnaires', {
+  id: text('id').primaryKey(),
+  clientId: text('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
+  type: text('type').notNull(),
+  date: text('date').notNull(),
+  data: text('data').notNull(),
+  createdAt: text('created_at').notNull(),
+  updatedAt: text('updated_at').notNull()
+})
+
+export type Questionnaire = typeof questionnaires.$inferSelect
+export type NewQuestionnaire = typeof questionnaires.$inferInsert
+
 // Modèles de protocole nutrition réutilisables (app-level, pas par client). `data`
 // = JSON d'un sous-ensemble des réglages nutrition, appliqué à un client en 1 clic.
 export const nutritionTemplates = sqliteTable('nutrition_templates', {
