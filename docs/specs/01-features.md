@@ -2,6 +2,13 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.7.4 — Grandeur : équivalent en cm affiché entre parenthèses)
+
+Sous le champ **Grandeur** (saisi en pouces), l'équivalent en **cm** s'affiche **entre parenthèses**, mis à jour
+en direct pendant la saisie (ex. `69 po` → `(175,3 cm)`). Confirme visuellement la conversion utilisée pour l'IMC.
+
+Version : 0.7.3 → 0.7.4.
+
 ## ✅ Fait (v0.7.3 — Mesures : Poids/Grandeur sur leur ligne, Grandeur en pouces)
 
 Ajustements de la prise de mesures : **Poids et Grandeur** occupent leur **propre ligne**, les circonférences

@@ -579,6 +579,11 @@ function MeasureEntryPanel({
             onChange={setGrandeur}
             previousValue={previousGrandeur}
             previousDate={previousCircRow?.date}
+            extra={
+              grandeur !== undefined ? (
+                <p className="text-cream/55 text-sm mt-1.5">({nf1(lengthInputToCm(grandeur, 'in'))} cm)</p>
+              ) : null
+            }
           />
         </div>
 
