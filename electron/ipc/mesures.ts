@@ -27,6 +27,8 @@ const CircDataSchema = z
     date: IsoDateSchema.optional(),
     // poidsKg : toujours reçu en kg (la conversion lb se fait côté UI).
     poidsKg: kg,
+    // grandeurCm : taille/hauteur en cm (sert à l'IMC).
+    grandeurCm: cm,
     cou: cm, epaule: cm, bicepsG: cm, bicepsD: cm, poitrine: cm,
     taille: cm, abdomen: cm, hanche: cm, cuisseG: cm, cuisseD: cm, molletG: cm, molletD: cm,
     notes: z.string().max(2000).optional()
@@ -104,6 +106,7 @@ export function registerMesuresHandlers(): void {
         clientId: validId,
         date: data.date ?? todayISO(),
         poidsKg: data.poidsKg ?? null,
+        grandeurCm: data.grandeurCm ?? null,
         ...circMeasurements(data),
         notes: data.notes ?? null,
         createdAt: now
@@ -124,6 +127,7 @@ export function registerMesuresHandlers(): void {
       .set({
         date: data.date ?? existing.date,
         poidsKg: data.poidsKg ?? null,
+        grandeurCm: data.grandeurCm ?? null,
         ...circMeasurements(data),
         notes: data.notes ?? null
       })

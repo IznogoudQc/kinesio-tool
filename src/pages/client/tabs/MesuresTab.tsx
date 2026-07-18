@@ -1,10 +1,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useBlocker, useNavigate } from 'react-router-dom'
-import { ArrowUpCircle, Calculator, Eye, Loader2, PencilLine, PersonStanding, Ruler, Save, SlidersHorizontal, Trash2, UserCog, X } from 'lucide-react'
-import bodyMale from '@/assets/body-male.png'
-import bodyFemale from '@/assets/body-female.png'
+import { ArrowUpCircle, Calculator, Eye, Loader2, PencilLine, Ruler, Save, SlidersHorizontal, Trash2, UserCog, X } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
-import { clientsService } from '../../../services/clients'
 import { mesuresService } from '../../../services/mesures'
 import { settingsService } from '../../../services/settings'
 import {
@@ -12,7 +9,7 @@ import {
   DEFAULT_MESURE_FIELD_KEYS,
   MESURE_FIELDS,
   REQUIRED_MESURE_FIELD_KEYS,
-  mesureRows
+  visibleMesureFields
 } from '../../../lib/mesure-fields'
 import { calculateAge, calculateBodyFat } from '../../../lib/body-fat-calculator'
 import {
@@ -73,7 +70,6 @@ function circRowToForm(row: MesureCirconferences, unit: 'cm' | 'in'): CircForm {
 
 export function MesuresTab() {
   const client = useClient()
-  const [view, setView] = useState<'circ' | 'plis'>('circ')
   const [toast, setToast] = useState<string | null>(null)
   // Saisie non enregistrée dans l'un ou l'autre panneau → on bloque la navigation
   // sortante (changement d'onglet, retour, autre client) pour éviter la perte.
@@ -89,25 +85,22 @@ export function MesuresTab() {
   }, [toast])
 
   return (
-    <div className="p-8 max-w-6xl">
-      <div className="inline-flex items-center gap-1 bg-cream-dark/60 rounded-lg p-1 mb-6">
-        <SubTabButton active={view === 'circ'} onClick={() => setView('circ')} icon={Ruler}>
-          Circonférences
-        </SubTabButton>
-        <SubTabButton active={view === 'plis'} onClick={() => setView('plis')} icon={Calculator}>
-          Plis cutanés
-        </SubTabButton>
-      </div>
-
-      {/* Les DEUX panneaux restent montés (l'inactif masqué via `hidden`) afin de
-          NE PAS perdre la saisie en cours quand on bascule d'un sous-onglet à
-          l'autre. Démonter/remonter réinitialiserait l'état local du formulaire. */}
-      <div className={view === 'circ' ? '' : 'hidden'}>
+    <div className="p-8 max-w-6xl space-y-10">
+      {/* Circonférences + plis sur une seule page (plus de sous-onglets) : Poids /
+          Grandeur / Circonférences d'abord, Plis cutanés ensuite. */}
+      <section>
+        <h2 className="text-marine font-bold text-xl mb-4 flex items-center gap-2">
+          <Ruler size={19} className="text-gold-dark" /> Poids, grandeur &amp; circonférences
+        </h2>
         <CirconferencesPanel client={client} notify={setToast} onDirtyChange={setCircDirty} />
-      </div>
-      <div className={view === 'plis' ? '' : 'hidden'}>
+      </section>
+
+      <section className="border-t border-cream-dark/50 pt-8">
+        <h2 className="text-marine font-bold text-xl mb-4 flex items-center gap-2">
+          <Calculator size={19} className="text-gold-dark" /> Plis cutanés
+        </h2>
         <PlisPanel client={client} notify={setToast} onDirtyChange={setPlisDirty} />
-      </div>
+      </section>
 
       {toast && (
         <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
@@ -143,32 +136,6 @@ export function MesuresTab() {
         </div>
       )}
     </div>
-  )
-}
-
-function SubTabButton({
-  active,
-  onClick,
-  icon: Icon,
-  children
-}: {
-  active: boolean
-  onClick: () => void
-  icon: React.ComponentType<{ size?: number; className?: string }>
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'inline-flex items-center gap-2 px-4 py-2 rounded-md text-base font-medium transition-colors',
-        active ? 'bg-marine text-cream shadow-sm' : 'text-marine/55 hover:text-marine'
-      ].join(' ')}
-    >
-      <Icon size={16} />
-      {children}
-    </button>
   )
 }
 
@@ -238,63 +205,6 @@ function DateField({ value, onChange }: { value: string; onChange: (v: string) =
         max={today}
         onChange={e => onChange(e.target.value || today)}
         className="mt-1 bg-transparent text-cream text-lg font-semibold outline-none border-0 [color-scheme:dark]"
-      />
-    </div>
-  )
-}
-
-/**
- * Visuel central de l'onglet Mesures. Priorité : (1) la photo « plein corps » du
- * client si elle existe, (2) sinon la silhouette générique selon le sexe, (3) sinon
- * une invite à compléter le profil.
- *
- * NB : la photo est affichée telle quelle. Si Marie-Eve téléverse une photo brute
- * (fond non transparent), le fond sera visible — recommander un PNG à fond
- * transparent. Un détourage automatique pourra être ajouté dans une v0.1.x suivante.
- */
-function Silhouette({ client }: { client: Client }) {
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    // Priorité : avatar full-body s'il existe, sinon avatar circle classique
-    const filename = client.avatarFullbodyFilename ?? client.avatarFilename ?? null
-    if (filename) {
-      clientsService
-        .getAvatarUrl(filename)
-        .then(url => {
-          if (!cancelled) setAvatarUrl(url)
-        })
-        .catch(() => {
-          if (!cancelled) setAvatarUrl(null)
-        })
-    } else {
-      setAvatarUrl(null)
-    }
-    return () => {
-      cancelled = true
-    }
-  }, [client.avatarFullbodyFilename, client.avatarFilename])
-
-  if (!avatarUrl && !client.sex) {
-    return (
-      <div className="flex flex-col items-center justify-center text-center bg-marine-light/35 border border-dashed border-gold/30 rounded-2xl p-6 min-h-[320px] h-full">
-        <PersonStanding size={64} className="text-cream/30" />
-        <p className="text-cream/55 text-sm mt-3 max-w-[15rem]">
-          Complétez le profil du client (ou ajoutez une photo) pour personnaliser la silhouette.
-        </p>
-      </div>
-    )
-  }
-
-  const bodyImage = avatarUrl ?? (client.sex === 'F' ? bodyFemale : bodyMale)
-  return (
-    <div className="flex items-center justify-center h-full">
-      <img
-        src={bodyImage}
-        alt={avatarUrl ? client.name : client.sex === 'F' ? 'Silhouette femme' : 'Silhouette homme'}
-        draggable={false}
-        className="max-h-[560px] max-w-full w-auto object-contain select-none"
       />
     </div>
   )
@@ -391,6 +301,8 @@ function CirconferencesPanel({
   const [pickerOpen, setPickerOpen] = useState(false)
   // `poids` est exprimé dans l'unité préférée du client (kg ou lb) — converti en kg à l'enregistrement.
   const [poids, setPoids] = useState<number | undefined>(undefined)
+  // `grandeur` (taille/hauteur) exprimée dans l'unité de longueur du client.
+  const [grandeur, setGrandeur] = useState<number | undefined>(undefined)
   // Date de la session de mesure (ISO `AAAA-MM-JJ`). Éditable pour permettre
   // une saisie en retard (Marie-Eve note sur papier puis entre les jours suivants).
   const [date, setDate] = useState<string>(todayISO())
@@ -448,6 +360,8 @@ function CirconferencesPanel({
     return typeof v === 'number' ? cmToLengthInput(v, unitLength) : undefined
   }
   const previousPoids = previousRow?.poidsKg != null ? kgToWeightInput(previousRow.poidsKg, unitWeight) : undefined
+  const previousGrandeur =
+    previousRow?.grandeurCm != null ? cmToLengthInput(previousRow.grandeurCm, unitLength) : undefined
 
   // Tour de taille / hanche / abdomen : baisse = amélioration.
   const LOWER_IS_BETTER_CIRC: Partial<Record<CircKey, boolean>> = {
@@ -456,9 +370,6 @@ function CirconferencesPanel({
     abdomen: true
   }
 
-  // Lignes du formulaire. Chaque mesure garde sa ligne anatomique : masquer
-  // « Cou » laisse sa place vide plutôt que d'y faire remonter « Biceps G ».
-  const fieldRows = mesureRows(mesureFields)
 
   // Une carte de saisie pour une circonférence (toutes en `lenLabel`).
   const circCard = (key: CircKey, label: string) => {
@@ -498,6 +409,7 @@ function CirconferencesPanel({
   function resetForm() {
     setForm({})
     setPoids(undefined)
+    setGrandeur(undefined)
     setDate(todayISO())
     setNotes('')
     setEditId(null)
@@ -506,13 +418,15 @@ function CirconferencesPanel({
   function startEdit(row: MesureCirconferences) {
     setForm(circRowToForm(row, unitLength))
     setPoids(row.poidsKg != null ? kgToWeightInput(row.poidsKg, unitWeight) : undefined)
+    setGrandeur(row.grandeurCm != null ? cmToLengthInput(row.grandeurCm, unitLength) : undefined)
     setDate(row.date)
     setNotes(row.notes ?? '')
     setEditId(row.id)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const hasAny = poids !== undefined || CIRC_ALL.some(c => form[c.key] !== undefined)
+  const hasAny =
+    poids !== undefined || grandeur !== undefined || CIRC_ALL.some(c => form[c.key] !== undefined)
 
   // « Dirty » = nouvelle saisie non enregistrée (on n'alerte pas en mode édition
   // d'une ligne existante, dont les valeurs sont déjà en base).
@@ -533,6 +447,7 @@ function CirconferencesPanel({
         if (v !== undefined) payload[key] = lengthInputToCm(v, unitLength)
       }
       if (poids !== undefined) payload.poidsKg = weightInputToKg(poids, unitWeight)
+      if (grandeur !== undefined) payload.grandeurCm = lengthInputToCm(grandeur, unitLength)
       if (editId) {
         await mesuresService.circonferences.update(editId, payload)
       } else {
@@ -627,52 +542,29 @@ function CirconferencesPanel({
 
         <DateField value={date} onChange={setDate} />
 
-        {/*
-          Disposition : grille 3 colonnes de largeur égale, N+1 lignes.
-          ─ colonne 2, lignes 1..N : silhouette (étirée sur toutes les rangées).
-          ─ colonnes 1 & 3 : les circonférences visibles, gauche / droite.
-          ─ ligne N+1, colonne 2 : Poids — une seule colonne de large, donc
-            exactement la même largeur visuelle que les cartes de mesure.
-          Chaque carte pose sa ligne explicitement (`gridRow`) : si Marie-Eve
-          masque « Mollet G » sans « Mollet D », la colonne de droite ne remonte
-          pas d'un cran.
-          `minmax(0,1fr)` sur chaque colonne : empêche l'image de la silhouette
-          (intrinsèquement large) d'élargir la colonne 2 au-delà de sa fraction.
-        */}
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-3 max-w-5xl mx-auto items-start">
-          <div
-            className="col-start-2 self-stretch flex items-center justify-center min-h-[320px]"
-            style={{ gridRow: `1 / span ${Math.max(fieldRows.length, 1)}` }}
-          >
-            <Silhouette client={client} />
-          </div>
-
-          {fieldRows.map(([left, right], i) => (
-            <Fragment key={left?.key ?? right?.key ?? i}>
-              {left && (
-                <div className="col-start-1" style={{ gridRow: i + 1 }}>
-                  {circCard(left.key, left.label)}
-                </div>
-              )}
-              {right && (
-                <div className="col-start-3" style={{ gridRow: i + 1 }}>
-                  {circCard(right.key, right.label)}
-                </div>
-              )}
-            </Fragment>
+        {/* Grille compacte : Poids · Grandeur, puis les circonférences choisies
+            (par défaut les 5 du bilan). Plus de silhouette, saisie au clavier + Tab. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <MeasureField
+            label="Poids"
+            unit={wLabel}
+            value={poids}
+            onChange={setPoids}
+            previousValue={previousPoids}
+            previousDate={previousRow?.date}
+            lowerIsBetter
+          />
+          <MeasureField
+            label="Grandeur"
+            unit={lenLabel}
+            value={grandeur}
+            onChange={setGrandeur}
+            previousValue={previousGrandeur}
+            previousDate={previousRow?.date}
+          />
+          {visibleMesureFields(mesureFields).map(f => (
+            <Fragment key={f.key}>{circCard(f.key as CircKey, f.label)}</Fragment>
           ))}
-
-          <div className="col-start-2" style={{ gridRow: fieldRows.length + 1 }}>
-            <MeasureField
-              label="Poids"
-              unit={wLabel}
-              value={poids}
-              onChange={setPoids}
-              previousValue={previousPoids}
-              previousDate={previousRow?.date}
-              lowerIsBetter
-            />
-          </div>
         </div>
 
         {/* Ratio Taille/Hanche : calculé dès que les 2 sont saisis, avec barre OMS */}

@@ -2,6 +2,19 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.7.0 — Mesures : version compacte (sans avatar) + Grandeur)
+
+L'onglet Mesures est simplifié : **plus de sous-onglets** — Circonférences et Plis cutanés sont sur **une seule
+page** (« Poids, grandeur & circonférences » puis « Plis cutanés »). La **silhouette/avatar est retirée** ; les
+champs passent dans une **grille compacte** (saisie clavier + Tab). Nouveau champ **Grandeur** (taille/hauteur) à
+côté du Poids — stocké dans une **nouvelle colonne `grandeur_cm`** de la table des circonférences (migration 0025,
++ IPC/types), avec delta vs. la prise précédente.
+
+Note : chaque bloc (circonférences / plis) garde son propre bouton Enregistrer et son historique — l'unification
+en une seule prise/un seul bouton pourra suivre.
+
+Version : 0.6.4 → 0.7.0.
+
 ## ✅ Fait (v0.6.4 — Bilan : seulement les 4 plis cutanés utilisés par Marie)
 
 Marie n'utilise que **4 plis** (triceps, biceps, sous-scapulaire, crête iliaque — les 4 sites de Durnin-Womersley).

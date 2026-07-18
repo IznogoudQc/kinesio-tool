@@ -1,0 +1,1 @@
+ALTER TABLE `mesures_circonferences` ADD `grandeur_cm` real;

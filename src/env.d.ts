@@ -273,6 +273,8 @@ interface MesureCirconferences {
   date: string
   /** Poids en kg (toujours stocké en métrique), `null` si non mesuré. */
   poidsKg: number | null
+  /** Grandeur (taille/hauteur) en cm, `null` si non mesurée. */
+  grandeurCm: number | null
   /** Toutes les circonférences en cm, `null` si non mesurée. */
   cou: number | null
   epaule: number | null
@@ -295,6 +297,8 @@ interface CirconferencesInput {
   date?: string
   /** Poids en kg (déjà converti en métrique côté UI). */
   poidsKg?: number
+  /** Grandeur (taille/hauteur) en cm. */
+  grandeurCm?: number
   cou?: number
   epaule?: number
   bicepsG?: number

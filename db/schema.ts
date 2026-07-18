@@ -107,6 +107,8 @@ export const mesuresCirconferences = sqliteTable('mesures_circonferences', {
   clientId: text('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
   date: text('date').notNull(),
   poidsKg: real('poids_kg'),
+  // Grandeur (taille/hauteur) en cm — saisie avec la prise (sert à l'IMC).
+  grandeurCm: real('grandeur_cm'),
   cou: real('cou'),
   epaule: real('epaule'),
   bicepsG: real('biceps_g'),
