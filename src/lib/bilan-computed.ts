@@ -114,6 +114,19 @@ function avg(scores: (number | null)[]): number | null {
   return present.reduce((s, x) => s + x, 0) / present.length
 }
 
+/** Moyenne PONDÉRÉE (ignore les cotes absentes). `null` si aucune cote présente. */
+function weightedAvg(pairs: [number | null, number][]): number | null {
+  let sum = 0
+  let wsum = 0
+  for (const [s, w] of pairs) {
+    if (s !== null && !Number.isNaN(s)) {
+      sum += s * w
+      wsum += w
+    }
+  }
+  return wsum === 0 ? null : sum / wsum
+}
+
 function round1(n: number): number {
   return Math.round(n * 10) / 10
 }
@@ -260,7 +273,17 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
   const composition = compose(['imc', 'pourcentage_gras', 'tour_taille_cm'])
   const bodyFat = compose(['pourcentage_gras'])
   const aerobic = compose(['vo2max'])
-  const backHealth = compose(['flexion_tronc_cm', 'endurance_dos_sec', 'situps'])
+  // Indice de santé du dos — formule de l'ancien logiciel (CPAFLA), SANS le terme
+  // « effets bénéfiques de l'activité physique » (aérobie) : moyenne des cotes de la
+  // taille, de l'IMC et d'une moyenne pondérée redressements(×1) / flexion(×1) /
+  // extension du dos(×2). Voir mémoire [[backhealth-formula-deferred]].
+  const dosRatings = weightedAvg([
+    [score('situps'), 1],
+    [score('flexion_tronc_cm'), 1],
+    [score('endurance_dos_sec'), 2]
+  ])
+  const backHealthScore = avg([score('tour_taille_cm'), score('imc'), dosRatings])
+  const backHealth: CompositeScore = { score: backHealthScore, category: scoreToCategory(backHealthScore) }
   // Force musculaire : tests de force/puissance seulement (flexibilité + dos → backHealth).
   const musculoGlobal = compose(['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'])
   const overallScore = avg([composition.score, aerobic.score, backHealth.score, musculoGlobal.score])

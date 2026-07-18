@@ -45,6 +45,13 @@ test('Saut vertical — rétro-compat : valeur directe si pas de départ/finale'
   assert.equal(r.sautVerticalCm, 48)
 })
 
+test('Indice de santé du dos — taille + IMC contribuent (nouvelle formule)', () => {
+  // Ancienne formule (situps/flexion/extension seulement) → score null sans ces tests.
+  // Nouvelle formule (taille + IMC + tests) → score non-null grâce à taille + IMC.
+  const r = computeBilan({ tour_taille_cm: 80, taille_cm: 175, poids_kg: 75 }, NICHOLAS)
+  assert.ok(r.backHealth.score !== null)
+})
+
 test('Nicholas — IMC 32.2', () => {
   const r = computeBilan(RAW, NICHOLAS)
   assert.equal(r.imc, 32.2)

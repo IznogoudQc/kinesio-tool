@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.3.5 — Indice de santé du dos : formule de l'ancien logiciel (sans le terme aérobie))
+
+Reprise de la formule « Indice de santé du dos » (CPAFLA) de l'ancien logiciel de Marie, **sans** le terme
+« Les effets bénéfiques de l'activité physique » (aérobie), volontairement omis. `backHealth` dans
+`src/lib/bilan-computed.ts` combine désormais **trois composantes à poids égaux** : la cote du **tour de taille**,
+la cote de l'**IMC**, et une **moyenne pondérée des cotes musculaires du dos** — redressements assis partiels ×1,
+flexion avant du tronc ×1, extension du dos ×2 (nouvel helper `weightedAvg`). Avant, l'indice ne reposait que sur
+les trois tests musculaires (poids égaux) et tombait à « n/d » sans eux ; il tient compte maintenant de la taille
+et de l'IMC. Le moteur exact (`BackHealthComposite`) reste une interprétation à calibrer si Marie fournit ses
+grilles Classification/Nombres.
+
+Version : 0.3.4 → 0.3.5.
+
 ## ✅ Fait (v0.3.4 — Bilan : section « Signes vitaux (repos) » regroupée en haut (comme la feuille))
 
 Comme sur la feuille (PA · Fc · PA récup en haut), regroupement en une **section « Signes vitaux (repos) »
