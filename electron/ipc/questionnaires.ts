@@ -41,6 +41,9 @@ const ObjectifsDataSchema = z
 const SanteDataSchema = z
   .object({
     conditions: z.string().max(2000).optional(),
+    // Zones marquées sur la silhouette : id de région → sévérité.
+    zonesSeverity: z.record(z.string().max(40), z.enum(['jaune', 'rouge'])).optional(),
+    // Ancien format (cases à cocher) — accepté en lecture pour rétro-compat.
     zones: z.array(z.string().max(60)).max(40).optional(),
     zonesAutre: z.string().max(500).optional(),
     restrictions: z.boolean().nullable().optional(),

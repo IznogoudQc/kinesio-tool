@@ -27,7 +27,8 @@ import {
   type QaapData
 } from '../../../lib/qaap'
 import { OBJECTIFS_FIELDS, emptyObjectifs, objectifsIsBlank, type ObjectifsData } from '../../../lib/objectifs'
-import { SANTE_ZONES, emptySante, santeIsBlank, toggleZone, type SanteData } from '../../../lib/sante'
+import { emptySante, regionLabel, santeIsBlank, type SanteData } from '../../../lib/sante'
+import { BodyPainMap } from '../BodyPainMap'
 
 function todayISO(): string {
   const d = new Date()
@@ -70,7 +71,7 @@ function asSante(data: unknown): SanteData {
   const d = { ...((data ?? {}) as SanteData) }
   return {
     ...d,
-    zones: Array.isArray(d.zones) ? d.zones : [],
+    zonesSeverity: d.zonesSeverity && typeof d.zonesSeverity === 'object' ? d.zonesSeverity : {},
     restrictions: d.restrictions === true ? true : d.restrictions === false ? false : null
   }
 }
@@ -582,7 +583,12 @@ function ObjectifsForm({
 
 function SanteHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: () => void; onDelete: () => void }) {
   const data = asSante(q.data)
-  const zoneCount = data.zones?.length ?? 0
+  const sev = data.zonesSeverity ?? {}
+  const ids = Object.keys(sev)
+  const nbRouge = ids.filter(id => sev[id] === 'rouge').length
+  const nbJaune = ids.filter(id => sev[id] === 'jaune').length
+  // Zones listées, douleurs (rouge) d'abord.
+  const orderedIds = [...ids].sort((a, b) => (sev[a] === 'rouge' ? 0 : 1) - (sev[b] === 'rouge' ? 0 : 1))
   return (
     <li className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm">
       <div className="flex items-start justify-between gap-3">
@@ -601,9 +607,14 @@ function SanteHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: (
                 <CheckCircle2 size={12} /> Aucune restriction
               </span>
             ) : null}
-            {zoneCount > 0 && (
-              <span className="text-marine/45 text-xs">
-                {zoneCount} zone{zoneCount > 1 ? 's' : ''} de tension
+            {nbRouge > 0 && (
+              <span className="inline-flex items-center gap-1 text-red-700 text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> {nbRouge} douleur{nbRouge > 1 ? 's' : ''}
+              </span>
+            )}
+            {nbJaune > 0 && (
+              <span className="inline-flex items-center gap-1 text-amber-700 text-xs">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" /> {nbJaune} tension{nbJaune > 1 ? 's' : ''}
               </span>
             )}
           </div>
@@ -614,6 +625,20 @@ function SanteHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: (
           onDelete={onDelete}
         />
       </div>
+      {orderedIds.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2.5">
+          {orderedIds.map(id => (
+            <span
+              key={id}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] ${
+                sev[id] === 'rouge' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+              }`}
+            >
+              {regionLabel(id)}
+            </span>
+          ))}
+        </div>
+      )}
       {data.conditions?.trim() && (
         <p className="text-marine/70 text-sm mt-2.5 whitespace-pre-wrap leading-relaxed border-t border-cream-dark/40 pt-2.5">
           {data.conditions}
@@ -663,33 +688,21 @@ function SanteForm({
       </div>
 
       <div>
-        <label className="text-marine/60 text-sm font-medium block mb-2">Zones de tension / douleur</label>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
-          {SANTE_ZONES.map(zone => {
-            const checked = data.zones?.includes(zone) ?? false
-            return (
-              <label
-                key={zone}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-sm cursor-pointer transition-colors ${
-                  checked ? 'bg-gold/15 border-gold/50 text-marine' : 'bg-white border-cream-dark text-marine/70 hover:border-gold/40'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => patch({ zones: toggleZone(data.zones, zone) })}
-                  className="accent-gold-dark"
-                />
-                {zone}
-              </label>
-            )
-          })}
+        <label className="text-marine/60 text-sm font-medium block mb-2">
+          Zones de tension / douleur
+          <span className="text-marine/40 font-normal"> — cliquez sur la silhouette</span>
+        </label>
+        <div className="border border-cream-dark/50 rounded-lg p-3 bg-cream/20">
+          <BodyPainMap
+            value={data.zonesSeverity ?? {}}
+            onChange={m => patch({ zonesSeverity: m })}
+          />
         </div>
         <input
           type="text"
           value={data.zonesAutre ?? ''}
           onChange={e => patch({ zonesAutre: e.target.value })}
-          placeholder="Autre(s) zone(s)…"
+          placeholder="Autre(s) zone(s) ou précisions…"
           className="w-full mt-2 px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-sm placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
         />
       </div>

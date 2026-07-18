@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.4.3 — Questionnaire de santé : silhouette de douleur cliquable)
+
+Les zones de tension du questionnaire de santé se marquent maintenant sur une **silhouette avant + arrière
+cliquable** (remplace les cases à cocher). Chaque zone cycle **rien → jaune (tension légère) → rouge (douleur)**
+au clic — les ~35 zones non marquées apparaissent en pointillé pour montrer ce qui est cliquable. Légende + champ
+« autre zone » conservés. La carte d'historique liste les zones (douleurs d'abord) avec un compte douleurs /
+tensions.
+
+SVG maison (aucune dépendance), `src/pages/client/BodyPainMap.tsx` + config des régions dans `src/lib/sante.ts`
+(testée). Données : `zonesSeverity` (id de région → sévérité), sans migration. Voir ADR 0021 (révise 0020).
+
+Version : 0.4.2 → 0.4.3.
+
 ## ✅ Fait (v0.4.2 — Questionnaires : « Questionnaire de santé » (blessures / zones de tension))
 
 3ᵉ et dernier formulaire d'admission : le **Questionnaire de santé**. Champs : **conditions de santé** (texte),
