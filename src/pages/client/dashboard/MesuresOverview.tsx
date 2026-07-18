@@ -291,7 +291,7 @@ export function MesuresOverview() {
         lowerIsBetter: true
       },
       // ── Composition corporelle (6) ───────────────────────────────────────
-      { key: 'pourcentageGrasSiri', label: '% Gras Siri', unit: '%', source: 'plis', group: 'composition', accessor: (_, p) => p?.pourcentageGrasSiri ?? null, lowerIsBetter: true },
+      { key: 'pourcentageGrasSiri', label: '% Gras (Durnin-Womersley)', unit: '%', source: 'plis', group: 'composition', accessor: (_, p) => p?.pourcentageGrasSiri ?? null, lowerIsBetter: true },
       { key: 'sommePlis', label: 'Somme 4 plis', unit: 'mm', source: 'plis', group: 'composition', accessor: (_, p) => p?.somme4Plis ?? null, lowerIsBetter: true },
       { key: 'pliTriceps', label: 'Triceps', unit: 'mm', source: 'plis', group: 'composition', accessor: (_, p) => p?.triceps ?? null, lowerIsBetter: true },
       { key: 'pliBiceps', label: 'Biceps (pli)', unit: 'mm', source: 'plis', group: 'composition', accessor: (_, p) => p?.biceps ?? null, lowerIsBetter: true },
@@ -579,7 +579,7 @@ export function MesuresOverview() {
             activeView?.plis ? (
               <p className="text-marine/45 text-xs mt-2 flex items-center gap-1">
                 <Calculator size={11} />
-                Siri · Brozek {activeView.plis.pourcentageGrasBrozek.toFixed(1)} % · Durnin-Womersley
+                Durnin-Womersley (4 plis)
               </p>
             ) : null
           }
@@ -1065,7 +1065,7 @@ function PlisCutanesSection({ latestPlis, previousPlis, chartData }: PlisCutanes
 
         <div>
           <p className="text-marine/55 text-xs uppercase tracking-wide font-medium mb-1.5">
-            Évolution % gras (Siri)
+            Évolution % gras (Durnin-Womersley)
           </p>
           {showChart ? (
             <div className="h-40">

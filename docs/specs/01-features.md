@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.7.2 — % de gras : un seul chiffre, méthode Durnin-Womersley)
+
+Le % de gras est présenté **uniquement en Durnin-Womersley** (densité D-W 1974 → conversion Siri, la version
+canonique). L'ancien second chiffre **Brozek est retiré de l'affichage** partout (formulaire Mesures, mini-dashboard,
+dashboard, page Barèmes) ; les libellés « (Siri) » deviennent « (Durnin-Womersley) ». Le calcul est inchangé (le
+rapport et le bilan utilisaient déjà cette valeur) ; la valeur Brozek reste calculée/stockée en coulisse (aucune
+migration, rétro-compat).
+
+Version : 0.7.1 → 0.7.2.
+
 ## ✅ Fait (v0.7.1 — Mesures : une seule prise, un seul bouton)
 
 Suite de v0.7.0 : les circonférences et les plis cutanés sont désormais **une seule prise** — **un seul

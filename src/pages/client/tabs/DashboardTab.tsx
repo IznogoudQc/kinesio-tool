@@ -598,8 +598,7 @@ export function DashboardTab() {
                 <span className="text-base font-medium text-marine/45 ml-1.5">%</span>
               </p>
               <p className="text-marine/45 text-xs mt-1">
-                Siri · Brozek {formatNumber(plisList[0].pourcentageGrasBrozek)} % ·{' '}
-                {formatBilanDate(plisList[0].date)}
+                Durnin-Womersley · {formatBilanDate(plisList[0].date)}
               </p>
             </div>
           )}

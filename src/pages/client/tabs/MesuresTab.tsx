@@ -643,15 +643,13 @@ function MeasureEntryPanel({
               </div>
             </div>
             <div className="mt-4 border-t border-marine-light/40 pt-4">
-              <p className="text-cream/55 text-xs uppercase tracking-wide">% de gras (Siri)</p>
+              <p className="text-cream/55 text-xs uppercase tracking-wide">% de gras (Durnin-Womersley)</p>
               <p className="mt-1 flex items-baseline gap-3 flex-wrap">
                 <span className="text-gold text-3xl font-bold leading-none">
                   {plisCalc ? nf1(plisCalc.bodyFatSiri) : '—'}
                   {plisCalc && <span className="text-xl"> %</span>}
                 </span>
-                <span className="text-cream/60 text-sm">
-                  {plisCalc ? `Brozek : ${nf1(plisCalc.bodyFatBrozek)} %` : 'Brozek : —'}
-                </span>
+                {plisCalc && <span className="text-cream/50 text-sm">4 plis · densité → Siri</span>}
               </p>
             </div>
           </div>
