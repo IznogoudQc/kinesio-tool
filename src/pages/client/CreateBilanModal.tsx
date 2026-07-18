@@ -37,8 +37,6 @@ const PREFILL_FIELDS: PrefillFieldDef[] = [
   { key: 'pli_biceps', label: 'Pli biceps', defaultChecked: true },
   { key: 'pli_sous_scap', label: 'Pli sous-scapulaire', defaultChecked: true },
   { key: 'pli_iliaque', label: 'Pli crête iliaque', defaultChecked: true },
-  { key: 'pli_mollet', label: 'Pli mollet', defaultChecked: true },
-  { key: 'pli_cuisse', label: 'Pli cuisse', defaultChecked: true },
   { key: 'tour_taille_cm', label: 'Tour de taille', defaultChecked: true },
   { key: 'tour_hanche_cm', label: 'Tour de hanche', defaultChecked: true },
   { key: 'fc_repos', label: 'FC au repos', defaultChecked: true },

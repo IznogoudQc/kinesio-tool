@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.6.4 — Bilan : seulement les 4 plis cutanés utilisés par Marie)
+
+Marie n'utilise que **4 plis** (triceps, biceps, sous-scapulaire, crête iliaque — les 4 sites de Durnin-Womersley).
+Les plis **mollet** et **cuisse** sont **retirés de l'UI** : formulaire bilan, modale de préremplissage, et rapport
+PDF (section composition). La **couche données est conservée** (colonnes, bornes, parser .docx, IPC) → les anciens
+bilans importés qui contiennent ces plis ne perdent rien et restent lisibles. Le calcul du % de gras utilisait déjà
+les 4 sites.
+
+Version : 0.6.3 → 0.6.4.
+
 ## ✅ Fait (v0.6.3 — Mini-dashboard Mesures aligné sur le bilan)
 
 Suite de v0.6.2 : le mini-dashboard Mesures utilise maintenant les **mêmes libellés** que le bilan. Le catalogue

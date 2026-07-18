@@ -1311,9 +1311,7 @@ function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bila
     { label: 'Triceps', key: 'pli_triceps' },
     { label: 'Biceps', key: 'pli_biceps' },
     { label: 'Sous-scapulaire', key: 'pli_sous_scap' },
-    { label: 'Crête iliaque', key: 'pli_iliaque' },
-    { label: 'Mollet', key: 'pli_mollet' },
-    { label: 'Cuisse', key: 'pli_cuisse' }
+    { label: 'Crête iliaque', key: 'pli_iliaque' }
   ]
   const plisPresents = plis.map(p => ({ ...p, value: num(d[p.key]) })).filter(p => p.value !== null)
   const durnin4 = ['pli_triceps', 'pli_biceps', 'pli_sous_scap', 'pli_iliaque'].map(k => num(d[k]))

@@ -70,8 +70,6 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
       { key: 'pli_biceps', label: 'Biceps', unit: 'mm' },
       { key: 'pli_sous_scap', label: 'Sous-scapulaire', unit: 'mm' },
       { key: 'pli_iliaque', label: 'Crête iliaque', unit: 'mm' },
-      { key: 'pli_mollet', label: 'Mollet', unit: 'mm' },
-      { key: 'pli_cuisse', label: 'Cuisse', unit: 'mm' },
       {
         key: 'pourcentage_gras',
         label: 'Pourcentage de gras',
