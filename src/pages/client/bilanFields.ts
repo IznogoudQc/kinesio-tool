@@ -32,6 +32,17 @@ export const TEST_AEROBIE_OPTIONS = [
 
 export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
   {
+    id: 'vitaux',
+    title: 'Signes vitaux (repos)',
+    fields: [
+      { key: 'pa_systolique', label: 'PA systolique (repos)', unit: 'mmHg' },
+      { key: 'pa_diastolique', label: 'PA diastolique (repos)', unit: 'mmHg' },
+      { key: 'fc_repos', label: 'FC au repos', unit: 'bpm' },
+      { key: 'pa_recup_sys', label: 'PA récup — systolique', unit: 'mmHg' },
+      { key: 'pa_recup_dia', label: 'PA récup — diastolique', unit: 'mmHg' }
+    ]
+  },
+  {
     id: 'anthropo',
     title: 'Anthropométrie',
     fields: [
@@ -87,14 +98,6 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
       },
       { key: 'pa_systolique', label: 'PA systolique (repos)', unit: 'mmHg' },
       { key: 'pa_diastolique', label: 'PA diastolique (repos)', unit: 'mmHg' }
-    ]
-  },
-  {
-    id: 'recuperation',
-    title: 'Récupération',
-    fields: [
-      { key: 'pa_recup_sys', label: 'PA récup — systolique', unit: 'mmHg' },
-      { key: 'pa_recup_dia', label: 'PA récup — diastolique', unit: 'mmHg' }
     ]
   },
   {

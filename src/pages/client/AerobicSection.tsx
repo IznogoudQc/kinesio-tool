@@ -155,11 +155,6 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
     onDataChange(setFields(data, patch))
   }
 
-  function setNumberField(key: keyof BilanData, value: number | undefined) {
-    if (!onDataChange) return
-    onDataChange(setFields(data, { [key]: value }))
-  }
-
   function setManualVo2max(value: number | undefined) {
     if (!onDataChange) return
     onDataChange(setFields(data, { vo2max: value }))
@@ -181,9 +176,6 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
     ) : null
   const cooperBound = boundOf('cooper_distance_m', data.cooper_distance_m)
   const legerBound = boundOf('leger_palier', data.leger_palier)
-  const fcReposBound = boundOf('fc_repos', data.fc_repos)
-  const paSysBound = boundOf('pa_systolique', data.pa_systolique)
-  const paDiaBound = boundOf('pa_diastolique', data.pa_diastolique)
 
   return (
     <div className="space-y-4">
@@ -444,32 +436,8 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
         </div>
       )}
 
-      {/* FC repos / FC max prédite / PA repos */}
+      {/* FC max prédite (calculée). Les PA/FC au repos sont dans « Signes vitaux (repos) ». */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-3">
-        <div className="min-w-0">
-          <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
-            FC au repos <span className="lowercase tracking-normal">(bpm)</span>
-          </label>
-          {readOnly ? (
-            <p className={`text-base font-medium ${valueClass}`}>
-              {data.fc_repos === undefined ? <span className="opacity-40">—</span> : data.fc_repos}
-            </p>
-          ) : (
-            <>
-              <input
-                type="number"
-                step="any"
-                value={data.fc_repos ?? ''}
-                onChange={e =>
-                  setNumberField('fc_repos', Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
-                }
-                className={`${inputClass}${boundBorder(fcReposBound)}`}
-              />
-              {boundMsg(fcReposBound)}
-            </>
-          )}
-        </div>
-
         <div className="min-w-0">
           <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
             FC max prédite <span className="lowercase tracking-normal">(bpm)</span>
@@ -488,60 +456,6 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
                 className={computedClass}
               />
               <p className={`text-xs mt-1 ${mutedClass}`}>Tanaka : 208 − 0.7 × âge</p>
-            </>
-          )}
-        </div>
-
-        <div className="min-w-0">
-          <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
-            PA systolique (repos) <span className="lowercase tracking-normal">(mmHg)</span>
-          </label>
-          {readOnly ? (
-            <p className={`text-base font-medium ${valueClass}`}>
-              {data.pa_systolique === undefined ? <span className="opacity-40">—</span> : data.pa_systolique}
-            </p>
-          ) : (
-            <>
-              <input
-                type="number"
-                step="any"
-                value={data.pa_systolique ?? ''}
-                onChange={e =>
-                  setNumberField(
-                    'pa_systolique',
-                    Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber
-                  )
-                }
-                className={`${inputClass}${boundBorder(paSysBound)}`}
-              />
-              {boundMsg(paSysBound)}
-            </>
-          )}
-        </div>
-
-        <div className="min-w-0">
-          <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
-            PA diastolique (repos) <span className="lowercase tracking-normal">(mmHg)</span>
-          </label>
-          {readOnly ? (
-            <p className={`text-base font-medium ${valueClass}`}>
-              {data.pa_diastolique === undefined ? <span className="opacity-40">—</span> : data.pa_diastolique}
-            </p>
-          ) : (
-            <>
-              <input
-                type="number"
-                step="any"
-                value={data.pa_diastolique ?? ''}
-                onChange={e =>
-                  setNumberField(
-                    'pa_diastolique',
-                    Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber
-                  )
-                }
-                className={`${inputClass}${boundBorder(paDiaBound)}`}
-              />
-              {boundMsg(paDiaBound)}
             </>
           )}
         </div>

@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.3.4 — Bilan : section « Signes vitaux (repos) » regroupée en haut (comme la feuille))
+
+Comme sur la feuille (PA · Fc · PA récup en haut), regroupement en une **section « Signes vitaux (repos) »
+placée en tête** du formulaire : PA systolique/diastolique (repos), FC au repos, PA récup systolique/diastolique.
+Ces champs sont **retirés de la section « Aptitude aérobie »** (qui ne garde que le test, la durée, le VO2max, le
+MET et la FC max prédite) — plus de doublon. `AerobicSection` nettoyée (setNumberField/bounds inutilisés retirés).
+
+Version : 0.3.3 → 0.3.4.
+
 ## ✅ Fait (v0.3.3 — Bilan : PA récup en 2 chiffres (sys/dia) + PA repos clarifiée)
 
 Marie note la tension en **systolique / diastolique** (2 chiffres) autant au repos qu'en récupération. La PA récup
