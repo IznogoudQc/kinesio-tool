@@ -107,11 +107,6 @@ function num(v: number | null | undefined): number | null {
   return typeof v === 'number' && !Number.isNaN(v) ? v : null
 }
 
-function avgGD(a: number | null, b: number | null): number | null {
-  const vals = [a, b].filter((v): v is number => typeof v === 'number')
-  return vals.length ? vals.reduce((s, x) => s + x, 0) / vals.length : null
-}
-
 /** Nombre de jours pleins entre aujourd'hui et une date ISO. Pour l'engagement. */
 function daysSince(iso: string): number {
   const today = new Date()
@@ -258,14 +253,14 @@ export function MesuresOverview() {
     return [
       // ── Circonférences (12) ──────────────────────────────────────────────
       { key: 'cou', label: 'Cou', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.cou ?? null, convert: convertLen, lowerIsBetter: false },
-      { key: 'epaule', label: 'Épaule', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.epaule ?? null, convert: convertLen, lowerIsBetter: false },
-      { key: 'bicepsG', label: 'Biceps G', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.bicepsG ?? null, convert: convertLen, lowerIsBetter: false },
+      { key: 'epaule', label: 'Épaules et pec', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.epaule ?? null, convert: convertLen, lowerIsBetter: false },
+      { key: 'bicepsG', label: 'Biceps fléchi', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.bicepsG ?? null, convert: convertLen, lowerIsBetter: false },
       { key: 'bicepsD', label: 'Biceps D', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.bicepsD ?? null, convert: convertLen, lowerIsBetter: false },
       { key: 'poitrine', label: 'Poitrine', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.poitrine ?? null, convert: convertLen, lowerIsBetter: false },
       { key: 'taille', label: 'Tour de taille', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.taille ?? null, convert: convertLen, lowerIsBetter: true },
       { key: 'abdomen', label: 'Abdomen', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.abdomen ?? null, convert: convertLen, lowerIsBetter: true },
       { key: 'hanche', label: 'Hanche', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.hanche ?? null, convert: convertLen, lowerIsBetter: true },
-      { key: 'cuisseG', label: 'Cuisse G', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.cuisseG ?? null, convert: convertLen, lowerIsBetter: false },
+      { key: 'cuisseG', label: 'Cuisse (2 po du genou)', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.cuisseG ?? null, convert: convertLen, lowerIsBetter: false },
       { key: 'cuisseD', label: 'Cuisse D', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.cuisseD ?? null, convert: convertLen, lowerIsBetter: false },
       { key: 'molletG', label: 'Mollet G', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.molletG ?? null, convert: convertLen, lowerIsBetter: false },
       { key: 'molletD', label: 'Mollet D', unit: lenLabel, source: 'circ', group: 'circ', accessor: c => c?.molletD ?? null, convert: convertLen, lowerIsBetter: false },
@@ -457,15 +452,11 @@ export function MesuresOverview() {
   const activeTailleCm = num(activeView?.circ.taille)
   const previousCircDate = activeView?.previousCirc.date
 
-  // Biceps moy et Cuisse moy : moyenne G/D sur la circ active et la précédente.
-  const bicepsAvgActive = activeView ? avgGD(num(activeView.circ.bicepsG), num(activeView.circ.bicepsD)) : null
-  const bicepsAvgPrev = activeView
-    ? avgGD(num(activeView.previousCirc.bicepsG), num(activeView.previousCirc.bicepsD))
-    : null
-  const cuisseAvgActive = activeView ? avgGD(num(activeView.circ.cuisseG), num(activeView.circ.cuisseD)) : null
-  const cuisseAvgPrev = activeView
-    ? avgGD(num(activeView.previousCirc.cuisseG), num(activeView.previousCirc.cuisseD))
-    : null
+  // Biceps fléchi / Cuisse (2 po du genou) : côté mesuré par Marie (colonnes bicepsG / cuisseG).
+  const bicepsActive = activeView ? num(activeView.circ.bicepsG) : null
+  const bicepsPrev = activeView ? num(activeView.previousCirc.bicepsG) : null
+  const cuisseActive = activeView ? num(activeView.circ.cuisseG) : null
+  const cuissePrev = activeView ? num(activeView.previousCirc.cuisseG) : null
 
   // Ratio Taille / Hanche — en cm (indépendant de l'unité d'affichage).
   function ratioOf(r: Partial<MesureCirconferences> | null | undefined): number | null {
@@ -607,20 +598,20 @@ export function MesuresOverview() {
           selectionKey="mesures:hanche"
         />
         <MiniStatCard
-          label="Biceps moy."
-          value={bicepsAvgActive !== null ? cmToLengthInput(bicepsAvgActive, unitLength) : null}
+          label="Biceps fléchi"
+          value={bicepsActive !== null ? cmToLengthInput(bicepsActive, unitLength) : null}
           unit={lenLabel}
-          previousValue={bicepsAvgPrev !== null ? cmToLengthInput(bicepsAvgPrev, unitLength) : undefined}
+          previousValue={bicepsPrev !== null ? cmToLengthInput(bicepsPrev, unitLength) : undefined}
           previousDate={previousCircDate}
-          selectionKey="mesures:biceps_moy"
+          selectionKey="mesures:biceps_flechi"
         />
         <MiniStatCard
-          label="Cuisse moy."
-          value={cuisseAvgActive !== null ? cmToLengthInput(cuisseAvgActive, unitLength) : null}
+          label="Cuisse (2 po)"
+          value={cuisseActive !== null ? cmToLengthInput(cuisseActive, unitLength) : null}
           unit={lenLabel}
-          previousValue={cuisseAvgPrev !== null ? cmToLengthInput(cuisseAvgPrev, unitLength) : undefined}
+          previousValue={cuissePrev !== null ? cmToLengthInput(cuissePrev, unitLength) : undefined}
           previousDate={previousCircDate}
-          selectionKey="mesures:cuisse_moy"
+          selectionKey="mesures:cuisse_genou"
         />
         <MiniStatCard
           label="Poids"
@@ -1145,15 +1136,15 @@ function AllMeasuresDetails({
   wLabel
 }: AllMeasuresDetailsProps) {
   const ALL_CIRC: { key: keyof MesureCirconferences; label: string }[] = [
+    { key: 'taille', label: 'Tour de taille' },
+    { key: 'hanche', label: 'Tour de hanche' },
+    { key: 'bicepsG', label: 'Biceps fléchi' },
+    { key: 'cuisseG', label: 'Cuisse (2 po du genou)' },
+    { key: 'epaule', label: 'Épaules et pec' },
     { key: 'cou', label: 'Cou' },
-    { key: 'epaule', label: 'Épaule' },
-    { key: 'bicepsG', label: 'Biceps G' },
     { key: 'bicepsD', label: 'Biceps D' },
     { key: 'poitrine', label: 'Poitrine' },
-    { key: 'taille', label: 'Tour de taille' },
     { key: 'abdomen', label: 'Abdomen' },
-    { key: 'hanche', label: 'Tour de hanche' },
-    { key: 'cuisseG', label: 'Cuisse G' },
     { key: 'cuisseD', label: 'Cuisse D' },
     { key: 'molletG', label: 'Mollet G' },
     { key: 'molletD', label: 'Mollet D' }

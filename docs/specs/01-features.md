@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.6.3 — Mini-dashboard Mesures aligné sur le bilan)
+
+Suite de v0.6.2 : le mini-dashboard Mesures utilise maintenant les **mêmes libellés** que le bilan. Le catalogue
+de métriques et la liste détail renomment `bicepsG` → **Biceps fléchi**, `cuisseG` → **Cuisse (2 po du genou)**,
+`epaule` → **Épaules et pec** (et remontent les 5 de Marie en tête). Les cartes résumé « Biceps moy. » / « Cuisse
+moy. » (moyennes gauche/droite, sans objet avec un seul côté) deviennent **« Biceps fléchi »** et **« Cuisse
+(2 po) »**, sur la valeur du côté réellement mesuré (`bicepsG` / `cuisseG`). Les métriques sans données restent
+auto-masquées. Aucune donnée touchée.
+
+Version : 0.6.2 → 0.6.3.
+
 ## ✅ Fait (v0.6.2 — Mesures : circonférences par défaut alignées sur le bilan)
 
 L'onglet **Mesures** affiche désormais **par défaut** seulement les **5 circonférences que Marie utilise**,
