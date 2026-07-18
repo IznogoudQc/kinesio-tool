@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.3.8 — Indice de santé du dos ré-affiché (retour au comportement v0.3.6))
+
+`SHOW_BACK_HEALTH` repassé à `true` : l'indice du dos réapparaît partout (carte de synthèse, dashboard,
+wins, rapports) et réintègre le score global, comme en v0.3.6. Le flag reste en place pour re-masquer /
+ajuster en un point une fois `BackHealthComposite` élucidé (barème CPAFLA taille/IMC). L'indice reste
+approximatif (voir v0.3.6) — assumé pour le moment.
+
+Version : 0.3.7 → 0.3.8.
+
 ## ✅ Fait (v0.3.7 — Indice de santé du dos masqué temporairement)
 
 L'« Indice de santé du dos » est **masqué partout** le temps de caler le barème CPAFLA du tour de taille /

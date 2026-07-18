@@ -33,10 +33,11 @@ export type { Category, NormsType }
  * sévèrement, ce qui tire l'indice ~1,5 point sous la valeur de l'ancien
  * logiciel (validé sur bilans réels). Tant que le barème n'est pas calé, on
  * masque la carte partout ET on l'exclut du score global, pour ne pas fausser.
- * Remettre à `true` une fois `BackHealthComposite` élucidé.
+ * Basculer à `false` pour re-masquer une fois `BackHealthComposite` élucidé
+ * (ou si le barème CPAFLA taille/IMC n'est toujours pas calé).
  * Voir mémoire [[backhealth-formula-deferred]].
  */
-export const SHOW_BACK_HEALTH = false
+export const SHOW_BACK_HEALTH = true
 
 export interface BilanProfile {
   age: number | null

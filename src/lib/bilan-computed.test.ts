@@ -125,10 +125,10 @@ test('Nicholas — score composition ACCEPTABLE (IMC obèse + %gras élevé + to
 
 test('Nicholas — score global calculé', () => {
   const r = computeBilan(RAW, NICHOLAS)
-  // composition ≈ 0.67, aerobic 4 ; force musculaire (saut EXCELLENT + puissance EXCELLENT) = 4 ; dos null.
-  // overall = avg(0.67, 4, 4) ≈ 2.89 (échelle 0-4)
+  // composition ≈ 0.67, aerobic 4, dos ≈ 0.5 (taille+IMC seuls), force musculaire = 4 (échelle 0-4).
+  // overall = avg(0.67, 4, 0.5, 4) ≈ 2.3 (dos inclus quand SHOW_BACK_HEALTH = true)
   assert.ok(r.overall.score !== null, 'overall score doit être calculable')
-  assert.ok(r.overall.score! > 2.0 && r.overall.score! < 3.5, `overall ${r.overall.score} hors plage attendue [2.0, 3.5]`)
+  assert.ok(r.overall.score! > 1.5 && r.overall.score! < 3.5, `overall ${r.overall.score} hors plage attendue [1.5, 3.5]`)
 })
 
 test('Profil incomplet (sex null) → scores null', () => {
