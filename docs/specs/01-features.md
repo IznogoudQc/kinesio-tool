@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.8.2 — Report des bilans EXISTANTS vers Mesures (backfill))
+
+Correctif : la synchro Bilan → Mesures ne se déclenchait qu'à l'**enregistrement** d'un bilan, donc les bilans
+**déjà en base** (avant la feature) n'apparaissaient pas dans l'onglet Mesures. Ajout d'un **report unique au
+démarrage** (`backfillBilansToMesuresOnce`, protégé par un drapeau `settings` → une seule fois) qui reporte
+**tous les bilans existants** dans les tables Mesures. Désormais l'historique Mesures montre aussi les mesures
+des anciens bilans.
+
+Version : 0.8.1 → 0.8.2.
+
 ## ✅ Fait (v0.8.1 — Partage des mesures : sens unique Bilan → Mesures)
 
 Ajustement de v0.8.0 : le partage devient **à sens unique**. Les mesures d'un **bilan** (enregistré ou importé)

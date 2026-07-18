@@ -11,6 +11,7 @@ import { registerTransferHandlers } from './ipc/transfer'
 import { registerNutritionTemplatesHandlers } from './ipc/nutritionTemplates'
 import { registerQuestionnairesHandlers } from './ipc/questionnaires'
 import { initDb } from '../db/client'
+import { backfillBilansToMesuresOnce } from './lib/measure-sync'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 
@@ -104,6 +105,12 @@ app.whenReady().then(() => {
   registerAIHandlers()
   registerNutritionTemplatesHandlers()
   registerQuestionnairesHandlers()
+  // Report unique des bilans existants vers l'onglet Mesures (sens Bilan → Mesures).
+  try {
+    backfillBilansToMesuresOnce()
+  } catch {
+    // ne jamais empêcher le démarrage de l'app
+  }
   createWindow()
 
   app.on('activate', () => {

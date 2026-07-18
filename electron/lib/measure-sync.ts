@@ -11,7 +11,7 @@
  */
 import { and, eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
-import { mesuresCirconferences, mesuresPlisCutanes, clients } from '../../db/schema'
+import { bilans, mesuresCirconferences, mesuresPlisCutanes, clients, settings } from '../../db/schema'
 import { calculateAge, calculateBodyFat, type Sex } from '../../src/lib/body-fat-calculator'
 import { CIRC_MAP, numOrNull } from '../../src/lib/measure-sync-map'
 
@@ -79,4 +79,34 @@ export function syncBilanToMesures(clientId: string, date: string, bilanData: Re
       }
     }
   }
+}
+
+const BACKFILL_FLAG = 'sync.bilan_mesures_backfill_v1'
+
+/**
+ * Report unique (au démarrage) de TOUS les bilans existants vers l'onglet Mesures.
+ * Nécessaire car la synchro ne se déclenchait qu'à l'enregistrement d'un bilan :
+ * les bilans déjà en base avant la feature n'avaient jamais été reportés.
+ * Idempotent + protégé par un drapeau dans `settings` → ne s'exécute qu'une fois.
+ */
+export function backfillBilansToMesuresOnce(): void {
+  const db = getDb()
+  const done = db.select().from(settings).where(eq(settings.key, BACKFILL_FLAG)).get()
+  if (done) return
+  const rows = db.select().from(bilans).all()
+  for (const r of rows) {
+    let data: Record<string, unknown> = {}
+    try {
+      const parsed: unknown = JSON.parse(r.data)
+      if (parsed && typeof parsed === 'object') data = parsed as Record<string, unknown>
+    } catch {
+      data = {}
+    }
+    try {
+      syncBilanToMesures(r.clientId, r.date, data)
+    } catch {
+      // un bilan qui échoue ne doit pas bloquer les autres
+    }
+  }
+  db.insert(settings).values({ key: BACKFILL_FLAG, value: 'done', updatedAt: new Date().toISOString() }).run()
 }
