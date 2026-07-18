@@ -55,6 +55,7 @@ const BilanDataSchema = z
     fc_max_predite: bounded('fc_max_predite'),
     pa_systolique: bounded('pa_systolique'),
     pa_diastolique: bounded('pa_diastolique'),
+    pa_recup: z.string().max(50).optional(),
     recup_1min_pa_sys: bounded('recup_1min_pa_sys'),
     recup_1min_pa_dia: bounded('recup_1min_pa_dia'),
     recup_1min_fc: bounded('recup_1min_fc'),

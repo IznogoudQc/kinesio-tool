@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.3.2 — Bilan : « Récupération » réduite à une seule « PA récup » (comme la feuille))
+
+La section « Récupération post-effort » affichait 9 champs (PA sys/dia + FC à 1/3/5 min) qui **ne sont pas sur la
+feuille de Marie** (elle a une seule case « PA récup »). Remplacée par un **unique champ texte « PA récup »**
+(ex. « 120/80 »). Nouveau `pa_recup` (BilanData + schéma IPC). Les anciens champs `recup_*` sont **conservés** dans
+le type et le schéma IPC (données d'anciens bilans / imports .docx préservées, non affichées dans le formulaire).
+
+Version : 0.3.1 → 0.3.2.
+
 ## ✅ Fait (v0.3.1 — Bilan : sections « Circonférences » et « Plis cutanés » séparées)
 
 Le groupe « Anthropométrie » mélangeait poids/taille, circonférences et plis. Découpé en **trois sections

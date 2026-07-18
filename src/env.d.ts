@@ -142,7 +142,9 @@ interface BilanData {
   fc_max_predite?: number
   pa_systolique?: number
   pa_diastolique?: number
-  /** Récupération à 1, 3 et 5 minutes après l'effort. */
+  /** PA de récupération (une seule mesure, feuille papier) — texte « sys/dia » (ex. « 120/80 »). */
+  pa_recup?: string
+  /** Récupération détaillée à 1, 3 et 5 min (ancien modèle / imports .docx — conservé). */
   recup_1min_pa_sys?: number
   recup_1min_pa_dia?: number
   recup_1min_fc?: number

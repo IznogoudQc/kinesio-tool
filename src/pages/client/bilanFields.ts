@@ -91,17 +91,15 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
   },
   {
     id: 'recuperation',
-    title: 'Récupération post-effort',
+    title: 'Récupération',
     fields: [
-      { key: 'recup_1min_pa_sys', label: 'PA sys. 1 min', unit: 'mmHg' },
-      { key: 'recup_1min_pa_dia', label: 'PA dia. 1 min', unit: 'mmHg' },
-      { key: 'recup_1min_fc', label: 'FC 1 min', unit: 'bpm' },
-      { key: 'recup_3min_pa_sys', label: 'PA sys. 3 min', unit: 'mmHg' },
-      { key: 'recup_3min_pa_dia', label: 'PA dia. 3 min', unit: 'mmHg' },
-      { key: 'recup_3min_fc', label: 'FC 3 min', unit: 'bpm' },
-      { key: 'recup_5min_pa_sys', label: 'PA sys. 5 min', unit: 'mmHg' },
-      { key: 'recup_5min_pa_dia', label: 'PA dia. 5 min', unit: 'mmHg' },
-      { key: 'recup_5min_fc', label: 'FC 5 min', unit: 'bpm' }
+      {
+        key: 'pa_recup',
+        label: 'PA récup',
+        unit: 'mmHg',
+        type: 'text',
+        hint: 'Tension pendant la récupération (ex. « 120/80 »)'
+      }
     ]
   },
   {
