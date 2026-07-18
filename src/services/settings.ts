@@ -42,6 +42,17 @@ export const settingsService = {
     return window.api.settings.getDefaultEmailTemplate()
   },
 
+  /** Modèle de courriel du document nutrition (distinct du bilan). */
+  async getNutritionEmailTemplate(): Promise<EmailTemplate> {
+    return window.api.settings.getNutritionEmailTemplate()
+  },
+  async setNutritionEmailTemplate(data: EmailTemplate): Promise<void> {
+    return window.api.settings.setNutritionEmailTemplate(data)
+  },
+  async getDefaultNutritionEmailTemplate(): Promise<EmailTemplate> {
+    return window.api.settings.getDefaultNutritionEmailTemplate()
+  },
+
   async getCategorizationNorms(): Promise<'acsm' | 'cpafla'> {
     return window.api.settings.getCategorizationNorms()
   },

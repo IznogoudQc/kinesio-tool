@@ -74,7 +74,8 @@ export function SettingsPage() {
           {tab === 'courriel' && (
             <>
               <SmtpCard />
-              <TemplateCard />
+              <TemplateCard kind="bilan" />
+              <TemplateCard kind="nutrition" />
             </>
           )}
           {tab === 'ia' && <AIProviderCard />}
@@ -534,27 +535,31 @@ function ExportBaremes() {
   )
 }
 
-function TemplateCard() {
+function TemplateCard({ kind }: { kind: 'bilan' | 'nutrition' }) {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<SaveStatus>('idle')
   const [error, setError] = useState<string | null>(null)
 
+  const isNutrition = kind === 'nutrition'
+
   useEffect(() => {
-    settingsService.getEmailTemplate().then(t => {
+    const p = isNutrition ? settingsService.getNutritionEmailTemplate() : settingsService.getEmailTemplate()
+    p.then(t => {
       setSubject(t.subject)
       setBody(t.body)
       setLoading(false)
     })
-  }, [])
+  }, [isNutrition])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setStatus('saving')
     setError(null)
     try {
-      await settingsService.setEmailTemplate({ subject, body })
+      if (isNutrition) await settingsService.setNutritionEmailTemplate({ subject, body })
+      else await settingsService.setEmailTemplate({ subject, body })
       setStatus('saved')
       setTimeout(() => setStatus(s => (s === 'saved' ? 'idle' : s)), 2500)
     } catch (err) {
@@ -565,9 +570,13 @@ function TemplateCard() {
 
   return (
     <Card
-      title="Template d'email"
+      title={isNutrition ? "Template d'email — Nutrition" : "Template d'email — Bilan"}
       icon={Mail}
-      description="Modèle utilisé pour l'envoi du bilan. Les variables sont remplacées automatiquement."
+      description={
+        isNutrition
+          ? "Modèle utilisé pour l'envoi du document nutrition. Les variables sont remplacées automatiquement."
+          : "Modèle utilisé pour l'envoi du bilan. Les variables sont remplacées automatiquement."
+      }
     >
       {loading ? (
         <p className="text-marine/45 text-base">Chargement…</p>
@@ -609,7 +618,9 @@ function TemplateCard() {
             <button
               type="button"
               onClick={async () => {
-                const d = await settingsService.getDefaultEmailTemplate()
+                const d = isNutrition
+                  ? await settingsService.getDefaultNutritionEmailTemplate()
+                  : await settingsService.getDefaultEmailTemplate()
                 setSubject(d.subject)
                 setBody(d.body)
               }}

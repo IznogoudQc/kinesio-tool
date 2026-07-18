@@ -95,6 +95,12 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('settings:template:set', data),
     getDefaultEmailTemplate: () =>
       ipcRenderer.invoke('settings:template:default'),
+    getNutritionEmailTemplate: () =>
+      ipcRenderer.invoke('settings:templateNutrition:get'),
+    setNutritionEmailTemplate: (data: { subject: string; body: string }) =>
+      ipcRenderer.invoke('settings:templateNutrition:set', data),
+    getDefaultNutritionEmailTemplate: () =>
+      ipcRenderer.invoke('settings:templateNutrition:default'),
     getCategorizationNorms: () =>
       ipcRenderer.invoke('settings:norms:get'),
     setCategorizationNorms: (value: 'acsm' | 'cpafla') =>

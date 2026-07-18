@@ -8,6 +8,7 @@ import { settings } from '../../db/schema'
 import { DEFAULT_SUPPLEMENTS } from '../../src/lib/supplements'
 import { DEFAULT_FOODS_GOOD, DEFAULT_FOODS_BAD } from '../../src/lib/food-suggestions'
 import { DEFAULT_PAIN_SUGGESTIONS } from '../../src/lib/pain-suggestions'
+import { DEFAULT_BILAN_EMAIL, DEFAULT_NUTRITION_EMAIL } from '../../src/lib/email-templates'
 
 const KEYTAR_SERVICE = 'kinesio-outils'
 const KEYTAR_ACCOUNT = 'smtp-password'
@@ -17,6 +18,7 @@ const KEYS = {
   profileSignature: 'profile.signature',
   smtp: 'smtp.config',
   emailTemplate: 'email.template',
+  emailTemplateNutrition: 'email.template_nutrition',
   categorizationNorms: 'categorization_norms',
   mesureFields: 'mesures.fields',
   documentsFolder: 'documents.folder',
@@ -92,20 +94,8 @@ const DEFAULT_PROFILE = {
   signature: 'Marie-Eve Riendeau\nKinésiologue'
 }
 
-// Chaque envoi porte DEUX pièces jointes (voir `reports:send-email`) : le rapport
-// PDF et le document interactif. Le texte par défaut les annonce et dit quoi en faire.
-const DEFAULT_TEMPLATE = {
-  subject: 'Bilan de forme physique - {{client_name}}',
-  body:
-    'Bonjour {{client_name}},\n\n' +
-    'Vous trouverez ci-joint votre bilan de forme physique daté du {{date}}, sous deux formes.\n\n' +
-    '1. Le rapport PDF — la version complète, à consulter, imprimer ou conserver.\n\n' +
-    '2. Le document interactif (fichier .html) — ouvrez-le dans votre navigateur en double-cliquant dessus. ' +
-    'Vous pourrez y explorer vos résultats, passer d\'un bilan à l\'autre et suivre votre progression dans le temps. ' +
-    'Il fonctionne sans connexion Internet, et aucune de vos données n\'est transmise : tout est contenu dans le fichier.\n\n' +
-    'N\'hésitez pas à me contacter pour toute question.\n\n' +
-    '{{signature}}'
-}
+// Textes par défaut partagés avec le renderer (src/lib/email-templates.ts).
+const DEFAULT_TEMPLATE = DEFAULT_BILAN_EMAIL
 
 async function readKey(key: string): Promise<string | null> {
   const row = getDb().select().from(settings).where(eq(settings.key, key)).get()
@@ -203,6 +193,22 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:template:set', async (_e, data: unknown) => {
     const validated = EmailTemplateSchema.parse(data)
     await writeKey(KEYS.emailTemplate, JSON.stringify(validated))
+  })
+
+  // ── Modèle de courriel du document NUTRITION (distinct du bilan) ────────────
+  ipcMain.handle('settings:templateNutrition:get', async () => {
+    const raw = await readKey(KEYS.emailTemplateNutrition)
+    if (!raw) return DEFAULT_NUTRITION_EMAIL
+    try {
+      return EmailTemplateSchema.parse(JSON.parse(raw))
+    } catch {
+      return DEFAULT_NUTRITION_EMAIL
+    }
+  })
+  ipcMain.handle('settings:templateNutrition:default', () => DEFAULT_NUTRITION_EMAIL)
+  ipcMain.handle('settings:templateNutrition:set', async (_e, data: unknown) => {
+    const validated = EmailTemplateSchema.parse(data)
+    await writeKey(KEYS.emailTemplateNutrition, JSON.stringify(validated))
   })
 
   ipcMain.handle('settings:norms:get', async () => {

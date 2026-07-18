@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.6.1 — Modèle de courriel nutrition éditable (Paramètres → Courriel))
+
+Le courriel du **document nutrition** avait un modèle **codé en dur** (dans `SendBilanModal`). Il devient
+**éditable** dans **Paramètres → Courriel**, à côté du modèle « Bilan » : deux cartes « Template d'email —
+Bilan » et « — Nutrition » (sujet + corps, variables, bouton *Rétablir*). Stocké dans les réglages
+(`email.template_nutrition`) ; `SendBilanModal` lit désormais le modèle enregistré. Défauts partagés
+renderer/main dans `src/lib/email-templates.ts`.
+
+Version : 0.6.0 → 0.6.1.
+
 ## ✅ Fait (v0.6.0 — Paramètres en onglets + réglages nutrition regroupés)
 
 La page **Paramètres** est réorganisée en **6 onglets** : Général (profil, dossier documents), Bilans (normes),

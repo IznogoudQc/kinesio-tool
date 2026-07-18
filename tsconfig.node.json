@@ -22,6 +22,7 @@
     "src/lib/client-bundle.ts",
     "src/lib/supplements.ts",
     "src/lib/food-suggestions.ts",
-    "src/lib/pain-suggestions.ts"
+    "src/lib/pain-suggestions.ts",
+    "src/lib/email-templates.ts"
   ]
 }

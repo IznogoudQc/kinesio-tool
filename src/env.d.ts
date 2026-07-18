@@ -489,6 +489,9 @@ interface Window {
       setEmailTemplate(data: EmailTemplate): Promise<void>
       /** Le modèle par défaut de l'app, sans l'enregistrer. */
       getDefaultEmailTemplate(): Promise<EmailTemplate>
+      getNutritionEmailTemplate(): Promise<EmailTemplate>
+      setNutritionEmailTemplate(data: EmailTemplate): Promise<void>
+      getDefaultNutritionEmailTemplate(): Promise<EmailTemplate>
       getCategorizationNorms(): Promise<'acsm' | 'cpafla'>
       setCategorizationNorms(value: 'acsm' | 'cpafla'): Promise<void>
       /** `null` = réglage jamais enregistré → afficher toutes les circonférences. */

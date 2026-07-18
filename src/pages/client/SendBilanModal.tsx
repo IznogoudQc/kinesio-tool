@@ -23,22 +23,6 @@ function applyVariables(text: string, vars: Record<string, string>): string {
   return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) => vars[key] ?? `{{${key}}}`)
 }
 
-/** Modèle de courriel propre au document nutrition (distinct du modèle « bilan »). */
-const NUTRITION_EMAIL = {
-  subject: 'Votre plan nutrition - {{client_name}}',
-  body: `Bonjour {{client_name}},
-
-Vous trouverez ci-joint votre plan nutrition, en deux fichiers :
-
-1. Le document nutrition (.html) — ouvrez-le dans votre navigateur en double-cliquant dessus. Il rassemble votre objectif, vos macros, votre planning de jeûne, l'hydratation, les aliments à privilégier et vos idées de menu. Il fonctionne sans connexion.
-
-2. Le journal alimentaire (.html) — à imprimer et à remplir au fil de la semaine pour noter ce que vous mangez, puis à rapporter à votre prochaine rencontre.
-
-Au plaisir de suivre vos progrès,
-
-{{signature}}`
-}
-
 export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: SendBilanModalProps) {
   const isNutrition = kind === 'nutrition'
   const [subject, setSubject] = useState('')
@@ -48,18 +32,19 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      settingsService.getEmailTemplate(),
-      settingsService.getProfile()
-    ]).then(([template, profile]) => {
+    // Le document nutrition a son propre modèle de courriel (≠ celui du bilan),
+    // tous deux éditables dans Paramètres → Courriel.
+    const tplPromise =
+      kind === 'nutrition'
+        ? settingsService.getNutritionEmailTemplate()
+        : settingsService.getEmailTemplate()
+    Promise.all([tplPromise, settingsService.getProfile()]).then(([tpl, profile]) => {
       const vars = {
         client_name: client.name,
         date: formatDate(),
         coach_name: profile.name,
         signature: profile.signature
       }
-      // Le document nutrition a son propre modèle de courriel (≠ celui du bilan).
-      const tpl = kind === 'nutrition' ? NUTRITION_EMAIL : template
       setSubject(applyVariables(tpl.subject, vars))
       setBody(applyVariables(tpl.body, vars))
       setLoading(false)
