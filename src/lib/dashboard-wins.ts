@@ -2,6 +2,7 @@
  *  montée de catégorie d'un composite, score global en hausse, record personnel
  *  sur une métrique, ou objectif de composition atteint. Pur (sans JSX). */
 
+import { SHOW_BACK_HEALTH } from './bilan-computed.ts'
 import type { BilanComputed, CompositeScore } from './bilan-computed'
 import { CATEGORY_LABELS, type Category } from './norms/types.ts'
 
@@ -54,7 +55,9 @@ export function detectWins(opts: {
       { label: 'Composition', cur: computed.composition, prev: previous.composition },
       { label: 'Cœur & endurance', cur: computed.aerobic, prev: previous.aerobic },
       { label: 'Force musculaire', cur: computed.musculoGlobal, prev: previous.musculoGlobal },
-      { label: 'Dos & souplesse', cur: computed.backHealth, prev: previous.backHealth }
+      ...(SHOW_BACK_HEALTH
+        ? [{ label: 'Dos & souplesse', cur: computed.backHealth, prev: previous.backHealth }]
+        : [])
     ]
     for (const p of pairs) {
       if (p.cur.category && p.prev.category && RANK[p.cur.category] > RANK[p.prev.category]) {

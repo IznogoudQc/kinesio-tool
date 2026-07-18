@@ -10,7 +10,7 @@ import { reportsService } from '../../../services/reports'
 import { SendBilanModal } from '../SendBilanModal'
 import { formatBilanDate } from '../bilanFields'
 import { computeAge, type NormsType } from '../../../lib/norms'
-import { computeBilan, type BilanProfile } from '../../../lib/bilan-computed'
+import { computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
 import { fitnessAge } from '../../../lib/fitness-age'
 import { dualWeight } from '../../../lib/objectif-format'
 import { buildObjectif } from '../../../lib/objectif'
@@ -483,13 +483,15 @@ export function DashboardTab() {
             previous={compareComputed?.aerobic}
             targetId="dash-cardio"
           />
-          <CompositeMiniCard
-            title="Santé du dos"
-            subtitle="Flexibilité, endurance, abdominaux"
-            current={computed.backHealth}
-            previous={compareComputed?.backHealth}
-            targetId="dash-musculo"
-          />
+          {SHOW_BACK_HEALTH && (
+            <CompositeMiniCard
+              title="Santé du dos"
+              subtitle="Flexibilité, endurance, abdominaux"
+              current={computed.backHealth}
+              previous={compareComputed?.backHealth}
+              targetId="dash-musculo"
+            />
+          )}
           <CompositeMiniCard
             title="Force musculaire"
             subtitle="Six tests"

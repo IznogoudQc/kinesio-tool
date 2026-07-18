@@ -31,7 +31,7 @@ import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
-import { computeBilan, type BilanComputed } from '../lib/bilan-computed'
+import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed } from '../lib/bilan-computed'
 import { bodyFatRisk, BF_RISK_HEX, bodyFatTargetWeights } from '../lib/body-fat-risk'
 import { principesFor, principesCountWord } from '../lib/principes'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
@@ -314,7 +314,7 @@ export function ReportPage() {
         domains={[
           { label: 'Composition', score: latestComputed.composition },
           { label: 'Cœur', score: latestComputed.aerobic },
-          { label: 'Dos', score: latestComputed.backHealth },
+          ...(SHOW_BACK_HEALTH ? [{ label: 'Dos', score: latestComputed.backHealth }] : []),
           { label: 'Force', score: latestComputed.musculoGlobal }
         ]}
       />
@@ -322,7 +322,7 @@ export function ReportPage() {
       <CompositionSection {...shared} computed={latestComputed} />
       <CardioSection {...shared} computed={latestComputed} />
       <ForceSection {...shared} />
-      <DosSection {...shared} />
+      {SHOW_BACK_HEALTH && <DosSection {...shared} />}
       <ObjectifSection client={client} latest={latest} chrono={chrono} profile={profile} />
       <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} customPrincipe={{ title: client.principePersoTitre, line: client.principePersoTexte }} />
     </article>
@@ -837,7 +837,9 @@ function OverviewSection({
     { title: 'Composition corporelle', score: synth.composition, keys: ['imc', 'pourcentage_gras', 'tour_taille_cm'] },
     { title: 'Cœur et endurance', score: synth.aerobic, keys: ['vo2max'] },
     { title: 'Force musculaire', score: synth.musculoGlobal, keys: ['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'] },
-    { title: 'Dos et souplesse', score: synth.backHealth, keys: ['flexion_tronc_cm', 'endurance_dos_sec', 'situps'] }
+    ...(SHOW_BACK_HEALTH
+      ? [{ title: 'Dos et souplesse', score: synth.backHealth, keys: ['flexion_tronc_cm', 'endurance_dos_sec', 'situps'] as (keyof BilanData)[] }]
+      : [])
   ]
 
   const beforeAfter = useMemo(() => {

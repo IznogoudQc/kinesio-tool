@@ -24,6 +24,20 @@ import type { Category, NormsType, TestKey } from './norms/types.ts'
 
 export type { Category, NormsType }
 
+/**
+ * Affichage de l'« Indice de santé du dos » — temporairement MASQUÉ.
+ *
+ * La structure de la formule est confirmée (moyenne taille + IMC + tests dos
+ * pondérés), mais le barème CPAFLA exact du tour de taille / IMC n'est pas
+ * disponible : nos normes ACSM notent ces deux mesures beaucoup plus
+ * sévèrement, ce qui tire l'indice ~1,5 point sous la valeur de l'ancien
+ * logiciel (validé sur bilans réels). Tant que le barème n'est pas calé, on
+ * masque la carte partout ET on l'exclut du score global, pour ne pas fausser.
+ * Remettre à `true` une fois `BackHealthComposite` élucidé.
+ * Voir mémoire [[backhealth-formula-deferred]].
+ */
+export const SHOW_BACK_HEALTH = false
+
 export interface BilanProfile {
   age: number | null
   sex: 'F' | 'M' | null
@@ -286,7 +300,12 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
   const backHealth: CompositeScore = { score: backHealthScore, category: scoreToCategory(backHealthScore) }
   // Force musculaire : tests de force/puissance seulement (flexibilité + dos → backHealth).
   const musculoGlobal = compose(['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'])
-  const overallScore = avg([composition.score, aerobic.score, backHealth.score, musculoGlobal.score])
+  const overallScore = avg([
+    composition.score,
+    aerobic.score,
+    ...(SHOW_BACK_HEALTH ? [backHealth.score] : []),
+    musculoGlobal.score
+  ])
   const overall: CompositeScore = { score: overallScore, category: scoreToCategory(overallScore) }
 
   return {

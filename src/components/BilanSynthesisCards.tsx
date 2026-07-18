@@ -1,4 +1,5 @@
 import { CategoryBadge } from './CategoryBadge'
+import { SHOW_BACK_HEALTH } from '../lib/bilan-computed'
 import type { BilanComputed, CompositeScore } from '../lib/bilan-computed'
 
 interface BilanSynthesisCardsProps {
@@ -73,12 +74,14 @@ export function BilanSynthesisCards({
       previous: previous?.bodyFat ?? null
     },
     { title: 'Aérobie', subtitle: 'VO2max', current: computed.aerobic, previous: previous?.aerobic ?? null },
-    {
-      title: 'Indice santé du dos',
-      subtitle: 'Flexion + endurance + sit-ups',
-      current: computed.backHealth,
-      previous: previous?.backHealth ?? null
-    },
+    ...(SHOW_BACK_HEALTH
+      ? [{
+          title: 'Indice santé du dos',
+          subtitle: 'Flexion + endurance + sit-ups',
+          current: computed.backHealth,
+          previous: previous?.backHealth ?? null
+        }]
+      : []),
     {
       title: 'Musculo global',
       subtitle: '6 tests musculo',

@@ -642,6 +642,18 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.3.7 — Indice de santé du dos masqué temporairement)
+
+L'« Indice de santé du dos » est **masqué partout** le temps de caler le barème CPAFLA du tour de taille /
+IMC (nos normes ACSM le tirent ~1,5 point sous la valeur de l'ancien logiciel — voir v0.3.6). Un flag unique
+`SHOW_BACK_HEALTH = false` dans `src/lib/bilan-computed.ts` gouverne tout : carte de synthèse, mini-carte
+dashboard, « wins » de progression, rapport PDF (aperçu + section « Votre dos ») et rapport standalone
+éditorial. L'indice est aussi **exclu du score global** pour ne pas le fausser. La valeur reste calculée en
+coulisse (aucune perte de données) — il suffira de repasser le flag à `true` une fois `BackHealthComposite`
+élucidé. Voir [[backhealth_formula_deferred]].
+
+Version : 0.3.6 → 0.3.7.
+
 ## ✅ Fait (v0.3.6 — Scores composites sur l'échelle 0–4 (comme l'ancien logiciel de Marie))
 
 Les scores composites (composition, aérobie, dos, musculo, global) passent de l'échelle **1–5** à **0–4**,

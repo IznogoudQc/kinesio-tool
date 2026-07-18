@@ -8,7 +8,7 @@ import {
   type NormsType,
   type TestKey
 } from '../lib/norms'
-import { computeBilan, type BilanComputed, type BilanProfile, type CompositeScore } from '../lib/bilan-computed'
+import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed, type BilanProfile, type CompositeScore } from '../lib/bilan-computed'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../lib/synthesisBilan'
 import { detectWins } from '../lib/dashboard-wins'
 import { fitnessAge } from '../lib/fitness-age'
@@ -1446,7 +1446,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         <div>
           <CompositeRow label="Composition corporelle" subtitle="IMC, % de gras, tour de taille" score={computed.composition} href="#composition" />
           <CompositeRow label="Cœur et endurance" subtitle="VO2max" score={computed.aerobic} href="#cardio" />
-          <CompositeRow label="Santé du dos" subtitle="Flexibilité, endurance, abdominaux" score={computed.backHealth} href="#force-mobilite" />
+          {SHOW_BACK_HEALTH && <CompositeRow label="Santé du dos" subtitle="Flexibilité, endurance, abdominaux" score={computed.backHealth} href="#force-mobilite" />}
           <CompositeRow label="Force musculaire" subtitle="Six tests" score={computed.musculoGlobal} href="#force-mobilite" />
         </div>
         {computed.overall.category && (
@@ -1539,7 +1539,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         id="force-mobilite"
         backTop
         scores={[
-          { label: 'Santé du dos', score: computed.backHealth },
+          ...(SHOW_BACK_HEALTH ? [{ label: 'Santé du dos', score: computed.backHealth }] : []),
           { label: 'Force musculaire', score: computed.musculoGlobal }
         ]}
         eyebrow="Force et mobilité"
