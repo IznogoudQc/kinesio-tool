@@ -642,6 +642,15 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.5.2 — Réglages : générer les suggestions de douleur avec l'IA)
+
+Dans la carte « Suggestions de douleur » des Réglages, chaque famille a un bouton **« ✦ Générer avec l'IA »** :
+Claude propose des descriptions typiques pour cette famille de zones, **fusionnées** (sans doublon) dans la
+liste éditable. Marie révise puis **Enregistre** pour peupler la bibliothèque permanente. Réutilise l'IPC
+`ai:pain-suggestions`. Complète les suggestions IA à la volée (v0.5.1) : ici on construit la bibliothèque durable.
+
+Version : 0.5.1 → 0.5.2.
+
 ## ✅ Fait (v0.5.1 — Douleur : suggestions IA + description agrandissable)
 
 Deux ajouts sur la liste des zones du questionnaire de santé :

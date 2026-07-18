@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Check, HeartPulse, Loader2, Plus, RotateCcw, X } from 'lucide-react'
+import { Check, HeartPulse, Loader2, Plus, RotateCcw, Sparkles, X } from 'lucide-react'
 import { settingsService } from '../../services/settings'
+import { aiAdviceService, AIAdviceError } from '../../services/aiAdvice'
 import { PAIN_FAMILIES, type PainSuggestionLib } from '../../lib/pain-suggestions'
 
 type Status = 'idle' | 'saving' | 'saved' | 'error'
@@ -33,6 +34,24 @@ export function PainSuggestionsCard() {
   }
   function removePhrase(family: string, phrase: string) {
     update(family, (lib?.[family] ?? []).filter(x => x !== phrase))
+  }
+  /** Fusionne une liste de phrases (dédupliquée) en un seul passage. */
+  function addMany(family: string, phrases: string[]) {
+    setLib(prev => {
+      const cur = prev?.[family] ?? []
+      const seen = new Set(cur.map(x => x.toLowerCase()))
+      const merged = [...cur]
+      for (const p of phrases) {
+        const t = p.trim()
+        if (t && !seen.has(t.toLowerCase())) {
+          seen.add(t.toLowerCase())
+          merged.push(t)
+        }
+      }
+      return { ...(prev ?? {}), [family]: merged }
+    })
+    setDirty(true)
+    setStatus('idle')
   }
 
   async function save() {
@@ -77,9 +96,11 @@ export function PainSuggestionsCard() {
             <FamilyEditor
               key={fam.key}
               label={fam.label}
+              aiZone={fam.key === 'commun' ? 'Symptôme général (toutes zones du corps)' : fam.label}
               phrases={lib[fam.key] ?? []}
               onAdd={p => addPhrase(fam.key, p)}
               onRemove={p => removePhrase(fam.key, p)}
+              onGenerated={list => addMany(fam.key, list)}
             />
           ))}
         </div>
@@ -111,23 +132,60 @@ export function PainSuggestionsCard() {
 
 function FamilyEditor({
   label,
+  aiZone,
   phrases,
   onAdd,
-  onRemove
+  onRemove,
+  onGenerated
 }: {
   label: string
+  aiZone: string
   phrases: string[]
   onAdd: (p: string) => void
   onRemove: (p: string) => void
+  onGenerated: (list: string[]) => void
 }) {
   const [draft, setDraft] = useState('')
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
   function commit() {
     onAdd(draft)
     setDraft('')
   }
+  async function generate() {
+    setAiLoading(true)
+    setAiError(null)
+    try {
+      const out = await aiAdviceService.suggestPainDescriptions({ zone: aiZone })
+      if (out.length === 0) setAiError("L'IA n'a rien proposé.")
+      else onGenerated(out)
+    } catch (err) {
+      setAiError(
+        err instanceof AIAdviceError && err.code === 'NO_API_KEY'
+          ? 'Clé API absente — ajoutez-la ci-dessus (Conseils IA).'
+          : err instanceof Error
+            ? err.message
+            : 'Erreur IA.'
+      )
+    } finally {
+      setAiLoading(false)
+    }
+  }
   return (
     <div className="border border-cream-dark/50 rounded-lg p-3 bg-cream/20">
-      <p className="text-marine font-medium text-sm mb-2">{label}</p>
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <p className="text-marine font-medium text-sm">{label}</p>
+        <button
+          type="button"
+          onClick={generate}
+          disabled={aiLoading}
+          title="Générer des suggestions avec l'IA"
+          className="inline-flex items-center gap-1 text-gold-dark hover:text-marine text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          {aiLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Générer avec l'IA
+        </button>
+      </div>
+      {aiError && <p className="text-red-600 text-[11px] mb-1.5">{aiError}</p>}
       <div className="flex flex-wrap gap-1.5 mb-2">
         {phrases.length === 0 && <span className="text-marine/35 text-sm">Aucune suggestion.</span>}
         {phrases.map(p => (
