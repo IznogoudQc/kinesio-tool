@@ -642,6 +642,18 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.5.1 — Douleur : suggestions IA + description agrandissable)
+
+Deux ajouts sur la liste des zones du questionnaire de santé :
+1. **Suggestions IA** — un bouton **✨ IA** par zone demande à Claude ~6-8 descriptions de douleur typiques
+   **pour cette zone précise** (avec la sévérité et les conditions de santé comme contexte). Elles s'ajoutent
+   aux puces préréglées (teinte or, icône ✦) ; un clic les insère dans la description. Nécessite la clé API
+   (sinon renvoi vers Paramètres). IPC `ai:pain-suggestions` (patron `ai:supplement-timing`).
+2. **Description agrandissable** — le champ de description passe d'une ligne à une **zone de texte
+   redimensionnable** (comme les autres commentaires de l'app).
+
+Version : 0.5.0 → 0.5.1.
+
 ## ✅ Fait (v0.5.0 — Douleur : description par zone + suggestions cliquables éditables)
 
 Deux ajouts à la silhouette du questionnaire de santé :

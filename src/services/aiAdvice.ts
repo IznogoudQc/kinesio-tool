@@ -122,6 +122,22 @@ export const aiAdviceService = {
       )
     }
     return res.timing
+  },
+
+  /** IA : suggestions de description de douleur pour une zone du corps. */
+  async suggestPainDescriptions(payload: {
+    zone: string
+    severity?: 'jaune' | 'rouge'
+    conditions?: string
+  }): Promise<string[]> {
+    const res = await window.api.ai.painSuggestions(payload)
+    if (!res.ok || !Array.isArray(res.suggestions)) {
+      throw new AIAdviceError(
+        (res.code as AIErrorCode) ?? 'BAD_RESPONSE',
+        res.error ?? 'Erreur inconnue lors de la suggestion.'
+      )
+    }
+    return res.suggestions
   }
 }
 

@@ -156,6 +156,17 @@ TOLÉRANCE DIGESTIVE : si le supplément est souvent mal toléré à jeun ou peu
 Réponds UNIQUEMENT avec le moment de prise — PAS le nom du supplément, PAS de phrase complète, PAS de guillemets, PAS de Markdown, PAS de point final.
 Exemples de réponses : à jeun le matin, avec une petite collation si nausées, à distance du calcium et du fer / au déjeuner, avec un corps gras / au coucher, avec un peu de nourriture si inconfort.`
 
+const PAIN_SUGGESTIONS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec qui remplit un questionnaire de santé.
+
+On te donne une ZONE du corps (et parfois la sévérité et le contexte de santé). Propose 6 à 8 courtes descriptions de douleur / tension / symptôme TYPIQUES et pertinentes pour cette zone, telles que le kinésiologue les noterait.
+
+Contraintes :
+- Français, 2 à 6 mots par description, sans point final.
+- Concret et clinique (type de douleur, mouvement déclencheur, irradiation, raideur, etc.).
+- Reste dans le champ du kinésiologue : PAS de diagnostic médical affirmé, PAS de traitement.
+- Réponds UNIQUEMENT par un tableau JSON de chaînes, sans texte autour, sans Markdown.
+Exemple : ["Douleur en flexion", "Raideur matinale", "Irradie dans la jambe"]`
+
 function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): string {
   if (p.type === 'supplements') {
     return `Suppléments à organiser en horaire :\n${(p.supplements ?? '').trim() || '(aucun supplément fourni)'}`
@@ -407,6 +418,51 @@ export function registerAIHandlers(): void {
       // Nettoie guillemets et point final éventuels renvoyés par le modèle.
       const timing = extractText(response).trim().replace(/^[«»"']+|[«»"'.\s]+$/g, '').trim()
       return { ok: true, timing }
+    } catch (err) {
+      if (err instanceof AIError) return { ok: false, error: err.message, code: err.code }
+      return { ok: false, error: err instanceof Error ? err.message : 'Erreur inconnue', code: 'BAD_RESPONSE' as AIErrorCode }
+    }
+  })
+
+  // ── Suggestions de description de douleur pour une zone (silhouette) ─────────
+  ipcMain.handle('ai:pain-suggestions', async (_e, rawPayload: unknown) => {
+    const apiKey = await getApiKey()
+    if (!apiKey) {
+      return { ok: false, error: 'Aucune clé API Anthropic configurée.', code: 'NO_API_KEY' as AIErrorCode }
+    }
+    let payload: { zone: string; severity?: string; conditions?: string }
+    try {
+      payload = z
+        .object({
+          zone: z.string().min(1).max(80),
+          severity: z.enum(['jaune', 'rouge']).optional(),
+          conditions: z.string().max(500).optional()
+        })
+        .parse(rawPayload)
+    } catch {
+      return { ok: false, error: 'Zone invalide.', code: 'BAD_RESPONSE' as AIErrorCode }
+    }
+    const parts = [`Zone : ${payload.zone}`]
+    if (payload.severity) parts.push(`Sévérité : ${payload.severity === 'rouge' ? 'douleur' : 'tension légère'}`)
+    if (payload.conditions?.trim()) parts.push(`Contexte santé : ${payload.conditions.trim()}`)
+    try {
+      const response = await callAnthropic(apiKey, {
+        model: MODEL_GENERATE,
+        max_tokens: 200,
+        system: PAIN_SUGGESTIONS_SYSTEM,
+        messages: [{ role: 'user', content: parts.join('\n') }]
+      })
+      const raw = extractText(response).trim().replace(/^```(json)?|```$/g, '').trim()
+      let arr: unknown
+      try {
+        arr = JSON.parse(raw)
+      } catch {
+        return { ok: false, error: 'Réponse IA illisible.', code: 'BAD_RESPONSE' as AIErrorCode }
+      }
+      const suggestions = Array.isArray(arr)
+        ? arr.filter((s): s is string => typeof s === 'string').map(s => s.trim().replace(/[.]+$/, '')).filter(s => s.length > 0 && s.length <= 80).slice(0, 8)
+        : []
+      return { ok: true, suggestions }
     } catch (err) {
       if (err instanceof AIError) return { ok: false, error: err.message, code: err.code }
       return { ok: false, error: err instanceof Error ? err.message : 'Erreur inconnue', code: 'BAD_RESPONSE' as AIErrorCode }

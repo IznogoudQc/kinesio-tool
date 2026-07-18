@@ -183,7 +183,13 @@ contextBridge.exposeInMainWorld('api', {
     generateNutrition: (payload: unknown): Promise<{ ok: boolean; plan?: unknown; error?: string; code?: string }> =>
       ipcRenderer.invoke('ai:generate-nutrition', payload),
     supplementTiming: (name: string): Promise<{ ok: boolean; timing?: string; error?: string; code?: string }> =>
-      ipcRenderer.invoke('ai:supplement-timing', { name })
+      ipcRenderer.invoke('ai:supplement-timing', { name }),
+    painSuggestions: (payload: {
+      zone: string
+      severity?: 'jaune' | 'rouge'
+      conditions?: string
+    }): Promise<{ ok: boolean; suggestions?: string[]; error?: string; code?: string }> =>
+      ipcRenderer.invoke('ai:pain-suggestions', payload)
   },
   nutritionTemplates: {
     list: () => ipcRenderer.invoke('nutrition-templates:list'),

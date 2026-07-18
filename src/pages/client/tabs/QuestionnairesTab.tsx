@@ -10,6 +10,7 @@ import {
   Plus,
   Save,
   ShieldAlert,
+  Sparkles,
   Target,
   Trash2
 } from 'lucide-react'
@@ -38,6 +39,7 @@ import {
 } from '../../../lib/sante'
 import { suggestionsForRegion, type PainSuggestionLib } from '../../../lib/pain-suggestions'
 import { settingsService } from '../../../services/settings'
+import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
 import { BodyPainMap } from '../BodyPainMap'
 
 function todayISO(): string {
@@ -713,7 +715,12 @@ function SanteForm({
         <div className="border border-cream-dark/50 rounded-lg p-3 bg-cream/20">
           <BodyPainMap value={zones} onChange={m => patch({ zonesDetail: m })} />
         </div>
-        <ZoneDetailsList value={zones} onChange={m => patch({ zonesDetail: m })} library={library} />
+        <ZoneDetailsList
+          value={zones}
+          onChange={m => patch({ zonesDetail: m })}
+          library={library}
+          conditions={data.conditions}
+        />
         <input
           type="text"
           value={data.zonesAutre ?? ''}
@@ -773,11 +780,13 @@ function SanteForm({
 function ZoneDetailsList({
   value,
   onChange,
-  library
+  library,
+  conditions
 }: {
   value: Record<string, ZoneMark>
   onChange: (next: Record<string, ZoneMark>) => void
   library: PainSuggestionLib | null
+  conditions?: string
 }) {
   const ids = Object.keys(value)
   if (ids.length === 0) {
@@ -804,6 +813,7 @@ function ZoneDetailsList({
           id={id}
           mark={value[id]}
           library={library}
+          conditions={conditions}
           onSeverity={s => setMark(id, { severity: s })}
           onDescription={d => setMark(id, { description: d })}
           onRemove={() => remove(id)}
@@ -817,6 +827,7 @@ function ZoneRow({
   id,
   mark,
   library,
+  conditions,
   onSeverity,
   onDescription,
   onRemove
@@ -824,19 +835,51 @@ function ZoneRow({
   id: string
   mark: ZoneMark
   library: PainSuggestionLib | null
+  conditions?: string
   onSeverity: (s: PainSeverity) => void
   onDescription: (d: string) => void
   onRemove: () => void
 }) {
   const desc = mark.description ?? ''
-  // Suggestions non déjà présentes dans la description.
-  const suggestions = (library ? suggestionsForRegion(id, library) : suggestionsForRegion(id)).filter(
-    s => !desc.toLowerCase().includes(s.toLowerCase())
-  )
+  const [aiList, setAiList] = useState<string[]>([])
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
+
+  // Suggestions préréglées + IA, en excluant celles déjà dans la description.
+  const preset = library ? suggestionsForRegion(id, library) : suggestionsForRegion(id)
+  const inDesc = (s: string) => desc.toLowerCase().includes(s.toLowerCase())
+  const presetShown = preset.filter(s => !inDesc(s))
+  const aiShown = aiList.filter(s => !inDesc(s) && !preset.some(p => p.toLowerCase() === s.toLowerCase()))
+
   function addSuggestion(phrase: string) {
     const trimmed = desc.trim()
     onDescription(trimmed ? `${trimmed}, ${phrase}` : phrase)
   }
+
+  async function askAI() {
+    setAiLoading(true)
+    setAiError(null)
+    try {
+      const out = await aiAdviceService.suggestPainDescriptions({
+        zone: regionLabel(id),
+        severity: mark.severity,
+        conditions: conditions?.trim() || undefined
+      })
+      setAiList(out)
+      if (out.length === 0) setAiError("L'IA n'a rien proposé.")
+    } catch (err) {
+      setAiError(
+        err instanceof AIAdviceError && err.code === 'NO_API_KEY'
+          ? 'Clé API absente — ajoutez-la dans Paramètres.'
+          : err instanceof Error
+            ? err.message
+            : 'Erreur IA.'
+      )
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   return (
     <li className="border border-cream-dark/50 rounded-lg p-2.5 bg-white">
       <div className="flex items-center gap-2 flex-wrap">
@@ -863,6 +906,15 @@ function ZoneRow({
         <span className="text-marine font-medium text-sm flex-1 min-w-[120px]">{regionLabel(id)}</span>
         <button
           type="button"
+          onClick={askAI}
+          disabled={aiLoading}
+          title="Proposer des descriptions avec l'IA"
+          className="inline-flex items-center gap-1 text-gold-dark hover:text-marine text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          {aiLoading ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} IA
+        </button>
+        <button
+          type="button"
           onClick={onRemove}
           className="text-marine/40 hover:text-red-600 transition-colors"
           aria-label={`Retirer ${regionLabel(id)}`}
@@ -870,16 +922,17 @@ function ZoneRow({
           <Trash2 size={15} />
         </button>
       </div>
-      <input
-        type="text"
+      <textarea
         value={desc}
         onChange={e => onDescription(e.target.value)}
+        rows={2}
         placeholder="Description de la douleur…"
-        className="w-full mt-2 px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+        className="w-full mt-2 px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors resize-y"
       />
-      {suggestions.length > 0 && (
+      {aiError && <p className="text-red-600 text-[11px] mt-1">{aiError}</p>}
+      {(presetShown.length > 0 || aiShown.length > 0) && (
         <div className="flex flex-wrap gap-1.5 mt-1.5">
-          {suggestions.map(s => (
+          {presetShown.map(s => (
             <button
               key={s}
               type="button"
@@ -887,6 +940,16 @@ function ZoneRow({
               className="inline-flex items-center gap-1 text-marine/70 bg-cream/60 hover:bg-gold/20 hover:text-marine border border-cream-dark/60 rounded-full px-2 py-0.5 text-[11px] transition-colors"
             >
               <Plus size={10} /> {s}
+            </button>
+          ))}
+          {aiShown.map(s => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => addSuggestion(s)}
+              className="inline-flex items-center gap-1 text-gold-dark bg-gold/10 hover:bg-gold/25 border border-gold/40 rounded-full px-2 py-0.5 text-[11px] transition-colors"
+            >
+              <Sparkles size={10} /> {s}
             </button>
           ))}
         </div>
