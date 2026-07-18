@@ -19,14 +19,14 @@ interface CardSpec {
   previous: CompositeScore | null
 }
 
-const GAUGE_LEVELS = 5
+const GAUGE_LEVELS = 4
 
 function Gauge({ score, variant }: { score: number | null; variant: 'light' | 'marine' }) {
   const filled = score === null ? 0 : Math.min(GAUGE_LEVELS, Math.max(0, Math.round(score)))
   const filledClass = variant === 'light' ? 'bg-gold' : 'bg-gold'
   const emptyClass = variant === 'light' ? 'bg-cream-dark' : 'bg-marine-light/40'
   return (
-    <div className="flex items-center gap-1 mt-1.5" role="meter" aria-label={`Score ${score?.toFixed(1) ?? '—'} sur 5`}>
+    <div className="flex items-center gap-1 mt-1.5" role="meter" aria-label={`Score ${score?.toFixed(1) ?? '—'} sur 4`}>
       {Array.from({ length: GAUGE_LEVELS }).map((_, i) => (
         <span
           key={i}
@@ -145,7 +145,7 @@ export function BilanSynthesisCards({
         </div>
         <div className="text-right">
           <p className={computed.overall.score === null ? muted : valueClass}>
-            {computed.overall.score === null ? '—' : `${computed.overall.score.toFixed(1)} / 5`}
+            {computed.overall.score === null ? '—' : `${computed.overall.score.toFixed(1)} / 4`}
           </p>
           <div className="flex items-center justify-end gap-3 mt-1">
             <CategoryBadge

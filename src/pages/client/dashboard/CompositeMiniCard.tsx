@@ -20,7 +20,7 @@ function scrollToId(id: string): void {
   el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
 }
 
-const GAUGE_LEVELS = 5
+const GAUGE_LEVELS = 4
 
 function Gauge({ score }: { score: number | null }) {
   const filled = score === null ? 0 : Math.min(GAUGE_LEVELS, Math.max(0, Math.round(score)))

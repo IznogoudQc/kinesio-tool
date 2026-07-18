@@ -27,28 +27,30 @@ export function computeFcMaxPredite(age: number | null): number | null {
   return 208 - 0.7 * age
 }
 
-/** Échelle 1-5 : une catégorie = un point entier (À améliorer = 1 … Excellent = 5).
- *  Un client « tout Excellent » obtient donc 5/5 (plus intuitif pour le client
- *  qu'un plafond à 4,5). Un score moyen se lit avec une jauge à 5 points. */
+/** Échelle 0-4 : une catégorie = un point entier (À améliorer = 0 … Excellent = 4).
+ *  Cette échelle reproduit celle de l'ancien logiciel de Marie (« Résultats de 0
+ *  à 4 ; ≥ 3.5 = Excellent »), pour que les scores composites soient directement
+ *  comparables aux anciens bilans. Un score moyen se lit avec une jauge à 4 points. */
 const CATEGORY_TO_SCORE: Record<Category, number> = {
-  A_AMELIORER: 1,
-  ACCEPTABLE: 2,
-  BIEN: 3,
-  TRES_BIEN: 4,
-  EXCELLENT: 5
+  A_AMELIORER: 0,
+  ACCEPTABLE: 1,
+  BIEN: 2,
+  TRES_BIEN: 3,
+  EXCELLENT: 4
 }
 
 export function categoryToScore(c: Category | null): number | null {
   return c === null ? null : CATEGORY_TO_SCORE[c]
 }
 
-/** Score 1-5 → Category. Bornes aux milieux entre deux niveaux :
- *  <1.5 = À améliorer, <2.5 = Acceptable, <3.5 = Bien, <4.5 = Très bien, sinon Excellent. */
+/** Score 0-4 → Category. Bornes aux milieux entre deux niveaux :
+ *  <0.5 = À améliorer, <1.5 = Acceptable, <2.5 = Bien, <3.5 = Très bien, sinon Excellent.
+ *  Le seuil Excellent ≥ 3.5 est identique à celui de l'ancien logiciel. */
 export function scoreToCategory(score: number | null): Category | null {
   if (score === null || !Number.isFinite(score)) return null
-  if (score < 1.5) return 'A_AMELIORER'
-  if (score < 2.5) return 'ACCEPTABLE'
-  if (score < 3.5) return 'BIEN'
-  if (score < 4.5) return 'TRES_BIEN'
+  if (score < 0.5) return 'A_AMELIORER'
+  if (score < 1.5) return 'ACCEPTABLE'
+  if (score < 2.5) return 'BIEN'
+  if (score < 3.5) return 'TRES_BIEN'
   return 'EXCELLENT'
 }

@@ -61,7 +61,7 @@ export interface BilanComputed {
   // ── Musculo
   sautVerticalCm: number | null
   puissanceJambesW: number | null
-  // ── Scores composites (échelle 0.5-4.5)
+  // ── Scores composites (échelle 0-4, comme l'ancien logiciel : ≥ 3,5 = Excellent)
   composition: CompositeScore
   bodyFat: CompositeScore
   aerobic: CompositeScore

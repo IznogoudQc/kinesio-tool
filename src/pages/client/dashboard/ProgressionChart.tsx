@@ -32,7 +32,7 @@ interface Metric {
 }
 
 const METRICS: Metric[] = [
-  { key: 'overall', label: 'Score global', unit: '/ 5', group: 'Vue d’ensemble' },
+  { key: 'overall', label: 'Score global', unit: '/ 4', group: 'Vue d’ensemble' },
 
   { key: 'poids_kg', label: 'Poids', unit: 'kg', group: 'Composition' },
   { key: 'imc', label: 'IMC', unit: 'kg/m²', group: 'Composition', testKey: 'bmi', lowerIsBetter: true },

@@ -402,7 +402,7 @@ function PdfScoreBadge({ score }: { score: CompositeScore }) {
     <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: '8mm' }}>
       <p className="report-display" style={{ fontSize: '25pt', fontWeight: 700, color: MARINE, lineHeight: 1 }}>
         {score.score.toFixed(1)}
-        <span style={{ fontSize: '12pt', color: '#b9b3a3', fontWeight: 400 }}> / 5</span>
+        <span style={{ fontSize: '12pt', color: '#b9b3a3', fontWeight: 400 }}> / 4</span>
       </p>
       {score.category && (
         <>
@@ -534,7 +534,7 @@ function ScoreRing({ score }: { score: number | null }) {
   const r = 84
   const cx = size / 2
   const circ = 2 * Math.PI * r
-  const frac = score === null ? 0 : Math.max(0, Math.min(1, score / 5))
+  const frac = score === null ? 0 : Math.max(0, Math.min(1, score / 4))
   return (
     <svg viewBox={`0 0 ${size} ${size}`} style={{ width: '46mm', height: '46mm' }}>
       <circle cx={cx} cy={cx} r={r} fill="none" stroke={GRID} strokeWidth={14} />
@@ -543,7 +543,7 @@ function ScoreRing({ score }: { score: number | null }) {
         {score === null ? '—' : score.toFixed(1)}
       </text>
       <text x={cx} y={cx + 34} textAnchor="middle" style={{ fontSize: '20px', fill: INK_SOFT }}>
-        sur 5
+        sur 4
       </text>
     </svg>
   )
@@ -899,7 +899,7 @@ function OverviewSection({
                 <span className="report-display" style={{ fontSize: '26pt', fontWeight: 700, color: MARINE }}>
                   {c.score.score === null ? '—' : c.score.score.toFixed(1)}
                 </span>
-                <span style={{ fontSize: '10pt', color: INK_SOFT }}>/ 5</span>
+                <span style={{ fontSize: '10pt', color: INK_SOFT }}>/ 4</span>
                 {c.score.category && (
                   <span style={{ marginLeft: 'auto' }}>
                     <CategoryPill category={c.score.category} />
@@ -1009,7 +1009,7 @@ function CompositeBreakdown({ keys, latest, profile }: { keys: (keyof BilanData)
 /** Barre 5 segments pour un score composite 0-5. */
 function ScoreBar({ score }: { score: number | null }) {
   const segs: Category[] = ['A_AMELIORER', 'ACCEPTABLE', 'BIEN', 'TRES_BIEN', 'EXCELLENT']
-  const pos = score === null ? null : Math.max(0, Math.min(100, (score / 5) * 100))
+  const pos = score === null ? null : Math.max(0, Math.min(100, (score / 4) * 100))
   return (
     <div style={{ position: 'relative', paddingTop: pos !== null ? '5mm' : 0 }}>
       {pos !== null && (

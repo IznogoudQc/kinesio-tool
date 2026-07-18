@@ -642,6 +642,22 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.3.6 — Scores composites sur l'échelle 0–4 (comme l'ancien logiciel de Marie))
+
+Les scores composites (composition, aérobie, dos, musculo, global) passent de l'échelle **1–5** à **0–4**,
+pour être directement comparables aux anciens bilans de Marie (« Résultats de 0 à 4 ; ≥ 3,5 = Excellent »).
+Décalage propre de −1 au cœur du moteur (`categoryToScore` : À améliorer = 0 … Excellent = 4), qui **aligne
+exactement** les bornes de catégories avec l'ancien logiciel (le seuil Excellent ≥ 3,5 devient identique).
+Affichage mis à jour partout : jauges à 4 points, « / 4 » / « sur 4 » (synthèse, dashboard, rapport PDF,
+graphique de progression), page Barèmes.
+
+Validation contre de vrais bilans de l'ancien logiciel : le **musculo global** tombe quasi identique
+(2,25 vs 2,3). L'**indice du dos** reste plus bas (nos normes ACSM notent le tour de taille / IMC plus
+sévèrement que la CPAFLA) — écart connu et assumé (le barème exact CPAFLA n'est pas disponible). Voir
+[[backhealth_formula_deferred]].
+
+Version : 0.3.5 → 0.3.6.
+
 ## ✅ Fait (v0.3.5 — Indice de santé du dos : formule de l'ancien logiciel (sans le terme aérobie))
 
 Reprise de la formule « Indice de santé du dos » (CPAFLA) de l'ancien logiciel de Marie, **sans** le terme

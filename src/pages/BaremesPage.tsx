@@ -183,8 +183,9 @@ export function BaremesPage() {
       <h2>1 · Principe de catégorisation</h2>
       <p>Chaque test est comparé aux percentiles (P10, P25, P50, P75) de la population de même âge et sexe :
         &lt; P10 = À améliorer, P10–P25 = Acceptable, P25–P50 = Bien, P50–P75 = Très bien, ≥ P75 = Excellent
-        (échelle 1 à 5). Pour les mesures où plus bas = mieux (IMC, tour de taille, tension, FC repos), l'échelle
-        est inversée. Un score composite est la moyenne des scores des tests qui le composent.</p>
+        (échelle 0 à 4, comme l'ancien logiciel : ≥ 3,5 = Excellent). Pour les mesures où plus bas = mieux
+        (IMC, tour de taille, tension, FC repos), l'échelle est inversée. Un score composite est la moyenne
+        des scores des tests qui le composent.</p>
       <p><b>Exception — le % de gras</b> est présenté au client via une <b>grille de risque dédiée</b> (5 zones, palier
         « moins de 70 ans » — voir § 3), avec du risque aux deux extrémités (trop maigre comme trop gras). Les percentiles
         ACSM du % de gras restent utilisés en coulisse pour le score de composition corporelle.</p>
