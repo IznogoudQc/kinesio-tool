@@ -37,12 +37,25 @@ const ObjectifsDataSchema = z
   })
   .strip()
 
+// Questionnaire de santé : conditions, zones de tension (cases), restrictions.
+const SanteDataSchema = z
+  .object({
+    conditions: z.string().max(2000).optional(),
+    zones: z.array(z.string().max(60)).max(40).optional(),
+    zonesAutre: z.string().max(500).optional(),
+    restrictions: z.boolean().nullable().optional(),
+    restrictionsDetail: z.string().max(2000).optional(),
+    notes: z.string().max(5000).optional()
+  })
+  .strip()
+
 const TYPE_SCHEMAS: Record<string, z.ZodTypeAny> = {
   qaap: QaapDataSchema,
-  objectifs: ObjectifsDataSchema
+  objectifs: ObjectifsDataSchema,
+  sante: SanteDataSchema
 }
 
-const QuestionnaireType = z.enum(['qaap', 'objectifs'])
+const QuestionnaireType = z.enum(['qaap', 'objectifs', 'sante'])
 
 /** Valide `data` selon `type`. Rejette un type inconnu. */
 function parseDataForType(type: string, data: unknown): unknown {

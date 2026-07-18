@@ -642,6 +642,19 @@ L'onglet « Historique » n'était qu'un placeholder jamais défini (doublon des
 Mesures / Notes). Retiré : entrée `TABS`, route, et composant `PlaceholderTab` (devenu inutile) supprimés.
 Version : 0.1.76 → 0.1.77.
 
+## ✅ Fait (v0.4.2 — Questionnaires : « Questionnaire de santé » (blessures / zones de tension))
+
+3ᵉ et dernier formulaire d'admission : le **Questionnaire de santé**. Champs : **conditions de santé** (texte),
+**zones de tension / douleur** en **cases à cocher** (nuque, épaules, bas du dos, genoux… + « autre »),
+**restrictions de mouvement** Oui/Non avec description si oui, et note interne privée. Daté avec historique ;
+la carte d'historique signale les restrictions et le nombre de zones.
+
+Conformément à l'ADR 0020, le schéma corporel du formulaire papier est **simplifié en cases à cocher** (pas de
+carte cliquable). Ajout **sans migration** : type `sante` sur la table `questionnaires`, logique testée
+`src/lib/sante.ts`. **La section Questionnaires est maintenant complète** (Q-AAP, Objectifs & habitudes, Santé).
+
+Version : 0.4.1 → 0.4.2.
+
 ## ✅ Fait (v0.4.1 — Questionnaires : « Objectifs & habitudes de vie »)
 
 2ᵉ formulaire de la section Questionnaires : **Objectifs & habitudes de vie**. Champs texte libres —

@@ -4,6 +4,7 @@ import {
   AlertTriangle,
   CheckCircle2,
   ClipboardList,
+  HeartPulse,
   Loader2,
   PencilLine,
   Plus,
@@ -26,6 +27,7 @@ import {
   type QaapData
 } from '../../../lib/qaap'
 import { OBJECTIFS_FIELDS, emptyObjectifs, objectifsIsBlank, type ObjectifsData } from '../../../lib/objectifs'
+import { SANTE_ZONES, emptySante, santeIsBlank, toggleZone, type SanteData } from '../../../lib/sante'
 
 function todayISO(): string {
   const d = new Date()
@@ -44,7 +46,8 @@ function cleanErr(err: unknown, fallback: string): string {
 
 const TYPE_LABEL: Record<QuestionnaireType, string> = {
   qaap: 'Q-AAP',
-  objectifs: 'Objectifs & habitudes de vie'
+  objectifs: 'Objectifs & habitudes de vie',
+  sante: 'Questionnaire de santé'
 }
 
 /** Normalise les données brutes (unknown) d'un Q-AAP vers une forme sûre. */
@@ -63,9 +66,19 @@ function asObjectifs(data: unknown): ObjectifsData {
   return { ...((data ?? {}) as ObjectifsData) }
 }
 
+function asSante(data: unknown): SanteData {
+  const d = { ...((data ?? {}) as SanteData) }
+  return {
+    ...d,
+    zones: Array.isArray(d.zones) ? d.zones : [],
+    restrictions: d.restrictions === true ? true : d.restrictions === false ? false : null
+  }
+}
+
 type Draft =
   | { id: string | null; type: 'qaap'; date: string; data: QaapData }
   | { id: string | null; type: 'objectifs'; date: string; data: ObjectifsData }
+  | { id: string | null; type: 'sante'; date: string; data: SanteData }
 
 /** Onglet Questionnaires — admission du client : Q-AAP + Objectifs & habitudes de vie. */
 export function QuestionnairesTab() {
@@ -105,10 +118,13 @@ export function QuestionnairesTab() {
   const blocker = useBlocker(dirty && !saving)
 
   function startNew(type: QuestionnaireType) {
+    const date = todayISO()
     setEditing(
       type === 'qaap'
-        ? { id: null, type: 'qaap', date: todayISO(), data: emptyQaap() }
-        : { id: null, type: 'objectifs', date: todayISO(), data: emptyObjectifs() }
+        ? { id: null, type: 'qaap', date, data: emptyQaap() }
+        : type === 'objectifs'
+          ? { id: null, type: 'objectifs', date, data: emptyObjectifs() }
+          : { id: null, type: 'sante', date, data: emptySante() }
     )
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -117,7 +133,9 @@ export function QuestionnairesTab() {
     setEditing(
       q.type === 'qaap'
         ? { id: q.id, type: 'qaap', date: q.date, data: asQaap(q.data) }
-        : { id: q.id, type: 'objectifs', date: q.date, data: asObjectifs(q.data) }
+        : q.type === 'objectifs'
+          ? { id: q.id, type: 'objectifs', date: q.date, data: asObjectifs(q.data) }
+          : { id: q.id, type: 'sante', date: q.date, data: asSante(q.data) }
     )
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -170,6 +188,13 @@ export function QuestionnairesTab() {
             >
               <Plus size={17} /> Objectifs &amp; habitudes
             </button>
+            <button
+              type="button"
+              onClick={() => startNew('sante')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-marine font-semibold rounded-md text-base border border-cream-dark hover:border-gold/60 transition-colors shadow-sm"
+            >
+              <Plus size={17} /> Santé
+            </button>
           </div>
         )}
       </header>
@@ -196,6 +221,15 @@ export function QuestionnairesTab() {
           saving={saving}
         />
       )}
+      {editing?.type === 'sante' && (
+        <SanteForm
+          value={editing}
+          onChange={setEditing}
+          onCancel={() => setEditing(null)}
+          onSave={save}
+          saving={saving}
+        />
+      )}
 
       {/* Historique */}
       {!editing && (
@@ -214,8 +248,10 @@ export function QuestionnairesTab() {
               {list.map(q =>
                 q.type === 'qaap' ? (
                   <QaapHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
-                ) : (
+                ) : q.type === 'objectifs' ? (
                   <ObjectifsHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
+                ) : (
+                  <SanteHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
                 )
               )}
             </ul>
@@ -278,14 +314,16 @@ export function QuestionnairesTab() {
 
 /** Petit chip de type affiché sur les cartes d'historique. */
 function TypeChip({ type }: { type: QuestionnaireType }) {
-  const isQaap = type === 'qaap'
+  const style: Record<QuestionnaireType, string> = {
+    qaap: 'bg-gold/20 text-gold-dark',
+    objectifs: 'bg-marine/10 text-marine',
+    sante: 'bg-rose-100 text-rose-700'
+  }
+  const icon =
+    type === 'qaap' ? <ClipboardList size={11} /> : type === 'objectifs' ? <Target size={11} /> : <HeartPulse size={11} />
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-        isQaap ? 'bg-gold/20 text-gold-dark' : 'bg-marine/10 text-marine'
-      }`}
-    >
-      {isQaap ? <ClipboardList size={11} /> : <Target size={11} />}
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${style[type]}`}>
+      {icon}
       {TYPE_LABEL[type]}
     </span>
   )
@@ -522,6 +560,168 @@ function ObjectifsForm({
         <textarea
           value={data.notes ?? ''}
           onChange={e => setField('notes', e.target.value)}
+          rows={2}
+          placeholder="Observations de Marie — jamais montrées au client."
+          className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-sm placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors resize-y"
+        />
+      </div>
+
+      <FormActions
+        saving={saving}
+        editing={!!value.id}
+        onSave={onSave}
+        onCancel={onCancel}
+        disabled={blank}
+        hint={blank ? 'Remplissez au moins un champ pour enregistrer.' : undefined}
+      />
+    </section>
+  )
+}
+
+// ── Questionnaire de santé ────────────────────────────────────────────────────
+
+function SanteHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: () => void; onDelete: () => void }) {
+  const data = asSante(q.data)
+  const zoneCount = data.zones?.length ?? 0
+  return (
+    <li className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <TypeChip type="sante" />
+            <p className="text-marine font-semibold text-sm">{formatBilanDate(q.date)}</p>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {data.restrictions === true ? (
+              <span className="inline-flex items-center gap-1 text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                <AlertTriangle size={12} /> Restrictions de mouvement
+              </span>
+            ) : data.restrictions === false ? (
+              <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                <CheckCircle2 size={12} /> Aucune restriction
+              </span>
+            ) : null}
+            {zoneCount > 0 && (
+              <span className="text-marine/45 text-xs">
+                {zoneCount} zone{zoneCount > 1 ? 's' : ''} de tension
+              </span>
+            )}
+          </div>
+        </div>
+        <HistoryActions
+          label={`Questionnaire de santé du ${formatBilanDate(q.date)}`}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      </div>
+      {data.conditions?.trim() && (
+        <p className="text-marine/70 text-sm mt-2.5 whitespace-pre-wrap leading-relaxed border-t border-cream-dark/40 pt-2.5">
+          {data.conditions}
+        </p>
+      )}
+    </li>
+  )
+}
+
+function SanteForm({
+  value,
+  onChange,
+  onCancel,
+  onSave,
+  saving
+}: {
+  value: Extract<Draft, { type: 'sante' }>
+  onChange: (v: Draft) => void
+  onCancel: () => void
+  onSave: () => void
+  saving: boolean
+}) {
+  const { date, data } = value
+  const blank = santeIsBlank(data)
+
+  function patch(p: Partial<SanteData>) {
+    onChange({ ...value, data: { ...data, ...p } })
+  }
+
+  return (
+    <section className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm space-y-4">
+      <FormHeader
+        title={value.id ? 'Modifier le questionnaire de santé' : 'Nouveau questionnaire de santé'}
+        date={date}
+        onDate={d => onChange({ ...value, date: d })}
+      />
+
+      <div>
+        <label className="text-marine/60 text-sm font-medium block mb-1.5">Conditions de santé</label>
+        <textarea
+          value={data.conditions ?? ''}
+          onChange={e => patch({ conditions: e.target.value })}
+          rows={3}
+          placeholder="Blessures, chirurgies, douleurs chroniques, diagnostics, grossesse…"
+          className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors resize-y"
+        />
+      </div>
+
+      <div>
+        <label className="text-marine/60 text-sm font-medium block mb-2">Zones de tension / douleur</label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+          {SANTE_ZONES.map(zone => {
+            const checked = data.zones?.includes(zone) ?? false
+            return (
+              <label
+                key={zone}
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-md border text-sm cursor-pointer transition-colors ${
+                  checked ? 'bg-gold/15 border-gold/50 text-marine' : 'bg-white border-cream-dark text-marine/70 hover:border-gold/40'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={() => patch({ zones: toggleZone(data.zones, zone) })}
+                  className="accent-gold-dark"
+                />
+                {zone}
+              </label>
+            )
+          })}
+        </div>
+        <input
+          type="text"
+          value={data.zonesAutre ?? ''}
+          onChange={e => patch({ zonesAutre: e.target.value })}
+          placeholder="Autre(s) zone(s)…"
+          className="w-full mt-2 px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-sm placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+        />
+      </div>
+
+      <div>
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="text-marine/70 text-sm font-medium">Restrictions de mouvement à respecter ?</label>
+          <div className="flex items-center gap-1.5">
+            <YesNoButton active={data.restrictions === true} tone="yes" onClick={() => patch({ restrictions: true })}>
+              Oui
+            </YesNoButton>
+            <YesNoButton active={data.restrictions === false} tone="no" onClick={() => patch({ restrictions: false })}>
+              Non
+            </YesNoButton>
+          </div>
+        </div>
+        {data.restrictions === true && (
+          <textarea
+            value={data.restrictionsDetail ?? ''}
+            onChange={e => patch({ restrictionsDetail: e.target.value })}
+            rows={2}
+            placeholder="Décrivez les mouvements à éviter ou à adapter…"
+            className="w-full mt-2 px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors resize-y"
+          />
+        )}
+      </div>
+
+      <div>
+        <label className="text-marine/60 text-sm font-medium block mb-1.5">Note interne (privée)</label>
+        <textarea
+          value={data.notes ?? ''}
+          onChange={e => patch({ notes: e.target.value })}
           rows={2}
           placeholder="Observations de Marie — jamais montrées au client."
           className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-sm placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors resize-y"
