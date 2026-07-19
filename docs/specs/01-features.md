@@ -2,6 +2,19 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.8.4 — Import .doc : correction de la circonférence de hanche)
+
+Bug corrigé à l'import d'un bilan du logiciel d'origine : la **circonférence de hanche** était lue
+comme **5 cm** au lieu de la vraie valeur (ex. **112 cm**). Cause : le parser accrochait le **premier**
+« Hanche » du document, celui de l'en-tête **« Ratio Taille/Hanche »**, et captait alors le « 5 » de la
+taille « 5' 9" » juste en dessous — au lieu du « Hanche → 112,0 » de la section **« Circonférences »** plus bas.
+Correctif : un *lookbehind* `(?<![/\wÀ-ÿ])` ignore l'en-tête « …/Hanche » et vise le libellé isolé
+(`electron/lib/bilan-parser.ts`, extraction courante **et** historique). Couvert par un test de non-régression
+(`electron/lib/bilan-parser.test.ts`). Nettoyage : suppression du script de debug mort `test-files/test-parser.mjs`
+(fixture disparue + copie périmée du parser).
+
+Version : 0.8.3 → 0.8.4.
+
 ## ✅ Fait (v0.8.3 — Mesures : ne garder que les champs utilisés par Marie)
 
 Épuration de l'onglet Mesures : le **sélecteur de graphe** (« Évolution dans le temps ») et la fenêtre

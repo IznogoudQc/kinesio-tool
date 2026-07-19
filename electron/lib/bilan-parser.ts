@@ -123,7 +123,7 @@ function chevronValue(text: string, labelPattern: string): string | undefined {
   return m?.[1]
 }
 
-function extractCurrent(text: string): BilanData {
+export function extractCurrent(text: string): BilanData {
   const data: BilanData = {}
 
   data.pourcentage_gras = parseFrenchNumber(chevronValue(text, 'Pourcentage de Gras(?: Corporelle)?'))
@@ -176,8 +176,10 @@ function extractCurrent(text: string): BilanData {
     data.pli_cuisse = parseFrenchNumber(matchAfter(pliSection, /Cuisse\s*[\n\r]+/, /^\s*(\d+(?:[,.]\d+)?)/))
   }
 
-  // Hanche
-  const hancheMatch = text.match(/Hanche\s*[\n\r]+\s*(\d+(?:[,.]\d+)?)/)
+  // Hanche (circonférence, section « Circonférences »).
+  // Le lookbehind évite d'accrocher l'en-tête « Ratio Taille/Hanche » : sinon le
+  // nombre capté juste après est le « 5 » de la taille « 5' 9" » au lieu de 112,0.
+  const hancheMatch = text.match(/(?<![/\wÀ-ÿ])Hanche\s*[\n\r]+\s*(\d+(?:[,.]\d+)?)/)
   if (hancheMatch) data.tour_hanche_cm = parseFrenchNumber(hancheMatch[1])
 
   // Test aerobie: heading "Aptitude Aérobie <test name>" before main body
@@ -255,7 +257,7 @@ function extractHistory(text: string): ExtractedBilan[] {
     { re: /Biceps\s*[\n\r]+/, field: 'pli_biceps', label: 'Pli biceps' },
     { re: /(?:Subscapulaire|Sousscapular|Sous-scap[a-zé]*)\s*[\n\r]+/, field: 'pli_sous_scap', label: 'Pli sous-scapulaire' },
     { re: /(?:Cr[êèe]te iliaque|Iliaque)\s*[\n\r]+/, field: 'pli_iliaque', label: 'Pli iliaque' },
-    { re: /Hanche\s*[\n\r]+/, field: 'tour_hanche_cm', label: 'Tour de hanche' }
+    { re: /(?<![/\wÀ-ÿ])Hanche\s*[\n\r]+/, field: 'tour_hanche_cm', label: 'Tour de hanche' }
   ]
 
   for (const def of defs) {

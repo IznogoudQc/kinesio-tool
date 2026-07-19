@@ -25,5 +25,6 @@
     "src/lib/pain-suggestions.ts",
     "src/lib/email-templates.ts",
     "src/lib/measure-sync-map.ts"
-  ]
+  ],
+  "exclude": ["electron/**/*.test.ts"]
 }
