@@ -32,7 +32,7 @@ import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed } from '../lib/bilan-computed'
-import { bodyFatRisk, BF_RISK_HEX, bodyFatTargetWeights } from '../lib/body-fat-risk'
+import { bodyFatRisk, BF_RISK_HEX, bodyFatTargetWeights, bodyFatGridRating } from '../lib/body-fat-risk'
 import { principesFor, principesCountWord } from '../lib/principes'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
 import { fitnessAge } from '../lib/fitness-age'
@@ -986,14 +986,21 @@ const SHORT_LABEL: Partial<Record<keyof BilanData, string>> = {
 /** Détail des sous-tests d'un score composite (le « pourquoi » du chiffre) :
  *  chaque test avec sa cote colorée. Rendu sous la carte du score. */
 function CompositeBreakdown({ keys, latest, profile }: { keys: (keyof BilanData)[]; latest: Bilan; profile: BilanProfile }) {
-  const rows = keys
-    .map(k => {
-      const v = num(latest.data[k])
-      if (v === null) return null
-      const cat = metricNorm(k, v, profile)?.category
-      return cat ? { key: k, label: SHORT_LABEL[k] ?? METRIC_BY_KEY[k]?.label ?? String(k), cat } : null
-    })
-    .filter((r): r is { key: keyof BilanData; label: string; cat: Category } => r !== null)
+  const rows: { key: keyof BilanData; label: string; cat: Category; status: string }[] = []
+  for (const k of keys) {
+    const v = num(latest.data[k])
+    if (v === null) continue
+    const label = SHORT_LABEL[k] ?? METRIC_BY_KEY[k]?.label ?? String(k)
+    // Le % de gras suit la grille de Marie (« En santé ») — même mot que la
+    // grille détaillée plus bas — et non le percentile ACSM (« Très bien »).
+    if (k === 'pourcentage_gras') {
+      const g = bodyFatGridRating(v, profile.sex)
+      if (g) rows.push({ key: k, label, cat: g.category, status: g.label })
+      continue
+    }
+    const cat = metricNorm(k, v, profile)?.category
+    if (cat) rows.push({ key: k, label, cat, status: CATEGORY_LABELS[cat] })
+  }
   if (rows.length === 0) return null
   return (
     <div style={{ marginTop: '3mm', paddingTop: '2.5mm', borderTop: `1px solid ${GRID}` }}>
@@ -1001,7 +1008,7 @@ function CompositeBreakdown({ keys, latest, profile }: { keys: (keyof BilanData)
         <div key={r.key as string} style={{ display: 'flex', alignItems: 'center', gap: '1.5mm', fontSize: '8pt', marginBottom: '1mm' }}>
           <span style={{ width: '2mm', height: '2mm', borderRadius: '50%', background: CAT_BG[r.cat], display: 'inline-block', flexShrink: 0 }} />
           <span style={{ color: INK_SOFT }}>{r.label}</span>
-          <span style={{ marginLeft: 'auto', color: MARINE, fontWeight: 600 }}>{CATEGORY_LABELS[r.cat]}</span>
+          <span style={{ marginLeft: 'auto', color: MARINE, fontWeight: 600 }}>{r.status}</span>
         </div>
       ))}
     </div>

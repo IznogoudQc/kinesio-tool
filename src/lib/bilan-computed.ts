@@ -9,6 +9,7 @@
  */
 
 import { calculateBodyFat } from './body-fat-calculator.ts'
+import { bodyFatGridRating } from './body-fat-risk.ts'
 import {
   bruceTreadmillVo2max,
   cooperVo2max,
@@ -118,6 +119,11 @@ function catFor(
 ): Category | null {
   if (typeof value !== 'number' || Number.isNaN(value)) return null
   if (profile.age === null || profile.sex === null) return null
+  // Le % de gras est coté selon la **grille de Marie** (En santé / Optimal / …),
+  // pas le percentile ACSM — cohérent avec l'affichage. Voir [[body-fat-risk]].
+  if (key === 'pourcentage_gras') {
+    return bodyFatGridRating(value, profile.sex)?.category ?? null
+  }
   const testKey = BILAN_TO_TEST_KEY[key]
   if (!testKey) return null
   return categorizeRaw(testKey, value, profile.age, profile.sex, profile.norms)

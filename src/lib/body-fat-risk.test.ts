@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { bodyFatRisk, bodyFatRiskZones, bodyFatTargetWeights, optimalBodyFatMax, healthyBodyFatMax } from './body-fat-risk.ts'
+import { bodyFatRisk, bodyFatRiskZones, bodyFatTargetWeights, optimalBodyFatMax, healthyBodyFatMax, bodyFatGridRating } from './body-fat-risk.ts'
 
 test('sexe inconnu → pas d’échelle', () => {
   assert.equal(bodyFatRisk(30, null), null)
@@ -16,6 +16,25 @@ test('femme : les 5 zones aux bornes 15/25/34/42', () => {
   assert.equal(bodyFatRisk(30, 'F')!.current?.key, 'sante')
   assert.equal(bodyFatRisk(38, 'F')!.current?.key, 'modere')
   assert.equal(bodyFatRisk(42, 'F')!.current?.key, 'eleve')
+})
+
+test('cotation grille : homme 23,1 % → « En santé » / TRES_BIEN', () => {
+  const g = bodyFatGridRating(23.1, 'M')
+  assert.equal(g?.label, 'En santé')
+  assert.equal(g?.category, 'TRES_BIEN')
+})
+
+test('cotation grille : mapping zone → cote 0-4 (homme)', () => {
+  assert.equal(bodyFatGridRating(10, 'M')?.category, 'EXCELLENT') // optimal (5-15)
+  assert.equal(bodyFatGridRating(23, 'M')?.category, 'TRES_BIEN') // En santé (15-30)
+  assert.equal(bodyFatGridRating(3, 'M')?.category, 'BIEN') // Risques potentiels (0-5)
+  assert.equal(bodyFatGridRating(31, 'M')?.category, 'ACCEPTABLE') // Risques modérés (30-32,1)
+  assert.equal(bodyFatGridRating(35, 'M')?.category, 'A_AMELIORER') // Risques élevés (>32,1)
+})
+
+test('cotation grille : sexe/valeur manquants → null', () => {
+  assert.equal(bodyFatGridRating(25, null), null)
+  assert.equal(bodyFatGridRating(null, 'M'), null)
 })
 
 test('bornes incluses en bas, exclues en haut (femme, 25 %)', () => {

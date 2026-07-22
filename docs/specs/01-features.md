@@ -2,6 +2,18 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.8.5 — % de gras : une seule description (grille de Marie) partout)
+
+Le % de gras était décrit de deux façons dans le rapport : « **Très bien** » (percentile ACSM) sur la
+carte composite et « **En santé** » (grille de risque de Marie) dans la section détaillée. Désormais le
+% de gras suit **la grille de Marie partout** — libellé (« En santé / Optimal / … ») **et** cote 0-4 du
+score de composition — via `bodyFatGridRating()` (`src/lib/body-fat-risk.ts`), branché dans
+`bilan-computed.catFor` et dans `ReportPage.CompositeBreakdown`. Le document HTML interactif était déjà
+aligné sur la grille ; c'est le PDF qui divergeait. Le percentile ACSM reste la référence pour les autres
+champs. Détail et réserves (zones extrêmes à valider, cartes 0-4 du dashboard) : ADR 0024.
+
+Version : 0.8.4 → 0.8.5.
+
 ## ✅ Fait (v0.8.4 — Import .doc : correction de la circonférence de hanche)
 
 Bug corrigé à l'import d'un bilan du logiciel d'origine : la **circonférence de hanche** était lue

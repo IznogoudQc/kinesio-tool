@@ -1,8 +1,10 @@
 /** Grille de **risque** du pourcentage de gras corporel, reprise de l'ancien
  *  logiciel de Marie. Cinq zones, un seul palier d'âge (« moins de 70 ans »),
  *  avec du risque **aux deux extrémités** (trop maigre = risque, trop gras =
- *  risque). C'est une lentille de **santé**, distincte du percentile ACSM (qui,
- *  lui, sert au score interne de composition corporelle).
+ *  risque). C'est la **référence unique de Marie** pour le % de gras : elle sert
+ *  à la fois au libellé affiché (« En santé », « Optimal », …) et à la cote 0-4
+ *  du % de gras dans le score de composition (via `bodyFatGridRating`). On
+ *  n'utilise plus le percentile ACSM pour le % de gras (choix de Marie).
  *
  *  Source unique pour le document client, le rapport PDF, le Dashboard et le
  *  document des barèmes — mêmes bornes partout.
@@ -10,6 +12,8 @@
  *  Bornes fournies par Marie (à valider quant à leur source publiée) :
  *    Femme : 15 · 25 · 34 · 42      Homme : 5 · 15 · 30 · 32,1
  */
+
+import type { Category } from './norms/types.ts'
 
 export type BfRiskKey = 'potentiel' | 'optimal' | 'sante' | 'modere' | 'eleve'
 
@@ -119,6 +123,38 @@ export function bodyFatTargetWeights(
     optimal: { targetBf: optimalBodyFatMax(sex), targetKg: at(optimalBodyFatMax(sex)) },
     healthyMax: { targetBf: healthyBodyFatMax(sex), targetKg: at(healthyBodyFatMax(sex)) }
   }
+}
+
+/** Correspondance zone de risque → cote 0-4 (`Category`). L'ordre santé : Optimal
+ *  (meilleur) → En santé → puis les zones à risque. La cotation des zones extrêmes
+ *  (« Risques potentiels » = trop maigre) est indicative — à valider avec Marie. */
+const ZONE_TO_CATEGORY: Record<BfRiskKey, Category> = {
+  optimal: 'EXCELLENT',
+  sante: 'TRES_BIEN',
+  potentiel: 'BIEN',
+  modere: 'ACCEPTABLE',
+  eleve: 'A_AMELIORER'
+}
+
+export interface BodyFatGridRating {
+  key: BfRiskKey
+  /** Libellé de la grille (« Optimal », « En santé », « Risques modérés », …). */
+  label: string
+  /** Cote 0-4 (via `Category`) alignée sur le reste du bilan, pour le score ET la couleur. */
+  category: Category
+}
+
+/** Cotation du % de gras **selon la grille de Marie** : renvoie le libellé de la
+ *  zone (« En santé ») ET une cote 0-4. Source unique pour l'affichage (rapport,
+ *  dashboard) et pour la contribution du % de gras au score de composition —
+ *  remplace le percentile ACSM pour ce champ. `null` si `pct`/`sex` manquent. */
+export function bodyFatGridRating(
+  pct: number | null | undefined,
+  sex: 'F' | 'M' | null
+): BodyFatGridRating | null {
+  const s = bodyFatRisk(pct, sex)
+  if (!s || !s.current) return null
+  return { key: s.current.key, label: s.current.label, category: ZONE_TO_CATEGORY[s.current.key] }
 }
 
 /** Prépare tout le nécessaire pour dessiner la barre + situer le client. */
