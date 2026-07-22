@@ -467,30 +467,74 @@ function SmtpCard() {
 }
 
 function NormsCard() {
-  // Une seule norme exposée pour l'instant : ACSM (voir daily-note 2026-07-04 —
-  // CPAFLA retiré de l'UI en attendant une source de tables). On normalise
-  // défensivement toute valeur stockée vers 'acsm' pour rester cohérent.
+  const [norms, setNorms] = useState<'acsm' | 'cpafla'>('acsm')
+  const [loaded, setLoaded] = useState(false)
+
   useEffect(() => {
     settingsService
       .getCategorizationNorms()
-      .then(v => {
-        if (v !== 'acsm') settingsService.setCategorizationNorms('acsm').catch(() => undefined)
-      })
+      .then(v => setNorms(v === 'cpafla' ? 'cpafla' : 'acsm'))
       .catch(() => undefined)
+      .finally(() => setLoaded(true))
   }, [])
+
+  function choose(value: 'acsm' | 'cpafla') {
+    setNorms(value)
+    settingsService.setCategorizationNorms(value).catch(() => undefined)
+  }
+
+  const OPTIONS: { key: 'acsm' | 'cpafla'; title: string; desc: string; tag?: string }[] = [
+    {
+      key: 'acsm',
+      title: 'ACSM — 11ᵉ édition (2021)',
+      desc: 'American College of Sports Medicine. Tables par âge et sexe pour VO2max, % de gras, push-ups, redressements, flexion du tronc, IMC, tour de taille, saut vertical, puissance et endurance du dos.'
+    },
+    {
+      key: 'cpafla',
+      title: 'CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd.',
+      desc: 'Société canadienne de physiologie de l’exercice (le référentiel de l’ancien logiciel de Marie). Barèmes musculosquelettiques encodés (extension des bras, flexion du tronc, redressements, saut, puissance, endurance du dos). VO2max, IMC et tour de taille utilisent encore ACSM. Le % de gras suit la grille de Marie.',
+      tag: 'En calibration'
+    }
+  ]
 
   return (
     <Card
       title="Normes de catégorisation"
       icon={Gauge}
-      description="Tables utilisées pour situer un résultat (À améliorer → Excellent) selon l'âge et le sexe."
+      description="Tables utilisées pour situer un résultat (À améliorer → Excellent) selon l'âge et le sexe. Par défaut : ACSM."
     >
-      <div className="p-3 rounded-md border border-gold/40 bg-gold/5">
-        <p className="text-marine font-medium text-base">ACSM — 11ᵉ édition (2021)</p>
-        <p className="text-marine/55 text-sm mt-0.5">
-          American College of Sports Medicine. Tables par âge et sexe pour VO2max, % de gras, push-ups,
-          redressements, flexion du tronc, IMC, tour de taille, saut vertical, puissance et endurance du dos.
-        </p>
+      <div className="space-y-2" role="radiogroup" aria-label="Norme de catégorisation">
+        {OPTIONS.map(o => {
+          const active = norms === o.key
+          return (
+            <button
+              key={o.key}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={!loaded}
+              onClick={() => choose(o.key)}
+              className={`w-full text-left p-3 rounded-md border transition-colors ${
+                active ? 'border-gold/60 bg-gold/10' : 'border-cream-dark hover:border-gold/40 bg-white'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${
+                    active ? 'border-gold bg-gold' : 'border-marine/30'
+                  }`}
+                />
+                <p className="text-marine font-medium text-base">{o.title}</p>
+                {o.tag && (
+                  <span className="ml-auto text-[11px] uppercase tracking-wide font-semibold text-gold-dark bg-gold/15 rounded px-1.5 py-0.5">
+                    {o.tag}
+                  </span>
+                )}
+              </div>
+              <p className="text-marine/55 text-sm mt-1 pl-6">{o.desc}</p>
+            </button>
+          )
+        })}
       </div>
       <ExportBaremes />
     </Card>

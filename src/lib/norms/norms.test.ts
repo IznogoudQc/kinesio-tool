@@ -194,16 +194,35 @@ test('Puissance jambes — Nicholas 5380 W H 48 ans → percentile ~77', () => {
   assert.ok(p !== null && p >= 70 && p <= 85, `attendu 70-85, reçu ${p}`)
 })
 
-test('CPAFLA — ossature prête, tables non encore encodées → null partout', () => {
-  // Tant que les barèmes officiels CSEP-PATH ne sont pas encodés (cf. ADR 0013),
-  // getCpaflaRange retourne null et la catégorisation retombe sur « — ».
-  assert.equal(getCpaflaRange('pushups', 35, 'M'), null)
-  assert.equal(getCpaflaRange('situps', 35, 'F'), null)
-  assert.equal(getCpaflaRange('trunkFlexion', 35, 'M'), null)
-  assert.equal(getCpaflaRange('legPower', 35, 'M'), null)
-  assert.equal(getCategorization('vo2max', 49, 35, 'M', 'cpafla'), null)
-  assert.equal(getCategorization('bodyFat', 12, 35, 'F', 'cpafla'), null)
-  assert.equal(cpaflaHasTables(), false)
+test('CPAFLA — tables musculosquelettiques encodées (guide CPHV 3e éd., Fig. 7-18/7-19)', () => {
+  assert.ok(cpaflaHasTables())
+  // Homme 25 ans (20-29) — extension des bras : A17 B22 TB29 E36 (intervalles contigus).
+  assert.equal(getCategorization('pushups', 36, 25, 'M', 'cpafla'), 'EXCELLENT')
+  assert.equal(getCategorization('pushups', 35, 25, 'M', 'cpafla'), 'TRES_BIEN')
+  assert.equal(getCategorization('pushups', 29, 25, 'M', 'cpafla'), 'TRES_BIEN')
+  assert.equal(getCategorization('pushups', 28, 25, 'M', 'cpafla'), 'BIEN')
+  assert.equal(getCategorization('pushups', 21, 25, 'M', 'cpafla'), 'ACCEPTABLE')
+  assert.equal(getCategorization('pushups', 16, 25, 'M', 'cpafla'), 'A_AMELIORER')
+  // Femme 35 ans (30-39) — flexion du tronc : A27 B32 TB36 E41.
+  assert.equal(getCategorization('trunkFlexion', 41, 35, 'F', 'cpafla'), 'EXCELLENT')
+  assert.equal(getCategorization('trunkFlexion', 35, 35, 'F', 'cpafla'), 'BIEN')
+  assert.equal(getCategorization('trunkFlexion', 26, 35, 'F', 'cpafla'), 'A_AMELIORER')
+  // Redressements plafonnés à 25 (homme 20-29 : A11 B16 TB21 E25).
+  assert.equal(getCategorization('situps', 25, 25, 'M', 'cpafla'), 'EXCELLENT')
+  assert.equal(getCategorization('situps', 24, 25, 'M', 'cpafla'), 'TRES_BIEN')
+  // Puissance (homme 20-29 : E5094) + endurance du dos (homme 30-39 : E147).
+  assert.equal(getCategorization('legPower', 5094, 25, 'M', 'cpafla'), 'EXCELLENT')
+  assert.equal(getCategorization('legPower', 5093, 25, 'M', 'cpafla'), 'TRES_BIEN')
+  assert.equal(getCategorization('backEndurance', 147, 35, 'M', 'cpafla'), 'EXCELLENT')
+  assert.equal(getCategorization('backEndurance', 55, 35, 'M', 'cpafla'), 'A_AMELIORER')
+})
+
+test('CPAFLA — VO2max / % gras / IMC non encodés → getCpaflaRange null (repli géré ailleurs)', () => {
+  // Le repli sur ACSM (VO2max, IMC, tour de taille) vit dans index.getCategorization
+  // et bilan-computed.categorizeRaw — testé end-to-end dans bilan-computed.test.ts.
+  assert.equal(getCpaflaRange('vo2max', 35, 'M'), null)
+  assert.equal(getCpaflaRange('bodyFat', 35, 'F'), null)
+  assert.equal(getCpaflaRange('bmi', 35, 'M'), null)
 })
 
 test('Valeur invalide → null', () => {

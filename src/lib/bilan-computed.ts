@@ -97,7 +97,12 @@ function categorizeRaw(
   sex: 'F' | 'M',
   norms: NormsType
 ): Category | null {
-  const range = norms === 'cpafla' ? getCpaflaRange(test, age, sex) : getAcsmRange(test, age, sex)
+  // CPAFLA ne couvre que le musculosquelettique → repli sur ACSM pour les tests
+  // sans table CPAFLA (VO2max, IMC, tour de taille). Voir ADR 0025.
+  const range =
+    norms === 'cpafla'
+      ? (getCpaflaRange(test, age, sex) ?? getAcsmRange(test, age, sex))
+      : getAcsmRange(test, age, sex)
   if (!range) return null
   const { percentiles: p, lowerIsBetter } = range
   if (lowerIsBetter) {

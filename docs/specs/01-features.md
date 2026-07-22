@@ -2,6 +2,19 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.0 — Norme CPAFLA sélectionnable (barèmes musculosquelettiques du guide CPHV))
+
+Marie a fourni le **Guide du conseiller CPHV, 3ᵉ éd. (SCPE)** — la source des barèmes de son ancien logiciel.
+Les **tables CPAFLA musculosquelettiques** (extension des bras, flexion du tronc, redressements, saut vertical,
+puissance des membres inférieurs, endurance des extenseurs du dos) sont encodées par âge × sexe (Figures 7-18/7-19)
+dans `src/lib/norms/cpafla.ts`. La norme **CPAFLA est de nouveau sélectionnable** dans Paramètres → Bilans
+(`NormsCard`), **ACSM restant par défaut** (CPAFLA marqué « En calibration » — on debug avant de basculer).
+Les tests sans table CPAFLA (VO2max, IMC, tour de taille) **replient sur ACSM** ; le % de gras suit la grille de
+Marie. À venir (livre complet en main) : notes pondérées / nomogramme CPAFLA pour la note combinée et l'indice de
+santé du dos. Détail : ADR 0025.
+
+Version : 0.8.6 → 0.9.0.
+
 ## ✅ Fait (v0.8.6 — Carte dashboard « % gras corporel » alignée sur la grille)
 
 Suite de v0.8.5 : la carte **« % gras corporel »** du dashboard (`BilanSynthesisCards`) affichait encore la

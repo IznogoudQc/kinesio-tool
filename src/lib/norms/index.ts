@@ -23,7 +23,11 @@ function getRange(test: TestKey, age: number, sex: 'F' | 'M', norms: NormsType):
   // normes fitness sélectionné — ils ne figurent pas dans les tables ACSM/CPAFLA.
   const clinical = getClinicalRange(test, sex)
   if (clinical) return clinical
-  return norms === 'cpafla' ? getCpaflaRange(test, age, sex) : getAcsmRange(test, age, sex)
+  // CPAFLA ne couvre (pour l'instant) que le musculosquelettique → repli sur ACSM
+  // pour les tests sans table CPAFLA (VO2max, IMC, tour de taille), sinon leurs
+  // scores disparaîtraient sous la norme CPAFLA. Voir ADR 0025.
+  if (norms === 'cpafla') return getCpaflaRange(test, age, sex) ?? getAcsmRange(test, age, sex)
+  return getAcsmRange(test, age, sex)
 }
 
 /** Dérive une `Category` à partir d'une valeur et des percentiles ACSM. */

@@ -123,6 +123,19 @@ test('Nicholas — score composition ACCEPTABLE (IMC obèse + %gras élevé + to
   assert.ok(r.composition.score !== null && r.composition.score > 0.5 && r.composition.score < 1.5)
 })
 
+test('Nicholas — norme CPAFLA : repli ACSM pour VO2max / composition (scores non nuls)', () => {
+  const cpafla: BilanProfile = { age: 48, sex: 'M', norms: 'cpafla' }
+  const r = computeBilan(RAW, cpafla)
+  const acsm = computeBilan(RAW, NICHOLAS)
+  // VO2max n'a pas de table CPAFLA → repli sur ACSM → aérobie coté (identique à ACSM).
+  assert.equal(r.aerobic.score, acsm.aerobic.score)
+  assert.notEqual(r.aerobic.score, null)
+  // Composition : IMC + tour de taille replient sur ACSM, % gras suit la grille de
+  // Marie (indépendante de la norme) → score identique à ACSM.
+  assert.equal(r.composition.score, acsm.composition.score)
+  assert.notEqual(r.composition.score, null)
+})
+
 test('Nicholas — score global calculé', () => {
   const r = computeBilan(RAW, NICHOLAS)
   // composition ≈ 0.67, aerobic 4, dos ≈ 0.5 (taille+IMC seuls), force musculaire = 4 (échelle 0-4).
