@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.8.6 — Carte dashboard « % gras corporel » alignée sur la grille)
+
+Suite de v0.8.5 : la carte **« % gras corporel »** du dashboard (`BilanSynthesisCards`) affichait encore la
+catégorie 0-4 (« Très bien »). Elle montre maintenant le **libellé de la grille de Marie** (« En santé »),
+en gardant la couleur de la cote. `computeBilan` expose `bodyFatGridLabel` ; `CategoryBadge` accepte un
+`label` optionnel (texte grille, couleur inchangée). Le % de gras dit donc « En santé » **partout** : rapport
+PDF, document HTML, dashboard.
+
+Version : 0.8.5 → 0.8.6.
+
 ## ✅ Fait (v0.8.5 — % de gras : une seule description (grille de Marie) partout)
 
 Le % de gras était décrit de deux façons dans le rapport : « **Très bien** » (percentile ACSM) sur la

@@ -45,6 +45,7 @@ taille, force, etc.).
   à l'ancien percentile → score inchangé.
 - La cotation des **zones extrêmes** (« Risques potentiels » = trop maigre → `BIEN`) est
   indicative, à valider avec Marie. Rare en pratique.
-- Les cartes composites **0-4** du dashboard (`BilanSynthesisCards`, dont « % gras corporel »)
-  gardent le vocabulaire 0-4 (langage des composites) — non aligné sur la grille pour l'instant.
-  À rediscuter si besoin.
+- La carte **« % gras corporel »** du dashboard (`BilanSynthesisCards`) a été alignée sur la grille
+  en v0.8.6 (affiche « En santé » via `bodyFatGridLabel` + prop `label` de `CategoryBadge`). Les
+  **autres** cartes composites du dashboard (composition, aérobie, dos, musculo — multi-métriques)
+  gardent le vocabulaire 0-4, c'est voulu.

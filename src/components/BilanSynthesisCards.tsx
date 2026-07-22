@@ -4,7 +4,7 @@ import type { BilanComputed, CompositeScore } from '../lib/bilan-computed'
 
 interface BilanSynthesisCardsProps {
   /** Synthèse du bilan en cours. */
-  computed: Pick<BilanComputed, 'composition' | 'bodyFat' | 'aerobic' | 'backHealth' | 'musculoGlobal' | 'overall'>
+  computed: Pick<BilanComputed, 'composition' | 'bodyFat' | 'aerobic' | 'backHealth' | 'musculoGlobal' | 'overall' | 'bodyFatGridLabel'>
   /** Synthèse du bilan précédent — pour les indicateurs ▲▼. Si absent, pas de comparaison. */
   previous?: Pick<BilanComputed, 'composition' | 'bodyFat' | 'aerobic' | 'backHealth' | 'musculoGlobal' | 'overall'>
   /** Variante de fond — `light` (modal) ou `marine` (dashboard). */
@@ -18,6 +18,9 @@ interface CardSpec {
   subtitle: string
   current: CompositeScore
   previous: CompositeScore | null
+  /** Libellé de statut à afficher à la place de la catégorie 0-4 (garde la couleur).
+   *  Utilisé pour le % de gras → grille de Marie (« En santé »). */
+  statusLabel?: string | null
 }
 
 const GAUGE_LEVELS = 4
@@ -71,7 +74,8 @@ export function BilanSynthesisCards({
       title: '% gras corporel',
       subtitle: 'Composition fine',
       current: computed.bodyFat,
-      previous: previous?.bodyFat ?? null
+      previous: previous?.bodyFat ?? null,
+      statusLabel: computed.bodyFatGridLabel
     },
     { title: 'Aérobie', subtitle: 'VO2max', current: computed.aerobic, previous: previous?.aerobic ?? null },
     ...(SHOW_BACK_HEALTH
@@ -127,6 +131,7 @@ export function BilanSynthesisCards({
               <CategoryBadge
                 category={c.current.category}
                 variant="compact"
+                label={c.statusLabel ?? undefined}
                 emptyClassName={isLight ? 'text-marine/30 text-xs' : 'text-cream/30 text-xs'}
               />
               <DeltaArrow current={c.current.score} previous={c.previous?.score ?? null} />

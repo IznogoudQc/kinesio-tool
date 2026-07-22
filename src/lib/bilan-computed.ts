@@ -69,6 +69,8 @@ export interface BilanComputed {
   poidsOptimalMaxKg: number | null
   ratioTailleHanche: number | null
   pourcentageGrasDurnin: number | null
+  /** Libellé de la zone de la grille de Marie pour le % de gras (« En santé », « Optimal », …). */
+  bodyFatGridLabel: string | null
   // ── Aérobie
   vo2max: number | null
   metEquivalent: number | null
@@ -293,6 +295,8 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
 
   const composition = compose(['imc', 'pourcentage_gras', 'tour_taille_cm'])
   const bodyFat = compose(['pourcentage_gras'])
+  // Libellé de la zone de la grille de Marie (« En santé », …) pour l'affichage du % de gras.
+  const bodyFatGridLabel = bodyFatGridRating(enriched.pourcentage_gras, profile.sex)?.label ?? null
   const aerobic = compose(['vo2max'])
   // Indice de santé du dos — formule de l'ancien logiciel (CPAFLA), SANS le terme
   // « effets bénéfiques de l'activité physique » (aérobie) : moyenne des cotes de la
@@ -320,6 +324,7 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     poidsOptimalMaxKg,
     ratioTailleHanche,
     pourcentageGrasDurnin,
+    bodyFatGridLabel,
     vo2max,
     metEquivalent,
     fcMaxPredite,
