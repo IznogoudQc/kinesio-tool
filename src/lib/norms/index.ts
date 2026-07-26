@@ -17,6 +17,7 @@ import type { Category, NormPercentiles, NormRange, NormsType, TestKey } from '.
 
 export type { Category, NormsType, TestKey, NormRange, NormPercentiles } from './types.ts'
 export { CATEGORY_LABELS, CATEGORY_COLORS, DEFAULT_NORMS } from './types.ts'
+export { getCpaflaRange } from './cpafla.ts'
 
 function getRange(test: TestKey, age: number, sex: 'F' | 'M', norms: NormsType): NormRange | null {
   // Les seuils cliniques (PA, FC repos) priment et sont indépendants du jeu de

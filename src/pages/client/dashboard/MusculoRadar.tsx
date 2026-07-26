@@ -5,11 +5,13 @@ import {
   CATEGORY_COLORS,
   CATEGORY_LABELS,
   getCategorization,
+  getCpaflaRange,
   getPercentile,
   type Category,
   type NormsType,
   type TestKey
 } from '../../../lib/norms'
+import { TableProperties } from 'lucide-react'
 import { CategoryBadge } from '../../../components/CategoryBadge'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
 import { MetricSelectable } from '../../../components/MetricSelectable'
@@ -51,12 +53,18 @@ const BAR_COLOR: Record<Category, string> = {
 }
 
 const VIEW_STORAGE_KEY = 'kinesio.musculo.view'
+const BAREME_STORAGE_KEY = 'kinesio.musculo.bareme'
 type ViewMode = 'bars' | 'radar'
 
 function loadView(): ViewMode {
   if (typeof window === 'undefined') return 'bars'
   const v = window.localStorage.getItem(VIEW_STORAGE_KEY)
   return v === 'radar' ? 'radar' : 'bars'
+}
+
+function loadBareme(): boolean {
+  if (typeof window === 'undefined') return false
+  return window.localStorage.getItem(BAREME_STORAGE_KEY) === '1'
 }
 
 function pctFor(data: BilanData, axis: Axis, age: number | null, sex: 'F' | 'M' | null, norms: NormsType): number | null {
@@ -84,10 +92,18 @@ export function MusculoRadar({
   compareLabel = null
 }: MusculoRadarProps) {
   const [view, setView] = useState<ViewMode>(() => loadView())
+  const [showBareme, setShowBareme] = useState<boolean>(() => loadBareme())
 
   useEffect(() => {
     if (typeof window !== 'undefined') window.localStorage.setItem(VIEW_STORAGE_KEY, view)
   }, [view])
+  useEffect(() => {
+    if (typeof window !== 'undefined') window.localStorage.setItem(BAREME_STORAGE_KEY, showBareme ? '1' : '0')
+  }, [showBareme])
+
+  // Le barème (bornes par catégorie) n'a de sens que sous CPAFLA, où les cotes
+  // sont des intervalles ; sous ACSM (percentiles), on ne propose pas le tableau.
+  const canShowBareme = norms === 'cpafla' && age !== null && (sex === 'M' || sex === 'F')
 
   const rows = useMemo(
     () =>
@@ -117,15 +133,33 @@ export function MusculoRadar({
             Profil musculosquelettique
           </h3>
         </div>
-        <button
-          type="button"
-          onClick={() => setView(v => (v === 'bars' ? 'radar' : 'bars'))}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine transition-colors"
-          title={view === 'bars' ? 'Basculer en vue radar' : 'Basculer en vue barres'}
-        >
-          {view === 'bars' ? <RadarIcon size={13} /> : <BarChart3 size={13} />}
-          {view === 'bars' ? 'Vue radar' : 'Vue barres'}
-        </button>
+        <div className="flex items-center gap-2">
+          {canShowBareme && view === 'bars' && (
+            <button
+              type="button"
+              onClick={() => setShowBareme(b => !b)}
+              aria-pressed={showBareme}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                showBareme
+                  ? 'bg-gold/15 text-gold-dark hover:bg-gold/25'
+                  : 'bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine'
+              }`}
+              title="Afficher le barème CPAFLA pour la tranche d'âge du client"
+            >
+              <TableProperties size={13} />
+              Barème
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setView(v => (v === 'bars' ? 'radar' : 'bars'))}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine transition-colors"
+            title={view === 'bars' ? 'Basculer en vue radar' : 'Basculer en vue barres'}
+          >
+            {view === 'bars' ? <RadarIcon size={13} /> : <BarChart3 size={13} />}
+            {view === 'bars' ? 'Vue radar' : 'Vue barres'}
+          </button>
+        </div>
       </div>
 
       {!anyData ? (
@@ -133,7 +167,12 @@ export function MusculoRadar({
           Aucune donnée musculosquelettique catégorisable dans ce bilan.
         </p>
       ) : view === 'bars' ? (
-        <BarsView rows={rows} compareLabel={compareLabel} />
+        <>
+          <BarsView rows={rows} compareLabel={compareLabel} />
+          {canShowBareme && showBareme && (
+            <BaremeTable age={age as number} sex={sex as 'F' | 'M'} rows={rows} />
+          )}
+        </>
       ) : (
         <RadarView rows={rows} compare={compareData} compareLabel={compareLabel} />
       )}
@@ -218,6 +257,83 @@ function BarRow({ row }: { row: Row }) {
     >
       {inner}
     </MetricSelectable>
+  )
+}
+
+/** Tableau du barème CPAFLA pour la tranche d'âge + sexe du client. Reconstruit les
+ *  intervalles à partir des bornes basses de catégorie (p10/p25/p50/p75 = Acceptable/
+ *  Bien/Très bien/Excellent) — exactement comme le guide. La cellule de la cote du
+ *  client est surlignée : Marie voit d'un coup pourquoi le résultat tombe dans sa case. */
+const BAREME_CATS: Category[] = ['A_AMELIORER', 'ACCEPTABLE', 'BIEN', 'TRES_BIEN', 'EXCELLENT']
+
+function BaremeTable({ age, sex, rows }: { age: number; sex: 'F' | 'M'; rows: Row[] }) {
+  const catByTest = new Map<TestKey, Category | null>(rows.map(r => [r.axis.test, r.category]))
+  const built = AXES.map(axis => {
+    const range = getCpaflaRange(axis.test, age, sex)
+    if (!range) return null
+    const p = range.percentiles
+    const cells: Record<Category, string> = {
+      A_AMELIORER: `≤ ${p.p10 - 1}`,
+      ACCEPTABLE: `${p.p10}–${p.p25 - 1}`,
+      BIEN: `${p.p25}–${p.p50 - 1}`,
+      TRES_BIEN: `${p.p50}–${p.p75 - 1}`,
+      EXCELLENT: `≥ ${p.p75}`
+    }
+    return { axis, cells, ageMin: range.ageMin, ageMax: range.ageMax, current: catByTest.get(axis.test) ?? null }
+  }).filter((b): b is NonNullable<typeof b> => b !== null)
+
+  if (built.length === 0) {
+    return (
+      <p className="mt-4 pt-4 border-t border-cream-dark/40 text-marine/50 text-xs">
+        Aucun barème CPAFLA pour cet âge (tables 15 à 69 ans).
+      </p>
+    )
+  }
+
+  const band = `${built[0].ageMin}–${built[0].ageMax}`
+  return (
+    <div className="mt-4 pt-4 border-t border-cream-dark/40">
+      <p className="text-marine/70 text-xs font-medium mb-2">
+        Barème CPAFLA — {sex === 'F' ? 'femmes' : 'hommes'} {band} ans
+        <span className="text-marine/40 font-normal"> · la case surlignée = la cote du client</span>
+      </p>
+      <div className="overflow-x-auto">
+        <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th className="text-left font-semibold text-marine/50 py-1.5 pr-3 whitespace-nowrap">Test</th>
+              {BAREME_CATS.map(c => (
+                <th key={c} className={`text-center font-semibold py-1.5 px-2 whitespace-nowrap ${CATEGORY_COLORS[c]}`}>
+                  {CATEGORY_LABELS[c]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {built.map(b => (
+              <tr key={b.axis.key as string} className="border-t border-cream-dark/30">
+                <td className="text-marine font-medium py-1.5 pr-3 whitespace-nowrap">
+                  {b.axis.label} <span className="text-marine/40 font-normal">({b.axis.unit})</span>
+                </td>
+                {BAREME_CATS.map(c => {
+                  const active = b.current === c
+                  return (
+                    <td
+                      key={c}
+                      className={`text-center py-1.5 px-2 tabular-nums whitespace-nowrap ${
+                        active ? `font-bold ${CATEGORY_COLORS[c]} bg-cream/80 rounded` : 'text-marine/70'
+                      }`}
+                    >
+                      {b.cells[c]}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }
 

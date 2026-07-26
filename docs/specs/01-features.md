@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.2 — Profil musculo : barème CPAFLA de la tranche d'âge affichable)
+
+Dans la carte **Profil musculosquelettique** du dashboard, un bouton **« Barème »** (visible seulement sous
+norme CPAFLA, en vue barres) révèle le **tableau des seuils CPAFLA pour la tranche d'âge + sexe du client** :
+6 tests × 5 catégories (À améliorer → Excellent), avec les bornes reconstruites depuis les tables, et **la case
+de la cote du client surlignée**. Marie voit ainsi *pourquoi* un résultat tombe dans « Excellent » ou « Bien »
+(ex. push-ups 55 → Excellent car ≥ 25 pour un homme 40-49). `getCpaflaRange` ré-exporté par le barrel `norms` ;
+composant `BaremeTable` dans `MusculoRadar.tsx`. Préférence d'affichage mémorisée (localStorage).
+
+Version : 0.9.1 → 0.9.2.
+
 ## ✅ Fait (v0.9.1 — CPAFLA : note combinée musculo + indice de santé du dos (pondérations + nomogramme))
 
 Sous la norme **CPAFLA**, les scores composites **Force musculaire** et **Santé du dos** suivent désormais la
