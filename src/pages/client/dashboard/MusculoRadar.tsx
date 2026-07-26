@@ -15,6 +15,7 @@ import { TableProperties } from 'lucide-react'
 import { CategoryBadge } from '../../../components/CategoryBadge'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
 import { MetricSelectable } from '../../../components/MetricSelectable'
+import type { CompositeScore } from '../../../lib/bilan-computed'
 
 interface MusculoRadarProps {
   current: BilanData
@@ -25,6 +26,8 @@ interface MusculoRadarProps {
   compare?: BilanData
   /** Nom du bilan comparé (« bilan précédent », « bilan du 4 sept. 2025 »). */
   compareLabel?: string | null
+  /** Aptitude musculosquelettique globale (note combinée) — affichée en tête. */
+  global?: CompositeScore
 }
 
 interface Axis {
@@ -89,7 +92,8 @@ export function MusculoRadar({
   sex,
   norms,
   compare: compareData,
-  compareLabel = null
+  compareLabel = null,
+  global
 }: MusculoRadarProps) {
   const [view, setView] = useState<ViewMode>(() => loadView())
   const [showBareme, setShowBareme] = useState<boolean>(() => loadBareme())
@@ -161,6 +165,23 @@ export function MusculoRadar({
           </button>
         </div>
       </div>
+
+      {global && global.score !== null && (
+        <div className="flex items-center justify-between gap-3 mb-3 px-3.5 py-2.5 rounded-lg bg-cream/60 border border-cream-dark/40">
+          <span className="text-marine/60 text-xs font-semibold uppercase tracking-wide">
+            Aptitude musculosquelettique globale
+          </span>
+          <span className="flex items-baseline gap-2 shrink-0">
+            <span className="text-marine font-bold text-xl tabular-nums leading-none">{global.score.toFixed(1)}</span>
+            <span className="text-marine/40 text-xs">/ 4</span>
+            {global.category && (
+              <span className={`text-sm font-semibold ${CATEGORY_COLORS[global.category]}`}>
+                {CATEGORY_LABELS[global.category]}
+              </span>
+            )}
+          </span>
+        </div>
+      )}
 
       {!anyData ? (
         <p className="text-marine/45 text-sm py-12 text-center">

@@ -759,6 +759,7 @@ export function DashboardTab() {
           age={age}
           sex={client.sex}
           norms={norms}
+          global={computed.musculoGlobal}
         />
       </section>
 
