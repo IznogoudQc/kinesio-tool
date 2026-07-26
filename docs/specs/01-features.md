@@ -2,6 +2,18 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.1 — CPAFLA : note combinée musculo + indice de santé du dos (pondérations + nomogramme))
+
+Sous la norme **CPAFLA**, les scores composites **Force musculaire** et **Santé du dos** suivent désormais la
+méthode du guide (Fig. 7-20/7-24/7-21/7-25) au lieu d'une simple moyenne : note pondérée (cote 0-4 × poids) par
+sexe, puis nomogramme `arrondi-demie-inférieure(obtenue/max × 4)` — validé sur les exemples résolus du guide.
+Poids : extension des bras ×2 (H) / flexion du tronc ×2 (F) pour le musculo ; extension du dos ×2 partout +
+circonférence de la taille ×2 (F) pour le dos. La **force de préhension** et le **niveau d'activité physique**
+sont exclus (non captés par l'app → note max réduite, comme prévu par le guide). Nouveau module
+`src/lib/norms/cpafla-combined.ts`. Sous **ACSM** (défaut), le calcul historique est inchangé. Détail : ADR 0026.
+
+Version : 0.9.0 → 0.9.1.
+
 ## ✅ Fait (v0.9.0 — Norme CPAFLA sélectionnable (barèmes musculosquelettiques du guide CPHV))
 
 Marie a fourni le **Guide du conseiller CPHV, 3ᵉ éd. (SCPE)** — la source des barèmes de son ancien logiciel.

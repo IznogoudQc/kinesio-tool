@@ -20,6 +20,12 @@ import {
 import { computeBmi, computeFcMaxPredite, computeMet, categoryToScore, scoreToCategory } from './norms/calc.ts'
 import { getAcsmRange } from './norms/acsm.ts'
 import { getCpaflaRange } from './norms/cpafla.ts'
+import {
+  cpaflaCombine,
+  MUSCULO_WEIGHTS,
+  BACK_HEALTH_WEIGHTS,
+  type CpaflaContribution
+} from './norms/cpafla-combined.ts'
 import { BILAN_TO_TEST_KEY } from './norms/bilan-keys.ts'
 import type { Category, NormsType, TestKey } from './norms/types.ts'
 
@@ -303,19 +309,36 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
   // Libellé de la zone de la grille de Marie (« En santé », …) pour l'affichage du % de gras.
   const bodyFatGridLabel = bodyFatGridRating(enriched.pourcentage_gras, profile.sex)?.label ?? null
   const aerobic = compose(['vo2max'])
-  // Indice de santé du dos — formule de l'ancien logiciel (CPAFLA), SANS le terme
-  // « effets bénéfiques de l'activité physique » (aérobie) : moyenne des cotes de la
-  // taille, de l'IMC et d'une moyenne pondérée redressements(×1) / flexion(×1) /
-  // extension du dos(×2). Voir mémoire [[backhealth-formula-deferred]].
-  const dosRatings = weightedAvg([
-    [score('situps'), 1],
-    [score('flexion_tronc_cm'), 1],
-    [score('endurance_dos_sec'), 2]
-  ])
-  const backHealthScore = avg([score('tour_taille_cm'), score('imc'), dosRatings])
-  const backHealth: CompositeScore = { score: backHealthScore, category: scoreToCategory(backHealthScore) }
-  // Force musculaire : tests de force/puissance seulement (flexibilité + dos → backHealth).
-  const musculoGlobal = compose(['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'])
+
+  // ── Note combinée musculo + indice de santé du dos ─────────────────────────
+  // Sous **CPAFLA**, on suit la note pondérée + nomogramme du guide (Fig. 7-20/
+  // 7-24/7-21/7-25), par sexe (préhension et activité physique exclues — non
+  // captées, cf. ADR 0026). Sous **ACSM**, on garde le calcul historique de l'app.
+  const useCpaflaCombined = profile.norms === 'cpafla' && (profile.sex === 'M' || profile.sex === 'F')
+  let backHealth: CompositeScore
+  let musculoGlobal: CompositeScore
+  if (useCpaflaCombined) {
+    const sex = profile.sex as 'M' | 'F'
+    const contribs = (weights: Record<string, number>): CpaflaContribution[] =>
+      Object.entries(weights).map(([k, w]) => [score(k as keyof BilanData), w])
+    const mScore = cpaflaCombine(contribs(MUSCULO_WEIGHTS[sex]))
+    musculoGlobal = { score: mScore, category: scoreToCategory(mScore) }
+    const bScore = cpaflaCombine(contribs(BACK_HEALTH_WEIGHTS[sex]))
+    backHealth = { score: bScore, category: scoreToCategory(bScore) }
+  } else {
+    // Indice de santé du dos — approximation historique (SANS le terme aérobie) :
+    // moyenne des cotes taille + IMC + moyenne pondérée redressements(×1) /
+    // flexion(×1) / extension du dos(×2). Voir mémoire [[backhealth-formula-deferred]].
+    const dosRatings = weightedAvg([
+      [score('situps'), 1],
+      [score('flexion_tronc_cm'), 1],
+      [score('endurance_dos_sec'), 2]
+    ])
+    const backHealthScore = avg([score('tour_taille_cm'), score('imc'), dosRatings])
+    backHealth = { score: backHealthScore, category: scoreToCategory(backHealthScore) }
+    // Force musculaire : tests de force/puissance seulement (flexibilité + dos → backHealth).
+    musculoGlobal = compose(['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'])
+  }
   const overallScore = avg([
     composition.score,
     aerobic.score,

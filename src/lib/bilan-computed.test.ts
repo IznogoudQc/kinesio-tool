@@ -136,6 +136,27 @@ test('Nicholas — norme CPAFLA : repli ACSM pour VO2max / composition (scores n
   assert.notEqual(r.composition.score, null)
 })
 
+test('CPAFLA — note combinée musculo + dos via pondérations + nomogramme (H 25 ans)', () => {
+  const p: BilanProfile = { age: 25, sex: 'M', norms: 'cpafla' }
+  const r = computeBilan(
+    {
+      pushups: 36, // E (M 20-29 ≥36) → 4, poids ×2 = 8
+      flexion_tronc_cm: 26, // Acceptable (M 20-29 : 25-29) → 1, ×1 = 1
+      situps: 25, // E → 4, ×1 = 4
+      endurance_dos_sec: 176, // E (M 20-29 ≥176) → 4, ×1 = 4 ; dos ×2 = 8
+      puissance_jambes_watts: 5094, // E (legPower M 20-29 ≥5094) → 4, ×1 = 4
+      puissance_calculated_auto: false
+    },
+    p
+  )
+  // Musculo : obtenue 8+1+4+4+4 = 21, max 8+4+4+4+4 = 24 → 21/24×4 = 3.5 → 3.
+  assert.equal(r.musculoGlobal.score, 3)
+  assert.equal(r.musculoGlobal.category, 'TRES_BIEN')
+  // Dos (taille absente → exclue) : obtenue flexion1 + situps4 + dos(4×2)=8 → 13,
+  // max 4+4+8 = 16 → 13/16×4 = 3.25 → 3.
+  assert.equal(r.backHealth.score, 3)
+})
+
 test('Nicholas — score global calculé', () => {
   const r = computeBilan(RAW, NICHOLAS)
   // composition ≈ 0.67, aerobic 4, dos ≈ 0.5 (taille+IMC seuls), force musculaire = 4 (échelle 0-4).
