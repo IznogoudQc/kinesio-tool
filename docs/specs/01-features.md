@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.3 — Total « Aptitude musculosquelettique globale » dans le profil du dashboard)
+
+La carte **Profil musculosquelettique** affiche désormais, en tête, un bandeau **« Aptitude musculosquelettique
+globale »** avec la **note combinée** (score /4 + catégorie colorée) — le total que produit l'ancien logiciel de
+Marie. Sous CPAFLA, c'est la note pondérée + nomogramme (v0.9.1) ; sous ACSM, la moyenne. `computed.musculoGlobal`
+est passé à `MusculoRadar` (prop `global`).
+
+Version : 0.9.2 → 0.9.3.
+
 ## ✅ Fait (v0.9.2 — Profil musculo : barème CPAFLA de la tranche d'âge affichable)
 
 Dans la carte **Profil musculosquelettique** du dashboard, un bouton **« Barème »** (visible seulement sous
