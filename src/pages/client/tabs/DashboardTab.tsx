@@ -477,7 +477,7 @@ export function DashboardTab() {
             targetId="dash-composition"
           />
           <CompositeMiniCard
-            title="Cœur et endurance"
+            title="Aptitude aérobie"
             subtitle="VO2max"
             current={computed.aerobic}
             previous={compareComputed?.aerobic}
@@ -485,7 +485,7 @@ export function DashboardTab() {
           />
           {SHOW_BACK_HEALTH && (
             <CompositeMiniCard
-              title="Santé du dos"
+              title="Indice de santé du dos"
               subtitle="Flexibilité, endurance, abdominaux"
               current={computed.backHealth}
               previous={compareComputed?.backHealth}
@@ -493,7 +493,7 @@ export function DashboardTab() {
             />
           )}
           <CompositeMiniCard
-            title="Force musculaire"
+            title="Aptitude musculosquelettique globale"
             subtitle="Six tests"
             current={computed.musculoGlobal}
             previous={compareComputed?.musculoGlobal}
@@ -741,7 +741,7 @@ export function DashboardTab() {
 
       {/* ── Cœur et endurance ──────────────────────────────────────────────── */}
       <section id="dash-cardio" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '160ms' }}>
-        <SectionHead eyebrow="Cœur et endurance" title="Votre cœur et votre souffle" />
+        <SectionHead eyebrow="Aptitude aérobie" title="Votre cœur et votre souffle" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Vo2Card}
           {fitAge !== null && <FitnessAgeCard fitAge={fitAge} age={age} />}

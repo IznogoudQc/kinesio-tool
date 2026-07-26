@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.4 — Dashboard : termes de l'ancien logiciel pour les cartes composites)
+
+Les cartes composites du dashboard reprennent les libellés de l'ancien logiciel de Marie : **Cœur et endurance
+→ Aptitude aérobie**, **Santé du dos → Indice de santé du dos**, **Force musculaire → Aptitude
+musculosquelettique globale** (Composition corporelle inchangé). L'entête de section « Cœur et endurance » suit
+aussi (« Aptitude aérobie »). Renommage d'affichage seulement (`DashboardTab`) — aucun changement de calcul.
+
+Version : 0.9.3 → 0.9.4.
+
 ## ✅ Fait (v0.9.3 — Total « Aptitude musculosquelettique globale » dans le profil du dashboard)
 
 La carte **Profil musculosquelettique** affiche désormais, en tête, un bandeau **« Aptitude musculosquelettique
