@@ -22,6 +22,9 @@ interface Client {
   nutritionEnabled: boolean
   /** % de gras corporel visé par le client (ex. 15). `null` si non défini. */
   nutritionTargetBodyFat: number | null
+  /** Poids cible explicite (kg). Sert à colorer la variation de poids (perte vs
+   *  gain). `null` = pas d'objectif de poids explicite. */
+  nutritionTargetWeightKg: number | null
   /** Niveau d'activité pour l'estimation calorique. `null` si non défini.
    *  Union alignée sur `ActivityLevel` de src/lib/nutrition.ts. */
   nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
@@ -413,6 +416,7 @@ interface Window {
           unitWeight?: 'kg' | 'lb'
           nutritionEnabled?: boolean
           nutritionTargetBodyFat?: number | null
+          nutritionTargetWeightKg?: number | null
           nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
           nutritionRateKgPerWeek?: number | null
           nutritionProteinPerLbLean?: number | null

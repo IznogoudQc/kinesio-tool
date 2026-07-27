@@ -24,6 +24,10 @@ export const clients = sqliteTable('clients', {
   // selon `nutritionActivityLevel`. Voir docs/decisions/0015.
   nutritionEnabled: integer('nutrition_enabled', { mode: 'boolean' }).notNull().default(false),
   nutritionTargetBodyFat: real('nutrition_target_body_fat'),
+  // Poids cible explicite (kg) — objectif de poids. Sert notamment à colorer la
+  // variation de poids (perte vs gain) selon le sens voulu par le client. `null`
+  // = pas d'objectif de poids explicite (on retombe sur la cible de % de gras).
+  nutritionTargetWeightKg: real('nutrition_target_weight_kg'),
   nutritionActivityLevel: text('nutrition_activity_level', {
     enum: ['sedentaire', 'leger', 'modere', 'actif', 'tres_actif']
   }),

@@ -183,6 +183,13 @@
       "when": 1784394406990,
       "tag": "0025_shallow_leech",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1785154886964,
+      "tag": "0026_worthless_pyro",
+      "breakpoints": true
     }
   ]
 }

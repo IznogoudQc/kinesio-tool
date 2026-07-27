@@ -37,7 +37,7 @@ import { settingsService } from '../../../services/settings'
 import { buildSynthesisBilan } from '../../../lib/synthesisBilan'
 import { computeBilan } from '../../../lib/bilan-computed'
 import { computeAge } from '../../../lib/norms'
-import { kgToLb } from '../../../lib/units'
+import { kgToLb, kgToWeightInput, weightInputToKg, weightUnitLabel } from '../../../lib/units'
 import { FastingPlanner } from './FastingPlanner'
 import type { FastingProgram } from '../../../lib/fasting-planning'
 
@@ -220,6 +220,11 @@ export function NutritionTab() {
   const [targetBodyFat, setTargetBodyFat] = useState(
     client.nutritionTargetBodyFat != null ? String(client.nutritionTargetBodyFat) : ''
   )
+  const wUnit = client.unitWeight ?? 'kg'
+  // Poids cible saisi dans l'unité du client (kg/lb) ; stocké en kg.
+  const [targetWeight, setTargetWeight] = useState(
+    client.nutritionTargetWeightKg != null ? String(kgToWeightInput(client.nutritionTargetWeightKg, wUnit)) : ''
+  )
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>(client.nutritionActivityLevel ?? '')
   const [rateKgPerWeek, setRateKgPerWeek] = useState<number>(client.nutritionRateKgPerWeek ?? DEFAULT_RATE_KG_PER_WEEK)
   const [proteinPerLb, setProteinPerLb] = useState<string>(
@@ -362,6 +367,14 @@ export function NutritionTab() {
       setError('Le % de gras visé doit être compris entre 3 et 60.')
       return false
     }
+    // Poids cible (saisi en unité client) → kg. Bornes larges (kg).
+    const targetWeightInput = targetWeight.trim() !== '' ? Number(targetWeight) : null
+    if (nutritionEnabled && targetWeightInput !== null && !Number.isFinite(targetWeightInput)) {
+      setError('Le poids cible doit être un nombre.')
+      return false
+    }
+    const targetWeightKg =
+      nutritionEnabled && targetWeightInput !== null ? weightInputToKg(targetWeightInput, wUnit) : null
     const proteinVal = proteinPerLb.trim() !== '' ? Number(proteinPerLb) : null
     const fatVal = fatMaxG.trim() !== '' ? Number(fatMaxG) : null
     if (nutritionEnabled && proteinVal !== null && (!Number.isFinite(proteinVal) || proteinVal < 0.3 || proteinVal > 2.5)) {
@@ -405,6 +418,7 @@ export function NutritionTab() {
       const updated = await clientsService.update(client.id, {
         nutritionEnabled,
         nutritionTargetBodyFat: nutritionEnabled ? targetPct : null,
+        nutritionTargetWeightKg: targetWeightKg,
         nutritionActivityLevel: nutritionEnabled && activityLevel !== '' ? activityLevel : null,
         nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null,
         nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
@@ -763,20 +777,38 @@ export function NutritionTab() {
 
         {nutritionEnabled && (
           <div className="mt-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-marine mb-1">% de gras corporel visé</label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min={3}
-                  max={60}
-                  step={0.5}
-                  value={targetBodyFat}
-                  onChange={e => setTargetBodyFat(e.target.value)}
-                  placeholder="15"
-                  className={`w-28 ${fieldClass}`}
-                />
-                <span className="text-marine/50 text-base">%</span>
+            <div className="flex flex-wrap gap-6">
+              <div>
+                <label className="block text-sm font-medium text-marine mb-1">% de gras corporel visé</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={3}
+                    max={60}
+                    step={0.5}
+                    value={targetBodyFat}
+                    onChange={e => setTargetBodyFat(e.target.value)}
+                    placeholder="15"
+                    className={`w-28 ${fieldClass}`}
+                  />
+                  <span className="text-marine/50 text-base">%</span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-marine mb-1">Poids cible (facultatif)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.1}
+                    value={targetWeight}
+                    onChange={e => setTargetWeight(e.target.value)}
+                    placeholder={wUnit === 'lb' ? '175' : '80'}
+                    className={`w-28 ${fieldClass}`}
+                  />
+                  <span className="text-marine/50 text-base">{weightUnitLabel(wUnit)}</span>
+                </div>
+                <p className="text-marine/40 text-xs mt-1">Colore la variation de poids (perte vs gain) selon le sens visé.</p>
               </div>
             </div>
             <div>

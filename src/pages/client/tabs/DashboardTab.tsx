@@ -528,9 +528,14 @@ export function DashboardTab() {
   const hasMultiple = count >= 2
 
   // Section « Mesures corporelles » du Bilan complet — alimentée **uniquement par
-  // les bilans** (pas l'onglet Mesures). La couleur du delta de poids suit l'objectif
-  // du client : perte (ou pas d'objectif) → baisse = vert ; gain → hausse = vert.
-  const weightLossGoal = (objectif?.goal.toLoseKg ?? 0) >= 0
+  // les bilans** (pas l'onglet Mesures). La couleur du delta de poids suit l'objectif :
+  //   1) poids cible explicite (nutrition) → au-dessus = perte, en dessous = gain ;
+  //   2) sinon cible de % de gras (buildObjectif) ; 3) sinon défaut = perte.
+  const currentWeightKg = typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null
+  const weightLossGoal =
+    client.nutritionTargetWeightKg != null && currentWeightKg != null
+      ? currentWeightKg >= client.nutritionTargetWeightKg
+      : (objectif?.goal.toLoseKg ?? 0) >= 0
   const MesuresPanel = (
     <BilanMeasuresOverview bilans={bilans ?? []} unitWeight={client.unitWeight ?? 'kg'} weightLossGoal={weightLossGoal} />
   )

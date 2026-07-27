@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `nutrition_target_weight_kg` real;

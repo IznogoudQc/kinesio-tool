@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.22 — Objectif de poids explicite (poids cible))
+
+Nouveau champ **« Poids cible »** dans Nutrition (par client, facultatif, dans l'unité du client → stocké en kg :
+`nutritionTargetWeightKg`, migration 0026). Il **prime** sur la cible de % de gras pour colorer la variation de
+poids : au-dessus de la cible → une baisse = vert (perte) ; en dessous → une hausse = vert (gain). Sans poids
+cible, on retombe sur la cible de % de gras, puis sur le défaut « perte ». UI dans `NutritionTab`, logique dans
+`DashboardTab`.
+
+Version : 0.9.21 → 0.9.22.
+
 ## ✅ Fait (v0.9.21 — Couleur du poids liée à l'objectif du client)
 
 La couleur de la variation de **poids** (Mesures corporelles) suit désormais l'**objectif du client** au lieu d'une
