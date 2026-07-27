@@ -142,6 +142,9 @@ export const mesuresPlisCutanes = sqliteTable('mesures_plis_cutanes', {
   biceps: real('biceps').notNull(),
   sousscapulaire: real('sousscapulaire').notNull(),
   iliaque: real('iliaque').notNull(),
+  /** 5e pli — sert à la somme des 5 plis (composition CPAFLA). Facultatif : le
+   *  calcul Durnin-Womersley du % de gras n'en a pas besoin (4 plis). */
+  mollet: real('mollet'),
   somme4Plis: real('somme_4_plis').notNull(),
   densiteCorporelle: real('densite_corporelle').notNull(),
   pourcentageGrasSiri: real('pourcentage_gras_siri').notNull(),

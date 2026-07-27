@@ -327,6 +327,8 @@ interface MesurePlisCutanes {
   biceps: number
   sousscapulaire: number
   iliaque: number
+  /** 5e pli, facultatif — somme des 5 plis (composition CPAFLA). `null` si non pris. */
+  mollet: number | null
   /** Valeurs calculées et figées au moment de l'enregistrement. */
   somme4Plis: number
   densiteCorporelle: number
@@ -345,6 +347,8 @@ interface PlisInput {
   biceps: number
   sousscapulaire: number
   iliaque: number
+  /** 5e pli, facultatif — somme des 5 plis (composition CPAFLA). */
+  mollet?: number
   notes?: string
 }
 

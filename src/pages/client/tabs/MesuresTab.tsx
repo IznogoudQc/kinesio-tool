@@ -20,8 +20,11 @@ import {
   lengthInputToCm,
   lengthUnitLabel,
   weightInputToKg,
-  weightUnitLabel
+  weightUnitLabel,
+  type LengthUnit,
+  type WeightUnit
 } from '../../../lib/units'
+import { clientsService } from '../../../services/clients'
 import { formatBilanDate } from '../bilanFields'
 import { MeasureDelta } from '../../../components/MeasureDelta'
 import { WaistRiskBar } from '../../../components/WaistRiskBar'
@@ -49,12 +52,18 @@ const ALL_CIRC_KEYS: CircKey[] = [
   'taille', 'abdomen', 'hanche', 'cuisseG', 'cuisseD', 'molletG', 'molletD'
 ]
 
-type PlisKey = 'triceps' | 'biceps' | 'sousscapulaire' | 'iliaque'
+type PlisKey = 'triceps' | 'biceps' | 'sousscapulaire' | 'iliaque' | 'mollet'
+/** Les 4 plis **requis** par Durnin-Womersley — le mollet en est exclu. */
+const PLIS_REQUIS: PlisKey[] = ['triceps', 'biceps', 'sousscapulaire', 'iliaque']
+
 const PLIS_FIELDS: { key: PlisKey; label: string }[] = [
   { key: 'triceps', label: 'Triceps' },
   { key: 'biceps', label: 'Biceps' },
   { key: 'sousscapulaire', label: 'Sous-scapulaire' },
-  { key: 'iliaque', label: 'Crête iliaque' }
+  { key: 'iliaque', label: 'Crête iliaque' },
+  // 5e pli, facultatif : il ne sert pas au Durnin-Womersley (4 plis) mais à la
+  // somme des 5 plis de la composition CPAFLA — présent aussi dans le bilan.
+  { key: 'mollet', label: 'Mollet' }
 ]
 
 type CircForm = Partial<Record<CircKey, number>>
@@ -126,10 +135,18 @@ export function MesuresTab() {
   )
 }
 
+/** Pastille de choix d'unité — même rendu que le formulaire de bilan. */
+function unitPill(active: boolean): string {
+  return `px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${
+    active ? 'bg-gold text-marine border-gold font-semibold' : 'bg-white text-marine/55 border-cream-dark hover:text-marine'
+  }`
+}
+
 // ── Carte de saisie d'une mesure ────────────────────────────────────────────────
 function MeasureField({
   label,
   unit,
+  unitToggle,
   value,
   onChange,
   previousValue,
@@ -139,6 +156,8 @@ function MeasureField({
 }: {
   label: string
   unit: string
+  /** Sélecteur d'unité propre au champ (grandeur), rendu à droite du libellé. */
+  unitToggle?: React.ReactNode
   value: number | undefined
   onChange: (v: number | undefined) => void
   /** Valeur de la mesure précédente (même unité que `value`) — affiche un delta. */
@@ -152,8 +171,11 @@ function MeasureField({
 }) {
   return (
     <div className="min-w-0">
-      <label className="block text-xs uppercase tracking-wide mb-1 text-marine/60 truncate">
-        {label} <span className="lowercase tracking-normal">({unit})</span>
+      <label className="flex items-center gap-1.5 text-xs uppercase tracking-wide mb-1 text-marine/60">
+        <span className="truncate">
+          {label} <span className="lowercase tracking-normal">({unit})</span>
+        </span>
+        {unitToggle}
       </label>
       <input
         type="number"
@@ -282,13 +304,46 @@ function MeasureEntryPanel({
   notify: (m: string) => void
   onDirtyChange: (dirty: boolean) => void
 }) {
-  const unitLength = client.unitLength ?? 'cm'
-  const unitWeight = client.unitWeight ?? 'kg'
+  // Unités de SAISIE, modifiables ici comme dans le formulaire de bilan. La DB
+  // stocke toujours en métrique (cm / kg) ; on convertit à l'affichage et au save.
+  const [unitLength, setUnitLength] = useState<LengthUnit>(client.unitLength ?? 'cm')
+  const [unitWeight, setUnitWeight] = useState<WeightUnit>(client.unitWeight ?? 'kg')
+  // La grandeur a son propre sélecteur : on la note souvent en pouces même quand
+  // les circonférences restent en cm (défaut historique de cet écran).
+  const [heightUnit, setHeightUnit] = useState<LengthUnit>('in')
+  /** Change l'unité de longueur des circonférences et reconvertit la saisie en cours. */
+  function changeUnitLength(next: LengthUnit) {
+    if (next === unitLength) return
+    setCircForm(prev => {
+      const out: CircForm = {}
+      for (const k of ALL_CIRC_KEYS) {
+        const v = prev[k]
+        if (typeof v === 'number') out[k] = cmToLengthInput(lengthInputToCm(v, unitLength), next)
+      }
+      return out
+    })
+    setUnitLength(next)
+    clientsService.update(client.id, { unitLength: next }).catch(() => {})
+  }
+
+  /** Idem pour le poids. */
+  function changeUnitWeight(next: WeightUnit) {
+    if (next === unitWeight) return
+    setPoids(p => (typeof p === 'number' ? kgToWeightInput(weightInputToKg(p, unitWeight), next) : p))
+    setUnitWeight(next)
+    clientsService.update(client.id, { unitWeight: next }).catch(() => {})
+  }
+
+  /** Sélecteur propre à la grandeur — non mémorisé sur le client (préférence d'écran). */
+  function changeHeightUnit(next: LengthUnit) {
+    if (next === heightUnit) return
+    setGrandeur(g => (typeof g === 'number' ? cmToLengthInput(lengthInputToCm(g, heightUnit), next) : g))
+    setHeightUnit(next)
+  }
+
   const lenLabel = lengthUnitLabel(unitLength)
   const wLabel = weightUnitLabel(unitWeight)
-  // La grandeur (taille/hauteur) est TOUJOURS saisie en pouces (peu importe l'unité
-  // du client), puis convertie en cm pour le stockage et les calculs (IMC).
-  const grandeurUnit = lengthUnitLabel('in')
+  const grandeurUnit = lengthUnitLabel(heightUnit)
 
   const [circList, setCircList] = useState<MesureCirconferences[]>([])
   const [plisList, setPlisList] = useState<MesurePlisCutanes[]>([])
@@ -381,7 +436,7 @@ function MeasureEntryPanel({
   }
   const previousPoids = previousCircRow?.poidsKg != null ? kgToWeightInput(previousCircRow.poidsKg, unitWeight) : undefined
   const previousGrandeur =
-    previousCircRow?.grandeurCm != null ? cmToLengthInput(previousCircRow.grandeurCm, 'in') : undefined
+    previousCircRow?.grandeurCm != null ? cmToLengthInput(previousCircRow.grandeurCm, heightUnit) : undefined
 
   const LOWER_IS_BETTER_CIRC: Partial<Record<CircKey, boolean>> = { taille: true, hanche: true, abdomen: true }
 
@@ -416,7 +471,8 @@ function MeasureEntryPanel({
     return Math.round((previousCircRow.taille / previousCircRow.hanche) * 100) / 100
   }, [previousCircRow])
 
-  const plisAllFilled = PLIS_FIELDS.every(f => typeof plisForm[f.key] === 'number' && (plisForm[f.key] as number) > 0)
+  // Seuls les 4 plis de Durnin sont exigés ; le mollet reste optionnel.
+  const plisAllFilled = PLIS_REQUIS.every(k => typeof plisForm[k] === 'number' && (plisForm[k] as number) > 0)
   const plisHasAny = PLIS_FIELDS.some(f => plisForm[f.key] !== undefined)
   const plisCalc = useMemo(() => {
     if (!plisAllFilled || !client.sex || !client.birthdate) return null
@@ -463,7 +519,7 @@ function MeasureEntryPanel({
     if (entry.circ) {
       setCircForm(circRowToForm(entry.circ, unitLength))
       setPoids(entry.circ.poidsKg != null ? kgToWeightInput(entry.circ.poidsKg, unitWeight) : undefined)
-      setGrandeur(entry.circ.grandeurCm != null ? cmToLengthInput(entry.circ.grandeurCm, 'in') : undefined)
+      setGrandeur(entry.circ.grandeurCm != null ? cmToLengthInput(entry.circ.grandeurCm, heightUnit) : undefined)
       setEditCircId(entry.circ.id)
     } else {
       setCircForm({})
@@ -508,7 +564,7 @@ function MeasureEntryPanel({
           if (v !== undefined) payload[key] = lengthInputToCm(v, unitLength)
         }
         if (poids !== undefined) payload.poidsKg = weightInputToKg(poids, unitWeight)
-        if (grandeur !== undefined) payload.grandeurCm = lengthInputToCm(grandeur, 'in')
+        if (grandeur !== undefined) payload.grandeurCm = lengthInputToCm(grandeur, heightUnit)
         if (editCircId) await mesuresService.circonferences.update(editCircId, payload)
         else await mesuresService.circonferences.create(client.id, payload)
       }
@@ -519,6 +575,7 @@ function MeasureEntryPanel({
           biceps: plisForm.biceps as number,
           sousscapulaire: plisForm.sousscapulaire as number,
           iliaque: plisForm.iliaque as number,
+          ...(typeof plisForm.mollet === 'number' ? { mollet: plisForm.mollet } : {}),
           notes: notesVal
         }
         if (editPlisId) await mesuresService.plis.update(editPlisId, payload)
@@ -561,7 +618,27 @@ function MeasureEntryPanel({
           </div>
         </div>
 
-        <DateField value={date} onChange={setDate} />
+        {/* Unités de saisie — même bandeau que le formulaire de bilan. */}
+        <div className="max-w-5xl mx-auto mb-4 flex flex-wrap items-end gap-x-8 gap-y-3">
+          <DateField value={date} onChange={setDate} />
+          <div>
+            <span className="block text-xs uppercase tracking-wide mb-1 text-marine/60">Longueurs</span>
+            <div className="flex gap-1.5">
+              <button type="button" onClick={() => changeUnitLength('cm')} className={unitPill(unitLength === 'cm')}>cm</button>
+              <button type="button" onClick={() => changeUnitLength('in')} className={unitPill(unitLength === 'in')}>pouce</button>
+            </div>
+          </div>
+          <div>
+            <span className="block text-xs uppercase tracking-wide mb-1 text-marine/60">Poids</span>
+            <div className="flex gap-1.5">
+              <button type="button" onClick={() => changeUnitWeight('kg')} className={unitPill(unitWeight === 'kg')}>kg</button>
+              <button type="button" onClick={() => changeUnitWeight('lb')} className={unitPill(unitWeight === 'lb')}>lb</button>
+            </div>
+          </div>
+          <p className="basis-full text-xs text-marine/45">
+            Les plis restent en mm. Tout est converti en métrique pour les calculs.
+          </p>
+        </div>
 
         {/* Poids · Grandeur sur leur propre ligne (Grandeur saisie en pouces). */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -577,13 +654,31 @@ function MeasureEntryPanel({
           <MeasureField
             label="Grandeur"
             unit={grandeurUnit}
+            unitToggle={
+              <span className="ml-auto inline-flex rounded overflow-hidden border border-cream-dark normal-case tracking-normal">
+                {(['cm', 'in'] as LengthUnit[]).map(u => (
+                  <button
+                    key={u}
+                    type="button"
+                    onClick={() => changeHeightUnit(u)}
+                    className={`px-1.5 py-px text-[10px] transition-colors ${
+                      heightUnit === u ? 'bg-gold text-marine font-semibold' : 'text-marine/50 hover:text-marine'
+                    }`}
+                  >
+                    {lengthUnitLabel(u)}
+                  </button>
+                ))}
+              </span>
+            }
             value={grandeur}
             onChange={setGrandeur}
             previousValue={previousGrandeur}
             previousDate={previousCircRow?.date}
             extra={
               grandeur !== undefined ? (
-                <p className="text-marine/45 text-xs mt-1">({nf1(lengthInputToCm(grandeur, 'in'))} cm)</p>
+                heightUnit === 'in' ? (
+                  <p className="text-marine/45 text-xs mt-1">({nf1(lengthInputToCm(grandeur, 'in'))} cm)</p>
+                ) : null
               ) : null
             }
           />
@@ -628,7 +723,7 @@ function MeasureEntryPanel({
                   unit="mm"
                   value={plisForm[f.key]}
                   onChange={v => setPlisField(f.key, v)}
-                  previousValue={previousPlisRow?.[f.key]}
+                  previousValue={previousPlisRow?.[f.key] ?? undefined}
                   previousDate={previousPlisRow?.date}
                   lowerIsBetter
                 />

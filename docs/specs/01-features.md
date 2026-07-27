@@ -2,6 +2,20 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.49 — Mesures : sélecteurs d'unités + pli du mollet)
+
+Trois manques comblés dans l'onglet **Mesures**, pour finir l'alignement sur le formulaire de bilan :
+
+- **Sélecteurs d'unités** « Longueurs (cm / pouce) » et « Poids (kg / lb) » en tête du formulaire. Les
+  valeurs **déjà saisies sont reconverties** au changement, pour qu'un 100 cm ne devienne pas 100 pouces.
+  Le choix est mémorisé sur la fiche client, comme au bilan.
+- **Sélecteur `cm | po` propre à la Grandeur** — elle était figée en pouces, sans moyen d'en changer.
+- **Pli du mollet** ajouté aux plis cutanés (migration `0027`). Il est **facultatif** : le calcul
+  Durnin-Womersley n'utilise que 4 plis, donc son absence ne bloque ni l'enregistrement ni le % de gras.
+  Il sert à la somme des 5 plis de la composition CPAFLA — comme dans le bilan.
+
+Version : 0.9.48 → 0.9.49.
+
 ## ✅ Fait (v0.9.48 — Saisie des Mesures alignée sur le formulaire de bilan)
 
 L'onglet **Mesures** saisissait sur fond **marine foncé** (gros chiffres blancs sans bordure) alors que le

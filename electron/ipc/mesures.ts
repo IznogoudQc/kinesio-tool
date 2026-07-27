@@ -42,6 +42,8 @@ const PlisDataSchema = z
     biceps: mm,
     sousscapulaire: mm,
     iliaque: mm,
+    /** 5e pli, facultatif — somme des 5 plis (composition CPAFLA). */
+    mollet: mm.optional(),
     notes: z.string().max(2000).optional()
   })
   .strip()
@@ -175,6 +177,7 @@ export function registerMesuresHandlers(): void {
         biceps: data.biceps,
         sousscapulaire: data.sousscapulaire,
         iliaque: data.iliaque,
+        mollet: data.mollet ?? null,
         somme4Plis: calc.sumPlis,
         densiteCorporelle: calc.density,
         pourcentageGrasSiri: calc.bodyFatSiri,
@@ -211,6 +214,7 @@ export function registerMesuresHandlers(): void {
         biceps: data.biceps,
         sousscapulaire: data.sousscapulaire,
         iliaque: data.iliaque,
+        mollet: data.mollet ?? null,
         somme4Plis: calc.sumPlis,
         densiteCorporelle: calc.density,
         pourcentageGrasSiri: calc.bodyFatSiri,

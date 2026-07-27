@@ -1,0 +1,1 @@
+ALTER TABLE `mesures_plis_cutanes` ADD `mollet` real;
