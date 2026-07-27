@@ -49,7 +49,9 @@ const SupplementsSchema = z
   .max(100)
 
 const CategorizationNormsSchema = z.enum(['acsm', 'cpafla'])
-const DEFAULT_CATEGORIZATION_NORMS = 'acsm' as const
+// Doit rester aligné avec `DEFAULT_NORMS` (src/lib/norms/types.ts) — duplication
+// assumée à la frontière IPC. CPAFLA = référentiel du logiciel d'origine (ADR 0028).
+const DEFAULT_CATEGORIZATION_NORMS = 'cpafla' as const
 
 // Circonférences que Marie-Eve choisit de saisir. Absence de réglage → l'UI les
 // affiche toutes. Masquer un champ n'efface aucune donnée déjà en base.

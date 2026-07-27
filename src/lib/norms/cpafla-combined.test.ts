@@ -3,34 +3,49 @@ import assert from 'node:assert/strict'
 import {
   cpaflaCombine,
   cpaflaCombineCategories,
+  cpaflaNomogramme,
   MUSCULO_WEIGHTS,
   BACK_HEALTH_WEIGHTS
 } from './cpafla-combined.ts'
 
-test('nomogramme = exemple résolu du guide (santé du dos : 23/28 → 3)', () => {
+const near = (a: number | null, b: number) => assert.ok(a !== null && Math.abs(a - b) < 1e-9, `${a} ≈ ${b}`)
+
+test('exemple résolu du guide (santé du dos : 23/28) — brut puis nomogramme', () => {
   // Guide CPHV, exemple p. Santé du dos (homme 29 ans) :
   // activité E(8) + taille E(4) + flexion A(1) + redress E(4) + dos TB(6) = 23 ; max 28.
   const s = cpaflaCombine([[4, 2], [4, 1], [1, 1], [4, 1], [3, 2]])
-  assert.equal(s, 3)
+  near(s, (23 / 28) * 4) // 3.2857… — valeur affichée par le logiciel d'origine
+  assert.equal(cpaflaNomogramme(s), 3) // grille du guide
 })
 
-test('nomogramme = même exemple via catégories', () => {
+test('même exemple via catégories', () => {
   const s = cpaflaCombineCategories([
     ['EXCELLENT', 2], ['EXCELLENT', 1], ['ACCEPTABLE', 1], ['EXCELLENT', 1], ['TRES_BIEN', 2]
   ])
-  assert.equal(s, 3)
+  assert.equal(cpaflaNomogramme(s), 3)
 })
 
-test('nomogramme = musculo obtenue 13 → 2 (exemple du guide)', () => {
+test('musculo obtenue 13/24 → nomogramme 2 (exemple du guide)', () => {
   // note obtenue 13 = 6+3+2+1+1, note max 24 = 8+4+4+4+4 ; 13/24×4 = 2.167 → 2.
-  assert.equal(cpaflaCombine([[3, 2], [3, 1], [2, 1], [1, 1], [1, 1]]), 2)
+  const s = cpaflaCombine([[3, 2], [3, 1], [2, 1], [1, 1], [1, 1]])
+  near(s, (13 / 24) * 4)
+  assert.equal(cpaflaNomogramme(s), 2)
 })
 
-test('arrondi à la demie inférieure : 3.5 → 3, 2.5 → 2, 0.5 → 0', () => {
-  assert.equal(cpaflaCombine([[3, 2], [4, 2]]), 3) // 14/16×4 = 3.5 → 3
-  assert.equal(cpaflaCombine([[2, 2], [3, 2]]), 2) // 10/16×4 = 2.5 → 2
-  assert.equal(cpaflaCombine([[1, 1], [0, 7]]), 0) // 1/32×4 = 0.125 → 0
+test('le score garde ses décimales (le logiciel d’origine affiche 3,6 — pas 4)', () => {
+  // Nicholas, 25 juin 2026 : taille E(4) + flexion B(2) + redress E(4) + dos E(4×2)
+  // = 18 ; max 20 → 3,6. Un arrondi nomogramme donnerait 4 (régression corrigée).
+  const s = cpaflaCombine([[4, 1], [2, 1], [4, 1], [4, 2]])
+  near(s, 3.6)
+  assert.equal(cpaflaNomogramme(s), 4)
+})
+
+test('nomogramme : arrondi à la demie inférieure (3.5 → 3, 2.5 → 2, 0.5 → 0)', () => {
+  assert.equal(cpaflaNomogramme(cpaflaCombine([[3, 2], [4, 2]])), 3) // 14/16×4 = 3.5 → 3
+  assert.equal(cpaflaNomogramme(cpaflaCombine([[2, 2], [3, 2]])), 2) // 10/16×4 = 2.5 → 2
+  assert.equal(cpaflaNomogramme(cpaflaCombine([[1, 1], [0, 7]])), 0) // 1/32×4 = 0.125 → 0
   assert.equal(cpaflaCombine([[4, 1], [4, 1]]), 4) // ratio 1 → 4
+  assert.equal(cpaflaNomogramme(null), null)
 })
 
 test('tests non mesurés (null) exclus de la note obtenue ET de la note max', () => {

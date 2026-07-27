@@ -136,7 +136,7 @@ test('Nicholas — norme CPAFLA : VO2max replie sur ACSM ; composition suit la m
   assert.equal(r.composition.category, 'BIEN')
 })
 
-test('CPAFLA — note combinée musculo + dos via pondérations + nomogramme (H 25 ans)', () => {
+test('CPAFLA — note combinée musculo + dos via pondérations (H 25 ans)', () => {
   const p: BilanProfile = { age: 25, sex: 'M', norms: 'cpafla' }
   const r = computeBilan(
     {
@@ -149,12 +149,14 @@ test('CPAFLA — note combinée musculo + dos via pondérations + nomogramme (H 
     },
     p
   )
-  // Musculo : obtenue 8+1+4+4+4 = 21, max 8+4+4+4+4 = 24 → 21/24×4 = 3.5 → 3.
-  assert.equal(r.musculoGlobal.score, 3)
-  assert.equal(r.musculoGlobal.category, 'TRES_BIEN')
+  // Musculo : obtenue 8+1+4+4+4 = 21, max 8+4+4+4+4 = 24 → 21/24×4 = 3,5.
+  // Décimales conservées (pas d'arrondi nomogramme) — cf. ADR 0028.
+  assert.equal(r.musculoGlobal.score, 3.5)
+  assert.equal(r.musculoGlobal.category, 'EXCELLENT')
   // Dos (taille absente → exclue) : obtenue flexion1 + situps4 + dos(4×2)=8 → 13,
-  // max 4+4+8 = 16 → 13/16×4 = 3.25 → 3.
-  assert.equal(r.backHealth.score, 3)
+  // max 4+4+8 = 16 → 13/16×4 = 3,25.
+  assert.equal(r.backHealth.score, 3.25)
+  assert.equal(r.backHealth.category, 'TRES_BIEN')
 })
 
 test('CPAFLA — composition corporelle : exemple du guide (femme) → Acceptable (1)', () => {

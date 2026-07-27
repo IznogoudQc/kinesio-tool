@@ -26,7 +26,7 @@ import {
   BACK_HEALTH_WEIGHTS,
   type CpaflaContribution
 } from './norms/cpafla-combined.ts'
-import { cpaflaComposition } from './norms/cpafla-composition.ts'
+import { cpaflaComposition, cpaflaWaistPoints } from './norms/cpafla-composition.ts'
 import { BILAN_TO_TEST_KEY } from './norms/bilan-keys.ts'
 import type { Category, NormsType, TestKey } from './norms/types.ts'
 
@@ -326,16 +326,24 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
   const aerobic = compose(['vo2max'])
 
   // ── Note combinée musculo + indice de santé du dos ─────────────────────────
-  // Sous **CPAFLA**, on suit la note pondérée + nomogramme du guide (Fig. 7-20/
-  // 7-24/7-21/7-25), par sexe (préhension et activité physique exclues — non
-  // captées, cf. ADR 0026). Sous **ACSM**, on garde le calcul historique de l'app.
-  const useCpaflaCombined = profile.norms === 'cpafla' && (profile.sex === 'M' || profile.sex === 'F')
+  // Méthode du guide CPHV (Fig. 7-20 / 7-24) : moyenne pondérée des cotes, par
+  // sexe, **décimales conservées** (préhension et activité physique exclues — non
+  // captées, cf. ADR 0026). Appliquée **quelle que soit la norme choisie** : c'est
+  // la seule formule sourcée pour ces deux composites, et elle reproduit à
+  // l'identique les rapports de l'ancien logiciel (ADR 0028). Le repli historique
+  // ci-dessous ne sert plus que si le sexe du client est inconnu.
+  const useCpaflaCombined = profile.sex === 'M' || profile.sex === 'F'
   let backHealth: CompositeScore
   let musculoGlobal: CompositeScore
   if (useCpaflaCombined) {
     const sex = profile.sex as 'M' | 'F'
+    // Le tour de taille se cote via les tables de composition (Fig. 7-4/7-5, donc
+    // selon la bande d'IMC) et non via les seuils Santé Canada — cf. `cpaflaWaistPoints`.
+    const waistPts = cpaflaWaistPoints(enriched.imc, enriched.tour_taille_cm, sex)
     const contribs = (weights: Record<string, number>): CpaflaContribution[] =>
-      Object.entries(weights).map(([k, w]) => [score(k as keyof BilanData), w])
+      Object.entries(weights).map(([k, w]) =>
+        k === 'tour_taille_cm' ? [waistPts, w] : [score(k as keyof BilanData), w]
+      )
     const mScore = cpaflaCombine(contribs(MUSCULO_WEIGHTS[sex]))
     musculoGlobal = { score: mScore, category: scoreToCategory(mScore) }
     const bScore = cpaflaCombine(contribs(BACK_HEALTH_WEIGHTS[sex]))

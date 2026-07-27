@@ -2,6 +2,23 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.30 — Indice de santé du dos & musculo : parité exacte avec l'ancien logiciel)
+
+L'**indice de santé du dos** et l'**aptitude musculosquelettique** reproduisent maintenant **à l'identique**
+les chiffres du logiciel d'origine, validés sur 6 rapports réels (2011 → juin 2026). Trois corrections :
+
+1. **Décimales conservées** — le nomogramme du guide (Fig. 7-25) arrondit à l'entier, mais le logiciel de
+   Marie affiche la valeur brute. Le bilan de juin 2026 affichait `4` au lieu de `3,6`.
+2. **Tour de taille coté via les tables de composition** (Fig. 7-4/7-5, donc selon la bande d'IMC) et non
+   via les seuils Santé Canada — nouveau helper `cpaflaWaistPoints`.
+3. **Formule appliquée quelle que soit la norme** (c'est la seule sourcée) et **CPAFLA devient la norme par
+   défaut**. Les tests sans table CPAFLA retombent sur ACSM.
+
+Le questionnaire d'activité physique (poids ×2 dans Fig. 7-24) reste **exclu** : Marie ne l'administre pas
+à chaque bilan. Voir ADR 0028 et `cpafla-parite.test.ts`.
+
+Version : 0.9.29 → 0.9.30.
+
 ## ✅ Fait (v0.9.29 — Graphes de tendance : étiquette du dernier point qui débordait)
 
 Correctif dans les trois graphes de tendance (`ScoreTrend`, `BodyFatTrend`, `Vo2maxTrend`) : l'étiquette de

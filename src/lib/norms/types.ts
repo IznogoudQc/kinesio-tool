@@ -48,7 +48,11 @@ export type TestKey =
 
 export type NormsType = 'acsm' | 'cpafla'
 
-export const DEFAULT_NORMS: NormsType = 'acsm'
+/** CPAFLA par défaut : c'est le référentiel du logiciel que l'app remplace, et la
+ *  parité de cotation avec les rapports de Marie a été validée (ADR 0028). Les
+ *  tests sans table CPAFLA (VO2max, % gras, IMC, tour de taille) retombent
+ *  automatiquement sur ACSM — cf. `getRange`. */
+export const DEFAULT_NORMS: NormsType = 'cpafla'
 
 /** Percentiles ACSM (P10, P25, P50, P75, P90) — la base de toute catégorisation.
  *  La catégorie est dérivée des cutoffs P10/P25/P50/P75 :

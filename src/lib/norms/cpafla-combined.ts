@@ -2,16 +2,23 @@
  *
  *  Le guide n'agrège PAS les cotes par simple moyenne : chaque test reçoit une
  *  **note pondérée** (cote 0-4 × poids), on somme (« note obtenue »), on somme les
- *  maxima des tests **présents** (« note maximale »), puis un **nomogramme**
- *  (Fig. 7-21 musculo / 7-25 dos) convertit le couple (max, obtenue) en score 0-4.
+ *  maxima des tests **présents** (« note maximale »), et le score = le rapport
+ *  `obtenue / max × 4` — c'est-à-dire la **moyenne pondérée des cotes**.
  *
- *  Nomogramme ≡ `arrondi-inférieur-à-la-demie(obtenue / max × 4)` — validé sur les
- *  exemples résolus du guide (santé du dos : 23/28 → 3 ; musculo : 13/32 → 2).
+ *  ⚠️ Le score est gardé **avec ses décimales**. Le nomogramme du guide
+ *  (Fig. 7-21 musculo / 7-25 dos) n'est que la version *arrondie* de ce même
+ *  rapport (`arrondi-inférieur-à-la-demie`, cf. `cpaflaNomogramme`) ; le logiciel
+ *  que l'app remplace, lui, affiche la valeur non arrondie (« 3,6 points »).
+ *
+ *  **Validé** contre 6 rapports réels de l'ancien logiciel (2011 → juin 2026) :
+ *  dos 2,6 = 13/5 · 2,0 = 2/1 · 3,6 = 18/5 ; musculo 2,8 = 17/6 · 3,5 = 21/6 ·
+ *  3,7 = 22/6. Voir ADR 0028.
  *
  *  Poids (Fig. 7-20 / 7-24), **par sexe**. Deux mesures du guide sont volontairement
  *  exclues car l'app ne les capte pas (choix de Marie — repli par note max réduite) :
  *    · Force de préhension (dynamomètre) — note combinée musculo
- *    · Niveau d'activité physique       — indice de santé du dos
+ *    · Niveau d'activité physique       — indice de santé du dos (n'apparaît que
+ *      dans le bilan 2011 des rapports de Marie ; plus administré depuis)
  *  Voir ADR 0026.
  */
 
@@ -33,10 +40,18 @@ function roundHalfDown(x: number): number {
   return r === 0 ? 0 : r // normalise -0 → 0
 }
 
+/** Nomogramme du guide (Fig. 7-21 / 7-25) : la note combinée **arrondie** à
+ *  l'entier. L'app affiche la valeur non arrondie de `cpaflaCombine` (comme le
+ *  logiciel d'origine) ; cette fonction sert à reproduire la grille du guide. */
+export function cpaflaNomogramme(score: number | null): number | null {
+  return score === null ? null : roundHalfDown(score)
+}
+
 /** Une contribution : la cote 0-4 du test (ou `null` si non mesuré) et son poids. */
 export type CpaflaContribution = [score: number | null, weight: number]
 
-/** Combine des cotes 0-4 pondérées → score combiné 0-4 via le nomogramme CPAFLA.
+/** Combine des cotes 0-4 pondérées → score combiné 0-4 (moyenne pondérée des
+ *  cotes = note obtenue / note maximale × 4), **décimales conservées**.
  *  Les tests `null` (non mesurés) sont exclus de la note obtenue ET de la note max.
  *  `null` si aucun test présent. */
 export function cpaflaCombine(contribs: CpaflaContribution[]): number | null {
@@ -48,7 +63,7 @@ export function cpaflaCombine(contribs: CpaflaContribution[]): number | null {
     max += 4 * weight
   }
   if (max === 0) return null
-  return roundHalfDown((obtenue / max) * 4)
+  return (obtenue / max) * 4
 }
 
 /** Idem mais à partir de catégories (pratique pour les tests). */

@@ -164,6 +164,24 @@ export function cpaflaComposition(input: CpaflaCompositionInput): number | null 
   return cpaflaCompositionDetail(input).score
 }
 
+/** Cote 0-4 du **tour de taille** telle que la lit le protocole CPAFLA : les points
+ *  du tour de taille viennent des tables de composition (Fig. 7-4/7-5) et dépendent
+ *  donc de la **bande d'IMC** — il n'existe pas de table « tour de taille » autonome.
+ *
+ *  C'est cette cote qu'utilise l'**indice de santé du dos** (et non les seuils
+ *  Santé Canada d'`acsm.ts`). Vérifié sur les rapports de l'ancien logiciel
+ *  (homme, IMC ≈ 30-32) : 93 cm → 4 · 97/99/100 cm → 2 · 103 cm → 0.
+ *
+ *  `null` si le tour de taille manque. Sans IMC, le protocole retombe sur la
+ *  bande de référence (IMC 27), comme `cpaflaCompositionDetail`. */
+export function cpaflaWaistPoints(
+  imc: number | null | undefined,
+  ct: number | null | undefined,
+  sex: 'F' | 'M'
+): number | null {
+  return cpaflaCompositionDetail({ imc, ct, s5pc: null, sex }).b
+}
+
 // ── Barème pour l'affichage (bouton « Barème ») ───────────────────────────────
 export interface CpaflaBaremeCell {
   range: string
