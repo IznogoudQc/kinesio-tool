@@ -60,6 +60,7 @@ export interface StandaloneData {
     unitWeight: 'kg' | 'lb'
     nutritionEnabled: boolean
     nutritionTargetBodyFat: number | null
+    nutritionTargetWeightKg: number | null
     nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
     nutritionRateKgPerWeek: number | null
     nutritionProteinPerLbLean: number | null
@@ -921,6 +922,12 @@ function ObjectifBody({
                 <p className="ed-eyebrow text-marine/40">Poids visé</p>
                 <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{dualWeight(objectif.goal.goalKg, unitWeight)}</p>
               </div>
+              {objectif.targetWeightKg !== null && (
+                <div>
+                  <p className="ed-eyebrow text-marine/40">Poids cible</p>
+                  <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{dualWeight(objectif.targetWeightKg, unitWeight)}</p>
+                </div>
+              )}
               <div>
                 <p className="ed-eyebrow text-marine/40">À perdre</p>
                 <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{dualWeight(objectif.goal.toLoseKg, unitWeight)}</p>

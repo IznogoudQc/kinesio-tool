@@ -653,6 +653,9 @@ function ObjectifBlock({
             <ObjStat label="% de gras actuel" value={`${bodyFatPct.toFixed(1)} %`} />
             <span style={{ fontSize: '16pt', color: GOLD }}>→</span>
             <ObjStat label="% de gras visé" value={`${target} %`} accent />
+            {num(client.nutritionTargetWeightKg) !== null && (
+              <ObjStat label="Poids cible" value={w(num(client.nutritionTargetWeightKg) as number)} accent />
+            )}
           </div>
 
           {atGoal ? (

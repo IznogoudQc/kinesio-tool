@@ -850,7 +850,7 @@ function FitnessAgeCard({ fitAge, age }: { fitAge: number; age: number | null })
 }
 
 function ObjectifCard({ objectif, unit }: { objectif: ObjectifSummary; unit: 'kg' | 'lb' }) {
-  const { goal, target, macros, weeks, goalDate, atGoal } = objectif
+  const { goal, target, targetWeightKg, macros, weeks, goalDate, atGoal } = objectif
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
       <p className="text-gold-dark text-xs uppercase tracking-wide font-semibold mb-1">Objectif</p>
@@ -889,6 +889,11 @@ function ObjectifCard({ objectif, unit }: { objectif: ObjectifSummary; unit: 'kg
             </div>
           )}
         </>
+      )}
+      {targetWeightKg != null && (
+        <p className="text-marine/60 text-sm mt-2 pt-2 border-t border-cream-dark/40">
+          Poids cible : <b className="text-marine">{dualWeight(targetWeightKg, unit)}</b>
+        </p>
       )}
     </div>
   )

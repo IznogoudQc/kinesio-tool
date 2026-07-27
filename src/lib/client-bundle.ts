@@ -66,6 +66,7 @@ export interface ClientBundle {
 const NUTRITION_KEYS = [
   'nutritionEnabled',
   'nutritionTargetBodyFat',
+  'nutritionTargetWeightKg',
   'nutritionActivityLevel',
   'nutritionRepasParJour',
   'jeuneType',

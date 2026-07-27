@@ -45,6 +45,8 @@ export interface ObjectifClient {
   sex: 'F' | 'M' | null
   nutritionEnabled: boolean
   nutritionTargetBodyFat: number | null
+  /** Poids cible explicite (kg). `null`/absent = pas d'objectif de poids. */
+  nutritionTargetWeightKg?: number | null
   nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
   nutritionRateKgPerWeek: number | null
   nutritionProteinPerLbLean: number | null
@@ -104,5 +106,14 @@ export function buildObjectif(
   // `rate` est le rythme RÉELLEMENT utilisé pour l'échéance : celui choisi par
   // Marie-Eve, ou celui déduit des calories manuelles. Le rapport et le document
   // client s'en servent pour expliquer d'où sort le nombre de semaines.
-  return { goal, target: client.nutritionTargetBodyFat, macros, weeks, goalDate, atGoal, rate: effectiveRate }
+  return {
+    goal,
+    target: client.nutritionTargetBodyFat,
+    targetWeightKg: client.nutritionTargetWeightKg ?? null,
+    macros,
+    weeks,
+    goalDate,
+    atGoal,
+    rate: effectiveRate
+  }
 }

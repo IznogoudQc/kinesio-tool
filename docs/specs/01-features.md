@@ -2,6 +2,14 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.23 — Poids cible affiché dans la carte objectif et le rapport)
+
+Le **poids cible** (v0.9.22) apparaît maintenant dans la **carte Objectif** du dashboard, dans le **rapport PDF**
+(tuile « Poids cible » de la section Objectif) et dans le **document HTML** interactif. Exposé via
+`buildObjectif().targetWeightKg` + ajouté au bundle client (`client-bundle.ts`) pour le HTML.
+
+Version : 0.9.22 → 0.9.23.
+
 ## ✅ Fait (v0.9.22 — Objectif de poids explicite (poids cible))
 
 Nouveau champ **« Poids cible »** dans Nutrition (par client, facultatif, dans l'unité du client → stocké en kg :
