@@ -2,6 +2,23 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.46 — IMC : mentionné, plus évalué)
+
+Même traitement que le tour de taille (v0.9.44) : l'**IMC** est affiché sans cote, sans percentile et sans
+objectif « −X kg/m² pour atteindre… ». Partout — formulaire, dashboard, forces/faiblesses, plan d'action,
+métriques IA, rapports PDF et HTML, et le graphique de progression (plus de zones).
+
+C'est cohérent avec ce que dit déjà le rapport lui-même : *« L'IMC seul dit peu de choses — un athlète
+musclé et une personne sédentaire peuvent avoir le même. »* Le coter revenait à contredire cette phrase.
+
+L'IMC continue d'alimenter le **score de composition** : c'est lui qui choisit la bande des tables CPAFLA
+Fig. 7-4/7-5. Parité des scores vérifiée, inchangée.
+
+Les barèmes IMC et tour de taille sont retirés de la feuille « Exporter les barèmes » — elle documente ce
+que l'app utilise pour coter.
+
+Version : 0.9.45 → 0.9.46.
+
 ## ✅ Fait (v0.9.45 — Ordre de la section Composition + objectif « +0 » supprimé)
 
 **Rapport HTML** : le tour de taille passe **juste sous l'IMC**. Les deux mesures anthropométriques

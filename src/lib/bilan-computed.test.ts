@@ -113,15 +113,14 @@ test('Nicholas — score aérobie EXCELLENT (VO2max 49 chez M 40-49)', () => {
   assert.equal(r.aerobic.score, 4)
 })
 
-test('Nicholas — score composition ACCEPTABLE (repli ACSM : IMC + % gras seulement)', () => {
+test('Nicholas — score composition ACCEPTABLE (repli ACSM : % de gras seulement)', () => {
   const r = computeBilan(RAW, NICHOLAS)
   // Chemin de repli ACSM (sexe inconnu en usage réel — la norme est toujours CPAFLA).
-  // IMC 32.2 (lowerIsBetter, p10=30) → > p10 → A_AMELIORER → 0
-  // % gras 30.2 (M 40-49 : p10=35, p25=30) → entre p25 et p10 → ACCEPTABLE → 1
-  // Le tour de taille n'entre PLUS dans la moyenne : il est mentionné, jamais évalué
-  // (plus de TestKey — cf. `BILAN_TO_TEST_KEY`). Moyenne (0 + 1)/2 = 0,5 → ACCEPTABLE.
+  // Ni l'IMC ni le tour de taille n'entrent dans la moyenne : ils sont mentionnés,
+  // jamais évalués (plus de TestKey — cf. `BILAN_TO_TEST_KEY`). Il ne reste que le
+  // % gras 30.2 (M 40-49 : p10=35, p25=30) → entre p25 et p10 → ACCEPTABLE → 1.
   assert.equal(r.composition.category, 'ACCEPTABLE')
-  assert.equal(r.composition.score, 0.5)
+  assert.equal(r.composition.score, 1)
 })
 
 test('Nicholas — norme CPAFLA : VO2max replie sur ACSM ; composition suit la méthode CPAFLA', () => {

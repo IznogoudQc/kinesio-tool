@@ -79,8 +79,6 @@ function Baro({ meta }: { meta: Meta }) {
 
 const CARDIO: Meta[] = [{ test: 'vo2max', label: 'VO2max', unit: 'ml/kg/min', source: 'ACSM 11ᵉ éd.' }]
 const COMPO: Meta[] = [
-  { test: 'bmi', label: 'IMC', unit: 'kg/m²', source: 'OMS · indépendant de l’âge/sexe', mergeSexes: true },
-  { test: 'waistCircumference', label: 'Tour de taille', unit: 'cm', source: 'Santé Canada / ACSM' }
   // Le % de gras utilise une grille de risque dédiée — voir <BodyFatRiskTable>.
 ]
 
