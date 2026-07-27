@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { TableProperties, Trophy } from 'lucide-react'
 import {
   CATEGORY_COLORS,
+  DEFAULT_NORMS,
   CATEGORY_LABELS,
   getCategorization,
   getDeltaVsAverage,
@@ -53,7 +54,7 @@ export function StatCardXL({
   test,
   age,
   sex,
-  norms = 'acsm',
+  norms = DEFAULT_NORMS,
   originDate,
   previousValue,
   lowerIsBetter = false,

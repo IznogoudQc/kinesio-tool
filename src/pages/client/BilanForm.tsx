@@ -5,7 +5,7 @@ import { CategoryBadge } from '../../components/CategoryBadge'
 import { BilanSynthesisCards } from '../../components/BilanSynthesisCards'
 import { PercentileIndicator } from '../../components/PercentileIndicator'
 import type { Category, NormsType } from '../../lib/norms'
-import { computeAge } from '../../lib/norms'
+import { computeAge, DEFAULT_NORMS } from '../../lib/norms'
 import { computeBilan, mergeComputedIntoBilan, type BilanProfile } from '../../lib/bilan-computed'
 import { BILAN_TO_TEST_KEY } from '../../lib/norms/bilan-keys'
 import { validateBilanField } from '../../lib/bilan-bounds'
@@ -63,7 +63,7 @@ function setField(data: BilanData, key: keyof BilanData, value: number | string 
  *  `computeBilan` (source de vérité unique). Utilisé pour les modaux au moment
  *  de la sauvegarde. */
 export function deriveBilanFields(data: BilanData, age: number | null, sex: 'F' | 'M' | null): BilanData {
-  const computed = computeBilan(data, { age, sex, norms: 'acsm' })
+  const computed = computeBilan(data, { age, sex, norms: DEFAULT_NORMS })
   return mergeComputedIntoBilan(data, computed)
 }
 
@@ -77,7 +77,7 @@ export function BilanForm({
   categorize,
   client,
   onUnitsChange,
-  norms = 'acsm',
+  norms = DEFAULT_NORMS,
   showSynthesis = false,
   previousData,
   collapsible,

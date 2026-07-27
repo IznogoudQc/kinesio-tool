@@ -13,6 +13,7 @@ import { validateBilanField, type BoundResult } from '../../lib/bilan-bounds'
 import { CategoryBadge } from '../../components/CategoryBadge'
 import { PercentileIndicator } from '../../components/PercentileIndicator'
 import type { Category, NormsType } from '../../lib/norms'
+import { DEFAULT_NORMS } from '../../lib/norms'
 
 interface AerobicSectionProps {
   data: BilanData
@@ -69,7 +70,7 @@ function computeVo2maxForProtocol(data: BilanData, age: number | null, sex: 'F' 
   return null
 }
 
-export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex, categorize, norms = 'acsm' }: AerobicSectionProps) {
+export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex, categorize, norms = DEFAULT_NORMS }: AerobicSectionProps) {
   const isLight = variant === 'light'
   const labelClass = isLight ? 'text-marine/60' : 'text-cream/55'
   const valueClass = isLight ? 'text-marine' : 'text-cream'

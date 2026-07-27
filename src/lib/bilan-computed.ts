@@ -412,5 +412,14 @@ export function mergeComputedIntoBilan(raw: BilanData, computed: BilanComputed):
     next.puissance_jambes_watts = computed.puissanceJambesW
     next.puissance_calculated_auto = true
   }
+  // Scores composites : **toujours** ceux calculés par l'app. À l'import d'un `.doc`,
+  // le parser recopie les scores imprimés par le logiciel d'origine ; on les écrase
+  // ici pour qu'il n'existe qu'une seule source de vérité (la section du formulaire
+  // s'appelle « Indices (calculés) »). Arrondis à la décimale, comme à l'affichage.
+  const round1 = (n: number): number => Math.round(n * 10) / 10
+  if (computed.composition.score !== null) next.score_composition = round1(computed.composition.score)
+  if (computed.backHealth.score !== null) next.indice_sante_dos = round1(computed.backHealth.score)
+  if (computed.musculoGlobal.score !== null) next.score_musculo_global = round1(computed.musculoGlobal.score)
+  if (computed.overall.score !== null) next.score_global = round1(computed.overall.score)
   return next
 }

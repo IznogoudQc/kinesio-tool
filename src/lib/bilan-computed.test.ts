@@ -213,3 +213,32 @@ test('Bilan vide → tous calculs null', () => {
   assert.equal(r.puissanceJambesW, null)
   assert.equal(r.overall.score, null)
 })
+
+test('import .doc : les scores du vieux rapport sont ÉCRASÉS par le calcul de l’app', () => {
+  // Le parser recopie les scores imprimés par le logiciel d'origine. On vérifie
+  // qu'ils ne survivent pas : `mergeComputedIntoBilan` (appelé par l'import et
+  // par chaque sauvegarde) les remplace par ceux calculés à partir des mesures.
+  // Mesures réelles du bilan du 25 juin 2026 (H 49 ans) → dos 3,6 · musculo 3,7.
+  const raw: BilanData = {
+    taille_cm: 176,
+    poids_kg: 91.8,
+    tour_taille_cm: 93,
+    pushups: 55,
+    situps: 49,
+    flexion_tronc_cm: 27,
+    endurance_dos_sec: 180,
+    puissance_jambes_watts: 4725,
+    puissance_calculated_auto: false,
+    vo2max: 57.6,
+    // Valeurs « importées » volontairement absurdes : elles doivent disparaître.
+    indice_sante_dos: 99,
+    score_musculo_global: 99,
+    score_composition: 99
+  }
+  const p: BilanProfile = { age: 49, sex: 'M', norms: 'cpafla' }
+  const merged = mergeComputedIntoBilan(raw, computeBilan(raw, p))
+
+  assert.equal(merged.indice_sante_dos, 3.6)
+  assert.equal(merged.score_musculo_global, 3.7)
+  assert.equal(merged.score_composition, 4)
+})

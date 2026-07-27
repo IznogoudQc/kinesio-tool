@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { CheckCircle2, FileText, Loader2 } from 'lucide-react'
 import { bilansService } from '../../services/bilans'
-import { BilanForm } from './BilanForm'
+import { BilanForm, deriveBilanFields } from './BilanForm'
 import { formatBilanDate, countFilledFields } from './bilanFields'
+import { computeAge } from '../../lib/norms'
 
 interface ImportBilanModalProps {
   clientId: string
@@ -48,9 +49,16 @@ export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved
     }
     setSaving(true)
     try {
-      const items: { date: string; data: BilanData }[] = [{ date, data }]
+      // Recalcule les valeurs dérivées (VO2max, IMC, % gras, scores composites)
+      // au lieu de conserver celles imprimées par le logiciel d'origine : l'app
+      // doit rester la seule source de vérité. L'âge est celui **à la date du
+      // bilan**, pas aujourd'hui — les bilans historiques peuvent avoir 15 ans.
+      const derive = (d: BilanData, isoDate: string): BilanData =>
+        deriveBilanFields(d, computeAge(client.birthdate, new Date(`${isoDate}T00:00:00`)), client.sex)
+
+      const items: { date: string; data: BilanData }[] = [{ date, data: derive(data, date) }]
       result.historical.forEach((h, i) => {
-        if (includeHistorical[i]) items.push({ date: h.date, data: h.data })
+        if (includeHistorical[i]) items.push({ date: h.date, data: derive(h.data, h.date) })
       })
       const s = await bilansService.importBilans(clientId, items)
       setSummary(s)

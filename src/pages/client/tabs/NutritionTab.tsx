@@ -36,7 +36,7 @@ import { DEFAULT_FOODS_GOOD, DEFAULT_FOODS_BAD } from '../../../lib/food-suggest
 import { settingsService } from '../../../services/settings'
 import { buildSynthesisBilan } from '../../../lib/synthesisBilan'
 import { computeBilan } from '../../../lib/bilan-computed'
-import { computeAge } from '../../../lib/norms'
+import { computeAge, DEFAULT_NORMS } from '../../../lib/norms'
 import { kgToLb, kgToWeightInput, weightInputToKg, weightUnitLabel } from '../../../lib/units'
 import { FastingPlanner } from './FastingPlanner'
 import type { FastingProgram } from '../../../lib/fasting-planning'
@@ -335,7 +335,7 @@ export function NutritionTab() {
     const weightKg = data && typeof data.poids_kg === 'number' ? data.poids_kg : null
     const target = targetBodyFat.trim() !== '' ? Number(targetBodyFat) : null
     if (!data || weightKg == null || target == null || activityLevel === '') return null
-    const computed = computeBilan(data, { age, sex: client.sex, norms: 'acsm' })
+    const computed = computeBilan(data, { age, sex: client.sex, norms: DEFAULT_NORMS })
     const bodyFatPct =
       computed.pourcentageGrasDurnin ?? (typeof data.pourcentage_gras === 'number' ? data.pourcentage_gras : null)
     const goal = bodyFatGoal(weightKg, bodyFatPct, target)

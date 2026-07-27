@@ -2,6 +2,24 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.32 — Import .doc : les scores sont recalculés, plus recopiés)
+
+Le parser recopiait les scores imprimés par l'ancien logiciel (`indice_sante_dos`, `score_musculo_global`,
+`score_composition`, `score_global`) et l'import les enregistrait **tels quels**. Le dashboard, lui, a
+toujours recalculé — mais la section « Indices (calculés) » du formulaire de bilan affichait, elle, la copie.
+Deux valeurs pouvaient donc diverger (visible sur le bilan 2011, qui inclut le questionnaire d'activité
+physique que l'app n'utilise pas).
+
+Désormais : `mergeComputedIntoBilan` **écrase** ces quatre scores avec ceux calculés par l'app, et l'import
+fait passer chaque bilan (courant **et** historiques) par `deriveBilanFields` — avec l'âge **à la date du
+bilan**, pas l'âge d'aujourd'hui. Une seule source de vérité.
+
+Corrigé au passage : `norms: 'acsm'` restait codé en dur dans `deriveBilanFields`, `NutritionTab` et les
+valeurs par défaut de `BilanForm` / `AerobicSection` / `StatCardXL` — reliquat de v0.9.31 qui faisait
+calculer la **composition** avec l'ancienne moyenne ACSM au lieu de la méthode CPAFLA.
+
+Version : 0.9.31 → 0.9.32.
+
 ## ✅ Fait (v0.9.31 — Norme unique : CPAFLA (choix ACSM retiré))
 
 Le réglage « Normes de catégorisation » disparaît des Paramètres : l'app suit **uniquement le CPAFLA**,
