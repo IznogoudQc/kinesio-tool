@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.13 — Bilan complet : « Mesures corporelles » alimentées par les bilans)
+
+Dans le **Bilan complet** (dashboard), la section « Mesures corporelles » reprend désormais le **système de
+l'onglet Mesures** (détail dépliable + évolution avec pills groupées circonférences / poids & ratios /
+composition + sélecteur de période 30j/90j/6mois/1an/Tout, graphe recharts), mais **alimentée uniquement par les
+bilans** (chaque bilan = une prise). L'onglet Mesures continue de combiner mesures + bilans. Nouveau composant
+`BilanMeasuresOverview.tsx` ; l'ancien mini-panneau (qui lisait `mesuresService`) est retiré du dashboard.
+
+Version : 0.9.12 → 0.9.13.
+
 ## ✅ Fait (v0.9.12 — Courbe « Évolution de la composition corporelle »)
 
 Nouvelle courbe de tendance dans la section Composition corporelle du dashboard, dans le style de « Évolution du

@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Calculator, Download, FileText, FileUp, FolderOpen, Globe, Info, Mail, PartyPopper, Ruler } from 'lucide-react'
+import { Download, FileText, FileUp, FolderOpen, Globe, Info, Mail, PartyPopper } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
 import { ClientAvatar } from '../../../components/ClientAvatar'
 import { bilansService } from '../../../services/bilans'
-import { mesuresService } from '../../../services/mesures'
+import { BilanMeasuresOverview } from '../dashboard/BilanMeasuresOverview'
 import { settingsService } from '../../../services/settings'
 import { reportsService } from '../../../services/reports'
 import { SendBilanModal } from '../SendBilanModal'
@@ -65,8 +65,6 @@ export function DashboardTab() {
   const selectedBilanIdFromUrl = searchParams.get('bilan')
 
   const [bilans, setBilans] = useState<Bilan[] | null>(null)
-  const [circList, setCircList] = useState<MesureCirconferences[]>([])
-  const [plisList, setPlisList] = useState<MesurePlisCutanes[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -92,16 +90,11 @@ export function DashboardTab() {
     let cancelled = false
     setLoading(true)
     setError(null)
-    Promise.all([
-      bilansService.getBilansForClient(client.id),
-      mesuresService.circonferences.list(client.id),
-      mesuresService.plis.list(client.id)
-    ])
-      .then(([list, circ, plis]) => {
+    bilansService
+      .getBilansForClient(client.id)
+      .then(list => {
         if (cancelled) return
         setBilans(list)
-        setCircList(circ)
-        setPlisList(plis)
       })
       .catch(() => {
         if (!cancelled) setError('Impossible de charger les bilans du client.')
@@ -534,57 +527,9 @@ export function DashboardTab() {
   )
   const hasMultiple = count >= 2
 
-  // ── Mesures section (light variant inline) ────────────────────────────────
-  const MesuresPanel = (
-    <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
-      <div className="flex items-center gap-2 mb-3">
-        <Ruler size={16} className="text-gold-dark" />
-        <h3 className="dash-eyebrow text-gold-dark">Mesures corporelles</h3>
-      </div>
-      {circList.length === 0 && plisList.length === 0 ? (
-        <p className="text-marine/45 text-sm">Aucune mesure enregistrée pour ce client.</p>
-      ) : (
-        <>
-          {circList[0] && (
-            <>
-              <p className="text-marine/45 text-xs mb-3">
-                Dernière prise circ. : {formatBilanDate(circList[0].date)}
-              </p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4">
-                <MesureRow label="Tour de taille" value={circList[0].taille} unit="cm" />
-                <MesureRow label="Tour de hanche" value={circList[0].hanche} unit="cm" />
-                <MesureRow
-                  label="Biceps moy."
-                  value={avgGD(circList[0].bicepsG, circList[0].bicepsD)}
-                  unit="cm"
-                />
-                <MesureRow
-                  label="Cuisse moy."
-                  value={avgGD(circList[0].cuisseG, circList[0].cuisseD)}
-                  unit="cm"
-                />
-              </div>
-            </>
-          )}
-          {plisList[0] && (
-            <div className="pt-3 border-t border-cream-dark/40">
-              <div className="flex items-center gap-2 mb-2">
-                <Calculator size={14} className="text-gold-dark" />
-                <p className="text-marine/65 text-xs uppercase tracking-wide font-medium">% gras (plis cutanés)</p>
-              </div>
-              <p className="dash-display text-marine text-3xl font-bold leading-none">
-                {formatNumber(plisList[0].pourcentageGrasSiri)}
-                <span className="text-base font-medium text-marine/45 ml-1.5">%</span>
-              </p>
-              <p className="text-marine/45 text-xs mt-1">
-                Durnin-Womersley · {formatBilanDate(plisList[0].date)}
-              </p>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  )
+  // Section « Mesures corporelles » du Bilan complet — alimentée **uniquement par
+  // les bilans** (pas l'onglet Mesures). Voir BilanMeasuresOverview.
+  const MesuresPanel = <BilanMeasuresOverview bilans={bilans ?? []} unitWeight={client.unitWeight ?? 'kg'} />
 
   return (
     <div className="dash-editorial bg-cream min-h-full">
@@ -857,23 +802,6 @@ export function DashboardTab() {
       )}
       {toast && <Toast message={toast} />}
     </div>
-    </div>
-  )
-}
-
-function avgGD(a: number | null, b: number | null): number | null {
-  const vals = [a, b].filter((v): v is number => typeof v === 'number')
-  return vals.length ? vals.reduce((s, x) => s + x, 0) / vals.length : null
-}
-
-function MesureRow({ label, value, unit }: { label: string; value: number | null; unit: string }) {
-  return (
-    <div>
-      <p className="text-marine/55 text-xs uppercase tracking-wide">{label}</p>
-      <p className="text-marine text-lg font-semibold mt-0.5 tabular-nums">
-        {value === null ? <span className="text-marine/25">—</span> : formatNumber(value)}
-        {value !== null && <span className="text-marine/45 text-sm font-medium ml-1">{unit}</span>}
-      </p>
     </div>
   )
 }
