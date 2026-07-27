@@ -71,3 +71,28 @@ test('circonférences : les plis Biceps (5,5) ne polluent pas la circonférence 
   assert.equal(data.pli_biceps, 5.5)
   assert.equal(data.circ_biceps_flechi_cm, 40)
 })
+
+// Cas rapporté : dans certains .doc, les Circonférences viennent AVANT les Plis, et
+// ce client n'a PAS de circonférence Biceps. La section Circonférences (bornée) ne
+// doit PAS déborder sur le pli Biceps (7) — sinon circ_biceps = 7 par erreur.
+const FIXTURE_CIRC_AVANT_PLIS = [
+  'Circonférences cm',
+  'Poitrine', '130,0',
+  'Hanche', '107,0',
+  'Cuisse', '52,0',
+  'Plis Cutanés mm',
+  'Triceps', '7,0',
+  'Biceps', '7,0',
+  'Sous-scapulaire', '18,5',
+  'Crête iliaque', '15,0',
+  'Aptitude Aérobie Tapis Roulant de Bruce'
+].join('\n')
+
+test('circonférences AVANT plis : le pli Biceps (7) ne devient PAS circ_biceps', () => {
+  const data = extractCurrent(FIXTURE_CIRC_AVANT_PLIS)
+  assert.equal(data.pli_biceps, 7) // le pli est bien lu
+  assert.equal(data.circ_biceps_flechi_cm, undefined) // pas de circ Biceps → non renseignée
+  assert.equal(data.circ_epaules_pec_cm, 130) // Poitrine → épaules/pec
+  assert.equal(data.tour_hanche_cm, 107)
+  assert.equal(data.circ_cuisse_cm, 52)
+})

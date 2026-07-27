@@ -120,6 +120,23 @@ function matchAfter(text: string, label: RegExp, valueRe: RegExp): string | unde
   return v?.[1]
 }
 
+/** Grandes rubriques d'un bilan — servent à borner chaque section pour qu'elle ne
+ *  déborde pas sur la suivante (ex. la circonférence « Biceps » qui capterait le pli
+ *  « Biceps » quand les Circonférences précèdent les Plis dans le document). */
+const NEXT_SECTION_RE =
+  /[\n\r](?:Plis Cutan[ée]s|Circonf[ée]rences|Aptitude A[ée]robie|Composition Corporelle|Pourcentage de Gras|Indice de Sant[ée])/
+
+/** Corps d'une section : du heading `startRe` jusqu'à la prochaine grande rubrique
+ *  (ou `maxLen` par défaut si aucune n'est trouvée). `null` si le heading est absent. */
+function sectionBody(text: string, startRe: RegExp, maxLen = 1000): string | null {
+  const i = text.search(startRe)
+  if (i === -1) return null
+  const tail = text.slice(i)
+  // On saute le 1er caractère pour ne pas matcher le heading courant lui-même.
+  const rel = tail.slice(1).search(NEXT_SECTION_RE)
+  return rel === -1 ? tail.slice(0, maxLen) : tail.slice(0, rel + 1)
+}
+
 function chevronValue(text: string, labelPattern: string): string | undefined {
   const re = new RegExp(`${labelPattern}\\s*►\\s*(-?\\d+(?:[,.]\\d+)?)`, 'i')
   const m = text.match(re)
@@ -163,10 +180,10 @@ export function extractCurrent(text: string): BilanData {
     if (imcMatch) data.imc = parseFrenchNumber(imcMatch[1])
   }
 
-  // Skinfolds: first occurrence after "Plis Cutanés"
-  const pliStart = text.search(/Plis Cutan[ée]s/)
-  if (pliStart !== -1) {
-    const pliSection = text.slice(pliStart, pliStart + 800)
+  // Skinfolds: section « Plis Cutanés », bornée pour ne pas déborder sur les
+  // « Circonférences » (sinon pli_cuisse capterait la circonférence Cuisse, etc.).
+  const pliSection = sectionBody(text, /Plis Cutan[ée]s/, 800)
+  if (pliSection) {
     data.pli_triceps = parseFrenchNumber(matchAfter(pliSection, /Triceps\s*[\n\r]+/, /^\s*(\d+(?:[,.]\d+)?)/))
     data.pli_biceps = parseFrenchNumber(matchAfter(pliSection, /Biceps\s*[\n\r]+/, /^\s*(\d+(?:[,.]\d+)?)/))
     data.pli_sous_scap = parseFrenchNumber(
@@ -186,9 +203,8 @@ export function extractCurrent(text: string): BilanData {
   // la taille » de l'anthropométrie) pour ne pas confondre avec les plis (Biceps,
   // Cuisse) ni avec l'en-tête « Ratio Taille/Hanche ».
   const numRe = /^\s*(\d+(?:[,.]\d+)?)/
-  const circStart = text.search(/Circonf[ée]rences/)
-  if (circStart !== -1) {
-    const circSection = text.slice(circStart, circStart + 500)
+  const circSection = sectionBody(text, /Circonf[ée]rences/, 500)
+  if (circSection) {
     const b = parseFrenchNumber(matchAfter(circSection, /Biceps\s*[\n\r]+/, numRe))
     if (b !== undefined) data.circ_biceps_flechi_cm = b
     const p = parseFrenchNumber(matchAfter(circSection, /Poitrine\s*[\n\r]+/, numRe))

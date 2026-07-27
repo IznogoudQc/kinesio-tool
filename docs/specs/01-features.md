@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.18 — Import .doc : fin de confusion pli Biceps / circonférence Biceps)
+
+Correctif d'import : un pli cutané « Biceps » (ex. 7 mm) pouvait être recopié comme circonférence « Biceps »
+quand, dans le `.doc`, les Circonférences précédaient les Plis et que le client n'avait pas de circonférence
+Biceps — la fenêtre de section débordait. `bilan-parser.ts` borne désormais chaque section (plis, circonférences)
+à la prochaine grande rubrique (`sectionBody`) → plus de chevauchement. Test de non-régression ajouté.
+
+Version : 0.9.17 → 0.9.18.
+
 ## ✅ Fait (v0.9.17 — Mesures corporelles : progression style « menu + ligne de référence »)
 
 Dans le Bilan complet, la section « Mesures corporelles » remplace le système à pills + périodes de l'évolution
