@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.19 — Nettoyage auto des circonférences aberrantes (bug d'import))
+
+Nettoyage unique au démarrage (`cleanupCircPliDuplicatesOnce`) qui efface les circonférences issues du bug
+pré-v0.9.18 (un pli en mm recopié comme circonférence du même nom). Heuristique sans faux positif : une vraie
+circonférence de biceps fléchi ne descend jamais sous ~20 cm ni une cuisse sous ~30 cm → toute valeur en dessous
+est effacée. Corrige les bilans ET les copies dans l'onglet Mesures. Plus besoin de réimporter les bilans
+touchés. Drapeau `settings` → ne s'exécute qu'une fois.
+
+Version : 0.9.18 → 0.9.19.
+
 ## ✅ Fait (v0.9.18 — Import .doc : fin de confusion pli Biceps / circonférence Biceps)
 
 Correctif d'import : un pli cutané « Biceps » (ex. 7 mm) pouvait être recopié comme circonférence « Biceps »

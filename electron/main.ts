@@ -12,6 +12,7 @@ import { registerNutritionTemplatesHandlers } from './ipc/nutritionTemplates'
 import { registerQuestionnairesHandlers } from './ipc/questionnaires'
 import { initDb } from '../db/client'
 import { backfillBilansToMesuresOnce } from './lib/measure-sync'
+import { cleanupCircPliDuplicatesOnce } from './lib/cleanup-circ-pli-dup'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 
@@ -108,6 +109,13 @@ app.whenReady().then(() => {
   // Report unique des bilans existants vers l'onglet Mesures (sens Bilan → Mesures).
   try {
     backfillBilansToMesuresOnce()
+  } catch {
+    // ne jamais empêcher le démarrage de l'app
+  }
+  // Nettoyage unique : circonférences aberrantes issues du bug d'import pré-v0.9.18
+  // (pli recopié comme circonférence du même nom).
+  try {
+    cleanupCircPliDuplicatesOnce()
   } catch {
     // ne jamais empêcher le démarrage de l'app
   }
