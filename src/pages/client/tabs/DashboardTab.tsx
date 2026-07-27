@@ -487,6 +487,8 @@ export function DashboardTab() {
             current={computed.aerobic}
             previous={compareComputed?.aerobic}
             targetId="dash-cardio"
+            displayValue={computed.vo2max}
+            displayUnit="ml/kg/min"
           />
           {SHOW_BACK_HEALTH && (
             <CompositeMiniCard

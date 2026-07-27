@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.25 — Aptitude aérobie notée en VO2max (pas 0-4) dans le dashboard)
+
+Comme l'ancien logiciel : la carte **Aptitude aérobie** du dashboard affiche le **VO2max** (ex. « 57,6 ml/kg/min »)
+comme valeur principale au lieu de la note 0-4, en gardant la catégorie (Excellent). `CompositeMiniCard` accepte
+`displayValue`/`displayUnit` ; DashboardTab passe `computed.vo2max`. La note 0-4 reste utilisée en interne pour le
+score global.
+
+Version : 0.9.24 → 0.9.25.
+
 ## ✅ Fait (v0.9.24 — Import : « Sexe du client requis » corrigé (calcul Bruce))
 
 À l'import d'un .doc, l'aperçu du bilan affichait « Sexe du client requis pour le calcul Bruce » alors que le

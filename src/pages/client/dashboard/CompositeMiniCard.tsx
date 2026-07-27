@@ -9,6 +9,11 @@ interface CompositeMiniCardProps {
   previous?: CompositeScore | null
   /** Si fourni, la carte devient un bouton qui fait défiler jusqu'à cet élément. */
   targetId?: string
+  /** Affiche cette valeur + unité (ex. VO2max 57,6 ml/kg/min) à la place de la note
+   *  0-4 — comme l'ancien rapport pour l'aptitude aérobie. La cote/pastille reste
+   *  celle du composite. Actif dès que `displayUnit` est défini. */
+  displayValue?: number | null
+  displayUnit?: string
 }
 
 /** Fait défiler en douceur jusqu'à une section du Dashboard (respecte le
@@ -33,8 +38,9 @@ function Gauge({ score }: { score: number | null }) {
   )
 }
 
-export function CompositeMiniCard({ title, subtitle, current, previous, targetId }: CompositeMiniCardProps) {
+export function CompositeMiniCard({ title, subtitle, current, previous, targetId, displayValue, displayUnit }: CompositeMiniCardProps) {
   const animScore = useCountUp(current.score)
+  const override = displayUnit !== undefined
   const delta =
     current.score !== null && previous && previous.score !== null
       ? current.score - previous.score
@@ -57,9 +63,16 @@ export function CompositeMiniCard({ title, subtitle, current, previous, targetId
         )}
       </p>
       {subtitle && <p className="text-marine/35 text-[10px] mt-0.5">{subtitle}</p>}
-      <p className={current.score === null ? 'dash-display text-marine/25 text-3xl font-bold mt-1.5' : 'dash-display text-marine text-3xl font-bold mt-1.5 tabular-nums'}>
-        {current.score === null ? '—' : (animScore ?? current.score).toFixed(1)}
-      </p>
+      {override ? (
+        <p className={displayValue == null ? 'dash-display text-marine/25 text-3xl font-bold mt-1.5' : 'dash-display text-marine text-3xl font-bold mt-1.5 tabular-nums'}>
+          {displayValue == null ? '—' : displayValue.toLocaleString('fr-CA', { maximumFractionDigits: 1 })}
+          {displayValue != null && <span className="text-sm font-medium text-marine/45 ml-1">{displayUnit}</span>}
+        </p>
+      ) : (
+        <p className={current.score === null ? 'dash-display text-marine/25 text-3xl font-bold mt-1.5' : 'dash-display text-marine text-3xl font-bold mt-1.5 tabular-nums'}>
+          {current.score === null ? '—' : (animScore ?? current.score).toFixed(1)}
+        </p>
+      )}
       <Gauge score={current.score} />
       <div className="flex items-center justify-between mt-1.5">
         <CategoryBadge category={current.category} variant="compact" />
