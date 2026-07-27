@@ -9,6 +9,9 @@ interface BilanSynthesisCardsProps {
   previous?: Pick<BilanComputed, 'composition' | 'bodyFat' | 'aerobic' | 'backHealth' | 'musculoGlobal' | 'overall'>
   /** Variante de fond — `light` (modal) ou `marine` (dashboard). */
   variant?: 'light' | 'marine'
+  /** % de gras réellement affiché (calculé Durnin ou saisi). Comme le dashboard, la
+   *  carte montre le pourcentage — pas la note 0-4. */
+  bodyFatPct?: number | null
   /** Message à afficher quand AUCUN score n'est calculable (saisie vierge). */
   emptyHint?: string
 }
@@ -65,6 +68,7 @@ export function BilanSynthesisCards({
   computed,
   previous,
   variant = 'light',
+  bodyFatPct,
   emptyHint
 }: BilanSynthesisCardsProps) {
   const cards: CardSpec[] = [
@@ -79,7 +83,9 @@ export function BilanSynthesisCards({
       subtitle: 'Grille de risque',
       current: computed.bodyFat,
       previous: previous?.bodyFat ?? null,
-      statusLabel: computed.bodyFatGridLabel
+      statusLabel: computed.bodyFatGridLabel,
+      displayValue: bodyFatPct ?? null,
+      displayUnit: '%'
     },
     {
       title: 'Aptitude aérobie',

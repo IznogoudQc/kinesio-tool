@@ -31,7 +31,7 @@ interface PrefillFieldDef {
 }
 
 const PREFILL_FIELDS: PrefillFieldDef[] = [
-  { key: 'taille_cm', label: 'Taille', defaultChecked: true },
+  { key: 'taille_cm', label: 'Grandeur (taille)', defaultChecked: true },
   { key: 'pli_triceps', label: 'Pli triceps', defaultChecked: true },
   { key: 'pli_biceps', label: 'Pli biceps', defaultChecked: true },
   { key: 'pli_sous_scap', label: 'Pli sous-scapulaire', defaultChecked: true },

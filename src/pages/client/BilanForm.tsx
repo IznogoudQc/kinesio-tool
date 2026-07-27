@@ -88,6 +88,9 @@ export function BilanForm({
   // Unités de SAISIE (l'app stocke et calcule toujours en métrique : cm, kg).
   // Par défaut = unités du client ; le toggle les mémorise via onUnitsChange.
   const [lengthUnit, setLengthUnit] = useState<LengthUnit>(client?.unitLength ?? 'cm')
+  // La GRANDEUR a son propre sélecteur cm/pouce : on la note souvent en pouces même
+  // quand les circonférences restent en cm. Initialisée sur le réglage global.
+  const [heightUnit, setHeightUnit] = useState<LengthUnit>(client?.unitLength ?? 'cm')
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(client?.unitWeight ?? 'kg')
   const applyUnits = (nextLength: LengthUnit, nextWeight: WeightUnit) => {
     setLengthUnit(nextLength)
@@ -165,12 +168,15 @@ export function BilanForm({
     // saisissent dans l'unité choisie, mais sont stockés en métrique.
     const isLengthField = def.unit === 'cm'
     const isWeightField = def.unit === 'kg'
+    const isHeightField = def.key === 'taille_cm'
+    // La grandeur suit son propre sélecteur ; les autres longueurs, le réglage global.
+    const activeLengthUnit = isHeightField ? heightUnit : lengthUnit
     const convertible = isLengthField || isWeightField
-    const displayUnit = isLengthField ? lengthUnitLabel(lengthUnit) : isWeightField ? weightUnitLabel(weightUnit) : def.unit
+    const displayUnit = isLengthField ? lengthUnitLabel(activeLengthUnit) : isWeightField ? weightUnitLabel(weightUnit) : def.unit
     const toDisplay = (m: number): number =>
-      isLengthField ? cmToLengthInput(m, lengthUnit) : isWeightField ? kgToWeightInput(m, weightUnit) : m
+      isLengthField ? cmToLengthInput(m, activeLengthUnit) : isWeightField ? kgToWeightInput(m, weightUnit) : m
     const fromDisplay = (v: number): number =>
-      isLengthField ? lengthInputToCm(v, lengthUnit) : isWeightField ? weightInputToKg(v, weightUnit) : v
+      isLengthField ? lengthInputToCm(v, activeLengthUnit) : isWeightField ? weightInputToKg(v, weightUnit) : v
     const displayStr = (v: unknown): string =>
       convertible && typeof v === 'number' ? String(toDisplay(v)) : String(v)
 
@@ -183,6 +189,28 @@ export function BilanForm({
           </span>
           {isComputed && !readOnly && (
             <Lock size={10} className="shrink-0 opacity-45" aria-label="Champ calculé automatiquement" />
+          )}
+          {isHeightField && !readOnly && (
+            <span
+              className={`ml-auto inline-flex rounded overflow-hidden border normal-case tracking-normal ${isLight ? 'border-cream-dark' : 'border-marine-light/50'}`}
+            >
+              {(['cm', 'in'] as LengthUnit[]).map(u => (
+                <button
+                  key={u}
+                  type="button"
+                  onClick={() => setHeightUnit(u)}
+                  className={`px-1.5 py-px text-[10px] transition-colors ${
+                    heightUnit === u
+                      ? 'bg-gold text-marine font-semibold'
+                      : isLight
+                        ? 'text-marine/50 hover:text-marine'
+                        : 'text-cream/50 hover:text-cream'
+                  }`}
+                >
+                  {lengthUnitLabel(u)}
+                </button>
+              ))}
+            </span>
           )}
         </label>
         {readOnly ? (
@@ -369,7 +397,10 @@ export function BilanForm({
             computed={computed}
             previous={previousComputed}
             variant={variant}
-            emptyHint="Saisissez taille + poids + VO2max pour voir la synthèse se calculer."
+            bodyFatPct={
+              typeof derivedData.pourcentage_gras === 'number' ? derivedData.pourcentage_gras : null
+            }
+            emptyHint="Saisissez la grandeur + le poids + le VO2max pour voir la synthèse se calculer."
           />
         </section>
       )}

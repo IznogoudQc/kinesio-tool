@@ -2,6 +2,24 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.39 — % de gras en pourcentage + « Taille » désambiguïsée)
+
+**Carte « Pourcentage de gras »** : elle affichait la note 0-4 (« 3.0 ») au lieu du pourcentage réel —
+même symptôme que l'aptitude aérobie, corrigé en v0.9.38. Elle montre maintenant **le pourcentage**
+(ex. « 23,1 % ») avec le libellé de la grille de Marie (« En santé »), comme le dashboard.
+
+**Deux champs s'appelaient « Taille »** — la grandeur (Anthropométrie) et le tour de taille
+(Circonférences). Renommés en **« Grandeur (taille) »** et **« Tour de taille »**, chacun avec une note
+qui renvoie à l'autre pour lever tout doute. Aligné dans les trois endroits où les libellés étaient
+dupliqués (formulaire, champs importants, pré-remplissage).
+
+**Sélecteur cm / po propre à la grandeur** : la grandeur se note souvent en pouces alors que les
+circonférences restent en cm. Un petit bouton `cm | po` apparaît sur ce champ et n'affecte que lui ; le
+réglage global « Longueurs » continue de piloter tous les autres. Valable partout (saisie manuelle,
+import, vue détail) puisque le formulaire est partagé.
+
+Version : 0.9.38 → 0.9.39.
+
 ## ✅ Fait (v0.9.38 — Synthèse d'un bilan alignée sur le dashboard)
 
 Les cartes de synthèse (« Voir / modifier un bilan », saisie manuelle, import) portaient encore les

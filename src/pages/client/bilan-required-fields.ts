@@ -12,7 +12,7 @@ export interface ImportantField {
 }
 
 export const IMPORTANT_BILAN_FIELDS: ImportantField[] = [
-  { key: 'taille_cm', label: 'Taille' },
+  { key: 'taille_cm', label: 'Grandeur (taille)' },
   { key: 'poids_kg', label: 'Poids' },
   { key: 'tour_taille_cm', label: 'Tour de taille' },
   { key: 'vo2max', label: 'VO2max' },

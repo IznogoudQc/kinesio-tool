@@ -47,7 +47,7 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
     title: 'Anthropométrie',
     fields: [
       { key: 'poids_kg', label: 'Poids', unit: 'kg' },
-      { key: 'taille_cm', label: 'Taille', unit: 'cm' },
+      { key: 'taille_cm', label: 'Grandeur (taille)', unit: 'cm', hint: 'La grandeur du client — à ne pas confondre avec le tour de taille (section Circonférences).' },
       { key: 'imc', label: 'IMC', unit: 'kg/m²', type: 'computed', hint: 'Calculé : poids ÷ taille²' }
     ]
   },
@@ -55,7 +55,7 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
     id: 'circonferences',
     title: 'Circonférences',
     fields: [
-      { key: 'tour_taille_cm', label: 'Taille', unit: 'cm' },
+      { key: 'tour_taille_cm', label: 'Tour de taille', unit: 'cm', hint: 'Circonférence à la taille — à ne pas confondre avec la grandeur (section Anthropométrie).' },
       { key: 'tour_hanche_cm', label: 'Hanche', unit: 'cm' },
       { key: 'circ_biceps_flechi_cm', label: 'Biceps fléchi', unit: 'cm' },
       { key: 'circ_cuisse_cm', label: 'Cuisse (2 po du genou)', unit: 'cm' },
