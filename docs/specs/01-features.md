@@ -2,6 +2,21 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.44 — Tour de taille : mentionné, plus évalué)
+
+Le tour de taille était coté (catégorie « Acceptable », percentile, objectif « −X cm pour atteindre… »)
+alors que Marie ne l'évalue pas. Il est désormais **affiché sans aucune cote**, partout : formulaire de
+bilan, dashboard, forces/faiblesses, plan d'action, métriques IA, rapports PDF et HTML, et le graphique de
+progression (plus de zones de catégories).
+
+Un seul point de changement : `tour_taille_cm` retiré de `BILAN_TO_TEST_KEY`, le mapping qui relie une
+mesure à son barème. Tous les écrans en dépendaient, donc ils suivent d'un coup.
+
+**Il continue d'alimenter le score de composition** — mais par les tables CPAFLA Fig. 7-4/7-5, qui ne
+passent pas par ce mapping. La parité des scores est intacte (vérifiée par la suite de tests).
+
+Version : 0.9.43 → 0.9.44.
+
 ## ✅ Fait (v0.9.43 — Poids et grandeur dans la section Composition des rapports)
 
 La section « Composition corporelle » montrait l'IMC sans montrer **les deux mesures d'où il sort**.

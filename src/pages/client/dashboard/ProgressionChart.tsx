@@ -37,7 +37,8 @@ const METRICS: Metric[] = [
   { key: 'poids_kg', label: 'Poids', unit: 'kg', group: 'Composition' },
   { key: 'imc', label: 'IMC', unit: 'kg/m²', group: 'Composition', testKey: 'bmi', lowerIsBetter: true },
   { key: 'pourcentage_gras', label: '% de gras', unit: '%', group: 'Composition', testKey: 'bodyFat', lowerIsBetter: true },
-  { key: 'tour_taille_cm', label: 'Tour de taille', unit: 'cm', group: 'Composition', testKey: 'waistCircumference', lowerIsBetter: true },
+  // Tour de taille : mentionné, jamais évalué → pas de `testKey` (donc pas de zones).
+  { key: 'tour_taille_cm', label: 'Tour de taille', unit: 'cm', group: 'Composition', lowerIsBetter: true },
   { key: 'tour_hanche_cm', label: 'Tour de hanche', unit: 'cm', group: 'Composition', lowerIsBetter: true },
 
   { key: 'vo2max', label: 'VO2max', unit: 'ml/kg/min', group: 'Cardio', testKey: 'vo2max' },

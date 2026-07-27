@@ -4,6 +4,11 @@
 
 import type { TestKey } from './types'
 
+/** NB : `tour_taille_cm` est volontairement ABSENT. Le tour de taille est
+ *  **mentionné mais pas évalué** (choix de Marie) : on affiche la mesure, jamais
+ *  une cote ni un percentile. Il continue d'alimenter le **score de composition**
+ *  par un autre chemin — les tables CPAFLA Fig. 7-4/7-5 (`cpaflaWaistPoints`), qui
+ *  ne passent pas par ce mapping. */
 export const BILAN_TO_TEST_KEY: Partial<Record<keyof BilanData, TestKey>> = {
   vo2max: 'vo2max',
   pushups: 'pushups',
@@ -14,7 +19,6 @@ export const BILAN_TO_TEST_KEY: Partial<Record<keyof BilanData, TestKey>> = {
   endurance_dos_sec: 'backEndurance',
   pourcentage_gras: 'bodyFat',
   imc: 'bmi',
-  tour_taille_cm: 'waistCircumference',
   pa_systolique: 'bloodPressureSystolic',
   pa_diastolique: 'bloodPressureDiastolic',
   fc_repos: 'restingHeartRate'

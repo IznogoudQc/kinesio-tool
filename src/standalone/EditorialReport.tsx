@@ -287,7 +287,8 @@ function Measure({
   label: string
   value: number | undefined
   unit: string
-  test: TestKey
+  /** Absent = mesure **mentionnée sans être évaluée** (tour de taille). */
+  test?: TestKey
   age: number | null
   sex: 'F' | 'M' | null
   norms: NormsType
@@ -306,10 +307,12 @@ function Measure({
   // Le % de gras n'affiche QUE la grille de risque de Marie (pas le percentile
   // ACSM ni la catégorie) — décision « A ». L'ACSM reste utilisé en coulisse
   // pour le score de composition corporelle.
-  const useAcsm = has && age !== null && sex && test !== 'bodyFat'
-  const category: Category | null = useAcsm ? getCategorization(test, value as number, age as number, sex as 'F' | 'M', norms) : null
+  // Pas de cote si le test n'en a pas (tour de taille) ni pour le % de gras,
+  // qui suit la grille de Marie affichée juste en dessous.
+  const useAcsm = has && age !== null && sex && test !== undefined && test !== 'bodyFat'
+  const category: Category | null = useAcsm ? getCategorization(test as TestKey, value as number, age as number, sex as 'F' | 'M', norms) : null
   // « +4 ml/kg/min pour atteindre Excellent » — la cible devient concrète.
-  const next = useAcsm ? getNextCategoryTarget(test, value as number, age as number, sex as 'F' | 'M', norms) : null
+  const next = useAcsm ? getNextCategoryTarget(test as TestKey, value as number, age as number, sex as 'F' | 'M', norms) : null
   // Poids-repères (optimal + santé max) — % de gras uniquement.
   const targetW = test === 'bodyFat' && has ? bodyFatTargetWeights(value as number, weightKg ?? null, sex) : null
 
@@ -1539,7 +1542,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         />
         <Measure label="Indice de masse corporelle" value={activeData.imc} unit="kg/m²" test="bmi" {...measureProps} previousValue={compareData?.imc} lowerIsBetter history={historyOf('imc')} />
         <Measure id="pourcentage-gras" label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />
-        <Measure label="Tour de taille" value={activeData.tour_taille_cm} unit="cm" test="waistCircumference" {...measureProps} previousValue={compareData?.tour_taille_cm} lowerIsBetter history={historyOf('tour_taille_cm')} />
+        <Measure label="Tour de taille" value={activeData.tour_taille_cm} unit="cm" {...measureProps} previousValue={compareData?.tour_taille_cm} lowerIsBetter history={historyOf('tour_taille_cm')} />
       </Section>
 
       <Section
