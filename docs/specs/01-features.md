@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.29 — Graphes de tendance : étiquette du dernier point qui débordait)
+
+Correctif dans les trois graphes de tendance (`ScoreTrend`, `BodyFatTrend`, `Vo2maxTrend`) : l'étiquette de
+valeur du dernier point (« 23,1 % », « 4 / 4 », VO2max) était **rognée** par les bords du SVG.
+- **Débordement à droite** (les trois) : le dernier point est à 14 px du bord ; l'étiquette centrée sortait
+  du `viewBox`. Son `x` est désormais borné à `Math.min(lastX, W - 24)`.
+- **Coupure en haut** (surtout `ScoreTrend`, échelle 0-4 sans marge) : quand le point est collé au bord
+  supérieur (score 4/4), l'étiquette est dessinée **sous** le point (`lastY + 20`) au lieu d'au-dessus.
+
+Version : 0.9.28 → 0.9.29.
+
 ## ✅ Fait (v0.9.28 — Graphe « Évolution du VO2max » avec zones de catégories)
 
 La section aérobie affiche une courbe **Évolution du VO2max** (même facture que « Évolution du % de gras ») :

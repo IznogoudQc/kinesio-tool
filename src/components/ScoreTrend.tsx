@@ -56,6 +56,11 @@ export function ScoreTrend({
 
   const lastX = px(series.length - 1)
   const lastY = py(values[values.length - 1])
+  // Étiquette du dernier point : bornée à droite (le point touche le bord) et
+  // basculée sous le point s'il est collé en haut (sinon le texte sort du viewBox).
+  const lastLabelX = Math.min(lastX, W - 24)
+  const lastLabelAbove = lastY - 20 >= 0
+  const lastLabelY = lastLabelAbove ? lastY - 9 : lastY + 20
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className={`w-full ${className}`} style={{ height: 'auto' }} role="img" aria-label={ariaLabel}>
@@ -84,7 +89,7 @@ export function ScoreTrend({
       })}
 
       {/* Valeur du dernier point. */}
-      <text x={lastX} y={lastY - 9} textAnchor="middle" fontSize={11} fontWeight={700} fill="#001331">
+      <text x={lastLabelX} y={lastLabelY} textAnchor="middle" fontSize={11} fontWeight={700} fill="#001331">
         {values[values.length - 1].toLocaleString('fr-CA', { maximumFractionDigits: 1 })} / 4
       </text>
 
