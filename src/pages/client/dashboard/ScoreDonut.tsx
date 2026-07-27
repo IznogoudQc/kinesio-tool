@@ -29,7 +29,8 @@ export function ScoreDonut({ score, category, label, previousScore, size = 200 }
   // Le score s'anime de 0 → valeur (anneau + chiffre) au montage / changement.
   const animScore = useCountUp(score)
   const shown = animScore ?? 0
-  const ratio = score === null ? 0 : Math.max(0, Math.min(1, shown / 5))
+  // Échelle 0-4 (comme les composites et l'ancien logiciel : ≥ 3,5 = Excellent).
+  const ratio = score === null ? 0 : Math.max(0, Math.min(1, shown / 4))
   const dash = ratio * circumference
   const color = category ? ARC_COLORS[category] : '#94a3b8'
   const delta = score !== null && typeof previousScore === 'number' ? score - previousScore : null
@@ -37,7 +38,7 @@ export function ScoreDonut({ score, category, label, previousScore, size = 200 }
   return (
     <div className="flex flex-col items-center">
       <div className="relative" style={{ width: size, height: size }}>
-        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${label} ${score?.toFixed(1) ?? '—'} sur 5`}>
+        <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={`${label} ${score?.toFixed(1) ?? '—'} sur 4`}>
           <circle
             cx={size / 2}
             cy={size / 2}
@@ -65,7 +66,7 @@ export function ScoreDonut({ score, category, label, previousScore, size = 200 }
           <div className="text-marine text-5xl font-bold leading-none tabular-nums">
             {score === null ? <span className="text-marine/30">—</span> : shown.toFixed(1)}
           </div>
-          <div className="text-marine/45 text-xs mt-1.5 uppercase tracking-wide">/ 5</div>
+          <div className="text-marine/45 text-xs mt-1.5 uppercase tracking-wide">/ 4</div>
         </div>
       </div>
       <p className="text-marine/55 text-xs uppercase tracking-wide mt-3">{label}</p>

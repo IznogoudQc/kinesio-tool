@@ -2,6 +2,14 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.5 — Anneau du score global sur l'échelle 0-4)
+
+L'anneau central du dashboard (« Santé et condition physique globale », `ScoreDonut`) affichait « / 5 » alors
+que les composites et l'ancien logiciel de Marie sont en **0-4** (≥ 3,5 = Excellent). Corrigé : remplissage de
+l'anneau `score / 4`, libellé « / 4 » et aria-label « sur 4 ». Cohérent partout.
+
+Version : 0.9.4 → 0.9.5.
+
 ## ✅ Fait (v0.9.4 — Dashboard : termes de l'ancien logiciel pour les cartes composites)
 
 Les cartes composites du dashboard reprennent les libellés de l'ancien logiciel de Marie : **Cœur et endurance
