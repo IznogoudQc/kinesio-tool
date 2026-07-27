@@ -2,6 +2,18 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.16 — Import .doc : circonférences de l'ancien logiciel mappées)
+
+À l'import d'un bilan `.doc`, la section « Circonférences » de l'ancien logiciel est lue et **mappée** vers les
+champs de Marie : **Biceps → Biceps fléchi** (`circ_biceps_flechi_cm`), **Poitrine → Épaules et pec**
+(`circ_epaules_pec_cm`), **Cuisse → Cuisse (2 po)** (`circ_cuisse_cm`), Hanche → tour de hanche. Extraction scopée
+à la section « Circonférences » pour ne pas confondre avec les plis (Biceps, Cuisse) ni l'en-tête « Ratio
+Taille/Hanche ». Explique le « il manque des circonférences » : les vieux imports ne les captaient pas.
+`electron/lib/bilan-parser.ts` + tests. (v0.9.14 : entêtes de groupe des mesures plus gros/gras ; v0.9.15 : les 5
+circonférences de Marie toujours affichées dans le détail du Bilan complet.)
+
+Version : 0.9.13 → 0.9.16.
+
 ## ✅ Fait (v0.9.13 — Bilan complet : « Mesures corporelles » alimentées par les bilans)
 
 Dans le **Bilan complet** (dashboard), la section « Mesures corporelles » reprend désormais le **système de

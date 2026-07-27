@@ -6,6 +6,9 @@ export interface BilanData {
   imc?: number
   tour_taille_cm?: number
   tour_hanche_cm?: number
+  circ_biceps_flechi_cm?: number
+  circ_cuisse_cm?: number
+  circ_epaules_pec_cm?: number
   pli_triceps?: number
   pli_biceps?: number
   pli_sous_scap?: number
@@ -176,11 +179,31 @@ export function extractCurrent(text: string): BilanData {
     data.pli_cuisse = parseFrenchNumber(matchAfter(pliSection, /Cuisse\s*[\n\r]+/, /^\s*(\d+(?:[,.]\d+)?)/))
   }
 
-  // Hanche (circonférence, section « Circonférences »).
-  // Le lookbehind évite d'accrocher l'en-tête « Ratio Taille/Hanche » : sinon le
-  // nombre capté juste après est le « 5 » de la taille « 5' 9" » au lieu de 112,0.
-  const hancheMatch = text.match(/(?<![/\wÀ-ÿ])Hanche\s*[\n\r]+\s*(\d+(?:[,.]\d+)?)/)
-  if (hancheMatch) data.tour_hanche_cm = parseFrenchNumber(hancheMatch[1])
+  // Circonférences (section « Circonférences » de l'ancien logiciel). Les libellés
+  // de l'ancien logiciel sont mappés vers les champs actuels de Marie :
+  //   Biceps → biceps fléchi · Poitrine → épaules et pec · Cuisse → cuisse · Hanche.
+  // On scope à la section (le heading pluriel « Circonférences » ≠ « Circonfér. de
+  // la taille » de l'anthropométrie) pour ne pas confondre avec les plis (Biceps,
+  // Cuisse) ni avec l'en-tête « Ratio Taille/Hanche ».
+  const numRe = /^\s*(\d+(?:[,.]\d+)?)/
+  const circStart = text.search(/Circonf[ée]rences/)
+  if (circStart !== -1) {
+    const circSection = text.slice(circStart, circStart + 500)
+    const b = parseFrenchNumber(matchAfter(circSection, /Biceps\s*[\n\r]+/, numRe))
+    if (b !== undefined) data.circ_biceps_flechi_cm = b
+    const p = parseFrenchNumber(matchAfter(circSection, /Poitrine\s*[\n\r]+/, numRe))
+    if (p !== undefined) data.circ_epaules_pec_cm = p
+    const c = parseFrenchNumber(matchAfter(circSection, /Cuisse\s*[\n\r]+/, numRe))
+    if (c !== undefined) data.circ_cuisse_cm = c
+    const h = parseFrenchNumber(matchAfter(circSection, /(?<![/\wÀ-ÿ])Hanche\s*[\n\r]+/, numRe))
+    if (h !== undefined) data.tour_hanche_cm = h
+  }
+  // Repli global pour la Hanche (docs sans en-tête « Circonférences »). Le lookbehind
+  // évite l'en-tête « Ratio Taille/Hanche » (sinon on capte le « 5 » de « 5' 9" »).
+  if (data.tour_hanche_cm === undefined) {
+    const hancheMatch = text.match(/(?<![/\wÀ-ÿ])Hanche\s*[\n\r]+\s*(\d+(?:[,.]\d+)?)/)
+    if (hancheMatch) data.tour_hanche_cm = parseFrenchNumber(hancheMatch[1])
+  }
 
   // Test aerobie: heading "Aptitude Aérobie <test name>" before main body
   const testMatch = text.match(/Aptitude A[ée]robie\s+([^\n(]+?)\s*\n\s*\n\s*(?:À am[ée]liorer|Acceptable|Bien|Tr[èe]s bien|Excellent)/)

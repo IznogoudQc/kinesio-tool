@@ -41,3 +41,33 @@ test('anthropométrie : taille (175) et tour de taille (99) restent corrects', (
   assert.equal(data.taille_cm, 175)
   assert.equal(data.tour_taille_cm, 99)
 })
+
+// Ancien logiciel : la section « Circonférences » liste Biceps / Poitrine / Hanche /
+// Cuisse. Mapping vers les champs de Marie : Biceps→biceps fléchi, Poitrine→épaules
+// et pec, Cuisse→cuisse. Les plis (Biceps, Cuisse aussi) ne doivent PAS être confondus.
+const FIXTURE_CIRC = [
+  'Plis Cutanés mm',
+  'Triceps', '7,0',
+  'Biceps', '5,5',
+  'Sous-scapulaire', '18,5',
+  'Crête iliaque', '15,0',
+  'Circonférences cm',
+  'Biceps', '40,0',
+  'Poitrine', '130,0',
+  'Hanche', '107,0',
+  'Cuisse', '52,0'
+].join('\n')
+
+test('circonférences : mapping Biceps→fléchi, Poitrine→épaules/pec, Cuisse, Hanche', () => {
+  const data = extractCurrent(FIXTURE_CIRC)
+  assert.equal(data.circ_biceps_flechi_cm, 40)
+  assert.equal(data.circ_epaules_pec_cm, 130)
+  assert.equal(data.circ_cuisse_cm, 52)
+  assert.equal(data.tour_hanche_cm, 107)
+})
+
+test('circonférences : les plis Biceps (5,5) ne polluent pas la circonférence Biceps (40)', () => {
+  const data = extractCurrent(FIXTURE_CIRC)
+  assert.equal(data.pli_biceps, 5.5)
+  assert.equal(data.circ_biceps_flechi_cm, 40)
+})
