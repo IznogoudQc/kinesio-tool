@@ -149,5 +149,11 @@ export const CPAFLA_TEST_LABELS: Record<string, string> = {
   flexion_tronc_cm: 'Flexion du tronc',
   endurance_dos_sec: 'Extension du dos (endurance)',
   puissance_jambes_watts: 'Puissance des jambes',
-  tour_taille_cm: 'Tour de taille'
+  tour_taille_cm: 'Tour de taille',
+  // Composantes du score « Santé et condition physique globale ».
+  composition: 'Composition corporelle',
+  aerobic: 'Aptitude aérobie (METS max)',
+  pa_systolique: 'Pression artérielle systolique',
+  backHealth: 'Indice de santé du dos',
+  musculoGlobal: 'Aptitude musculosquelettique'
 }

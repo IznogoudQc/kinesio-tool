@@ -124,3 +124,21 @@ export function getClinicalRange(test: TestKey, sex: 'F' | 'M'): NormRange | nul
     lowerIsBetter: true
   }
 }
+
+/** Cote 0-4 de la **pression artérielle systolique** telle que l'utilise le score
+ *  « Santé et condition physique globale » de l'ancien logiciel.
+ *
+ *  ⚠️ **PROVISOIRE — barème non confirmé.** Déduit par rétro-calcul sur 4 bilans
+ *  réels (voir ADR 0030) : 112 → 4, 113 → 4, 122 → 0, 129 → 0. La règle « < 120 mmHg
+ *  → 4, sinon 0 » est la plus simple compatible avec ces quatre points, et 120 est
+ *  la borne clinique standard de la PA optimale.
+ *
+ *  Ce qu'on ignore encore : la frontière exacte entre 113 et 122, et l'existence
+ *  éventuelle de cotes intermédiaires (1, 2, 3). À remplacer dès que Marie fournit
+ *  la table de classification du test « Pression artérielle systolique ».
+ *
+ *  `null` si la mesure est absente → la composante est exclue du score global. */
+export function systolicRatingLegacy(value: number | null | undefined): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  return value < 120 ? 4 : 0
+}

@@ -16,6 +16,8 @@ interface Props {
   figure: string
   /** Phrase de contexte affichée en pied de carte. */
   footnote: string
+  /** Avertissement affiché en évidence (ex. calcul encore en calibration). */
+  warning?: string
 }
 
 const nf1 = (n: number): string => n.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
@@ -28,7 +30,7 @@ const nf1 = (n: number): string => n.toLocaleString('fr-CA', { maximumFractionDi
  *
  *  Même facture que `CompositionCpaflaCard`, avec un bouton « Barème » qui déplie
  *  les pondérations utilisées. */
-export function CompositeCpaflaCard({ title, score, category, detail, storageKey, figure, footnote }: Props) {
+export function CompositeCpaflaCard({ title, score, category, detail, storageKey, figure, footnote, warning }: Props) {
   const [showBareme, setShowBareme] = useState<boolean>(
     () => typeof window !== 'undefined' && window.localStorage.getItem(storageKey) === '1'
   )
@@ -40,6 +42,8 @@ export function CompositeCpaflaCard({ title, score, category, detail, storageKey
 
   const mesures = detail.rows.filter(r => r.cote !== null)
   const absents = detail.rows.filter(r => r.cote === null)
+  // Sans pondération particulière (tout ×1), le « barème » n'apprendrait rien.
+  const aDesPoids = detail.rows.some(r => r.poids !== 1)
 
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
@@ -53,6 +57,7 @@ export function CompositeCpaflaCard({ title, score, category, detail, storageKey
               <span className={`text-sm font-semibold ${CATEGORY_COLORS[category]}`}>{CATEGORY_LABELS[category]}</span>
             )}
           </span>
+          {aDesPoids && (
           <button
             type="button"
             onClick={() => setShowBareme(b => !b)}
@@ -65,8 +70,15 @@ export function CompositeCpaflaCard({ title, score, category, detail, storageKey
             <TableProperties size={13} />
             Barème
           </button>
+          )}
         </div>
       </div>
+
+      {warning && (
+        <p className="mb-3 text-xs text-gold-dark bg-gold/10 border border-gold/30 rounded-md px-3 py-2 leading-relaxed">
+          {warning}
+        </p>
+      )}
 
       {/* Détail : chaque test coté, pondéré, et sa contribution. */}
       <div className="divide-y divide-cream-dark/40 border-y border-cream-dark/40">
@@ -98,7 +110,7 @@ export function CompositeCpaflaCard({ title, score, category, detail, storageKey
         </p>
       )}
 
-      {showBareme && (
+      {aDesPoids && showBareme && (
         <div className="mt-4 pt-4 border-t border-cream-dark/40">
           <p className="text-marine/70 text-xs font-medium mb-2">
             Pondérations CPAFLA — {figure}

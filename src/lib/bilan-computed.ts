@@ -28,6 +28,7 @@ import {
   type CpaflaCombineDetail
 } from './norms/cpafla-combined.ts'
 import { cpaflaComposition, cpaflaWaistPoints } from './norms/cpafla-composition.ts'
+import { systolicRatingLegacy } from './norms/clinical.ts'
 import { BILAN_TO_TEST_KEY } from './norms/bilan-keys.ts'
 import type { Category, NormsType, TestKey } from './norms/types.ts'
 
@@ -97,6 +98,9 @@ export interface BilanComputed {
    *  dashboard. `null` si le sexe du client est inconnu (méthode CPAFLA inapplicable). */
   backHealthDetail: CpaflaCombineDetail | null
   musculoDetail: CpaflaCombineDetail | null
+  /** Détail du score global. ⚠️ Structure reconstituée depuis l'ancien logiciel, le
+   *  barème de la PA systolique reste **provisoire** — voir ADR 0030. */
+  overallDetail: CpaflaCombineDetail
   overall: CompositeScore
 }
 
@@ -371,12 +375,28 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     // Force musculaire : tests de force/puissance seulement (flexibilité + dos → backHealth).
     musculoGlobal = compose(['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'])
   }
-  const overallScore = avg([
-    composition.score,
-    aerobic.score,
-    ...(SHOW_BACK_HEALTH ? [backHealth.score] : []),
-    musculoGlobal.score
+  // ── Santé et condition physique globale ────────────────────────────────────
+  // Structure reconstituée depuis l'ancien logiciel (ADR 0030) : moyenne des
+  // **cotes entières 0-4** des composantes réellement mesurées — et non des scores
+  // décimaux. Les composantes sont composition, aptitude aérobie (METS max),
+  // pression artérielle systolique, indice du dos et aptitude musculosquelettique,
+  // toutes pondérées ×1.
+  //
+  // ⚠️ Le barème de la PA systolique est PROVISOIRE (`systolicRatingLegacy`), et le
+  // bilan de janvier 2026 de S. D. ne se reproduit pas encore : il exigerait un
+  // nombre PAIR de composantes, donc une 6ᵉ qu'on n'a pas identifiée.
+  const coteOf = (c: CompositeScore): number | null =>
+    c.score === null ? null : categoryToScore(scoreToCategory(c.score))
+  const overallDetail = cpaflaCombineDetail([
+    ['composition', coteOf(composition), 1],
+    ['aerobic', coteOf(aerobic), 1],
+    ['pa_systolique', systolicRatingLegacy(raw.pa_systolique), 1],
+    ...(SHOW_BACK_HEALTH
+      ? ([['backHealth', coteOf(backHealth), 1]] as CpaflaKeyedContribution[])
+      : []),
+    ['musculoGlobal', coteOf(musculoGlobal), 1]
   ])
+  const overallScore = overallDetail.score
   const overall: CompositeScore = { score: overallScore, category: scoreToCategory(overallScore) }
 
   return {
@@ -398,6 +418,7 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     musculoGlobal,
     backHealthDetail,
     musculoDetail,
+    overallDetail,
     overall
   }
 }

@@ -91,3 +91,51 @@ test('aptitude musculosquelettique = rapports de l’ancien logiciel', () => {
     pushups: 4, flexion_tronc_cm: 2, situps: 4, endurance_dos_sec: 4, puissance_jambes_watts: 4
   }), 3.7)
 })
+
+// ── Santé et condition physique globale (structure reconstituée, ADR 0030) ────
+
+import { computeBilan, type BilanProfile } from '../bilan-computed.ts'
+import { systolicRatingLegacy } from './clinical.ts'
+
+const round1g = (n: number | null): number | null => (n === null ? null : Math.round(n * 10) / 10)
+
+test('score global = rapports de l’ancien logiciel (bilans complets)', () => {
+  const P: BilanProfile = { age: 49, sex: 'M', norms: 'cpafla' }
+  // 25 juin 2026 : toutes les composantes cotées Excellent → 20/20 → 4,0.
+  const juin = computeBilan(
+    { taille_cm: 176, poids_kg: 91.8, tour_taille_cm: 93, pushups: 55, situps: 49,
+      flexion_tronc_cm: 27, endurance_dos_sec: 180, saut_vertical_cm: 48, vo2max: 57.6,
+      pa_systolique: 112 },
+    P
+  )
+  assert.equal(round1g(juin.overall.score), 4)
+
+  // 4 sept. 2025 : composition 0 + aérobie 4 + PA 0 + dos 3 + musculo 4 = 11/20 → 2,2.
+  const sept = computeBilan(
+    { taille_cm: 176, poids_kg: 99.8, tour_taille_cm: 103, pushups: 28, situps: 25,
+      flexion_tronc_cm: 22, endurance_dos_sec: 180, saut_vertical_cm: 48, vo2max: 49,
+      pa_systolique: 129 },
+    { ...P, age: 48 }
+  )
+  assert.equal(round1g(sept.overall.score), 2.2)
+})
+
+test('score global : une composante non mesurée est exclue (pas comptée 0)', () => {
+  const P: BilanProfile = { age: 48, sex: 'M', norms: 'cpafla' }
+  // Reproduit les bilans de déc. 2025 / janv. / févr. 2026 : seuls le tour de taille
+  // et le poids sont pris. Composition ET indice du dos restent calculables (le tour
+  // de taille suffit au dos), aérobie / PA / musculo sont exclus → moyenne sur 2.
+  const r = computeBilan({ taille_cm: 176, poids_kg: 96.1, tour_taille_cm: 100 }, P)
+  const mesurees = r.overallDetail.rows.filter(x => x.cote !== null).map(x => x.key)
+  assert.deepEqual(mesurees, ['composition', 'backHealth'])
+  // Les deux cotées Bien (2) → 2,0, exactement ce qu'imprime l'ancien logiciel.
+  assert.equal(round1g(r.overall.score), 2)
+})
+
+test('barème PA provisoire : seuil à 120 (cohérent avec les 4 points connus)', () => {
+  assert.equal(systolicRatingLegacy(112), 4)
+  assert.equal(systolicRatingLegacy(113), 4)
+  assert.equal(systolicRatingLegacy(122), 0)
+  assert.equal(systolicRatingLegacy(129), 0)
+  assert.equal(systolicRatingLegacy(undefined), null) // non mesurée → exclue
+})

@@ -815,6 +815,18 @@ export function DashboardTab() {
             footnote="Le tour de taille est coté par les tables de composition (selon l'IMC) ; l'extension du dos pèse double, c'est le meilleur prédicteur de la santé lombaire."
           />
         )}
+
+        {/* Score global — structure reconstituée de l'ancien logiciel (ADR 0030). */}
+        <CompositeCpaflaCard
+          title="Santé et condition physique globale"
+          score={computed.overall.score}
+          category={computed.overall.category}
+          detail={computed.overallDetail}
+          storageKey="kinesio.global.bareme"
+          figure="—"
+          warning="Calcul en cours de calibration. La structure (moyenne des cotes des composantes mesurées) reproduit l'ancien logiciel sur les bilans vérifiés, mais le barème de la pression artérielle reste provisoire — il sera ajusté dès que la table de classification sera disponible."
+          footnote="Chaque composante est ramenée à sa cote 0-4, puis toutes comptent également. Une composante non mesurée est simplement exclue."
+        />
       </section>
 
       {objectif !== null && (

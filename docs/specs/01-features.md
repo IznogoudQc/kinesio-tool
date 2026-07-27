@@ -2,6 +2,26 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.41 — Score global : structure de l'ancien logiciel + carte explicative)
+
+La formule du logiciel d'origine, fournie par Marie, a livré deux clés : ce sont les **cotes entières
+0-4** qui sont moyennées (pas les scores décimaux), et la **pression artérielle systolique** est une
+composante à part entière — l'app l'ignorait complètement.
+
+Le score global est donc désormais la moyenne des cotes des composantes **mesurées** : composition,
+aptitude aérobie (METS max), PA systolique, indice du dos, aptitude musculosquelettique.
+
+Vérifié sur **7 bilans** (2 clients) : 4,0 / 2,2 / 2,2 / 2,0 / 2,0 / 2,0 / 2,0 — tous identiques.
+
+Une **carte explicative** apparaît après celles du dos et du musculo, avec le détail composante par
+composante. Elle porte un **avertissement de calibration** : le barème de la PA reste provisoire
+(< 120 → 4, sinon 0 — déduit de 4 points réels), et un bilan reste non reproduit. Voir ADR 0030.
+
+⚠️ Le score global **change** pour les bilans existants. L'ancien calcul donnait 2,5 au lieu de 2,2 et
+faisait basculer la **catégorie** (« Très bien » au lieu de « Bien ») dans la moitié des cas.
+
+Version : 0.9.40 → 0.9.41.
+
 ## ✅ Fait (v0.9.40 — Expliquer l'indice du dos et l'aptitude musculosquelettique)
 
 Après le radar « Six tests, six angles », deux nouvelles cartes expliquent **d'où vient la note** — même
