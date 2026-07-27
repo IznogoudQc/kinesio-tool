@@ -7,8 +7,7 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis
-} from 'recharts'
+  YAxis, ReferenceLine } from 'recharts'
 import {
   Calculator,
   ChevronDown,
@@ -352,13 +351,6 @@ export function MesuresOverview() {
   }, [activeMetric, circList, plisList, period])
 
   // ── Données pour la mini-évolution du % gras (section Plis) ──────────────
-  const plisChartData = useMemo(() => {
-    if (!plisList) return []
-    return [...plisList].reverse().map(p => ({
-      label: formatBilanMonth(p.date),
-      value: p.pourcentageGrasSiri
-    }))
-  }, [plisList])
 
   // ── Tendance 90 jours (pour la bannière d'engagement) ────────────────────
   // Sur la métrique active du graphique : compare la valeur la + ancienne dans
@@ -422,6 +414,21 @@ export function MesuresOverview() {
   }
 
   // ── Helpers locaux pour lire la vue active (synthèse ou snapshot date) ────
+  // Référence du graphique : la même métrique sur la prise précédente.
+  const referenceValue = useMemo(() => {
+    if (!activeView || !activeMetric) return null
+    const raw = activeMetric.accessor(
+      (activeView.previousCirc ?? null) as MesureCirconferences | null,
+      activeView.previousPlis ?? null
+    )
+    if (raw === null || !Number.isFinite(raw)) return null
+    return activeMetric.convert ? activeMetric.convert(raw) : raw
+  }, [activeView, activeMetric])
+  const referenceLabel =
+    activeView?.previousCirc?.date != null
+      ? `Mesure du ${formatBilanDate(activeView.previousCirc.date)}`
+      : 'Mesure précédente'
+
   const lastDate = activeView?.circDate ?? activeView?.plisDate ?? null
   const lastDays = lastDate ? daysSince(lastDate) : null
   const totalSessions = (circList?.length ?? 0) + (plisList?.length ?? 0)
@@ -666,16 +673,10 @@ export function MesuresOverview() {
         setPeriod={setPeriod}
         allMetrics={METRICS_DEFS}
         availableMetrics={availableMetrics}
+        referenceValue={referenceValue}
+        referenceLabel={referenceLabel}
       />
 
-      {/* ── Plis cutanés section ──────────────────────────────────────── */}
-      {activeView?.plis && (
-        <PlisCutanesSection
-          latestPlis={activeView.plis}
-          previousPlis={activeView.previousPlis}
-          chartData={plisChartData}
-        />
-      )}
     </div>
   )
 }
@@ -840,6 +841,11 @@ interface EvolutionChartProps {
   setPeriod: (p: PeriodFilter) => void
   allMetrics: MetricDef[]
   availableMetrics: Set<MetricKey>
+  /** Valeur de la prise servant de référence — trait pointillé + écart affiché.
+   *  `null` si aucune prise antérieure pour cette métrique. */
+  referenceValue?: number | null
+  /** Libellé de la référence (« Mesure précédente » ou la date choisie). */
+  referenceLabel?: string
 }
 
 function EvolutionChart({
@@ -849,7 +855,9 @@ function EvolutionChart({
   period,
   setPeriod,
   allMetrics,
-  availableMetrics
+  availableMetrics,
+  referenceValue,
+  referenceLabel = 'Mesure précédente'
 }: EvolutionChartProps) {
   const chartEnabled = chartData.filter(p => p.value !== null).length >= 2
 
@@ -921,11 +929,42 @@ function EvolutionChart({
         ))}
       </div>
 
+      {chartEnabled && typeof referenceValue === 'number' && (() => {
+        const last = [...chartData].reverse().find(pt => pt.value !== null)?.value ?? null
+        const delta = last === null ? null : last - referenceValue
+        const better = delta === null ? null : activeMetric.lowerIsBetter ? delta < 0 : delta > 0
+        return (
+          <p className="text-marine/60 text-xs mb-2">
+            Référence ({referenceLabel.toLowerCase()}) :{' '}
+            <span className="text-marine font-semibold tabular-nums">
+              {referenceValue.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} {activeMetric.unit}
+            </span>
+            {delta !== null && Math.abs(delta) >= 0.05 && (
+              <>
+                {' · '}
+                <span className={`font-semibold tabular-nums ${better ? 'text-green-600' : 'text-red-500'}`}>
+                  {delta > 0 ? '▲ +' : '▼ '}
+                  {delta.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} {activeMetric.unit}
+                </span>
+              </>
+            )}
+          </p>
+        )
+      })()}
+
       {chartEnabled ? (
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -8 }}>
               <CartesianGrid stroke="rgba(10, 28, 94, 0.08)" vertical={false} />
+              {typeof referenceValue === 'number' && (
+                <ReferenceLine
+                  y={referenceValue}
+                  stroke="rgba(10, 28, 94, 0.45)"
+                  strokeDasharray="5 4"
+                  label={{ value: referenceLabel, position: 'insideBottomLeft', fill: 'rgba(10, 28, 94, 0.55)', fontSize: 10 }}
+                />
+              )}
               <XAxis
                 dataKey="label"
                 tick={{ fill: 'rgba(10, 28, 94, 0.55)', fontSize: 11 }}
@@ -1003,108 +1042,6 @@ function EvolutionTooltip({
         </p>
       )}
     </div>
-  )
-}
-
-interface PlisCutanesSectionProps {
-  latestPlis: MesurePlisCutanes
-  previousPlis: MesurePlisCutanes | null
-  chartData: { label: string; value: number }[]
-}
-
-function PlisCutanesSection({ latestPlis, previousPlis, chartData }: PlisCutanesSectionProps) {
-  const PLIS = [
-    { key: 'triceps' as const, label: 'Triceps' },
-    { key: 'biceps' as const, label: 'Biceps' },
-    { key: 'sousscapulaire' as const, label: 'Sous-scap' },
-    { key: 'iliaque' as const, label: 'Iliaque' },
-    { key: 'mollet' as const, label: 'Mollet' }
-  ]
-  const showChart = chartData.filter(p => typeof p.value === 'number').length >= 2
-
-  return (
-    <section className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
-      <div className="flex items-center gap-2 mb-3">
-        <Calculator size={16} className="text-gold-dark" />
-        <h3 className="text-marine font-semibold text-sm uppercase tracking-wide">Plis cutanés</h3>
-        <span className="text-marine/45 text-xs ml-auto">{formatBilanDate(latestPlis.date)}</span>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
-        <div>
-          {/* 4 plis + somme */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-            {PLIS.map(p => (
-              <MiniStatCard
-                key={p.key}
-                label={p.label}
-                value={latestPlis[p.key] ?? null}
-                unit="mm"
-                previousValue={previousPlis?.[p.key] ?? undefined}
-                previousDate={previousPlis?.date}
-                lowerIsBetter
-              />
-            ))}
-          </div>
-          <div className="mt-3 bg-gradient-to-br from-white to-cream/40 border border-cream-dark/30 rounded-xl p-4">
-            <p className="text-marine/55 text-xs uppercase tracking-wide font-medium">Somme des 4 plis</p>
-            <p className="text-marine text-2xl font-bold mt-1 leading-none tabular-nums">
-              {latestPlis.somme4Plis.toFixed(1)}
-              <span className="text-marine/45 text-sm font-medium ml-1">mm</span>
-            </p>
-            <MeasureDelta
-              current={latestPlis.somme4Plis}
-              previous={previousPlis?.somme4Plis}
-              previousDate={previousPlis?.date}
-              unit="mm"
-              lowerIsBetter
-            />
-          </div>
-        </div>
-
-        <div>
-          <p className="text-marine/55 text-xs uppercase tracking-wide font-medium mb-1.5">
-            Évolution % gras (Durnin-Womersley)
-          </p>
-          {showChart ? (
-            <div className="h-40">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: -8 }}>
-                  <CartesianGrid stroke="rgba(10, 28, 94, 0.08)" vertical={false} />
-                  <XAxis
-                    dataKey="label"
-                    tick={{ fill: 'rgba(10, 28, 94, 0.55)', fontSize: 10 }}
-                    stroke="rgba(10, 28, 94, 0.15)"
-                  />
-                  <YAxis
-                    tick={{ fill: 'rgba(10, 28, 94, 0.55)', fontSize: 10 }}
-                    stroke="rgba(10, 28, 94, 0.15)"
-                    width={34}
-                    domain={['auto', 'auto']}
-                  />
-                  <Tooltip
-                    contentStyle={{ background: '#fff', border: '1px solid #d4a574', borderRadius: 8, fontSize: 12 }}
-                    formatter={(v: unknown) => [`${typeof v === 'number' ? v.toFixed(1) : v} %`, '% gras']}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="value"
-                    stroke="#d4a574"
-                    strokeWidth={2}
-                    dot={{ r: 3, fill: '#d4a574' }}
-                    isAnimationActive={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <p className="text-marine/40 text-sm">
-              Au moins 2 prises de plis sont nécessaires pour tracer la courbe.
-            </p>
-          )}
-        </div>
-      </div>
-    </section>
   )
 }
 

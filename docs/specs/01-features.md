@@ -2,6 +2,20 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.52 — Vue Mesures : référence « mesure précédente » + section plis dédoublonnée)
+
+Deux emprunts au dashboard Bilan :
+
+- **Ligne de référence** sur la courbe d'évolution — trait pointillé à la valeur de la prise précédente,
+  avec son libellé daté et l'**écart chiffré** au-dessus du graphique (vert si l'évolution va dans le bon
+  sens, en tenant compte du sens de la mesure).
+- **Section « Plis cutanés » du bas retirée** : elle répétait ce que le détail dépliable montre déjà plus
+  haut. Le composant et son calcul de série sont supprimés, pas juste masqués.
+
+Reste à faire : le sélecteur **« Comparer à »** (choisir une autre prise que la précédente).
+
+Version : 0.9.51 → 0.9.52.
+
 ## ✅ Fait (v0.9.51 — Pli du mollet affiché dans la vue Mesures)
 
 Le mollet était saisissable (v0.9.49) mais n'apparaissait nulle part une fois enregistré. Il rejoint les
