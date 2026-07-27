@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.12 — Courbe « Évolution de la composition corporelle »)
+
+Nouvelle courbe de tendance dans la section Composition corporelle du dashboard, dans le style de « Évolution du
+% de gras » : le **score de composition (0-4)** dans le temps, avec les **5 zones de catégories en fond** (À
+améliorer → Excellent), dernier point mis en valeur. Composant réutilisable `src/components/ScoreTrend.tsx`
+(SVG pur). Affichée dès qu'il y a ≥ 2 bilans avec un score de composition.
+
+Version : 0.9.11 → 0.9.12.
+
 ## ✅ Fait (v0.9.11 — Composition corporelle : titre simplifié + bouton Barème)
 
 La carte d'explication de la composition (dashboard, sous CPAFLA) s'intitule maintenant simplement

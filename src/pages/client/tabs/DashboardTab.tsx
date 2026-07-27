@@ -32,6 +32,7 @@ import { detectHealthFlags } from '../../../lib/health-flags'
 import { HealthFlags } from '../dashboard/HealthFlags'
 import { BodyFatRiskBar } from '../../../components/BodyFatRiskBar'
 import { BodyFatTrend } from '../../../components/BodyFatTrend'
+import { ScoreTrend } from '../../../components/ScoreTrend'
 import { bodyFatTargetWeights } from '../../../lib/body-fat-risk'
 import { kgToLb, cmToFeetInches } from '../../../lib/units'
 
@@ -338,6 +339,15 @@ export function DashboardTab() {
       return { date: b.date, pct: typeof v === 'number' && !Number.isNaN(v) ? v : null }
     })
     .filter((p): p is { date: string; pct: number } => p.pct !== null)
+
+  // Série datée du score de composition corporelle (0-4) → courbe de tendance.
+  const compositionSeries = [...(bilans ?? [])]
+    .reverse()
+    .map(b => {
+      const s = computeBilan(b.data, profile).composition.score
+      return { date: b.date, score: typeof s === 'number' && !Number.isNaN(s) ? s : null }
+    })
+    .filter((p): p is { date: string; score: number } => p.score !== null)
 
   // Poids-repères (optimal + santé max) dérivés du % de gras, à masse maigre constante.
   const targetW = bodyFatTargetWeights(
@@ -725,6 +735,15 @@ export function DashboardTab() {
               />
             )
           })()}
+        {compositionSeries.length >= 2 && (
+          <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
+            <p className="dash-eyebrow text-gold-dark mb-2">Évolution de la composition corporelle</p>
+            <ScoreTrend
+              series={compositionSeries}
+              ariaLabel="Progression du score de composition corporelle (0 à 4) dans le temps, avec les zones de catégories en fond."
+            />
+          </div>
+        )}
         {typeof activeData.pourcentage_gras === 'number' && client.sex && (
           <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4">
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
