@@ -278,10 +278,12 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     return typeof raw.saut_vertical_cm === 'number' ? raw.saut_vertical_cm : null
   })()
   const puissanceJambesW = (() => {
-    // Préserver les valeurs importées du logiciel d'origine.
-    if (raw.puissance_calculated_auto === false && typeof raw.puissance_jambes_watts === 'number') {
-      return raw.puissance_jambes_watts
-    }
+    // Toujours (re)calculer par Sayers dès que saut + poids sont connus — y compris
+    // pour un bilan importé : la puissance est un champ **calculé** (jamais saisi à
+    // la main), donc l'app doit en être la seule source. Sayers reproduit d'ailleurs
+    // exactement les rapports d'origine quand leurs données sont cohérentes.
+    // Repli sur la valeur importée seulement si le calcul est impossible (saut ou
+    // poids manquant) — sinon on perdrait la donnée.
     const computed = sayersLegPower(sautVerticalCm ?? undefined, raw.poids_kg)
     if (computed !== null) return computed
     return typeof raw.puissance_jambes_watts === 'number' ? raw.puissance_jambes_watts : null
@@ -403,12 +405,10 @@ export function mergeComputedIntoBilan(raw: BilanData, computed: BilanComputed):
   if (typeof raw.saut_depart_cm === 'number' && typeof raw.saut_finale_cm === 'number' && computed.sautVerticalCm !== null) {
     next.saut_vertical_cm = computed.sautVerticalCm
   }
-  // Puissance : ne pas écraser une valeur importée (flag === false).
-  if (
-    computed.puissanceJambesW !== null &&
-    raw.puissance_calculated_auto !== false &&
-    !(raw.puissance_calculated_auto === undefined && typeof raw.puissance_jambes_watts === 'number')
-  ) {
+  // Puissance : champ calculé, jamais saisi → toujours celle de l'app (Sayers).
+  // `computed.puissanceJambesW` retombe déjà sur la valeur importée si le calcul
+  // est impossible, donc on n'écrase jamais par du vide.
+  if (computed.puissanceJambesW !== null) {
     next.puissance_jambes_watts = computed.puissanceJambesW
     next.puissance_calculated_auto = true
   }

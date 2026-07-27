@@ -2,6 +2,23 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.33 — Import : la puissance des jambes aussi est recalculée)
+
+Dernière valeur dérivée qui restait recopiée du vieux rapport. La puissance des jambes est un champ
+**calculé en lecture seule** (jamais saisi à la main) : l'app doit en être la seule source. Elle est
+désormais toujours (re)calculée par Sayers dès que saut + poids sont connus ; la valeur importée ne sert
+plus que de repli quand le calcul est impossible (saut ou poids manquant), pour ne pas perdre la donnée.
+
+Justification : Sayers reproduit **exactement** les rapports d'origine quand leurs données sont cohérentes
+(sept. 2025 → 5380 W ; août 2011 → 4988 W). Seul juin 2026 divergeait (4725 W au lieu de 5017), le vieux
+rapport étant alors incohérent avec le saut et le poids qu'il imprime — et avec la formule Sayers qu'il
+déclare pourtant utiliser.
+
+**Bilan : une seule feuille de saisie, tout le reste calculé.** L'import affiche déjà exactement le même
+formulaire que la saisie manuelle ; les seules données reprises du `.doc` sont les mesures brutes.
+
+Version : 0.9.32 → 0.9.33.
+
 ## ✅ Fait (v0.9.32 — Import .doc : les scores sont recalculés, plus recopiés)
 
 Le parser recopiait les scores imprimés par l'ancien logiciel (`indice_sante_dos`, `score_musculo_global`,

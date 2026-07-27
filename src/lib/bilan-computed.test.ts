@@ -242,3 +242,30 @@ test('import .doc : les scores du vieux rapport sont ÉCRASÉS par le calcul de 
   assert.equal(merged.score_musculo_global, 3.7)
   assert.equal(merged.score_composition, 4)
 })
+
+test('import : la puissance des jambes est recalculée (Sayers), pas recopiée', () => {
+  // Champ « calculé » (jamais saisi à la main) → l'app doit en être la seule source.
+  // Bilan du 4 sept. 2025 : saut 48 cm, poids 99,8 kg → Sayers = 5380 W.
+  const raw: BilanData = {
+    poids_kg: 99.8,
+    saut_vertical_cm: 48,
+    puissance_jambes_watts: 1234, // valeur « importée » absurde
+    puissance_calculated_auto: false
+  }
+  const p: BilanProfile = { age: 48, sex: 'M', norms: 'cpafla' }
+  const merged = mergeComputedIntoBilan(raw, computeBilan(raw, p))
+  assert.equal(merged.puissance_jambes_watts, 5380)
+  assert.equal(merged.puissance_calculated_auto, true)
+})
+
+test('import : puissance conservée si Sayers est impossible (saut ou poids manquant)', () => {
+  // Sans saut vertical, on ne peut pas recalculer → ne pas perdre la donnée.
+  const raw: BilanData = {
+    poids_kg: 91.8,
+    puissance_jambes_watts: 4725,
+    puissance_calculated_auto: false
+  }
+  const p: BilanProfile = { age: 49, sex: 'M', norms: 'cpafla' }
+  const merged = mergeComputedIntoBilan(raw, computeBilan(raw, p))
+  assert.equal(merged.puissance_jambes_watts, 4725)
+})
