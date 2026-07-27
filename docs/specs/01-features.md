@@ -2,6 +2,24 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.53 — Vue Mesures : sélecteur « Comparer à »)
+
+Dernier des trois emprunts au dashboard Bilan. La comparaison était **figée** sur la prise immédiatement
+précédente ; elle se choisit maintenant, comme pour les bilans :
+
+- **Mesure précédente** (défaut, comportement inchangé)
+- **une date précise** parmi les prises antérieures
+- **Aucune comparaison** — masque tous les écarts ▲▼ et la ligne de référence
+
+Le choix vit dans l'URL (`?mesureCompare=`), donc il survit au rafraîchissement et au retour navigateur.
+Il pilote **tous** les écarts de la page — vignettes, détail dépliable, ratio taille/hanche et ligne de
+référence du graphique — pas seulement le graphique.
+
+Les plis suivent la date choisie pour les circonférences, afin que toute la page se lise au même moment.
+Seules les prises **antérieures** à celle affichée sont proposées.
+
+Version : 0.9.52 → 0.9.53.
+
 ## ✅ Fait (v0.9.52 — Vue Mesures : référence « mesure précédente » + section plis dédoublonnée)
 
 Deux emprunts au dashboard Bilan :

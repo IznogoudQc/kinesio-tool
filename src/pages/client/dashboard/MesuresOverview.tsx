@@ -153,6 +153,21 @@ export function MesuresOverview() {
     [searchParams, setSearchParams]
   )
 
+  // Prise servant de RÉFÉRENCE pour tous les écarts ▲▼ de la vue.
+  //   `null` / absent → la prise immédiatement précédente (comportement historique)
+  //   `'none'`        → aucune comparaison
+  //   sinon           → l'`id` d'une prise antérieure précise
+  const compareKey = searchParams.get('mesureCompare')
+  const setCompareKey = useCallback(
+    (key: string | null) => {
+      const next = new URLSearchParams(searchParams)
+      if (key) next.set('mesureCompare', key)
+      else next.delete('mesureCompare')
+      setSearchParams(next, { replace: false })
+    },
+    [searchParams, setSearchParams]
+  )
+
   // Persistance du choix de métrique (par défaut, pas par client — Marie-Eve
   // bascule souvent sur la même donnée pour tous ses clients).
   useEffect(() => {
@@ -231,19 +246,36 @@ export function MesuresOverview() {
     const target = selectedMesureKey!
     const circ = findCircAtOrBefore(circList, target)
     const plis = findPlisAtOrBefore(plisList ?? [], target)
-    // « Précédent » = la session immédiatement avant celle active dans la liste.
+    // Référence : par défaut la session immédiatement avant celle active, sinon
+    // celle choisie dans « Comparer à » (ou aucune).
     const circIdxInList = circ ? circList.findIndex(c => c.id === circ.id) : -1
     const plisIdxInList = plis && plisList ? plisList.findIndex(p => p.id === plis.id) : -1
+    let refCirc: MesureCirconferences | null =
+      circIdxInList >= 0 ? (circList[circIdxInList + 1] ?? null) : null
+    let refPlis: MesurePlisCutanes | null =
+      plisIdxInList >= 0 && plisList ? (plisList[plisIdxInList + 1] ?? null) : null
+    if (compareKey === 'none') {
+      refCirc = null
+      refPlis = null
+    } else if (compareKey) {
+      const chosen = circList.find(c => c.id === compareKey) ?? null
+      if (chosen) {
+        refCirc = chosen
+        // On aligne les plis sur la MÊME date que la circonférence choisie, pour
+        // que tous les écarts de la page se lisent au même moment.
+        refPlis = findPlisAtOrBefore(plisList ?? [], chosen.date)
+      }
+    }
     return {
       circ: (circ ?? {}) as Partial<MesureCirconferences>,
       plis: plis ?? null,
-      previousCirc: ((circIdxInList >= 0 ? circList[circIdxInList + 1] : null) ?? {}) as Partial<MesureCirconferences>,
-      previousPlis: (plisIdxInList >= 0 && plisList ? plisList[plisIdxInList + 1] : null) ?? null,
+      previousCirc: (refCirc ?? {}) as Partial<MesureCirconferences>,
+      previousPlis: refPlis,
       circDate: circ?.date ?? null,
       plisDate: plis?.date ?? null,
       mode: 'date' as const
     }
-  }, [isSynthesisMode, selectedMesureKey, circList, plisList, synthesisCirc, previousSynthesisCirc])
+  }, [isSynthesisMode, selectedMesureKey, compareKey, circList, plisList, synthesisCirc, previousSynthesisCirc])
 
   const METRICS_DEFS: MetricDef[] = useMemo(() => {
     const convertLen = (raw: number) => cmToLengthInput(raw, unitLength)
@@ -429,6 +461,13 @@ export function MesuresOverview() {
       ? `Mesure du ${formatBilanDate(activeView.previousCirc.date)}`
       : 'Mesure précédente'
 
+  // Prises proposées comme référence : uniquement celles antérieures à l'active.
+  const compareOptions = useMemo(() => {
+    if (!circList) return []
+    const activeDate = activeView?.circDate ?? null
+    return circList.filter(c => (activeDate ? c.date < activeDate : true))
+  }, [circList, activeView])
+
   const lastDate = activeView?.circDate ?? activeView?.plisDate ?? null
   const lastDays = lastDate ? daysSince(lastDate) : null
   const totalSessions = (circList?.length ?? 0) + (plisList?.length ?? 0)
@@ -538,14 +577,35 @@ export function MesuresOverview() {
         </button>
       </header>
 
-      {/* ── Sélecteur de prise (Synthèse + une pill par date) ──────────── */}
+      {/* ── Sélecteur de prise (Synthèse + une pill par date) + référence ── */}
       {unifiedDates.length > 0 && (
-        <MesureSelectorPills
-          dates={unifiedDates}
-          selectedKey={selectedMesureKey}
-          onSelect={setSelectedMesureKey}
-          synthesisLatestDate={synthesisCirc?.latestContributionDate ?? null}
-        />
+        <div className="flex items-center justify-between gap-4 flex-wrap">
+          <MesureSelectorPills
+            dates={unifiedDates}
+            selectedKey={selectedMesureKey}
+            onSelect={setSelectedMesureKey}
+            synthesisLatestDate={synthesisCirc?.latestContributionDate ?? null}
+          />
+          {compareOptions.length > 0 && (
+            <label className="flex items-center gap-1.5 text-xs text-marine/55 shrink-0">
+              <span>Comparer à</span>
+              <select
+                value={compareKey ?? 'prev'}
+                onChange={e => setCompareKey(e.target.value === 'prev' ? null : e.target.value)}
+                className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
+                title="Prise de référence pour tous les écarts ▲▼ de cette page"
+              >
+                <option value="prev">Mesure précédente</option>
+                {compareOptions.map(o => (
+                  <option key={o.id} value={o.id}>
+                    {formatBilanDate(o.date)}
+                  </option>
+                ))}
+                <option value="none">Aucune comparaison</option>
+              </select>
+            </label>
+          )}
+        </div>
       )}
 
       {/* ── 2 cards principales ────────────────────────────────────────── */}
