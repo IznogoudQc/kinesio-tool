@@ -9,7 +9,7 @@ import { settingsService } from '../../../services/settings'
 import { reportsService } from '../../../services/reports'
 import { SendBilanModal } from '../SendBilanModal'
 import { formatBilanDate } from '../bilanFields'
-import { computeAge, type NormsType } from '../../../lib/norms'
+import { computeAge, getNormPercentiles, type NormsType } from '../../../lib/norms'
 import { computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
 import { BloodPressureBar } from '../../../components/BloodPressureBar'
 import { dualWeight } from '../../../lib/objectif-format'
@@ -32,6 +32,7 @@ import { detectHealthFlags } from '../../../lib/health-flags'
 import { HealthFlags } from '../dashboard/HealthFlags'
 import { BodyFatRiskBar } from '../../../components/BodyFatRiskBar'
 import { BodyFatTrend } from '../../../components/BodyFatTrend'
+import { Vo2maxTrend } from '../../../components/Vo2maxTrend'
 import { ScoreTrend } from '../../../components/ScoreTrend'
 import { bodyFatTargetWeights } from '../../../lib/body-fat-risk'
 import { kgToLb, cmToFeetInches } from '../../../lib/units'
@@ -339,6 +340,21 @@ export function DashboardTab() {
       return { date: b.date, score: typeof s === 'number' && !Number.isNaN(s) ? s : null }
     })
     .filter((p): p is { date: string; score: number } => p.score !== null)
+
+  // Série datée du VO2max (du plus ancien au plus récent) → courbe de tendance.
+  const vo2maxSeries = [...(bilans ?? [])]
+    .reverse()
+    .map(b => {
+      const v = b.data.vo2max
+      return { date: b.date, vo2max: typeof v === 'number' && !Number.isNaN(v) ? v : null }
+    })
+    .filter((p): p is { date: string; vo2max: number } => p.vo2max !== null)
+
+  // Seuils de catégories VO2max (percentiles ACSM âge/sexe) → zones de fond du graphe.
+  const vo2maxPercentiles =
+    typeof age === 'number' && client.sex
+      ? getNormPercentiles('vo2max', age, client.sex, norms)?.percentiles ?? null
+      : null
 
   // Poids-repères (optimal + santé max) dérivés du % de gras, à masse maigre constante.
   const targetW = bodyFatTargetWeights(
@@ -756,6 +772,12 @@ export function DashboardTab() {
             </div>
           )}
         </div>
+        {vo2maxSeries.length >= 2 && (
+          <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
+            <p className="dash-eyebrow text-gold-dark mb-1">Évolution du VO2max</p>
+            <Vo2maxTrend series={vo2maxSeries} percentiles={vo2maxPercentiles} />
+          </div>
+        )}
         <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} />
       </section>
 

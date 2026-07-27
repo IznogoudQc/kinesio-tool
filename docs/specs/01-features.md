@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.28 — Graphe « Évolution du VO2max » avec zones de catégories)
+
+La section aérobie affiche une courbe **Évolution du VO2max** (même facture que « Évolution du % de gras ») :
+ligne datée du plus ancien au plus récent, **zones de catégories en fond** (À améliorer → Excellent,
+rouge → vert) dérivées des percentiles ACSM P10/P25/P50/P75 pour l'âge et le sexe du client, dernier point
+en or avec sa valeur. Nouveau composant `Vo2maxTrend`. Rendu à partir de 2 bilans avec VO2max ; sans âge/sexe,
+la courbe s'affiche sans zones.
+
+Version : 0.9.27 → 0.9.28.
+
 ## ✅ Fait (v0.9.27 — VO2max : bouton « Barème » + cartes de même taille)
 
 La carte **VO2max** du dashboard reçoit un bouton **Barème** (comme Composition corporelle) : il déplie
