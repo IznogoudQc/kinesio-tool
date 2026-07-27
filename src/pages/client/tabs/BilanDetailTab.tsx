@@ -126,11 +126,11 @@ export function BilanDetailTab() {
         </div>
       )}
 
-      <section className="bg-marine-light/95 border border-gold/20 rounded-xl p-7 text-cream">
-        <h2 className="text-cream font-semibold text-lg mb-1">
+      <section className="bg-white border border-cream-dark rounded-xl p-7 text-marine">
+        <h2 className="text-marine font-semibold text-lg mb-1">
           Bilan du {formatBilanDate(editing ? draftDate || bilan.date : bilan.date)}
         </h2>
-        <p className="text-cream/55 text-sm mb-6">
+        <p className="text-marine/55 text-sm mb-6">
           {bilan.source === 'import_docx' ? 'Importé depuis un fichier .docx' : 'Saisie manuelle'}
           {' · '}
           Catégorisation selon la norme <span className="font-medium">CPAFLA</span>.
@@ -142,6 +142,7 @@ export function BilanDetailTab() {
             data={draftData}
             onDateChange={setDraftDate}
             onDataChange={setDraftData}
+            variant="light"
             client={client}
             norms={norms}
             showSynthesis
@@ -151,6 +152,7 @@ export function BilanDetailTab() {
             date={bilan.date}
             data={bilan.data}
             readOnly
+            variant="light"
             categorize={categorize}
             client={client}
             norms={norms}
@@ -159,7 +161,7 @@ export function BilanDetailTab() {
         )}
 
         {editing && (
-          <div className="flex items-center justify-end gap-3 mt-7 pt-5 border-t border-marine-light/40">
+          <div className="flex items-center justify-end gap-3 mt-7 pt-5 border-t border-cream-dark">
             <button
               type="button"
               onClick={() => {
@@ -167,7 +169,7 @@ export function BilanDetailTab() {
                 setError(null)
               }}
               disabled={saving}
-              className="px-4 py-2 text-cream/70 hover:text-cream text-base transition-colors"
+              className="px-4 py-2 text-marine/70 hover:text-marine text-base transition-colors"
             >
               Annuler
             </button>

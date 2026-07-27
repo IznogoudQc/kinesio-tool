@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.36 — Vue d'un bilan : même thème clair que la saisie)
+
+La vue « Voir / Modifier un bilan » était le seul écran de bilan en **marine foncé** (fond `bg-marine-light`,
+texte crème, `BilanForm` en variante `marine`) alors que la saisie manuelle et l'import sont en **clair**.
+Elle passe en carte blanche sur fond crème, texte marine — les trois écrans de bilan sont désormais
+visuellement identiques.
+
+Version : 0.9.35 → 0.9.36.
+
 ## ✅ Fait (v0.9.35 — Import : exactement le même formulaire que la saisie manuelle)
 
 À l'import d'un `.doc`, on retrouve maintenant **la feuille de saisie complète**, préremplie avec les
