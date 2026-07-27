@@ -2,6 +2,14 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.8 — Taille et poids affichés en métrique ET impérial (comme l'ancien bilan))
+
+Dans la ligne d'info de « Composition corporelle », **Taille** et **Poids** montrent les deux unités façon
+ancien bilan : `5' 9¼" · 176 cm` et `202,4 lb · 91,8 kg`. Nouveau helper `cmToFeetInches(cm)` (`units.ts`,
+arrondi au quart de pouce). IMC et tour de taille restent en unité unique (comme l'ancien bilan).
+
+Version : 0.9.7 → 0.9.8.
+
 ## ✅ Fait (v0.9.7 — Composition corporelle : ajout taille + poids à la ligne d'info)
 
 La ligne d'info discrète de « Composition corporelle / Votre silhouette » liste maintenant **Taille · Poids ·

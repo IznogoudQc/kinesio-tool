@@ -9,6 +9,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
+  cmToFeetInches,
   cmToIn,
   cmToLengthInput,
   formatLength,
@@ -67,4 +68,16 @@ test('valeurs nulles → tiret', () => {
   assert.equal(formatLength(null, 'in'), '—')
   assert.equal(formatWeight(null, 'kg'), '—')
   assert.equal(formatWeight(null, 'lb'), '—')
+})
+
+test('cmToFeetInches — 176 cm → 5\' 9¼" (comme l’ancien bilan)', () => {
+  assert.equal(cmToFeetInches(176), '5\' 9¼"')
+})
+
+test('cmToFeetInches — fractions et report de pouces', () => {
+  assert.equal(cmToFeetInches(180), '5\' 10¾"') // 70.87 po → arrondi 10¾
+  assert.equal(cmToFeetInches(152.4), '5\' 0"') // exactement 60 po
+  assert.equal(cmToFeetInches(155), '5\' 1"') // 61.02 po → arrondi 61
+  assert.equal(cmToFeetInches(null), '—')
+  assert.equal(cmToFeetInches(0), '—')
 })

@@ -31,7 +31,7 @@ import { HealthFlags } from '../dashboard/HealthFlags'
 import { BodyFatRiskBar } from '../../../components/BodyFatRiskBar'
 import { BodyFatTrend } from '../../../components/BodyFatTrend'
 import { bodyFatTargetWeights } from '../../../lib/body-fat-risk'
-import { kgToLb } from '../../../lib/units'
+import { kgToLb, cmToFeetInches } from '../../../lib/units'
 
 function formatNumber(n: number | null | undefined): string {
   if (typeof n !== 'number' || Number.isNaN(n)) return '—'
@@ -670,13 +670,17 @@ export function DashboardTab() {
             {typeof activeData.taille_cm === 'number' && (
               <span>
                 <span className="text-marine/45">Taille</span>{' '}
-                <span className="font-semibold text-marine tabular-nums">{formatNumber(activeData.taille_cm)} cm</span>
+                <span className="font-semibold text-marine tabular-nums">
+                  {cmToFeetInches(activeData.taille_cm)} · {formatNumber(activeData.taille_cm)} cm
+                </span>
               </span>
             )}
             {typeof activeData.poids_kg === 'number' && (
               <span>
                 <span className="text-marine/45">Poids</span>{' '}
-                <span className="font-semibold text-marine tabular-nums">{dualWeight(activeData.poids_kg, client.unitWeight ?? 'kg')}</span>
+                <span className="font-semibold text-marine tabular-nums">
+                  {formatNumber(kgToLb(activeData.poids_kg))} lb · {formatNumber(activeData.poids_kg)} kg
+                </span>
               </span>
             )}
             {typeof activeData.imc === 'number' && (

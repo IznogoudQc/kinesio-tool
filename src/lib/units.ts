@@ -25,6 +25,23 @@ export function lbToKg(lb: number): number {
   return lb / 2.2046226218
 }
 
+/** Formate une taille (cm) en pieds/pouces avec fractions de ¼ po, façon
+ *  ancien bilan (ex. 176 cm → « 5' 9¼" »). Arrondi au quart de pouce le plus proche. */
+export function cmToFeetInches(cm: number | null): string {
+  if (cm == null || !Number.isFinite(cm) || cm <= 0) return '—'
+  const totalIn = cmToIn(cm)
+  let feet = Math.floor(totalIn / 12)
+  let q = Math.round((totalIn - feet * 12) * 4) / 4 // quart de pouce
+  if (q >= 12) {
+    feet += 1
+    q -= 12
+  }
+  const whole = Math.floor(q)
+  const frac = q - whole
+  const fracStr = frac === 0.25 ? '¼' : frac === 0.5 ? '½' : frac === 0.75 ? '¾' : ''
+  return `${feet}' ${whole}${fracStr}"`
+}
+
 // ── Helpers de formatage selon l'unité préférée du client ────────────────────
 export function formatLength(cm: number | null, unit: LengthUnit): string {
   if (cm == null) return '—'
