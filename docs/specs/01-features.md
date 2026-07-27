@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.11 — Composition corporelle : titre simplifié + bouton Barème)
+
+La carte d'explication de la composition (dashboard, sous CPAFLA) s'intitule maintenant simplement
+**« Composition corporelle »** (au lieu de « Pourquoi cette note — … »), cohérent avec les autres sections. Ajout
+d'un bouton **« Barème »** (comme le profil musculo) qui déplie la table CPAFLA Fig. 7-4/7-5 pour le sexe du
+client, avec **la ligne d'IMC et les cases (tour de taille / plis) du client surlignées**. Nouveaux exports
+`cpaflaCompositionBareme` + index de cases dans `cpaflaCompositionDetail`.
+
+Version : 0.9.10 → 0.9.11.
+
 ## ✅ Fait (v0.9.10 — Composition corporelle : « Pourquoi cette note » dans le dashboard)
 
 Sous CPAFLA, la section Composition corporelle du dashboard explique **pourquoi** le client obtient sa note :

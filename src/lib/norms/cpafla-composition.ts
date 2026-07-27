@@ -4,8 +4,7 @@
  *  Trois variables (pas le % de gras) : IMC (kg/m²), CT = circonférence de la
  *  taille (cm), S5PC = somme des CINQ plis cutanés (mm) : triceps, biceps,
  *  sous-scapulaire, crête iliaque, **mollet**. Les points de CT (colonne B) et de
- *  S5PC (colonne C) dépendent de la **plage d'IMC** (les seuils changent selon
- *  l'IMC). Pas de dépendance à l'âge — seulement le sexe.
+ *  S5PC (colonne C) dépendent de la **plage d'IMC**. Pas de dépendance à l'âge.
  *
  *  Résultat selon les mesures disponibles (guide p. 7-17/18) :
  *    IMC + CT + S5PC → arrondi[(B × 1,5 + C) / 2,5]   (arrondi : ≥ x,5 → haut)
@@ -14,89 +13,86 @@
  *    CT seule        → B évalué dans la plage « IMC 27 » (25,0-29,9)
  *    IMC seul        → A (colonne A)
  *
- *  Validé sur l'exemple du guide (femme, IMC 25,8 · CT 91 · S5PC 116,6 →
- *  B=1, C=2 → (1,5+2)/2,5 = 1,4 → 1 « Acceptable »).
- *
- *  Le 5ᵉ pli (mollet) n'est pas toujours mesuré : sans S5PC, on retombe sur
- *  IMC + CT (comportement « auto »). Voir ADR 0027.
+ *  Validé sur l'exemple du guide (femme IMC 25,8 · CT 91 · S5PC 116,6 →
+ *  B=1, C=2 → (1,5+2)/2,5 = 1,4 → 1 « Acceptable »). Voir ADR 0027.
  */
 
 const NEG = Number.NEGATIVE_INFINITY
 
-/** Palier d'un barème : la valeur obtient `pts` si elle atteint la borne `from`
- *  (incluse si `inc`, sinon stricte). Paliers évalués du plus bas au plus haut,
- *  le dernier atteint gagne. */
+/** Palier d'un barème : `pts` si la valeur atteint `from` (incluse si `inc`).
+ *  `label` = intervalle lisible (affichage barème). Évalués du bas vers le haut. */
 interface Step {
   from: number
   inc: boolean
   pts: number
+  label: string
 }
 
-function pickPts(value: number, steps: Step[]): number {
-  let pts = steps[0].pts
-  for (const s of steps) {
-    if (s.inc ? value >= s.from : value > s.from) pts = s.pts
+function pickIndex(value: number, steps: Step[]): number {
+  let idx = 0
+  for (let i = 0; i < steps.length; i++) {
+    const s = steps[i]
+    if (s.inc ? value >= s.from : value > s.from) idx = i
   }
-  return pts
+  return idx
 }
 
 interface ImcBand {
-  /** Borne supérieure exclusive de la plage d'IMC (la 1re plage < 18,5, etc.). */
+  /** Borne supérieure exclusive de la plage d'IMC. */
   imcLt: number
+  /** Libellé de la plage (« 25,0–29,9 »). */
+  label: string
   /** Colonne A — points de l'IMC seul. */
   a: number
-  /** Colonne B — points du tour de taille (selon l'IMC). */
+  /** Colonne B — tour de taille (selon l'IMC). */
   ct: Step[]
-  /** Colonne C — points de la somme des 5 plis (selon l'IMC). */
+  /** Colonne C — somme des 5 plis (selon l'IMC). */
   s5pc: Step[]
 }
 
+const ALL_CT = [{ from: NEG, inc: true, pts: 3, label: 'Toutes' }]
+
 // ── Figure 7-4 — HOMMES ───────────────────────────────────────────────────────
 const MEN: ImcBand[] = [
-  { imcLt: 18.5, a: 3,
-    ct: [{ from: NEG, inc: true, pts: 3 }],
-    s5pc: [{ from: NEG, inc: true, pts: 3 }, { from: 25, inc: true, pts: 4 }, { from: 55, inc: true, pts: 3 }, { from: 77, inc: false, pts: 2 }] },
-  { imcLt: 25, a: 4,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 94, inc: true, pts: 3 }, { from: 101, inc: false, pts: 1 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 54, inc: true, pts: 3 }, { from: 77, inc: false, pts: 2 }] },
-  { imcLt: 30, a: 3,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 94, inc: true, pts: 3 }, { from: 101, inc: false, pts: 1 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 54, inc: true, pts: 3 }, { from: 77, inc: false, pts: 2 }] },
-  { imcLt: 32.5, a: 2,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 94, inc: true, pts: 2 }, { from: 101, inc: false, pts: 0 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 54, inc: true, pts: 3 }, { from: 77, inc: false, pts: 2 }] },
-  { imcLt: 35.05, a: 1,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 94, inc: true, pts: 2 }, { from: 101, inc: false, pts: 0 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 54, inc: true, pts: 2 }, { from: 77, inc: false, pts: 1 }] },
-  { imcLt: Number.POSITIVE_INFINITY, a: 0,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 94, inc: true, pts: 2 }, { from: 101, inc: false, pts: 0 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 54, inc: true, pts: 2 }, { from: 77, inc: false, pts: 0 }] }
+  { imcLt: 18.5, label: 'moins de 18,5', a: 3, ct: ALL_CT,
+    s5pc: [{ from: NEG, inc: true, pts: 3, label: '< 25' }, { from: 25, inc: true, pts: 4, label: '25–54' }, { from: 55, inc: true, pts: 3, label: '55–77' }, { from: 77, inc: false, pts: 2, label: '> 77' }] },
+  { imcLt: 25, label: '18,5–24,9', a: 4,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 94' }, { from: 94, inc: true, pts: 3, label: '94–101' }, { from: 101, inc: false, pts: 1, label: '> 101' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 54' }, { from: 54, inc: true, pts: 3, label: '54–77' }, { from: 77, inc: false, pts: 2, label: '> 77' }] },
+  { imcLt: 30, label: '25,0–29,9', a: 3,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 94' }, { from: 94, inc: true, pts: 3, label: '94–101' }, { from: 101, inc: false, pts: 1, label: '> 101' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 54' }, { from: 54, inc: true, pts: 3, label: '54–77' }, { from: 77, inc: false, pts: 2, label: '> 77' }] },
+  { imcLt: 32.5, label: '30,0–32,4', a: 2,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 94' }, { from: 94, inc: true, pts: 2, label: '94–101' }, { from: 101, inc: false, pts: 0, label: '> 101' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 54' }, { from: 54, inc: true, pts: 3, label: '54–77' }, { from: 77, inc: false, pts: 2, label: '> 77' }] },
+  { imcLt: 35.05, label: '32,5–35,0', a: 1,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 94' }, { from: 94, inc: true, pts: 2, label: '94–101' }, { from: 101, inc: false, pts: 0, label: '> 101' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 54' }, { from: 54, inc: true, pts: 2, label: '54–77' }, { from: 77, inc: false, pts: 1, label: '> 77' }] },
+  { imcLt: Number.POSITIVE_INFINITY, label: 'plus de 35,0', a: 0,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 94' }, { from: 94, inc: true, pts: 2, label: '94–101' }, { from: 101, inc: false, pts: 0, label: '> 101' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 54' }, { from: 54, inc: true, pts: 2, label: '54–77' }, { from: 77, inc: false, pts: 0, label: '> 77' }] }
 ]
 
 // ── Figure 7-5 — FEMMES ───────────────────────────────────────────────────────
 const WOMEN: ImcBand[] = [
-  { imcLt: 18.5, a: 3,
-    ct: [{ from: NEG, inc: true, pts: 3 }],
-    s5pc: [{ from: NEG, inc: true, pts: 3 }, { from: 46, inc: true, pts: 4 }, { from: 84, inc: true, pts: 3 }, { from: 113, inc: false, pts: 2 }] },
-  { imcLt: 25, a: 4,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 80, inc: true, pts: 3 }, { from: 87, inc: false, pts: 1 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 83, inc: true, pts: 3 }, { from: 113, inc: false, pts: 2 }] },
-  { imcLt: 30, a: 3,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 80, inc: true, pts: 3 }, { from: 87, inc: false, pts: 1 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 83, inc: true, pts: 3 }, { from: 113, inc: false, pts: 2 }] },
-  { imcLt: 32.5, a: 2,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 80, inc: true, pts: 2 }, { from: 87, inc: false, pts: 0 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 83, inc: true, pts: 3 }, { from: 113, inc: false, pts: 2 }] },
-  { imcLt: 35.05, a: 1,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 80, inc: true, pts: 2 }, { from: 87, inc: false, pts: 0 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 83, inc: true, pts: 2 }, { from: 113, inc: false, pts: 1 }] },
-  { imcLt: Number.POSITIVE_INFINITY, a: 0,
-    ct: [{ from: NEG, inc: true, pts: 4 }, { from: 80, inc: true, pts: 2 }, { from: 87, inc: false, pts: 0 }],
-    s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 83, inc: true, pts: 2 }, { from: 113, inc: false, pts: 0 }] }
+  { imcLt: 18.5, label: 'moins de 18,5', a: 3, ct: ALL_CT,
+    s5pc: [{ from: NEG, inc: true, pts: 3, label: '< 46' }, { from: 46, inc: true, pts: 4, label: '46–83' }, { from: 84, inc: true, pts: 3, label: '84–113' }, { from: 113, inc: false, pts: 2, label: '> 113' }] },
+  { imcLt: 25, label: '18,5–24,9', a: 4,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 80' }, { from: 80, inc: true, pts: 3, label: '80–87' }, { from: 87, inc: false, pts: 1, label: '> 87' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 83' }, { from: 83, inc: true, pts: 3, label: '83–113' }, { from: 113, inc: false, pts: 2, label: '> 113' }] },
+  { imcLt: 30, label: '25,0–29,9', a: 3,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 80' }, { from: 80, inc: true, pts: 3, label: '80–87' }, { from: 87, inc: false, pts: 1, label: '> 87' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 83' }, { from: 83, inc: true, pts: 3, label: '83–113' }, { from: 113, inc: false, pts: 2, label: '> 113' }] },
+  { imcLt: 32.5, label: '30,0–32,4', a: 2,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 80' }, { from: 80, inc: true, pts: 2, label: '80–87' }, { from: 87, inc: false, pts: 0, label: '> 87' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 83' }, { from: 83, inc: true, pts: 3, label: '83–113' }, { from: 113, inc: false, pts: 2, label: '> 113' }] },
+  { imcLt: 35.05, label: '32,5–35,0', a: 1,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 80' }, { from: 80, inc: true, pts: 2, label: '80–87' }, { from: 87, inc: false, pts: 0, label: '> 87' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 83' }, { from: 83, inc: true, pts: 2, label: '83–113' }, { from: 113, inc: false, pts: 1, label: '> 113' }] },
+  { imcLt: Number.POSITIVE_INFINITY, label: 'plus de 35,0', a: 0,
+    ct: [{ from: NEG, inc: true, pts: 4, label: '< 80' }, { from: 80, inc: true, pts: 2, label: '80–87' }, { from: 87, inc: false, pts: 0, label: '> 87' }],
+    s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 83' }, { from: 83, inc: true, pts: 2, label: '83–113' }, { from: 113, inc: false, pts: 0, label: '> 113' }] }
 ]
-
-/** Libellés des plages d'IMC (même ordre que MEN/WOMEN). */
-const IMC_BAND_LABELS = ['moins de 18,5', '18,5–24,9', '25,0–29,9', '30,0–32,4', '32,5–35,0', 'plus de 35,0']
 
 function bandIndexForImc(bands: ImcBand[], imc: number): number {
   const i = bands.findIndex(b => imc < b.imcLt)
@@ -112,31 +108,29 @@ export interface CpaflaCompositionInput {
   sex: 'F' | 'M' | null
 }
 
-/** Combinaison de mesures utilisée pour la note (guide p. 7-17/18). */
 export type CpaflaCompositionCombo = 'imc+ct+s5pc' | 'imc+ct' | 'imc+s5pc' | 'ct' | 'imc' | null
 
 export interface CpaflaCompositionDetail {
   score: number | null
-  /** Combinaison de mesures utilisée (pour l'explication). */
   combo: CpaflaCompositionCombo
-  /** Libellé de la plage d'IMC (ex. « 25,0–29,9 »), ou `null`. */
   imcBandLabel: string | null
-  /** Points colonne A (IMC seul). */
   a: number | null
-  /** Points colonne B (tour de taille selon l'IMC), `null` si CT absent. */
   b: number | null
-  /** Points colonne C (somme des 5 plis selon l'IMC), `null` si S5PC absent. */
   c: number | null
-  /** Valeur intermédiaire (B×1,5 + C)/2,5 avant arrondi, pour la combinaison complète. */
   raw: number | null
+  /** Index de la plage d'IMC (pour surligner la bonne ligne du barème). */
+  imcIndex: number | null
+  /** Index du palier de tour de taille atteint (colonne B). */
+  ctIndex: number | null
+  /** Index du palier de somme des 5 plis atteint (colonne C). */
+  s5pcIndex: number | null
 }
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 
-/** Détail du calcul de composition CPAFLA — sert à **expliquer** la note au client
- *  (quelles mesures, quels points, quelle formule). */
+/** Détail du calcul — sert à **expliquer** la note et à **surligner** le barème. */
 export function cpaflaCompositionDetail(input: CpaflaCompositionInput): CpaflaCompositionDetail {
-  const empty: CpaflaCompositionDetail = { score: null, combo: null, imcBandLabel: null, a: null, b: null, c: null, raw: null }
+  const empty: CpaflaCompositionDetail = { score: null, combo: null, imcBandLabel: null, a: null, b: null, c: null, raw: null, imcIndex: null, ctIndex: null, s5pcIndex: null }
   const { sex } = input
   if (sex !== 'F' && sex !== 'M') return empty
   const bands = sex === 'M' ? MEN : WOMEN
@@ -147,23 +141,48 @@ export function cpaflaCompositionDetail(input: CpaflaCompositionInput): CpaflaCo
 
   const idx = bandIndexForImc(bands, hasImc ? (input.imc as number) : 27)
   const band = bands[idx]
+  const ctIndex = hasCt ? pickIndex(input.ct as number, band.ct) : null
+  const s5pcIndex = hasS5 ? pickIndex(input.s5pc as number, band.s5pc) : null
+  const b = ctIndex === null ? null : band.ct[ctIndex].pts
+  const c = s5pcIndex === null ? null : band.s5pc[s5pcIndex].pts
   const a = band.a
-  const b = hasCt ? pickPts(input.ct as number, band.ct) : null
-  const c = hasS5 ? pickPts(input.s5pc as number, band.s5pc) : null
-  const imcBandLabel = hasImc ? IMC_BAND_LABELS[idx] : null
+  const imcBandLabel = band.label
+  const base = { imcBandLabel, a, b, c, imcIndex: idx, ctIndex, s5pcIndex }
 
   if (hasImc && hasCt && hasS5) {
     const raw = ((b as number) * 1.5 + (c as number)) / 2.5
-    return { score: Math.round(raw), combo: 'imc+ct+s5pc', imcBandLabel, a, b, c, raw }
+    return { ...base, score: Math.round(raw), combo: 'imc+ct+s5pc', raw }
   }
-  if (hasImc && hasCt) return { score: b, combo: 'imc+ct', imcBandLabel, a, b, c: null, raw: null }
-  if (hasImc && hasS5) return { score: c, combo: 'imc+s5pc', imcBandLabel, a, b: null, c, raw: null }
-  if (hasCt) return { score: b, combo: 'ct', imcBandLabel: IMC_BAND_LABELS[idx], a, b, c: null, raw: null }
-  return { score: a, combo: 'imc', imcBandLabel, a, b: null, c: null, raw: null }
+  if (hasImc && hasCt) return { ...base, score: b, combo: 'imc+ct', c: null, s5pcIndex: null, raw: null }
+  if (hasImc && hasS5) return { ...base, score: c, combo: 'imc+s5pc', b: null, ctIndex: null, raw: null }
+  if (hasCt) return { ...base, score: b, combo: 'ct', c: null, s5pcIndex: null, raw: null }
+  return { ...base, score: a, combo: 'imc', b: null, c: null, ctIndex: null, s5pcIndex: null, raw: null }
 }
 
-/** Score de composition corporelle CPAFLA (0-4), ou `null` si sexe / mesures
- *  insuffisants. Voir en-tête pour les combinaisons. */
+/** Score de composition corporelle CPAFLA (0-4), ou `null`. */
 export function cpaflaComposition(input: CpaflaCompositionInput): number | null {
   return cpaflaCompositionDetail(input).score
+}
+
+// ── Barème pour l'affichage (bouton « Barème ») ───────────────────────────────
+export interface CpaflaBaremeCell {
+  range: string
+  pts: number
+}
+export interface CpaflaBaremeRow {
+  imcLabel: string
+  a: number
+  ct: CpaflaBaremeCell[]
+  s5pc: CpaflaBaremeCell[]
+}
+
+/** Table de la composition corporelle (Fig. 7-4 hommes / 7-5 femmes) pour affichage. */
+export function cpaflaCompositionBareme(sex: 'F' | 'M'): CpaflaBaremeRow[] {
+  const bands = sex === 'M' ? MEN : WOMEN
+  return bands.map(b => ({
+    imcLabel: b.label,
+    a: b.a,
+    ct: b.ct.map(s => ({ range: s.label, pts: s.pts })),
+    s5pc: b.s5pc.map(s => ({ range: s.label, pts: s.pts }))
+  }))
 }

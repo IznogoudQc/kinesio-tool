@@ -721,6 +721,7 @@ export function DashboardTab() {
                 imc={computed.imc}
                 ct={ct}
                 s5pc={s5pc}
+                sex={client.sex}
               />
             )
           })()}
