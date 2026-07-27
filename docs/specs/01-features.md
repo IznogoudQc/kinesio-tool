@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.10 — Composition corporelle : « Pourquoi cette note » dans le dashboard)
+
+Sous CPAFLA, la section Composition corporelle du dashboard explique **pourquoi** le client obtient sa note :
+une carte `CompositionCpaflaCard` montre le score /4 + catégorie, puis le détail (IMC et sa plage, tour de taille
+→ points colonne B, somme des 5 plis → points colonne C) et la **phrase de calcul** adaptée à la combinaison de
+mesures disponibles ((B×1,5 + C)/2,5, ou repli IMC+CT si le mollet manque, etc.). Nouveau
+`cpaflaCompositionDetail` expose les points. Sous ACSM, rien n'est affiché.
+
+Version : 0.9.9 → 0.9.10.
+
 ## ✅ Fait (v0.9.9 — Score de composition corporelle selon la méthode CPAFLA)
 
 Sous la norme **CPAFLA**, le score de composition corporelle suit la méthode du guide CPHV (Fig. 7-4/7-5 +

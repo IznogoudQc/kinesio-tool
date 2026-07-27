@@ -95,8 +95,12 @@ const WOMEN: ImcBand[] = [
     s5pc: [{ from: NEG, inc: true, pts: 4 }, { from: 83, inc: true, pts: 2 }, { from: 113, inc: false, pts: 0 }] }
 ]
 
-function bandForImc(bands: ImcBand[], imc: number): ImcBand {
-  return bands.find(b => imc < b.imcLt) ?? bands[bands.length - 1]
+/** Libellés des plages d'IMC (même ordre que MEN/WOMEN). */
+const IMC_BAND_LABELS = ['moins de 18,5', '18,5–24,9', '25,0–29,9', '30,0–32,4', '32,5–35,0', 'plus de 35,0']
+
+function bandIndexForImc(bands: ImcBand[], imc: number): number {
+  const i = bands.findIndex(b => imc < b.imcLt)
+  return i === -1 ? bands.length - 1 : i
 }
 
 export interface CpaflaCompositionInput {
@@ -108,30 +112,58 @@ export interface CpaflaCompositionInput {
   sex: 'F' | 'M' | null
 }
 
+/** Combinaison de mesures utilisée pour la note (guide p. 7-17/18). */
+export type CpaflaCompositionCombo = 'imc+ct+s5pc' | 'imc+ct' | 'imc+s5pc' | 'ct' | 'imc' | null
+
+export interface CpaflaCompositionDetail {
+  score: number | null
+  /** Combinaison de mesures utilisée (pour l'explication). */
+  combo: CpaflaCompositionCombo
+  /** Libellé de la plage d'IMC (ex. « 25,0–29,9 »), ou `null`. */
+  imcBandLabel: string | null
+  /** Points colonne A (IMC seul). */
+  a: number | null
+  /** Points colonne B (tour de taille selon l'IMC), `null` si CT absent. */
+  b: number | null
+  /** Points colonne C (somme des 5 plis selon l'IMC), `null` si S5PC absent. */
+  c: number | null
+  /** Valeur intermédiaire (B×1,5 + C)/2,5 avant arrondi, pour la combinaison complète. */
+  raw: number | null
+}
+
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
 
-/** Score de composition corporelle CPAFLA (0-4), ou `null` si sexe / mesures
- *  insuffisants. Voir en-tête pour les combinaisons. */
-export function cpaflaComposition(input: CpaflaCompositionInput): number | null {
+/** Détail du calcul de composition CPAFLA — sert à **expliquer** la note au client
+ *  (quelles mesures, quels points, quelle formule). */
+export function cpaflaCompositionDetail(input: CpaflaCompositionInput): CpaflaCompositionDetail {
+  const empty: CpaflaCompositionDetail = { score: null, combo: null, imcBandLabel: null, a: null, b: null, c: null, raw: null }
   const { sex } = input
-  if (sex !== 'F' && sex !== 'M') return null
+  if (sex !== 'F' && sex !== 'M') return empty
   const bands = sex === 'M' ? MEN : WOMEN
   const hasImc = isNum(input.imc)
   const hasCt = isNum(input.ct)
   const hasS5 = isNum(input.s5pc)
-  if (!hasImc && !hasCt) return null // ni IMC ni CT → rien d'exploitable
+  if (!hasImc && !hasCt) return empty
 
-  // Bande d'IMC : celle du client, ou « IMC 27 » (25-29,9) pour le cas « CT seule ».
-  const band = bandForImc(bands, hasImc ? (input.imc as number) : 27)
-  const B = hasCt ? pickPts(input.ct as number, band.ct) : null
-  const C = hasS5 ? pickPts(input.s5pc as number, band.s5pc) : null
+  const idx = bandIndexForImc(bands, hasImc ? (input.imc as number) : 27)
+  const band = bands[idx]
+  const a = band.a
+  const b = hasCt ? pickPts(input.ct as number, band.ct) : null
+  const c = hasS5 ? pickPts(input.s5pc as number, band.s5pc) : null
+  const imcBandLabel = hasImc ? IMC_BAND_LABELS[idx] : null
 
   if (hasImc && hasCt && hasS5) {
-    // Arrondi « à la demie supérieure » (≥ x,5 → haut) — Math.round sur les positifs.
-    return Math.round(((B as number) * 1.5 + (C as number)) / 2.5)
+    const raw = ((b as number) * 1.5 + (c as number)) / 2.5
+    return { score: Math.round(raw), combo: 'imc+ct+s5pc', imcBandLabel, a, b, c, raw }
   }
-  if (hasImc && hasCt) return B
-  if (hasImc && hasS5) return C
-  if (hasCt) return B // CT seule (IMC de référence 27)
-  return band.a // IMC seul
+  if (hasImc && hasCt) return { score: b, combo: 'imc+ct', imcBandLabel, a, b, c: null, raw: null }
+  if (hasImc && hasS5) return { score: c, combo: 'imc+s5pc', imcBandLabel, a, b: null, c, raw: null }
+  if (hasCt) return { score: b, combo: 'ct', imcBandLabel: IMC_BAND_LABELS[idx], a, b, c: null, raw: null }
+  return { score: a, combo: 'imc', imcBandLabel, a, b: null, c: null, raw: null }
+}
+
+/** Score de composition corporelle CPAFLA (0-4), ou `null` si sexe / mesures
+ *  insuffisants. Voir en-tête pour les combinaisons. */
+export function cpaflaComposition(input: CpaflaCompositionInput): number | null {
+  return cpaflaCompositionDetail(input).score
 }
