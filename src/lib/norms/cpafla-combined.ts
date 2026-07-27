@@ -88,3 +88,66 @@ export const BACK_HEALTH_WEIGHTS: Record<'M' | 'F', Record<string, number>> = {
   M: { tour_taille_cm: 1, flexion_tronc_cm: 1, situps: 1, endurance_dos_sec: 2 },
   F: { tour_taille_cm: 2, flexion_tronc_cm: 1, situps: 1, endurance_dos_sec: 2 }
 }
+
+// ── Détail du calcul (pour expliquer la note au client) ──────────────────────
+
+/** Une contribution nommée : clé du test, sa cote 0-4 (ou `null` si non mesuré), son poids. */
+export type CpaflaKeyedContribution = [key: string, score: number | null, weight: number]
+
+export interface CpaflaCombineRow {
+  key: string
+  /** Cote 0-4 du test, ou `null` s'il n'a pas été mesuré (exclu du calcul). */
+  cote: number | null
+  poids: number
+  /** Note pondérée obtenue (cote × poids), `null` si non mesuré. */
+  points: number | null
+  /** Note pondérée maximale du test (4 × poids) — comptée seulement s'il est mesuré. */
+  maxPoints: number
+}
+
+export interface CpaflaCombineDetail {
+  score: number | null
+  /** Somme des notes pondérées obtenues. */
+  obtenue: number
+  /** Somme des notes pondérées maximales des tests **présents**. */
+  max: number
+  rows: CpaflaCombineRow[]
+}
+
+/** Même calcul que `cpaflaCombine`, mais en conservant le détail par test — sert à
+ *  expliquer la note (« pourquoi 3,7 ? ») sans risquer de diverger du score affiché. */
+export function cpaflaCombineDetail(contribs: CpaflaKeyedContribution[]): CpaflaCombineDetail {
+  const rows: CpaflaCombineRow[] = contribs.map(([key, score, weight]) => {
+    const mesure = score !== null && !Number.isNaN(score)
+    return {
+      key,
+      cote: mesure ? score : null,
+      poids: weight,
+      points: mesure ? (score as number) * weight : null,
+      maxPoints: 4 * weight
+    }
+  })
+  let obtenue = 0
+  let max = 0
+  for (const r of rows) {
+    if (r.points === null) continue
+    obtenue += r.points
+    max += r.maxPoints
+  }
+  return {
+    score: max === 0 ? null : (obtenue / max) * 4,
+    obtenue,
+    max,
+    rows
+  }
+}
+
+/** Libellés des tests, pour l'affichage du détail. */
+export const CPAFLA_TEST_LABELS: Record<string, string> = {
+  pushups: 'Extension des bras (push-ups)',
+  situps: 'Redressements assis',
+  flexion_tronc_cm: 'Flexion du tronc',
+  endurance_dos_sec: 'Extension du dos (endurance)',
+  puissance_jambes_watts: 'Puissance des jambes',
+  tour_taille_cm: 'Tour de taille'
+}

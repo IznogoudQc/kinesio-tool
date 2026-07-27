@@ -21,10 +21,11 @@ import { computeBmi, computeFcMaxPredite, computeMet, categoryToScore, scoreToCa
 import { getAcsmRange } from './norms/acsm.ts'
 import { getCpaflaRange } from './norms/cpafla.ts'
 import {
-  cpaflaCombine,
+  cpaflaCombineDetail,
   MUSCULO_WEIGHTS,
   BACK_HEALTH_WEIGHTS,
-  type CpaflaContribution
+  type CpaflaKeyedContribution,
+  type CpaflaCombineDetail
 } from './norms/cpafla-combined.ts'
 import { cpaflaComposition, cpaflaWaistPoints } from './norms/cpafla-composition.ts'
 import { BILAN_TO_TEST_KEY } from './norms/bilan-keys.ts'
@@ -92,6 +93,10 @@ export interface BilanComputed {
   aerobic: CompositeScore
   backHealth: CompositeScore
   musculoGlobal: CompositeScore
+  /** Détail du calcul (cote × poids par test) — sert à expliquer la note dans le
+   *  dashboard. `null` si le sexe du client est inconnu (méthode CPAFLA inapplicable). */
+  backHealthDetail: CpaflaCombineDetail | null
+  musculoDetail: CpaflaCombineDetail | null
   overall: CompositeScore
 }
 
@@ -337,19 +342,21 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
   const useCpaflaCombined = profile.sex === 'M' || profile.sex === 'F'
   let backHealth: CompositeScore
   let musculoGlobal: CompositeScore
+  let backHealthDetail: CpaflaCombineDetail | null = null
+  let musculoDetail: CpaflaCombineDetail | null = null
   if (useCpaflaCombined) {
     const sex = profile.sex as 'M' | 'F'
     // Le tour de taille se cote via les tables de composition (Fig. 7-4/7-5, donc
     // selon la bande d'IMC) et non via les seuils Santé Canada — cf. `cpaflaWaistPoints`.
     const waistPts = cpaflaWaistPoints(enriched.imc, enriched.tour_taille_cm, sex)
-    const contribs = (weights: Record<string, number>): CpaflaContribution[] =>
+    const contribs = (weights: Record<string, number>): CpaflaKeyedContribution[] =>
       Object.entries(weights).map(([k, w]) =>
-        k === 'tour_taille_cm' ? [waistPts, w] : [score(k as keyof BilanData), w]
+        k === 'tour_taille_cm' ? [k, waistPts, w] : [k, score(k as keyof BilanData), w]
       )
-    const mScore = cpaflaCombine(contribs(MUSCULO_WEIGHTS[sex]))
-    musculoGlobal = { score: mScore, category: scoreToCategory(mScore) }
-    const bScore = cpaflaCombine(contribs(BACK_HEALTH_WEIGHTS[sex]))
-    backHealth = { score: bScore, category: scoreToCategory(bScore) }
+    musculoDetail = cpaflaCombineDetail(contribs(MUSCULO_WEIGHTS[sex]))
+    musculoGlobal = { score: musculoDetail.score, category: scoreToCategory(musculoDetail.score) }
+    backHealthDetail = cpaflaCombineDetail(contribs(BACK_HEALTH_WEIGHTS[sex]))
+    backHealth = { score: backHealthDetail.score, category: scoreToCategory(backHealthDetail.score) }
   } else {
     // Indice de santé du dos — approximation historique (SANS le terme aérobie) :
     // moyenne des cotes taille + IMC + moyenne pondérée redressements(×1) /
@@ -389,6 +396,8 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     aerobic,
     backHealth,
     musculoGlobal,
+    backHealthDetail,
+    musculoDetail,
     overall
   }
 }

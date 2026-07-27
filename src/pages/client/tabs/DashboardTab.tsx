@@ -22,6 +22,7 @@ import { CompositeMiniCard } from '../dashboard/CompositeMiniCard'
 import { ProgressionChart } from '../dashboard/ProgressionChart'
 import { MusculoRadar } from '../dashboard/MusculoRadar'
 import { CompositionCpaflaCard } from '../dashboard/CompositionCpaflaCard'
+import { CompositeCpaflaCard } from '../dashboard/CompositeCpaflaCard'
 import { cpaflaCompositionDetail } from '../../../lib/norms/cpafla-composition'
 import { TrainingZones } from '../dashboard/TrainingZones'
 import { StrengthsAndWeaknesses } from '../dashboard/StrengthsAndWeaknesses'
@@ -789,6 +790,31 @@ export function DashboardTab() {
           norms={norms}
           global={computed.musculoGlobal}
         />
+
+        {/* Pourquoi cette note ? — même logique explicative que la composition. */}
+        {computed.musculoDetail && (
+          <CompositeCpaflaCard
+            title="Aptitude musculosquelettique globale"
+            score={computed.musculoGlobal.score}
+            category={computed.musculoGlobal.category}
+            detail={computed.musculoDetail}
+            storageKey="kinesio.musculo.bareme"
+            figure="Fig. 7-20"
+            footnote="Méthode du Physitest canadien (CPAFLA) : chaque test est coté selon votre âge et votre sexe, puis pondéré."
+          />
+        )}
+
+        {SHOW_BACK_HEALTH && computed.backHealthDetail && (
+          <CompositeCpaflaCard
+            title="Indice de santé du dos"
+            score={computed.backHealth.score}
+            category={computed.backHealth.category}
+            detail={computed.backHealthDetail}
+            storageKey="kinesio.dos.bareme"
+            figure="Fig. 7-24"
+            footnote="Le tour de taille est coté par les tables de composition (selon l'IMC) ; l'extension du dos pèse double, c'est le meilleur prédicteur de la santé lombaire."
+          />
+        )}
       </section>
 
       {objectif !== null && (

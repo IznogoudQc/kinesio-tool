@@ -2,6 +2,26 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.40 — Expliquer l'indice du dos et l'aptitude musculosquelettique)
+
+Après le radar « Six tests, six angles », deux nouvelles cartes expliquent **d'où vient la note** — même
+principe que la carte Composition corporelle :
+
+- **Aptitude musculosquelettique globale** (Fig. 7-20)
+- **Indice de santé du dos** (Fig. 7-24)
+
+Chaque carte liste les tests retenus avec leur **cote 0-4**, leur **pondération** (×2 mis en évidence) et
+leur contribution (`points / maximum`), puis le calcul complet : *note obtenue ÷ note maximale × 4*. Les
+tests non mesurés sont **listés explicitement** avec la mention qu'ils sortent des deux totaux — ce qui
+explique qu'un bilan partiel donne quand même une note juste. Bouton **Barème** pour déplier les
+pondérations.
+
+Le détail vient de `computeBilan` (nouveaux `musculoDetail` / `backHealthDetail`) : l'explication est
+calculée par le **même code** que le score, donc les deux ne peuvent pas diverger — un test verrouille
+cet invariant.
+
+Version : 0.9.39 → 0.9.40.
+
 ## ✅ Fait (v0.9.39 — % de gras en pourcentage + « Taille » désambiguïsée)
 
 **Carte « Pourcentage de gras »** : elle affichait la note 0-4 (« 3.0 ») au lieu du pourcentage réel —

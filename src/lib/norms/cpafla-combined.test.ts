@@ -4,6 +4,7 @@ import {
   cpaflaCombine,
   cpaflaCombineCategories,
   cpaflaNomogramme,
+  cpaflaCombineDetail,
   MUSCULO_WEIGHTS,
   BACK_HEALTH_WEIGHTS
 } from './cpafla-combined.ts'
@@ -72,4 +73,35 @@ test('pondérations : extension du dos ×2 partout ; taille ×2 chez la femme �
   assert.equal(BACK_HEALTH_WEIGHTS.F.tour_taille_cm, 2)
   // Activité physique jamais présente (exclue).
   assert.equal('activite' in BACK_HEALTH_WEIGHTS.M, false)
+})
+
+test('le détail explique exactement le score affiché (aucune divergence possible)', () => {
+  // Nicholas, 25 juin 2026 — musculo : bras E(4)×2 + flexion B(2) + redress E(4)
+  // + endurance E(4) + puissance E(4) = 22 ; max 24 → 3,67 → affiché 3,7.
+  const contribs: [string, number | null, number][] = [
+    ['pushups', 4, 2],
+    ['flexion_tronc_cm', 2, 1],
+    ['situps', 4, 1],
+    ['endurance_dos_sec', 4, 1],
+    ['puissance_jambes_watts', 4, 1]
+  ]
+  const d = cpaflaCombineDetail(contribs)
+  assert.equal(d.obtenue, 22)
+  assert.equal(d.max, 24)
+  near(d.score, (22 / 24) * 4)
+  // Invariant : le détail et le calcul simple donnent le MÊME score.
+  near(d.score, cpaflaCombine(contribs.map(([, s, w]) => [s, w])) as number)
+})
+
+test('détail : un test non mesuré sort des DEUX totaux et est signalé', () => {
+  const d = cpaflaCombineDetail([
+    ['pushups', 4, 2],
+    ['situps', null, 1], // non mesuré
+    ['endurance_dos_sec', 2, 1]
+  ])
+  assert.equal(d.obtenue, 10) // 8 + 2
+  assert.equal(d.max, 12) // 8 + 4 — le test absent ne gonfle pas le maximum
+  const absent = d.rows.find(r => r.key === 'situps')
+  assert.equal(absent?.cote, null)
+  assert.equal(absent?.points, null)
 })
