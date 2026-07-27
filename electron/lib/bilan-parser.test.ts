@@ -96,3 +96,22 @@ test('circonférences AVANT plis : le pli Biceps (7) ne devient PAS circ_biceps'
   assert.equal(data.tour_hanche_cm, 107)
   assert.equal(data.circ_cuisse_cm, 52)
 })
+
+// Cas réel de Marie : Plis d'abord (Triceps/Biceps/Subscapulaire/Crète iliaque),
+// puis Circonférences avec SEULEMENT Hanche (pas de circonférence Biceps prise).
+// Le pli Biceps 6 ne doit PAS se retrouver en circonférence Biceps.
+const FIXTURE_PLIS_PUIS_CIRC_HANCHE = [
+  'Plis Cutanés mm',
+  'Triceps', '5,0', 'Biceps', '6,0', 'Subscapulaire', '17,0',
+  'Crète iliaque', '22,0',
+  'Circonférences cm',
+  'Hanche', '106,0',
+  'Aptitude Aérobie Tapis Roulant de Bruce'
+].join('\n')
+
+test('plis puis circonférences (Hanche seule) : le pli Biceps (6) ne devient PAS circ_biceps', () => {
+  const data = extractCurrent(FIXTURE_PLIS_PUIS_CIRC_HANCHE)
+  assert.equal(data.pli_biceps, 6)
+  assert.equal(data.circ_biceps_flechi_cm, undefined)
+  assert.equal(data.tour_hanche_cm, 106)
+})
