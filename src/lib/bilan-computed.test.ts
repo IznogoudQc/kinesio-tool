@@ -269,3 +269,38 @@ test('import : puissance conservée si Sayers est impossible (saut ou poids manq
   const merged = mergeComputedIntoBilan(raw, computeBilan(raw, p))
   assert.equal(merged.puissance_jambes_watts, 4725)
 })
+
+test('champ forcé à la main : la valeur de Marie prime sur le calcul', () => {
+  // % de gras mesuré au DEXA (28,0) au lieu du Durnin-Womersley (≈30,2).
+  const raw: BilanData = { ...RAW, pourcentage_gras: 28, champs_manuels: ['pourcentage_gras'] }
+  const r = computeBilan(raw, NICHOLAS)
+  assert.equal(r.pourcentageGrasDurnin, 28)
+  // La sauvegarde ne le réécrase pas non plus.
+  assert.equal(mergeComputedIntoBilan(raw, r).pourcentage_gras, 28)
+})
+
+test('champ forcé : les scores composites découlent de la valeur forcée', () => {
+  const calcule = computeBilan(RAW, NICHOLAS)
+  const force = computeBilan(
+    { ...RAW, pourcentage_gras: 12, champs_manuels: ['pourcentage_gras'] },
+    NICHOLAS
+  )
+  // 12 % chez un homme de 48 ans = bien meilleur que 30,2 % → cote supérieure.
+  assert.notEqual(force.bodyFat.score, calcule.bodyFat.score)
+  assert.ok((force.bodyFat.score ?? 0) > (calcule.bodyFat.score ?? 0))
+})
+
+test('champ forcé : le VO2max saisi prime sur le calcul du protocole Bruce', () => {
+  // Bruce 13:33 donnerait ≈49 ; Marie saisit 52 mesuré en laboratoire.
+  const raw: BilanData = { ...RAW, vo2max: 52, champs_manuels: ['vo2max'] }
+  const r = computeBilan(raw, NICHOLAS)
+  assert.equal(r.vo2max, 52)
+  // Le MET en découle (52 / 3.5 ≈ 14,9) — il n'est pas forcé, il suit.
+  assert.ok(r.metEquivalent !== null && Math.abs(r.metEquivalent - 14.9) < 0.1)
+})
+
+test('champ non listé dans champs_manuels : le calcul reprend la main', () => {
+  const raw: BilanData = { ...RAW, pourcentage_gras: 28 } // pas de marqueur
+  const r = computeBilan(raw, NICHOLAS)
+  assert.ok(r.pourcentageGrasDurnin !== null && Math.abs(r.pourcentageGrasDurnin - 30.2) < 0.5)
+})

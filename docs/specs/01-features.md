@@ -2,6 +2,25 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.34 — Forcer à la main une valeur calculée)
+
+Les champs **dérivés** peuvent maintenant être forcés par Marie quand elle dispose d'une valeur mesurée
+plus fiable que l'estimation (% de gras au DEXA, VO2max en analyse de gaz, FC max au cardiofréquencemètre).
+
+- Le champ reste **calculé par défaut**, avec une petite icône ✏️ pour le déverrouiller.
+- Une fois modifié : mention **« Modifié manuellement »** + un lien **« recalculer »** pour rendre la main
+  à l'application. Vider le champ revient aussi au calcul.
+- Une valeur forcée n'est **jamais** écrasée, ni par `computeBilan`, ni à la sauvegarde, ni à l'import.
+- Les **scores composites en découlent** (un % de gras forcé alimente la composition).
+- Le marqueur est stocké dans `champs_manuels` (liste des clés forcées).
+
+**Portée** : IMC, % de gras, VO2max, MET, FC max prédite, saut vertical, puissance des jambes
+(`OVERRIDABLE_FIELDS`). Les **4 indices composites** (composition, dos, musculo, global) restent toujours
+calculés — les rendre modifiables casserait la parité CPAFLA (ADR 0028) et rendrait les courbes
+d'évolution ininterprétables. Si un indice semble faux, c'est une *entrée* qu'il faut corriger.
+
+Version : 0.9.33 → 0.9.34.
+
 ## ✅ Fait (v0.9.33 — Import : la puissance des jambes aussi est recalculée)
 
 Dernière valeur dérivée qui restait recopiée du vieux rapport. La puissance des jambes est un champ

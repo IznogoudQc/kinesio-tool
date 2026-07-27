@@ -130,6 +130,9 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
       { key: 'flexion_tronc_cm', label: 'Flexibilité (flexion du tronc)', unit: 'cm' }
     ]
   },
+  // NB : la liste `OVERRIDABLE_FIELDS` (bas de fichier) décide quels champs
+  // dérivés Marie-Eve peut forcer à la main. Les indices ci-dessous en sont
+  // volontairement exclus.
   {
     id: 'indices',
     title: 'Indices (calculés)',
@@ -195,4 +198,43 @@ export function formatBilanMonth(iso: string): string {
 /** Compte le nombre de mesures non vides dans un bilan. */
 export function countFilledFields(data: BilanData): number {
   return Object.values(data).filter(v => v !== undefined && v !== null && v !== '').length
+}
+
+/** Champs **dérivés** que Marie-Eve peut forcer à la main (verrou dans le formulaire).
+ *
+ *  Volontairement limité aux **mesures** : une valeur mesurée en laboratoire (% de gras
+ *  au DEXA, VO2max en analyse de gaz) est parfois plus fiable que notre estimation.
+ *
+ *  Les 4 **indices composites** (composition, indice du dos, musculosquelettique,
+ *  score global) en sont **exclus** : ils reproduisent à l'identique l'ancien logiciel
+ *  (ADR 0028), et pouvoir les écraser rendrait les courbes d'évolution ininterprétables.
+ *  Si un indice semble faux, c'est une *entrée* qu'il faut corriger.
+ */
+export const OVERRIDABLE_FIELDS: ReadonlySet<string> = new Set([
+  'imc',
+  'pourcentage_gras',
+  'vo2max',
+  'met_equivalent',
+  'fc_max_predite',
+  'saut_vertical_cm',
+  'puissance_jambes_watts'
+])
+
+/** `true` si ce champ dérivé a été forcé à la main sur ce bilan. */
+export function isFieldManual(data: BilanData, key: string): boolean {
+  return Array.isArray(data.champs_manuels) && data.champs_manuels.includes(key)
+}
+
+/** Marque (ou démarque) un champ comme forcé à la main. Retourne un nouvel objet.
+ *  Démarquer efface aussi la valeur, pour que le calcul reprenne la main. */
+export function setFieldManual(data: BilanData, key: string, manual: boolean): BilanData {
+  const current = Array.isArray(data.champs_manuels) ? data.champs_manuels : []
+  if (manual) {
+    if (current.includes(key)) return data
+    return { ...data, champs_manuels: [...current, key] }
+  }
+  const next = current.filter(k => k !== key)
+  const cleaned: BilanData = { ...data, champs_manuels: next.length > 0 ? next : undefined }
+  delete (cleaned as Record<string, unknown>)[key]
+  return cleaned
 }

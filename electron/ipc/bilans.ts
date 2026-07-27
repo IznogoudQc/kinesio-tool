@@ -81,6 +81,8 @@ const BilanDataSchema = z
     indice_sante_dos: bounded('indice_sante_dos'),
     score_musculo_global: bounded('score_musculo_global'),
     score_global: bounded('score_global'),
+    // Champs dérivés forcés à la main (voir `OVERRIDABLE_FIELDS` côté renderer).
+    champs_manuels: z.array(z.string().max(60)).max(20).optional(),
     notes: z.string().max(5000).optional(),
     objectif: z.string().max(2000).optional()
   })
