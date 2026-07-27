@@ -339,7 +339,7 @@ function Measure({
 
       {category && <CategoryCue category={category} />}
 
-      {next && (
+      {next && !(!next.isAtTop && Math.abs(next.delta) < 0.05) && (
         <p className="mt-2 text-sm text-marine/70">
           {next.isAtTop ? (
             <span className="font-semibold text-gold-dark">Niveau maximal atteint — l’objectif devient de le maintenir.</span>
@@ -1541,8 +1541,8 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
           unitWeight={client.unitWeight}
         />
         <Measure label="Indice de masse corporelle" value={activeData.imc} unit="kg/m²" test="bmi" {...measureProps} previousValue={compareData?.imc} lowerIsBetter history={historyOf('imc')} />
-        <Measure id="pourcentage-gras" label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />
         <Measure label="Tour de taille" value={activeData.tour_taille_cm} unit="cm" {...measureProps} previousValue={compareData?.tour_taille_cm} lowerIsBetter history={historyOf('tour_taille_cm')} />
+        <Measure id="pourcentage-gras" label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />
       </Section>
 
       <Section

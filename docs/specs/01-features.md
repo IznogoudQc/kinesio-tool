@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.45 — Ordre de la section Composition + objectif « +0 » supprimé)
+
+**Rapport HTML** : le tour de taille passe **juste sous l'IMC**. Les deux mesures anthropométriques
+simples se suivent, et le % de gras ferme la section avec sa grille de risque et ses poids-repères — la
+mesure la plus riche en dernier. (Le PDF avait déjà cet ordre.)
+
+**Correctif au passage** : la phrase « **+0 kg/m² pour atteindre "Acceptable"** » n'a aucun sens. Elle
+n'apparaît plus quand l'écart s'arrondit à zéro.
+
+Version : 0.9.44 → 0.9.45.
+
 ## ✅ Fait (v0.9.44 — Tour de taille : mentionné, plus évalué)
 
 Le tour de taille était coté (catégorie « Acceptable », percentile, objectif « −X cm pour atteindre… »)
