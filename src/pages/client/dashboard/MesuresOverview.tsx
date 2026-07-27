@@ -54,7 +54,7 @@ type MetricKey =
   | 'molletG' | 'molletD'
   | 'poidsKg' | 'ratioTH' | 'imc'
   | 'pourcentageGrasSiri' | 'sommePlis'
-  | 'pliTriceps' | 'pliBiceps' | 'pliSousscap' | 'pliIliaque'
+  | 'pliTriceps' | 'pliBiceps' | 'pliSousscap' | 'pliIliaque' | 'pliMollet'
 
 type MetricGroup = 'circ' | 'weights' | 'composition'
 
@@ -292,7 +292,9 @@ export function MesuresOverview() {
       { key: 'pliTriceps', label: 'Triceps', unit: 'mm', source: 'plis', group: 'composition', accessor: (_, p) => p?.triceps ?? null, lowerIsBetter: true },
       { key: 'pliBiceps', label: 'Biceps (pli)', unit: 'mm', source: 'plis', group: 'composition', accessor: (_, p) => p?.biceps ?? null, lowerIsBetter: true },
       { key: 'pliSousscap', label: 'Sous-scap', unit: 'mm', source: 'plis', group: 'composition', accessor: (_, p) => p?.sousscapulaire ?? null, lowerIsBetter: true },
-      { key: 'pliIliaque', label: 'Iliaque', unit: 'mm', source: 'plis', group: 'composition', accessor: (_, p) => p?.iliaque ?? null, lowerIsBetter: true }
+      { key: 'pliIliaque', label: 'Iliaque', unit: 'mm', source: 'plis', group: 'composition', accessor: (_, p) => p?.iliaque ?? null, lowerIsBetter: true },
+      // 5e pli, facultatif : absent des anciennes prises → `null` (donc pas de point).
+      { key: 'pliMollet', label: 'Mollet (pli)', unit: 'mm', source: 'plis', group: 'composition', accessor: (_, p) => p?.mollet ?? null, lowerIsBetter: true }
     ]
   }, [lenLabel, wLabel, unitLength, unitWeight, bodyHeightCm])
 
@@ -1015,7 +1017,8 @@ function PlisCutanesSection({ latestPlis, previousPlis, chartData }: PlisCutanes
     { key: 'triceps' as const, label: 'Triceps' },
     { key: 'biceps' as const, label: 'Biceps' },
     { key: 'sousscapulaire' as const, label: 'Sous-scap' },
-    { key: 'iliaque' as const, label: 'Iliaque' }
+    { key: 'iliaque' as const, label: 'Iliaque' },
+    { key: 'mollet' as const, label: 'Mollet' }
   ]
   const showChart = chartData.filter(p => typeof p.value === 'number').length >= 2
 
@@ -1035,9 +1038,9 @@ function PlisCutanesSection({ latestPlis, previousPlis, chartData }: PlisCutanes
               <MiniStatCard
                 key={p.key}
                 label={p.label}
-                value={latestPlis[p.key]}
+                value={latestPlis[p.key] ?? null}
                 unit="mm"
-                previousValue={previousPlis?.[p.key]}
+                previousValue={previousPlis?.[p.key] ?? undefined}
                 previousDate={previousPlis?.date}
                 lowerIsBetter
               />
@@ -1185,13 +1188,13 @@ function AllMeasuresDetails({
             Plis cutanés ({formatBilanDate(plis.date)})
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-2">
-            {(['triceps', 'biceps', 'sousscapulaire', 'iliaque'] as const).map(k => (
+            {(['triceps', 'biceps', 'sousscapulaire', 'iliaque', 'mollet'] as const).map(k => (
               <DetailRow
                 key={k}
                 label={k === 'sousscapulaire' ? 'Sous-scapulaire' : k.charAt(0).toUpperCase() + k.slice(1)}
-                value={plis[k]}
+                value={plis[k] ?? null}
                 unit="mm"
-                previousValue={previousPlis?.[k]}
+                previousValue={previousPlis?.[k] ?? undefined}
                 previousDate={previousPlis?.date}
                 lowerIsBetter
               />

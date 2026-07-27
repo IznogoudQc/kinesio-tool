@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.51 — Pli du mollet affiché dans la vue Mesures)
+
+Le mollet était saisissable (v0.9.49) mais n'apparaissait nulle part une fois enregistré. Il rejoint les
+**trois** endroits où les plis sont présentés : la vignette de la section « Plis cutanés », le détail
+dépliable, et la liste des métriques suivies (donc sa **courbe d'évolution**).
+
+Les prises antérieures n'ont pas de mollet — il s'affiche alors « — », sans point sur la courbe.
+
+Version : 0.9.50 → 0.9.51.
+
 ## ✅ Fait (v0.9.50 — Mesures : date alignée à gauche)
 
 La « Date de la mesure » restait **centrée** : `DateField` gardait un `mx-auto` hérité de sa disposition
