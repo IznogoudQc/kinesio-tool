@@ -161,7 +161,7 @@ export function BilanMeasuresOverview({
         <div className="mt-3 space-y-4">
           {detailByGroup.map(({ group, metrics }) => (
             <div key={group}>
-              <p className="text-marine/45 text-[11px] uppercase tracking-wide font-semibold mb-1.5">{GROUP_LABEL[group]}</p>
+              <p className="text-marine text-sm uppercase tracking-wide font-bold mb-1.5">{GROUP_LABEL[group]}</p>
               <div className="grid grid-cols-2 gap-x-6 gap-y-2">
                 {metrics.map(m => {
                   const cur = m.read(latest.data)
