@@ -203,7 +203,7 @@ function MeasureField({
 function DateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const today = todayISO()
   return (
-    <div className="mb-4 max-w-5xl mx-auto">
+    <div>
       <label className="block text-xs uppercase tracking-wide mb-1 text-marine/60">Date de la mesure</label>
       <input
         type="date"
@@ -621,7 +621,7 @@ function MeasureEntryPanel({
         {/* Unités de saisie — même bandeau que le formulaire de bilan. */}
         <div className="max-w-5xl mx-auto mb-4 flex flex-wrap items-end gap-x-8 gap-y-3">
           <DateField value={date} onChange={setDate} />
-          <div>
+          <div className="ml-auto">
             <span className="block text-xs uppercase tracking-wide mb-1 text-marine/60">Longueurs</span>
             <div className="flex gap-1.5">
               <button type="button" onClick={() => changeUnitLength('cm')} className={unitPill(unitLength === 'cm')}>cm</button>
@@ -635,7 +635,7 @@ function MeasureEntryPanel({
               <button type="button" onClick={() => changeUnitWeight('lb')} className={unitPill(unitWeight === 'lb')}>lb</button>
             </div>
           </div>
-          <p className="basis-full text-xs text-marine/45">
+          <p className="basis-full text-xs text-marine/45 order-last">
             Les plis restent en mm. Tout est converti en métrique pour les calculs.
           </p>
         </div>

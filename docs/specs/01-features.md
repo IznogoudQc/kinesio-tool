@@ -2,6 +2,14 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.50 — Mesures : date alignée à gauche)
+
+La « Date de la mesure » restait **centrée** : `DateField` gardait un `mx-auto` hérité de sa disposition
+précédente, où il occupait toute la largeur. Il est retiré — la date se cale à gauche et les sélecteurs
+d'unités sont poussés à droite, comme dans le formulaire de bilan.
+
+Version : 0.9.49 → 0.9.50.
+
 ## ✅ Fait (v0.9.49 — Mesures : sélecteurs d'unités + pli du mollet)
 
 Trois manques comblés dans l'onglet **Mesures**, pour finir l'alignement sur le formulaire de bilan :
