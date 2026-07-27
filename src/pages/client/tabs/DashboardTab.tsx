@@ -528,8 +528,12 @@ export function DashboardTab() {
   const hasMultiple = count >= 2
 
   // Section « Mesures corporelles » du Bilan complet — alimentée **uniquement par
-  // les bilans** (pas l'onglet Mesures). Voir BilanMeasuresOverview.
-  const MesuresPanel = <BilanMeasuresOverview bilans={bilans ?? []} unitWeight={client.unitWeight ?? 'kg'} />
+  // les bilans** (pas l'onglet Mesures). La couleur du delta de poids suit l'objectif
+  // du client : perte (ou pas d'objectif) → baisse = vert ; gain → hausse = vert.
+  const weightLossGoal = (objectif?.goal.toLoseKg ?? 0) >= 0
+  const MesuresPanel = (
+    <BilanMeasuresOverview bilans={bilans ?? []} unitWeight={client.unitWeight ?? 'kg'} weightLossGoal={weightLossGoal} />
+  )
 
   return (
     <div className="dash-editorial bg-cream min-h-full">

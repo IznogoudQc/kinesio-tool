@@ -55,11 +55,15 @@ const nf = (n: number | null, digits: number): string =>
 
 export function BilanMeasuresOverview({
   bilans,
-  unitWeight = 'kg'
+  unitWeight = 'kg',
+  weightLossGoal = true
 }: {
   /** Du plus récent au plus ancien (ordre de `bilansService.list`). */
   bilans: Bilan[]
   unitWeight?: 'kg' | 'lb'
+  /** Objectif du client : `true` = perdre du poids (baisse = vert), `false` = prendre
+   *  (hausse = vert). Défaut `true` (le cas courant). */
+  weightLossGoal?: boolean
 }) {
   const wLabel = weightUnitLabel(unitWeight)
 
@@ -70,7 +74,7 @@ export function BilanMeasuresOverview({
       { key: 'biceps', label: 'Biceps fléchi', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: false, read: d => num(d.circ_biceps_flechi_cm) },
       { key: 'cuisse', label: 'Cuisse (2 po du genou)', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: false, read: d => num(d.circ_cuisse_cm) },
       { key: 'epaule', label: 'Épaules et pec', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: false, read: d => num(d.circ_epaules_pec_cm) },
-      { key: 'poids', label: 'Poids', unit: wLabel, group: 'weights', digits: 1, lowerIsBetter: true, read: d => { const p = num(d.poids_kg); return p === null ? null : kgToWeightInput(p, unitWeight) } },
+      { key: 'poids', label: 'Poids', unit: wLabel, group: 'weights', digits: 1, lowerIsBetter: weightLossGoal, read: d => { const p = num(d.poids_kg); return p === null ? null : kgToWeightInput(p, unitWeight) } },
       { key: 'ratio', label: 'Ratio taille / hanche', unit: '', group: 'weights', digits: 2, lowerIsBetter: true, read: ratioTH },
       { key: 'imc', label: 'IMC', unit: 'kg/m²', group: 'weights', digits: 1, lowerIsBetter: true, read: imcOf },
       { key: 'gras', label: '% de gras', unit: '%', group: 'composition', digits: 1, lowerIsBetter: true, read: d => num(d.pourcentage_gras) },
@@ -80,7 +84,7 @@ export function BilanMeasuresOverview({
       { key: 'sousscap', label: 'Pli sous-scapulaire', unit: 'mm', group: 'composition', digits: 1, lowerIsBetter: true, read: d => num(d.pli_sous_scap) },
       { key: 'iliaque', label: 'Pli crête iliaque', unit: 'mm', group: 'composition', digits: 1, lowerIsBetter: true, read: d => num(d.pli_iliaque) }
     ],
-    [wLabel, unitWeight]
+    [wLabel, unitWeight, weightLossGoal]
   )
 
   const [selected, setSelected] = useState<string>('taille')

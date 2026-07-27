@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.21 — Couleur du poids liée à l'objectif du client)
+
+La couleur de la variation de **poids** (Mesures corporelles) suit désormais l'**objectif du client** au lieu d'une
+règle fixe : objectif de **perte** (ou pas d'objectif) → une baisse s'affiche en **vert** ; objectif de **gain** →
+une hausse en vert. Basé sur `buildObjectif().goal.toLoseKg` (≥ 0 = perte). Prop `weightLossGoal` de
+`BilanMeasuresOverview`.
+
+Version : 0.9.20 → 0.9.21.
+
 ## ✅ Fait (v0.9.20 — Poids : baisse affichée en vert)
 
 Dans « Mesures corporelles », une **baisse de poids** s'affiche désormais en **vert** (amélioration) — comme le
