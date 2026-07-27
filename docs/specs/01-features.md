@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.6 — Composition corporelle : IMC et tour de taille en info discrète)
+
+Dans la section **Composition corporelle / Votre silhouette** du dashboard, l'IMC et le tour de taille ne sont
+plus affichés en grosses cartes `StatCardXL` (catégorie, barre, historique) — juste une **ligne d'info discrète**
+(libellé + valeur, en gris). Marie ne veut pas leur donner beaucoup d'importance : le **% de gras** (grille de
+Marie + poids-repères + tendance) reste la mesure clé et garde toute la place. Modif d'affichage seulement
+(`DashboardTab`), calculs inchangés.
+
+Version : 0.9.5 → 0.9.6.
+
 ## ✅ Fait (v0.9.5 — Anneau du score global sur l'échelle 0-4)
 
 L'anneau central du dashboard (« Santé et condition physique globale », `ScoreDonut`) affichait « / 5 » alors

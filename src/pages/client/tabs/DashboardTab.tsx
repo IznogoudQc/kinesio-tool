@@ -520,39 +520,6 @@ export function DashboardTab() {
       compareLabel={compareLabel}
     />
   )
-  const ImcCard = (
-    <StatCardXL
-      label="IMC"
-      value={activeData.imc}
-      unit="kg/m²"
-      test="bmi"
-      age={age}
-      sex={client.sex}
-      norms={norms}
-      originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.imc : undefined}
-      previousValue={compareData?.imc}
-      history={historyOf('imc')}
-      lowerIsBetter
-      compareLabel={compareLabel}
-    />
-  )
-  const TailleCard = (
-    <StatCardXL
-      label="Tour de taille"
-      value={activeData.tour_taille_cm}
-      unit="cm"
-      test="waistCircumference"
-      age={age}
-      sex={client.sex}
-      norms={norms}
-      originDate={isSynthesisMode ? synthesisResult?.fieldOriginDates.tour_taille_cm : undefined}
-      previousValue={compareData?.tour_taille_cm}
-      history={historyOf('tour_taille_cm')}
-      lowerIsBetter
-      compareLabel={compareLabel}
-    />
-  )
-
   const hasMultiple = count >= 2
 
   // ── Mesures section (light variant inline) ────────────────────────────────
@@ -693,10 +660,24 @@ export function DashboardTab() {
       {/* ── Composition corporelle ─────────────────────────────────────────── */}
       <section id="dash-composition" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '140ms' }}>
         <SectionHead eyebrow="Composition corporelle" title="Votre silhouette" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {ImcCard}
-          {TailleCard}
-        </div>
+        {/* IMC + tour de taille : simple info, volontairement discrète (Marie ne
+            veut pas leur donner beaucoup d'importance — le % de gras est la mesure clé). */}
+        {(typeof activeData.imc === 'number' || typeof activeData.tour_taille_cm === 'number') && (
+          <div className="flex flex-wrap gap-x-8 gap-y-1.5 text-sm text-marine/55">
+            {typeof activeData.imc === 'number' && (
+              <span>
+                <span className="text-marine/40">IMC</span>{' '}
+                <span className="font-semibold text-marine/75 tabular-nums">{formatNumber(activeData.imc)} kg/m²</span>
+              </span>
+            )}
+            {typeof activeData.tour_taille_cm === 'number' && (
+              <span>
+                <span className="text-marine/40">Tour de taille</span>{' '}
+                <span className="font-semibold text-marine/75 tabular-nums">{formatNumber(activeData.tour_taille_cm)} cm</span>
+              </span>
+            )}
+          </div>
+        )}
         {typeof activeData.pourcentage_gras === 'number' && client.sex && (
           <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4">
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
