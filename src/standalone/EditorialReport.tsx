@@ -959,12 +959,16 @@ function ObjectifBody({
   objectif,
   objectifText,
   unitWeight,
+  currentWeightKg,
   activityLevel,
   mealsPerDay
 }: {
   objectif: Objectif | null
   objectifText: string
   unitWeight: 'kg' | 'lb'
+  /** Poids du bilan courant — le point de départ, sans lequel « à perdre » et
+   *  « poids visé » obligent le client à faire le calcul de tête. */
+  currentWeightKg: number | null
   activityLevel: StandaloneData['client']['nutritionActivityLevel']
   /** Si fourni (> 1), affiche la répartition des macros par repas. */
   mealsPerDay?: number
@@ -978,6 +982,12 @@ function ObjectifBody({
         <div className={objectifText !== '' ? 'mt-10' : ''}>
           {!objectif.atGoal && (
             <div className="grid gap-8 sm:grid-cols-2">
+              {currentWeightKg !== null && (
+                <div>
+                  <p className="ed-eyebrow text-marine/40">Poids actuel</p>
+                  <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{dualWeight(currentWeightKg, unitWeight)}</p>
+                </div>
+              )}
               <div>
                 <p className="ed-eyebrow text-marine/40">Poids visé</p>
                 <p className="ed-display mt-1 text-4xl tabular-nums text-marine">{dualWeight(objectif.goal.goalKg, unitWeight)}</p>
@@ -1275,6 +1285,7 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
             objectif={objectif}
             objectifText={objectifText}
             unitWeight={client.unitWeight}
+            currentWeightKg={typeof objectifData.poids_kg === 'number' ? objectifData.poids_kg : null}
             activityLevel={client.nutritionActivityLevel}
             mealsPerDay={client.nutritionRepasParJour ?? DEFAULT_MEALS_PER_DAY}
           />
@@ -1639,6 +1650,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
             objectif={objectif}
             objectifText={objectifText}
             unitWeight={client.unitWeight}
+            currentWeightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null}
             activityLevel={client.nutritionActivityLevel}
           />
         </Section>

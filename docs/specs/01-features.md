@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.47 — Poids actuel dans la section Objectif)
+
+La section « Votre objectif » annonçait le **poids visé** et le **poids à perdre**, mais pas le **point de
+départ** — le client devait faire la soustraction de tête pour se situer.
+
+« **Poids actuel** » ouvre maintenant le bloc : d'où l'on part → où l'on va → ce qu'il reste. Affiché dans
+les deux unités comme les autres chiffres. Vaut pour le **rapport de bilan** et le **document nutrition**
+(même composant partagé).
+
+Version : 0.9.46 → 0.9.47.
+
 ## ✅ Fait (v0.9.46 — IMC : mentionné, plus évalué)
 
 Même traitement que le tour de taille (v0.9.44) : l'**IMC** est affiché sans cote, sans percentile et sans
