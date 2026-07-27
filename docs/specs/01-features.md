@@ -2,6 +2,21 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.48 — Saisie des Mesures alignée sur le formulaire de bilan)
+
+L'onglet **Mesures** saisissait sur fond **marine foncé** (gros chiffres blancs sans bordure) alors que le
+formulaire de bilan est en **clair** (champs blancs bordés, libellé en petites capitales, unité en
+suffixe). Deux écrans de saisie qui ne se ressemblaient pas.
+
+`MeasureField` et `DateField` reprennent exactement la facture du bilan, et les trois panneaux de
+résultats (conversion de la grandeur, **Ratio Taille / Hanche**, **Composition corporelle estimée**)
+passent en cartes blanches.
+
+Les **champs restent les mêmes** — Mesures garde ses circonférences gauche/droite (cou, épaule, biceps,
+cuisse, mollet), que le bilan n'a pas.
+
+Version : 0.9.47 → 0.9.48.
+
 ## ✅ Fait (v0.9.47 — Poids actuel dans la section Objectif)
 
 La section « Votre objectif » annonçait le **poids visé** et le **poids à perdre**, mais pas le **point de

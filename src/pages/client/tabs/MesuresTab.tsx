@@ -151,28 +151,25 @@ function MeasureField({
   extra?: React.ReactNode
 }) {
   return (
-    <div className="bg-marine-light/95 border border-gold/20 rounded-xl px-4 py-3">
-      <p className="text-cream/55 text-xs uppercase tracking-wide truncate">{label}</p>
-      <div className="flex items-baseline gap-1.5 mt-1">
-        <input
-          type="number"
-          step="any"
-          min="0"
-          inputMode="decimal"
-          value={value === undefined ? '' : value}
-          onChange={e => onChange(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)}
-          placeholder="—"
-          className="min-w-0 flex-1 bg-transparent text-2xl font-bold text-cream outline-none placeholder:text-cream/20"
-        />
-        <span className="text-cream/40 text-sm font-medium shrink-0">{unit}</span>
-      </div>
+    <div className="min-w-0">
+      <label className="block text-xs uppercase tracking-wide mb-1 text-marine/60 truncate">
+        {label} <span className="lowercase tracking-normal">({unit})</span>
+      </label>
+      <input
+        type="number"
+        step="any"
+        min="0"
+        inputMode="decimal"
+        value={value === undefined ? '' : value}
+        onChange={e => onChange(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)}
+        className="w-full px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors"
+      />
       <MeasureDelta
         current={value}
         previous={previousValue}
         previousDate={previousDate}
         unit={unit}
         lowerIsBetter={lowerIsBetter}
-        theme="dark"
       />
       {extra}
     </div>
@@ -184,14 +181,14 @@ function MeasureField({
 function DateField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const today = todayISO()
   return (
-    <div className="mb-4 max-w-5xl mx-auto bg-marine-light/95 border border-gold/20 rounded-xl px-4 py-3">
-      <p className="text-cream/55 text-xs uppercase tracking-wide">Date de la mesure</p>
+    <div className="mb-4 max-w-5xl mx-auto">
+      <label className="block text-xs uppercase tracking-wide mb-1 text-marine/60">Date de la mesure</label>
       <input
         type="date"
         value={value}
         max={today}
         onChange={e => onChange(e.target.value || today)}
-        className="mt-1 bg-transparent text-cream text-lg font-semibold outline-none border-0 [color-scheme:dark]"
+        className="px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors"
       />
     </div>
   )
@@ -586,7 +583,7 @@ function MeasureEntryPanel({
             previousDate={previousCircRow?.date}
             extra={
               grandeur !== undefined ? (
-                <p className="text-cream/55 text-sm mt-1.5">({nf1(lengthInputToCm(grandeur, 'in'))} cm)</p>
+                <p className="text-marine/45 text-xs mt-1">({nf1(lengthInputToCm(grandeur, 'in'))} cm)</p>
               ) : null
             }
           />
@@ -600,12 +597,12 @@ function MeasureEntryPanel({
         </div>
 
         {ratioTH !== null && client.sex && (
-          <div className="mt-3 bg-marine-light/95 border border-gold/20 rounded-xl px-4 py-3">
+          <div className="mt-4 bg-white border border-cream-dark rounded-xl px-4 py-3">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <div>
-                <p className="text-cream/55 text-xs uppercase tracking-wide">Ratio Taille / Hanche</p>
-                <p className="text-cream text-2xl font-bold mt-0.5">{ratioTH.toFixed(2)}</p>
-                <MeasureDelta current={ratioTH} previous={previousRatioTH} previousDate={previousCircRow?.date} lowerIsBetter theme="dark" />
+                <p className="text-marine/60 text-xs uppercase tracking-wide">Ratio Taille / Hanche</p>
+                <p className="text-marine text-2xl font-bold mt-0.5">{ratioTH.toFixed(2)}</p>
+                <MeasureDelta current={ratioTH} previous={previousRatioTH} previousDate={previousCircRow?.date} lowerIsBetter />
               </div>
               <div className="flex-1 min-w-[180px]">
                 <WaistRiskBar value={ratioTH} sex={client.sex} type="ratio" />
@@ -639,34 +636,34 @@ function MeasureEntryPanel({
             </div>
           </div>
 
-          <div className="bg-marine-light/95 border border-gold/20 rounded-xl p-5 text-cream">
+          <div className="bg-white border border-cream-dark rounded-xl p-5">
             <div className="flex items-center gap-2.5 mb-3">
-              <Calculator size={17} className="text-gold" />
-              <h4 className="text-cream font-semibold text-base">Composition corporelle estimée</h4>
+              <Calculator size={17} className="text-gold-dark" />
+              <h4 className="text-marine font-semibold text-base">Composition corporelle estimée</h4>
             </div>
             <div className="grid grid-cols-2 gap-x-5 gap-y-3">
               <div>
-                <p className="text-cream/55 text-xs uppercase tracking-wide">Somme des 4 plis</p>
-                <p className="text-cream text-xl font-bold mt-0.5">
-                  {plisCalc ? nf1(plisCalc.sumPlis) : <span className="text-cream/25">—</span>}
-                  {plisCalc && <span className="text-cream/40 text-sm font-medium ml-1.5">mm</span>}
+                <p className="text-marine/60 text-xs uppercase tracking-wide">Somme des 4 plis</p>
+                <p className="text-marine text-xl font-bold mt-0.5">
+                  {plisCalc ? nf1(plisCalc.sumPlis) : <span className="text-marine/25">—</span>}
+                  {plisCalc && <span className="text-marine/45 text-sm font-medium ml-1.5">mm</span>}
                 </p>
               </div>
               <div>
-                <p className="text-cream/55 text-xs uppercase tracking-wide">Densité</p>
-                <p className="text-cream text-xl font-bold mt-0.5">
-                  {plisCalc ? nf4(plisCalc.density) : <span className="text-cream/25">—</span>}
+                <p className="text-marine/60 text-xs uppercase tracking-wide">Densité</p>
+                <p className="text-marine text-xl font-bold mt-0.5">
+                  {plisCalc ? nf4(plisCalc.density) : <span className="text-marine/25">—</span>}
                 </p>
               </div>
             </div>
-            <div className="mt-4 border-t border-marine-light/40 pt-4">
-              <p className="text-cream/55 text-xs uppercase tracking-wide">% de gras (Durnin-Womersley)</p>
+            <div className="mt-4 border-t border-cream-dark pt-4">
+              <p className="text-marine/60 text-xs uppercase tracking-wide">% de gras (Durnin-Womersley)</p>
               <p className="mt-1 flex items-baseline gap-3 flex-wrap">
-                <span className="text-gold text-3xl font-bold leading-none">
+                <span className="text-gold-dark text-3xl font-bold leading-none">
                   {plisCalc ? nf1(plisCalc.bodyFatSiri) : '—'}
                   {plisCalc && <span className="text-xl"> %</span>}
                 </span>
-                {plisCalc && <span className="text-cream/50 text-sm">4 plis · densité → Siri</span>}
+                {plisCalc && <span className="text-marine/45 text-sm">4 plis · densité → Siri</span>}
               </p>
             </div>
           </div>
