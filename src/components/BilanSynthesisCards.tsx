@@ -4,7 +4,7 @@ import type { BilanComputed, CompositeScore } from '../lib/bilan-computed'
 
 interface BilanSynthesisCardsProps {
   /** Synthèse du bilan en cours. */
-  computed: Pick<BilanComputed, 'composition' | 'bodyFat' | 'aerobic' | 'backHealth' | 'musculoGlobal' | 'overall' | 'bodyFatGridLabel'>
+  computed: Pick<BilanComputed, 'composition' | 'bodyFat' | 'aerobic' | 'backHealth' | 'musculoGlobal' | 'overall' | 'bodyFatGridLabel' | 'vo2max'>
   /** Synthèse du bilan précédent — pour les indicateurs ▲▼. Si absent, pas de comparaison. */
   previous?: Pick<BilanComputed, 'composition' | 'bodyFat' | 'aerobic' | 'backHealth' | 'musculoGlobal' | 'overall'>
   /** Variante de fond — `light` (modal) ou `marine` (dashboard). */
@@ -21,6 +21,10 @@ interface CardSpec {
   /** Libellé de statut à afficher à la place de la catégorie 0-4 (garde la couleur).
    *  Utilisé pour le % de gras → grille de Marie (« En santé »). */
   statusLabel?: string | null
+  /** Affiche cette valeur + unité au lieu de la note 0-4 — comme l'ancien rapport
+   *  et le dashboard pour l'aptitude aérobie (VO2max). La cote reste celle du composite. */
+  displayValue?: number | null
+  displayUnit?: string
 }
 
 const GAUGE_LEVELS = 4
@@ -66,29 +70,37 @@ export function BilanSynthesisCards({
   const cards: CardSpec[] = [
     {
       title: 'Composition corporelle',
-      subtitle: 'IMC + % gras + tour de taille',
+      subtitle: 'IMC, % de gras, tour de taille',
       current: computed.composition,
       previous: previous?.composition ?? null
     },
     {
-      title: '% gras corporel',
-      subtitle: 'Composition fine',
+      title: 'Pourcentage de gras',
+      subtitle: 'Grille de risque',
       current: computed.bodyFat,
       previous: previous?.bodyFat ?? null,
       statusLabel: computed.bodyFatGridLabel
     },
-    { title: 'Aérobie', subtitle: 'VO2max', current: computed.aerobic, previous: previous?.aerobic ?? null },
+    {
+      title: 'Aptitude aérobie',
+      subtitle: 'VO2max',
+      current: computed.aerobic,
+      previous: previous?.aerobic ?? null,
+      // Comme le dashboard : on note l'aérobie en VO2max, pas sur 0-4.
+      displayValue: computed.vo2max,
+      displayUnit: 'ml/kg/min'
+    },
     ...(SHOW_BACK_HEALTH
       ? [{
-          title: 'Indice santé du dos',
-          subtitle: 'Flexion + endurance + sit-ups',
+          title: 'Indice de santé du dos',
+          subtitle: 'Flexibilité, endurance, abdominaux',
           current: computed.backHealth,
           previous: previous?.backHealth ?? null
         }]
       : []),
     {
-      title: 'Musculo global',
-      subtitle: '6 tests musculo',
+      title: 'Aptitude musculosquelettique globale',
+      subtitle: 'Six tests',
       current: computed.musculoGlobal,
       previous: previous?.musculoGlobal ?? null
     }
@@ -121,9 +133,20 @@ export function BilanSynthesisCards({
           <div key={c.title} className={cardClass}>
             <p className={titleClass}>{c.title}</p>
             <p className={subtitleClass}>{c.subtitle}</p>
-            <p className={c.current.score === null ? muted : valueClass}>
-              {c.current.score === null ? '—' : c.current.score.toFixed(1)}
-            </p>
+            {c.displayUnit !== undefined ? (
+              <p className={c.displayValue == null ? muted : valueClass}>
+                {c.displayValue == null ? '—' : c.displayValue.toLocaleString('fr-CA', { maximumFractionDigits: 1 })}
+                {c.displayValue != null && (
+                  <span className={`block text-xs font-medium ${isLight ? 'text-marine/45' : 'text-cream/45'}`}>
+                    {c.displayUnit}
+                  </span>
+                )}
+              </p>
+            ) : (
+              <p className={c.current.score === null ? muted : valueClass}>
+                {c.current.score === null ? '—' : c.current.score.toFixed(1)}
+              </p>
+            )}
             <div className="flex justify-center">
               <Gauge score={c.current.score} variant={variant} />
             </div>
@@ -149,7 +172,7 @@ export function BilanSynthesisCards({
       >
         <div>
           <p className={titleClass}>Santé et condition physique globale</p>
-          <p className={subtitleClass}>Moyenne pondérée — composition / aérobie / dos / musculo</p>
+          <p className={subtitleClass}>Moyenne des quatre composites — composition / aérobie / dos / musculo</p>
         </div>
         <div className="text-right">
           <p className={computed.overall.score === null ? muted : valueClass}>

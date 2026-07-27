@@ -2,6 +2,27 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.38 — Synthèse d'un bilan alignée sur le dashboard)
+
+Les cartes de synthèse (« Voir / modifier un bilan », saisie manuelle, import) portaient encore les
+anciens libellés et notaient l'aérobie **sur 0-4**, alors que le dashboard avait été aligné sur l'ancien
+logiciel. Elles suivent maintenant la même présentation :
+
+| Avant | Maintenant |
+|---|---|
+| Aérobie → note 0-4 | **Aptitude aérobie → VO2max en ml/kg/min** |
+| « Musculo global » / « 6 tests musculo » | « Aptitude musculosquelettique globale » / « Six tests » |
+| « Indice santé du dos » | « Indice de santé du dos » |
+| « % gras corporel » / « Composition fine » | « Pourcentage de gras » / « Grille de risque » |
+
+Pas de graphique ni de comparaison ▲▼ dans la vue détail (elle ne fournit pas de bilan de référence) —
+la comparaison reste disponible en saisie manuelle et à l'import, où elle a du sens.
+
+Corrigé au passage : le score global était décrit comme une « moyenne pondérée » alors que c'est une
+moyenne simple des quatre composites.
+
+Version : 0.9.37 → 0.9.38.
+
 ## ✅ Fait (v0.9.37 — Distinguer d'un coup d'œil les champs à remplir des champs calculés)
 
 Les champs calculés utilisaient `bg-cream/40` **sur un conteneur déjà crème** : rien ne les distinguait
