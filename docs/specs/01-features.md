@@ -2,6 +2,18 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.43 — Poids et grandeur dans la section Composition des rapports)
+
+La section « Composition corporelle » montrait l'IMC sans montrer **les deux mesures d'où il sort**.
+
+- **Rapport HTML** : nouveau bloc `BodyReference` placé **avant** l'IMC — poids et grandeur côte à côte,
+  dans les deux systèmes d'unités (l'unité préférée du client en gros, l'autre en dessous), comme le
+  faisait l'ancien bilan. Volontairement en retrait typographique (3xl contre 5xl/6xl pour les mesures
+  notées) : ce sont des références, pas des résultats cotés.
+- **Rapport PDF** : « Poids » et « Grandeur » ajoutés **en tête** de la grille « Vos mesures », avant l'IMC.
+
+Version : 0.9.42 → 0.9.43.
+
 ## ✅ Fait (v0.9.42 — Rapports PDF et HTML alignés sur le dashboard)
 
 Le chantier différé depuis le début de la refonte CPAFLA. Les deux rapports suivent maintenant la même

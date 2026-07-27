@@ -36,7 +36,7 @@ import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed } from '../lib/bilan
 import { bodyFatRisk, BF_RISK_HEX, bodyFatTargetWeights, bodyFatGridRating } from '../lib/body-fat-risk'
 import { principesFor, principesCountWord } from '../lib/principes'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
-import { kgToLb } from '../lib/units'
+import { kgToLb, cmToFeetInches } from '../lib/units'
 import { dualWeight, estimatedGoalDate } from '../lib/objectif-format'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
@@ -1303,7 +1303,13 @@ function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bila
   const durnin4 = ['pli_triceps', 'pli_biceps', 'pli_sous_scap', 'pli_iliaque'].map(k => num(d[k]))
   const sommePlis = durnin4.every(v => v !== null) ? (durnin4 as number[]).reduce((a, b) => a + b, 0) : null
 
+  const tailleCm = num(d.taille_cm)
   const stats: { label: string; value: string; hint?: string }[] = [
+    { label: 'Poids', value: dualWeight(num(d.poids_kg), weightUnit) },
+    {
+      label: 'Grandeur',
+      value: tailleCm === null ? '—' : `${cmToFeetInches(tailleCm)} (${fmt(tailleCm)} cm)`
+    },
     { label: 'IMC', value: computed.imc === null ? '—' : `${fmt(computed.imc)} kg/m²` },
     { label: 'Tour de taille', value: num(d.tour_taille_cm) === null ? '—' : `${fmt(num(d.tour_taille_cm))} cm` },
     { label: 'Ratio taille / hanche', value: computed.ratioTailleHanche === null ? '—' : fmt(computed.ratioTailleHanche, 2) },

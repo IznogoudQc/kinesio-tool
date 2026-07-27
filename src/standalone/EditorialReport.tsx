@@ -33,7 +33,7 @@ import { BodyFatRiskBar } from '../components/BodyFatRiskBar'
 import { bodyFatTargetWeights } from '../lib/body-fat-risk'
 import { BloodPressureBar } from '../components/BloodPressureBar'
 import { classifyBloodPressure } from '../lib/norms/clinical'
-import { kgToLb } from '../lib/units'
+import { kgToLb, cmToFeetInches } from '../lib/units'
 import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
 import { MusculoRadar } from '../pages/client/dashboard/MusculoRadar'
 import { TrainingZones } from '../pages/client/dashboard/TrainingZones'
@@ -128,6 +128,46 @@ function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }
   return (
     <div ref={ref} className={`ed-reveal${visible ? ' is-visible' : ''}`} style={{ transitionDelay: `${delay}ms` }}>
       {children}
+    </div>
+  )
+}
+
+/** Poids et grandeur — les deux mesures d'où sort l'IMC. Présentées en amont de
+ *  celui-ci, dans les deux systèmes d'unités comme le faisait l'ancien bilan, et en
+ *  retrait typographique : ce sont des références, pas des résultats notés. */
+function BodyReference({
+  poidsKg,
+  tailleCm,
+  unitWeight
+}: {
+  poidsKg: number | null
+  tailleCm: number | null
+  unitWeight: 'kg' | 'lb'
+}) {
+  if (poidsKg === null && tailleCm === null) return null
+  const nf = (n: number, d = 1) => n.toLocaleString('fr-CA', { maximumFractionDigits: d })
+  const lb = poidsKg === null ? null : kgToLb(poidsKg)
+  const poidsPrim = poidsKg === null ? '—' : unitWeight === 'lb' ? `${nf(lb as number)} lb` : `${nf(poidsKg)} kg`
+  const poidsSec = poidsKg === null ? null : unitWeight === 'lb' ? `${nf(poidsKg)} kg` : `${nf(lb as number)} lb`
+
+  return (
+    <div className="border-t border-marine/10 py-6">
+      <div className="grid max-w-md grid-cols-2 gap-x-10 gap-y-4">
+        {poidsKg !== null && (
+          <div>
+            <p className="ed-eyebrow text-marine/40">Poids</p>
+            <p className="ed-display mt-1.5 text-3xl tabular-nums text-marine">{poidsPrim}</p>
+            {poidsSec && <p className="mt-0.5 text-sm text-marine/45">{poidsSec}</p>}
+          </div>
+        )}
+        {tailleCm !== null && (
+          <div>
+            <p className="ed-eyebrow text-marine/40">Grandeur</p>
+            <p className="ed-display mt-1.5 text-3xl tabular-nums text-marine">{cmToFeetInches(tailleCm)}</p>
+            <p className="mt-0.5 text-sm text-marine/45">{nf(tailleCm)} cm</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -1492,6 +1532,11 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         title="Ce que raconte votre silhouette"
         lead="L’IMC seul dit peu de choses : un athlète musclé et une personne sédentaire peuvent avoir le même. Il doit être interprété avec le % de gras, le tour de taille et l’évaluation de la kinésiologue."
       >
+        <BodyReference
+          poidsKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null}
+          tailleCm={typeof activeData.taille_cm === 'number' ? activeData.taille_cm : null}
+          unitWeight={client.unitWeight}
+        />
         <Measure label="Indice de masse corporelle" value={activeData.imc} unit="kg/m²" test="bmi" {...measureProps} previousValue={compareData?.imc} lowerIsBetter history={historyOf('imc')} />
         <Measure id="pourcentage-gras" label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />
         <Measure label="Tour de taille" value={activeData.tour_taille_cm} unit="cm" test="waistCircumference" {...measureProps} previousValue={compareData?.tour_taille_cm} lowerIsBetter history={historyOf('tour_taille_cm')} />
