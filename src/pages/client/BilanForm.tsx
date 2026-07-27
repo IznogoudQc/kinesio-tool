@@ -1,13 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Check, ChevronDown, ChevronRight, Pencil, RotateCcw } from 'lucide-react'
-import {
-  BILAN_FIELD_GROUPS,
-  OVERRIDABLE_FIELDS,
-  isFieldManual,
-  setFieldManual,
-  type BilanFieldDef,
-  type BilanFieldGroup
-} from './bilanFields'
+import { Check, ChevronDown, ChevronRight } from 'lucide-react'
+import { BILAN_FIELD_GROUPS, type BilanFieldDef, type BilanFieldGroup } from './bilanFields'
 import { CategoryBadge } from '../../components/CategoryBadge'
 import { BilanSynthesisCards } from '../../components/BilanSynthesisCards'
 import { PercentileIndicator } from '../../components/PercentileIndicator'
@@ -146,42 +139,12 @@ export function BilanForm({
     })
   }
 
-  // Champs calculés temporairement déverrouillés (le temps de la saisie). Dès qu'une
-  // valeur est tapée, le champ est marqué « manuel » dans les données et le reste.
-  const [unlocked, setUnlocked] = useState<Set<string>>(() => new Set())
-
-  /** Écrit une valeur dans un champ dérivé ET le marque comme forcé à la main. */
-  function setOverridden(key: keyof BilanData, value: number | undefined) {
-    // Vider le champ = renoncer à la valeur forcée → le calcul reprend la main.
-    if (value === undefined) {
-      onDataChange?.(setFieldManual(data, key as string, false))
-      return
-    }
-    const withValue = setField(data, key, value)
-    onDataChange?.(setFieldManual(withValue, key as string, true))
-  }
-
-  /** Rend la main au calcul : retire le marqueur ET la valeur forcée. */
-  function recomputeField(key: keyof BilanData) {
-    onDataChange?.(setFieldManual(data, key as string, false))
-    setUnlocked(prev => {
-      const next = new Set(prev)
-      next.delete(key as string)
-      return next
-    })
-  }
-
   function renderField(def: BilanFieldDef) {
     const raw = derivedData[def.key]
     const isText = def.type === 'text'
     const isSelect = def.type === 'select'
     const isTextarea = def.type === 'textarea'
     const isComputed = def.type === 'computed'
-    // Champs dérivés que Marie-Eve peut forcer (mesures seulement — jamais les indices).
-    const overridable = !readOnly && !!onDataChange && OVERRIDABLE_FIELDS.has(def.key as string)
-    const isManual = isFieldManual(data, def.key as string)
-    // Un champ calculé s'édite s'il est déverrouillé ou déjà forcé.
-    const editableComputed = overridable && (isManual || unlocked.has(def.key as string))
     const numericValue = typeof raw === 'number' && !Number.isNaN(raw) ? raw : null
     const category = readOnly && categorize && numericValue !== null ? categorize(def.key, numericValue) : null
     const showBadge = readOnly && categorize && numericValue !== null
@@ -210,34 +173,9 @@ export function BilanForm({
 
     return (
       <div key={def.key} className={`min-w-0 ${fullWidth}`}>
-        <label className={`flex items-center gap-1.5 text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
-          <span>
-            {def.label}
-            {def.unit && <span className="lowercase tracking-normal"> ({displayUnit})</span>}
-          </span>
-          {overridable && isManual ? (
-            <button
-              type="button"
-              onClick={() => recomputeField(def.key)}
-              title="Revenir à la valeur calculée par l'application"
-              className="inline-flex items-center gap-1 normal-case tracking-normal text-[11px] font-medium text-gold-dark hover:underline"
-            >
-              <RotateCcw size={11} />
-              recalculer
-            </button>
-          ) : overridable && isComputed && !editableComputed ? (
-            <button
-              type="button"
-              onClick={() =>
-                setUnlocked(prev => new Set(prev).add(def.key as string))
-              }
-              title="Saisir une valeur mesurée à la place du calcul"
-              className={`inline-flex items-center normal-case tracking-normal transition-opacity opacity-40 hover:opacity-100 ${isLight ? 'text-marine' : 'text-cream'}`}
-              aria-label={`Modifier ${def.label} à la main`}
-            >
-              <Pencil size={11} />
-            </button>
-          ) : null}
+        <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
+          {def.label}
+          {def.unit && <span className="lowercase tracking-normal"> ({displayUnit})</span>}
         </label>
         {readOnly ? (
           <>
@@ -262,34 +200,14 @@ export function BilanForm({
           </>
         ) : isComputed ? (
           <>
-            {editableComputed ? (
-              <input
-                type="number"
-                step="any"
-                autoFocus={!isManual}
-                value={raw === undefined ? '' : toDisplay(raw as number)}
-                onChange={e =>
-                  setOverridden(
-                    def.key,
-                    Number.isNaN(e.target.valueAsNumber) ? undefined : fromDisplay(e.target.valueAsNumber)
-                  )
-                }
-                className={inputClass}
-              />
-            ) : (
-              <input
-                type="text"
-                readOnly
-                tabIndex={-1}
-                value={raw === undefined ? '—' : displayStr(raw)}
-                className={computedClass}
-              />
-            )}
-            {isManual ? (
-              <p className="text-xs mt-1 text-gold-dark font-medium">Modifié manuellement</p>
-            ) : (
-              def.hint && <p className={`text-xs mt-1 ${isLight ? 'text-marine/45' : 'text-cream/45'}`}>{def.hint}</p>
-            )}
+            <input
+              type="text"
+              readOnly
+              tabIndex={-1}
+              value={raw === undefined ? '—' : displayStr(raw)}
+              className={computedClass}
+            />
+            {def.hint && <p className={`text-xs mt-1 ${isLight ? 'text-marine/45' : 'text-cream/45'}`}>{def.hint}</p>}
           </>
         ) : isSelect ? (
           <select
@@ -327,13 +245,15 @@ export function BilanForm({
               type="number"
               step="any"
               value={raw === undefined ? '' : toDisplay(raw as number)}
-              onChange={e => {
-                const v = Number.isNaN(e.target.valueAsNumber) ? undefined : fromDisplay(e.target.valueAsNumber)
-                // VO2max : champ libre, mais s'il est aussi calculable (protocole
-                // saisi), la valeur tapée doit primer → on le marque « manuel ».
-                if (overridable) setOverridden(def.key, v)
-                else onDataChange?.(setField(data, def.key, v))
-              }}
+              onChange={e =>
+                onDataChange?.(
+                  setField(
+                    data,
+                    def.key,
+                    Number.isNaN(e.target.valueAsNumber) ? undefined : fromDisplay(e.target.valueAsNumber)
+                  )
+                )
+              }
               className={`${inputClass}${boundBorder}`}
             />
             {bound?.message && (

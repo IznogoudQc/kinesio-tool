@@ -253,49 +253,41 @@ function computePourcentageGrasDurnin(
 export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComputed {
   const { age, sex } = profile
 
-  // Champs dérivés que Marie-Eve a forcés à la main (ex. % de gras au DEXA, VO2max
-  // de laboratoire) : on garde SA valeur au lieu du calcul, et les scores composites
-  // en découlent. Voir `champs_manuels` / `OVERRIDABLE_FIELDS`.
-  const manuels = new Set(Array.isArray(raw.champs_manuels) ? raw.champs_manuels : [])
-  const forced = (key: keyof BilanData, computedValue: number | null): number | null => {
-    if (!manuels.has(key as string)) return computedValue
-    const v = raw[key]
-    return typeof v === 'number' && Number.isFinite(v) ? v : computedValue
-  }
-
   // Anthropo
   const bmi = computeBmi(raw.taille_cm, raw.poids_kg)
-  const imc = forced('imc', bmi === null ? null : round1(bmi))
+  const imc = bmi === null ? null : round1(bmi)
   const poidsOptimalMaxKg = computePoidsOptimalMax(raw.taille_cm)
   const ratioTailleHanche = computeRatioTailleHanche(raw.tour_taille_cm, raw.tour_hanche_cm)
-  const pourcentageGrasDurnin = forced('pourcentage_gras', computePourcentageGrasDurnin(raw, age, sex))
+  const pourcentageGrasDurnin = computePourcentageGrasDurnin(raw, age, sex)
 
-  // Aérobie — l'ordre compte : le MET découle du VO2max (forcé ou non).
-  const vo2max = forced('vo2max', computeVo2maxByProtocol(raw, age, sex))
+  // Aérobie
+  const vo2max = computeVo2maxByProtocol(raw, age, sex)
   const metRaw = computeMet(vo2max ?? undefined)
-  const metEquivalent = forced('met_equivalent', metRaw === null ? null : round1(metRaw))
+  const metEquivalent = metRaw === null ? null : round1(metRaw)
   const fcMaxRaw = computeFcMaxPredite(age)
-  const fcMaxPredite = forced('fc_max_predite', fcMaxRaw === null ? null : Math.round(fcMaxRaw))
+  const fcMaxPredite = fcMaxRaw === null ? null : Math.round(fcMaxRaw)
   const fcZones = computeFcZones(fcMaxPredite)
 
-  // Musculo — l'ordre compte : la puissance découle du saut (forcé ou non).
+  // Musculo
   // Saut vertical : finale − départ si les deux sont saisis (feuille papier),
   // sinon la valeur directe (rétro-compatibilité des anciens bilans / imports).
-  const sautVerticalCm = forced('saut_vertical_cm', (() => {
+  const sautVerticalCm = (() => {
     if (typeof raw.saut_depart_cm === 'number' && typeof raw.saut_finale_cm === 'number') {
       return Math.max(0, Math.round((raw.saut_finale_cm - raw.saut_depart_cm) * 10) / 10)
     }
     return typeof raw.saut_vertical_cm === 'number' ? raw.saut_vertical_cm : null
-  })())
-  const puissanceJambesW = forced('puissance_jambes_watts', (() => {
+  })()
+  const puissanceJambesW = (() => {
     // Toujours (re)calculer par Sayers dès que saut + poids sont connus — y compris
-    // pour un bilan importé : l'app doit être la seule source de vérité (ADR 0028).
+    // pour un bilan importé : la puissance est un champ **calculé** (jamais saisi à
+    // la main), donc l'app doit en être la seule source. Sayers reproduit d'ailleurs
+    // exactement les rapports d'origine quand leurs données sont cohérentes.
     // Repli sur la valeur importée seulement si le calcul est impossible (saut ou
     // poids manquant) — sinon on perdrait la donnée.
-    const computedW = sayersLegPower(sautVerticalCm ?? undefined, raw.poids_kg)
-    if (computedW !== null) return computedW
+    const computed = sayersLegPower(sautVerticalCm ?? undefined, raw.poids_kg)
+    if (computed !== null) return computed
     return typeof raw.puissance_jambes_watts === 'number' ? raw.puissance_jambes_watts : null
-  })())
+  })()
 
   // ── Scores composites ──────────────────────────────────────────────────────
   // On utilise les valeurs *dérivées* (imc, vo2max, pourcentage_gras) pour les

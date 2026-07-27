@@ -2,24 +2,25 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
-## ✅ Fait (v0.9.34 — Forcer à la main une valeur calculée)
+## ✅ Fait (v0.9.35 — Import : exactement le même formulaire que la saisie manuelle)
 
-Les champs **dérivés** peuvent maintenant être forcés par Marie quand elle dispose d'une valeur mesurée
-plus fiable que l'estimation (% de gras au DEXA, VO2max en analyse de gaz, FC max au cardiofréquencemètre).
+À l'import d'un `.doc`, on retrouve maintenant **la feuille de saisie complète**, préremplie avec les
+mesures extraites — comme si Marie avait tout tapé elle-même :
 
-- Le champ reste **calculé par défaut**, avec une petite icône ✏️ pour le déverrouiller.
-- Une fois modifié : mention **« Modifié manuellement »** + un lien **« recalculer »** pour rendre la main
-  à l'application. Vider le champ revient aussi au calcul.
-- Une valeur forcée n'est **jamais** écrasée, ni par `computeBilan`, ni à la sauvegarde, ni à l'import.
-- Les **scores composites en découlent** (un % de gras forcé alimente la composition).
-- Le marqueur est stocké dans `champs_manuels` (liste des clés forcées).
+- **Cartes « Synthèse — mise à jour en temps réel »** au-dessus du formulaire
+- Bascule **« Tout afficher / Guidé »** + barre de progression par section
+- **Comparaison ▲▼** avec le bilan précédent du client
+- **Mémorisation du choix d'unités** (cm/pouce, kg/lb) sur la fiche client
+- **Récapitulatif des mesures importantes manquantes** avant d'enregistrer (jamais bloquant)
 
-**Portée** : IMC, % de gras, VO2max, MET, FC max prédite, saut vertical, puissance des jambes
-(`OVERRIDABLE_FIELDS`). Les **4 indices composites** (composition, dos, musculo, global) restent toujours
-calculés — les rendre modifiables casserait la parité CPAFLA (ADR 0028) et rendrait les courbes
-d'évolution ininterprétables. Si un indice semble faux, c'est une *entrée* qu'il faut corriger.
+`StepperHeader` et `MissingFieldsDialog` sont désormais partagés entre les deux écrans plutôt que
+dupliqués. Seul reste propre à l'import : la liste des bilans plus anciens trouvés dans le document.
 
-Version : 0.9.33 → 0.9.34.
+**Annulé au passage** : le mécanisme de déverrouillage des champs calculés (v0.9.34, icône ✏️ +
+« Modifié manuellement » + « recalculer »). Ce n'était pas le besoin — les champs calculés
+redeviennent simplement en lecture seule.
+
+Version : 0.9.33 → 0.9.35.
 
 ## ✅ Fait (v0.9.33 — Import : la puissance des jambes aussi est recalculée)
 

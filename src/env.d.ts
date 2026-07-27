@@ -178,13 +178,6 @@ interface BilanData {
   indice_sante_dos?: number
   score_musculo_global?: number
   score_global?: number
-  /** Champs **dérivés** que Marie-Eve a forcés à la main (ex. un % de gras mesuré
-   *  au DEXA, un VO2max de laboratoire). Tant qu'une clé est listée ici, ni
-   *  `computeBilan` ni la sauvegarde ne l'écrasent — le formulaire affiche
-   *  « modifié manuellement » et propose de recalculer.
-   *  Seules les MESURES dérivées sont concernées, jamais les 4 indices composites
-   *  (composition / dos / musculo / global) : voir `OVERRIDABLE_FIELDS`. */
-  champs_manuels?: string[]
   /** Observations / conseils libres saisis par Marie-Eve (uniquement saisie manuelle). */
   notes?: string
   /** Objectif du client dans ses mots (ex. « perdre 10 kg », « courir un 10 km »).

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import {
   bruceStageFor,
   bruceTreadmillVo2max,
@@ -10,10 +10,8 @@ import {
 } from '../../lib/vo2max-calculator'
 import { computeMet } from '../../lib/norms/calc'
 import { validateBilanField, type BoundResult } from '../../lib/bilan-bounds'
-import { Pencil, RotateCcw } from 'lucide-react'
 import { CategoryBadge } from '../../components/CategoryBadge'
 import { PercentileIndicator } from '../../components/PercentileIndicator'
-import { isFieldManual, setFieldManual } from './bilanFields'
 import type { Category, NormsType } from '../../lib/norms'
 import { DEFAULT_NORMS } from '../../lib/norms'
 
@@ -163,60 +161,6 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
     onDataChange(setFields(data, { vo2max: value }))
   }
 
-  // Verrou des champs dérivés de cette section (VO2max, FC max prédite) : Marie-Eve
-  // peut forcer une valeur mesurée (labo, cardio-fréquencemètre). Même mécanisme que
-  // `BilanForm` — voir `OVERRIDABLE_FIELDS` / `champs_manuels`.
-  const [unlocked, setUnlocked] = useState<Set<string>>(() => new Set())
-  const vo2maxManual = isFieldManual(data, 'vo2max')
-  const fcMaxManual = isFieldManual(data, 'fc_max_predite')
-
-  function forceField(key: 'vo2max' | 'fc_max_predite', value: number | undefined) {
-    if (!onDataChange) return
-    if (value === undefined) {
-      onDataChange(setFieldManual(data, key, false))
-      return
-    }
-    onDataChange(setFieldManual(setFields(data, { [key]: value }), key, true))
-  }
-
-  function releaseField(key: 'vo2max' | 'fc_max_predite') {
-    if (onDataChange) onDataChange(setFieldManual(data, key, false))
-    setUnlocked(prev => {
-      const next = new Set(prev)
-      next.delete(key)
-      return next
-    })
-  }
-
-  /** Petit bouton crayon / « recalculer » à côté d'un libellé de champ calculé. */
-  function LockToggle({ field, manual }: { field: 'vo2max' | 'fc_max_predite'; manual: boolean }) {
-    if (readOnly || !onDataChange) return null
-    if (manual) {
-      return (
-        <button
-          type="button"
-          onClick={() => releaseField(field)}
-          title="Revenir à la valeur calculée par l'application"
-          className="inline-flex items-center gap-1 normal-case tracking-normal text-[11px] font-medium text-gold-dark hover:underline"
-        >
-          <RotateCcw size={11} />
-          recalculer
-        </button>
-      )
-    }
-    if (unlocked.has(field)) return null
-    return (
-      <button
-        type="button"
-        onClick={() => setUnlocked(prev => new Set(prev).add(field))}
-        title="Saisir une valeur mesurée à la place du calcul"
-        className={`inline-flex items-center normal-case tracking-normal transition-opacity opacity-40 hover:opacity-100 ${isLight ? 'text-marine' : 'text-cream'}`}
-      >
-        <Pencil size={11} />
-      </button>
-    )
-  }
-
   // ── Render ────────────────────────────────────────────────────────────────
 
   const vo2maxCategory =
@@ -334,9 +278,8 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
       {/* VO2max + MET — toujours affichés */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-3">
         <div className="min-w-0">
-          <label className={`flex items-center gap-1.5 text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
-            <span>VO2max <span className="lowercase tracking-normal">(ml/kg/min)</span></span>
-            {testType !== 'manual' && <LockToggle field="vo2max" manual={vo2maxManual} />}
+          <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
+            VO2max <span className="lowercase tracking-normal">(ml/kg/min)</span>
           </label>
           {readOnly ? (
             <>
@@ -349,23 +292,16 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
                 </div>
               )}
             </>
-          ) : testType === 'manual' || vo2maxManual || unlocked.has('vo2max') ? (
-            <>
+          ) : testType === 'manual' ? (
             <input
               type="number"
               step="any"
               value={data.vo2max ?? ''}
-              onChange={e => {
-                const v = Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber
-                // Sous protocole, une valeur tapée est un forçage explicite ; en test
-                // « manuel », le VO2max EST la donnée source (pas un forçage).
-                if (testType === 'manual') setManualVo2max(v)
-                else forceField('vo2max', v)
-              }}
+              onChange={e =>
+                setManualVo2max(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
+              }
               className={inputClass}
             />
-            {vo2maxManual && <p className="text-xs mt-1 text-gold-dark font-medium">Modifié manuellement</p>}
-            </>
           ) : (
             <>
               <input
@@ -504,27 +440,13 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
       {/* FC max prédite (calculée). Les PA/FC au repos sont dans « Signes vitaux (repos) ». */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-x-5 gap-y-3">
         <div className="min-w-0">
-          <label className={`flex items-center gap-1.5 text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
-            <span>FC max prédite <span className="lowercase tracking-normal">(bpm)</span></span>
-            <LockToggle field="fc_max_predite" manual={fcMaxManual} />
+          <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
+            FC max prédite <span className="lowercase tracking-normal">(bpm)</span>
           </label>
           {readOnly ? (
             <p className={`text-base font-medium ${valueClass}`}>
               {data.fc_max_predite === undefined ? <span className="opacity-40">—</span> : data.fc_max_predite}
             </p>
-          ) : fcMaxManual || unlocked.has('fc_max_predite') ? (
-            <>
-              <input
-                type="number"
-                step="any"
-                value={data.fc_max_predite ?? ''}
-                onChange={e =>
-                  forceField('fc_max_predite', Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)
-                }
-                className={inputClass}
-              />
-              {fcMaxManual && <p className="text-xs mt-1 text-gold-dark font-medium">Modifié manuellement</p>}
-            </>
           ) : (
             <>
               <input

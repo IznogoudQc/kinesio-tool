@@ -302,7 +302,7 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
 }
 
 /** Barre de progression du mode guidé : « Section N / M » + le titre courant. */
-function StepperHeader({ stepIndex, titles }: { stepIndex: number; titles: string[] }) {
+export function StepperHeader({ stepIndex, titles }: { stepIndex: number; titles: string[] }) {
   const total = titles.length
   const pct = Math.round(((stepIndex + 1) / total) * 100)
   return (
@@ -328,7 +328,7 @@ interface MissingFieldsDialogProps {
 }
 
 /** Récapitulatif non bloquant des mesures importantes manquantes. */
-function MissingFieldsDialog({ missing, guided, onComplete, onSaveAnyway }: MissingFieldsDialogProps) {
+export function MissingFieldsDialog({ missing, guided, onComplete, onSaveAnyway }: MissingFieldsDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/50 backdrop-blur-sm p-6">
       <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark">

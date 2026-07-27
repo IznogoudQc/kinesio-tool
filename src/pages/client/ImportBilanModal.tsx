@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle2, FileText, Loader2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, FileText, Loader2 } from 'lucide-react'
 import { bilansService } from '../../services/bilans'
 import { BilanForm, deriveBilanFields } from './BilanForm'
-import { formatBilanDate, countFilledFields } from './bilanFields'
+import { BILAN_FIELD_GROUPS, formatBilanDate, countFilledFields } from './bilanFields'
+import { missingImportantFields, type ImportantField } from './bilan-required-fields'
+import { MissingFieldsDialog, StepperHeader } from './CreateBilanModal'
+import { clientsService } from '../../services/clients'
 import { computeAge } from '../../lib/norms'
 
 interface ImportBilanModalProps {
@@ -25,6 +28,19 @@ export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [summary, setSummary] = useState<ImportBilansSummary | null>(null)
+  // Mêmes options que la saisie manuelle : mode d'affichage, comparaison au
+  // bilan précédent et récapitulatif des champs manquants (cf. CreateBilanModal).
+  const [mode, setMode] = useState<'scroll' | 'guided'>('scroll')
+  const [stepIndex, setStepIndex] = useState(0)
+  const [previous, setPrevious] = useState<Bilan | null>(null)
+  const [pendingMissing, setPendingMissing] = useState<ImportantField[] | null>(null)
+
+  useEffect(() => {
+    bilansService
+      .getBilansForClient(clientId)
+      .then(list => setPrevious(list[0] ?? null))
+      .catch(() => setPrevious(null))
+  }, [clientId])
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -40,13 +56,24 @@ export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved
     setIncludeHistorical(prev => prev.map((v, i) => (i === index ? !v : v)))
   }
 
-  async function handleSave(e: React.FormEvent) {
+  function handleSave(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
       setError('La date du bilan est requise.')
       return
     }
+    // Même garde-fou doux que la saisie manuelle : on signale les mesures
+    // importantes absentes du document, sans jamais bloquer.
+    const missing = missingImportantFields(data)
+    if (missing.length > 0) {
+      setPendingMissing(missing)
+      return
+    }
+    void persist()
+  }
+
+  async function persist() {
     setSaving(true)
     try {
       // Recalcule les valeurs dérivées (VO2max, IMC, % gras, scores composites)
@@ -105,11 +132,35 @@ export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
       <div className="bg-cream rounded-lg shadow-2xl w-full max-w-3xl border border-cream-dark max-h-[92vh] flex flex-col">
         <form onSubmit={handleSave} className="p-6 flex flex-col min-h-0 flex-1">
-          <h2 className="text-marine font-semibold text-xl mb-1">Importer un bilan</h2>
-          <p className="text-marine/55 text-base mb-5 flex items-center gap-2">
-            <FileText size={15} className="text-gold shrink-0" />
-            <span className="truncate">{fileName}</span>
-          </p>
+          <div className="flex items-start gap-3 mb-5">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-marine font-semibold text-xl mb-1">Importer un bilan</h2>
+              <p className="text-marine/55 text-base flex items-center gap-2">
+                <FileText size={15} className="text-gold shrink-0" />
+                <span className="truncate">{fileName}</span>
+              </p>
+            </div>
+            <div className="flex rounded-md border border-cream-dark overflow-hidden shrink-0 text-sm">
+              <button
+                type="button"
+                onClick={() => setMode('scroll')}
+                className={`px-3 py-1.5 transition-colors ${mode === 'scroll' ? 'bg-gold text-marine font-semibold' : 'bg-white/60 text-marine/60 hover:text-marine'}`}
+              >
+                Tout afficher
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMode('guided'); setStepIndex(0) }}
+                className={`px-3 py-1.5 transition-colors ${mode === 'guided' ? 'bg-gold text-marine font-semibold' : 'bg-white/60 text-marine/60 hover:text-marine'}`}
+              >
+                Guidé
+              </button>
+            </div>
+          </div>
+
+          {mode === 'guided' && (
+            <StepperHeader stepIndex={stepIndex} titles={BILAN_FIELD_GROUPS.map(g => g.title)} />
+          )}
 
           <div className="space-y-6 overflow-y-auto pr-1 flex-1 min-h-0">
             {error && (
@@ -129,6 +180,13 @@ export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved
                 onDateChange={setDate}
                 onDataChange={setData}
                 client={client}
+                onUnitsChange={u => {
+                  clientsService.update(clientId, u).catch(() => {})
+                }}
+                showSynthesis
+                previousData={previous?.data}
+                visibleSectionIds={mode === 'guided' ? [BILAN_FIELD_GROUPS[stepIndex].id] : undefined}
+                collapsible={mode === 'guided' ? false : undefined}
               />
             </div>
 
@@ -180,17 +238,52 @@ export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved
             >
               Annuler
             </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {saving && <Loader2 size={15} className="animate-spin" />}
-              {saving ? 'Enregistrement…' : 'Sauvegarder'}
-            </button>
+            {mode === 'guided' && stepIndex > 0 && (
+              <button
+                type="button"
+                onClick={() => setStepIndex(i => Math.max(0, i - 1))}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-marine border border-cream-dark rounded-md text-base hover:bg-white transition-colors"
+              >
+                <ArrowLeft size={15} /> Précédent
+              </button>
+            )}
+            {mode === 'guided' && stepIndex < BILAN_FIELD_GROUPS.length - 1 ? (
+              <button
+                type="button"
+                onClick={() => setStepIndex(i => Math.min(BILAN_FIELD_GROUPS.length - 1, i + 1))}
+                className="inline-flex items-center gap-1.5 px-5 py-2 bg-marine text-cream font-semibold rounded-md text-base hover:bg-marine-light transition-colors"
+              >
+                Section suivante <ArrowRight size={15} />
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {saving && <Loader2 size={15} className="animate-spin" />}
+                {saving ? 'Enregistrement…' : mode === 'guided' ? 'Vérifier & enregistrer' : 'Sauvegarder'}
+              </button>
+            )}
           </div>
         </form>
       </div>
+
+      {pendingMissing && (
+        <MissingFieldsDialog
+          missing={pendingMissing}
+          guided={mode === 'guided'}
+          onComplete={() => {
+            setPendingMissing(null)
+            if (mode === 'guided') setStepIndex(0)
+          }}
+          onSaveAnyway={() => {
+            setPendingMissing(null)
+            void persist()
+          }}
+        />
+      )}
     </div>
   )
 }
