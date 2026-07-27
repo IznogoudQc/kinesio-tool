@@ -2,6 +2,28 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.42 — Rapports PDF et HTML alignés sur le dashboard)
+
+Le chantier différé depuis le début de la refonte CPAFLA. Les deux rapports suivent maintenant la même
+présentation que le dashboard :
+
+| | Avant | Maintenant |
+|---|---|---|
+| Échelle (HTML) | **/ 5**, « sur 5 », « noté sur 5 » | **/ 4** partout |
+| Aptitude aérobie | note 0-4 | **VO2max en ml/kg/min** |
+| Termes | « Cœur », « Dos », « Force », « Force musculaire » | Aptitude aérobie · Indice de santé du dos · Aptitude musculosquelettique globale |
+| « Âge en forme » | présent dans les deux | **retiré** (comme au dashboard, v0.9.26) |
+| Échelle annoncée (PDF) | « de 1 à 5 » | « de 0 à 4 » |
+
+Les **valeurs** des scores étaient déjà correctes : les rapports appellent `computeBilan`, donc ils ont
+hérité automatiquement des corrections de parité (v0.9.30, v0.9.41). Seuls la présentation et les libellés
+restaient en retard.
+
+Non repris volontairement : les **cartes explicatives** du dashboard (détail cote × poids). Les rapports
+sont destinés au client, pas à la justification du calcul — à ajouter si Marie le souhaite.
+
+Version : 0.9.41 → 0.9.42.
+
 ## ✅ Fait (v0.9.41 — Score global : structure de l'ancien logiciel + carte explicative)
 
 La formule du logiciel d'origine, fournie par Marie, a livré deux clés : ce sont les **cotes entières

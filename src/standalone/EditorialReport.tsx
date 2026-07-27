@@ -11,7 +11,6 @@ import {
 import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed, type BilanProfile, type CompositeScore } from '../lib/bilan-computed'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../lib/synthesisBilan'
 import { detectWins } from '../lib/dashboard-wins'
-import { fitnessAge } from '../lib/fitness-age'
 import { buildActionPlan } from '../lib/action-plan'
 import { buildObjectif, type Objectif } from '../lib/objectif'
 import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
@@ -133,7 +132,7 @@ function Reveal({ children, delay = 0 }: { children: ReactNode; delay?: number }
   )
 }
 
-/** Note d'un domaine (X.X / 5 + catégorie colorée). `big` pour l'en-tête solo. */
+/** Note d'un domaine (X.X / 4 + catégorie colorée). `big` pour l'en-tête solo. */
 function ScoreValue({ score, big = false }: { score: CompositeScore; big?: boolean }) {
   const anim = useCountUp(score.score)
   const shown = anim ?? score.score
@@ -141,7 +140,7 @@ function ScoreValue({ score, big = false }: { score: CompositeScore; big?: boole
     <div>
       <p className={`ed-display tabular-nums text-marine sm:text-right ${big ? 'text-4xl sm:text-5xl' : 'text-2xl sm:text-3xl'}`}>
         {shown === null ? '—' : shown.toFixed(1)}
-        <span className="text-base text-marine/35"> / 5</span>
+        <span className="text-base text-marine/35"> / 4</span>
       </p>
       {score.category && (
         <p className="mt-1 flex items-center gap-2 text-sm font-semibold sm:justify-end" style={{ color: CAT_HEX[score.category] }}>
@@ -378,7 +377,23 @@ const DOMAIN_ADVICE: Record<Category, string> = {
   A_AMELIORER: 'C’est le domaine à travailler en priorité — et donc celui qui progressera le plus vite.'
 }
 
-function CompositeRow({ label, subtitle, score, href }: { label: string; subtitle: string; score: CompositeScore; href?: string }) {
+function CompositeRow({
+  label,
+  subtitle,
+  score,
+  href,
+  displayValue,
+  displayUnit
+}: {
+  label: string
+  subtitle: string
+  score: CompositeScore
+  href?: string
+  /** Si fourni, affiche cette valeur + unité au lieu de la note 0-4 (aptitude
+   *  aérobie → VO2max, comme l'ancien rapport et le dashboard). */
+  displayValue?: number | null
+  displayUnit?: string
+}) {
   const anim = useCountUp(score.score)
   const shown = anim ?? score.score
 
@@ -406,8 +421,17 @@ function CompositeRow({ label, subtitle, score, href }: { label: string; subtitl
       </div>
       <div className="shrink-0 text-right">
         <p className="ed-display text-3xl tabular-nums text-marine sm:text-4xl">
-          {shown === null ? '—' : shown.toFixed(1)}
-          <span className="text-base text-marine/35"> / 5</span>
+          {displayUnit !== undefined ? (
+            <>
+              {displayValue == null ? '—' : displayValue.toLocaleString('fr-CA', { maximumFractionDigits: 1 })}
+              {displayValue != null && <span className="text-base text-marine/35"> {displayUnit}</span>}
+            </>
+          ) : (
+            <>
+              {shown === null ? '—' : shown.toFixed(1)}
+              <span className="text-base text-marine/35"> / 4</span>
+            </>
+          )}
         </p>
         {score.category && (
           <p className="mt-1 flex items-center justify-end gap-2 text-sm font-semibold" style={{ color: CAT_HEX[score.category] }}>
@@ -456,27 +480,20 @@ function headlineFor(firstName: string, computed: BilanComputed, previous?: Bila
 function Hero({
   data,
   computed,
-  previous,
-  fitAge,
-  age
+  previous
 }: {
   data: StandaloneData
   computed: BilanComputed
   previous?: BilanComputed
-  fitAge: number | null
-  age: number | null
 }) {
   const firstName = data.client.name.trim().split(/\s+/)[0]
   const score = computed.overall.score
   const anim = useCountUp(score, 1100)
   const shown = anim ?? score
 
-  const subline =
-    fitAge !== null && age !== null && fitAge < age
-      ? `Votre capacité aérobie est celle d’une personne de ${fitAge} ans — ${age - fitAge} an${age - fitAge > 1 ? 's' : ''} de moins que votre âge réel.`
-      : computed.overall.category
-        ? `Votre condition physique globale est jugée « ${CATEGORY_LABELS[computed.overall.category].toLowerCase()} » pour votre âge et votre sexe.`
-        : 'Voici le portrait de vos dernières mesures.'
+  const subline = computed.overall.category
+    ? `Votre condition physique globale est jugée « ${CATEGORY_LABELS[computed.overall.category].toLowerCase()} » pour votre âge et votre sexe.`
+    : 'Voici le portrait de vos dernières mesures.'
 
   return (
     <header className="ed-hero relative flex min-h-[100svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
@@ -500,7 +517,7 @@ function Hero({
         <div className="mt-12 flex flex-wrap items-end gap-x-8 gap-y-4">
           <div className="flex items-end gap-3">
             <span className="ed-score text-gold">{shown === null ? '—' : shown.toFixed(1)}</span>
-            <span className="pb-3 text-lg text-cream/50">sur 5</span>
+            <span className="pb-3 text-lg text-cream/50">sur 4</span>
           </div>
           {previous?.overall.score != null && score !== null && (
             <div className="pb-3">
@@ -1310,7 +1327,6 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   const activeData = activeBilan.data
   const computed = computeBilan(activeData, profile)
   const previousComputed = previousBilan ? computeBilan(previousBilan.data, profile) : undefined
-  const fitAge = fitnessAge(computed.vo2max ?? (typeof activeData.vo2max === 'number' ? activeData.vo2max : null), client.sex)
 
   const wins = detectWins({ computed, previous: previousComputed, bilans, currentData: activeData })
   // On garde les « forces » (mises en valeur pour le client), pas les priorités
@@ -1345,7 +1361,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
     /* `overflow-x-hidden` : rien ne doit faire défiler la page latéralement sur
        un téléphone — ni la frise, ni une étiquette de graphique. */
     <div className="overflow-x-hidden bg-cream text-marine">
-      <Hero data={data} computed={computed} previous={compareComputed} fitAge={fitAge} age={age} />
+      <Hero data={data} computed={computed} previous={compareComputed} />
 
       {/* Choix du bilan affiché — discret, mais c'est le cœur de l'interactivité. */}
       <div className="ed-no-print border-b border-marine/10 bg-white">
@@ -1447,14 +1463,21 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         id="vue-ensemble"
         eyebrow="Vue d’ensemble"
         title="Quatre façons de lire votre condition physique"
-        lead="Chaque domaine est noté sur 5, en comparant vos résultats à ceux des personnes de votre âge et de votre sexe. Le score global en est la moyenne."
+        lead="Chaque domaine est noté sur 4, en comparant vos résultats à ceux des personnes de votre âge et de votre sexe. Le score global est la moyenne des domaines évalués."
         tone="white"
       >
         <div>
           <CompositeRow label="Composition corporelle" subtitle="IMC, % de gras, tour de taille" score={computed.composition} href="#composition" />
-          <CompositeRow label="Cœur et endurance" subtitle="VO2max" score={computed.aerobic} href="#cardio" />
-          {SHOW_BACK_HEALTH && <CompositeRow label="Santé du dos" subtitle="Flexibilité, endurance, abdominaux" score={computed.backHealth} href="#force-mobilite" />}
-          <CompositeRow label="Force musculaire" subtitle="Six tests" score={computed.musculoGlobal} href="#force-mobilite" />
+          <CompositeRow
+            label="Aptitude aérobie"
+            subtitle="VO2max"
+            score={computed.aerobic}
+            href="#cardio"
+            displayValue={computed.vo2max}
+            displayUnit="ml/kg/min"
+          />
+          {SHOW_BACK_HEALTH && <CompositeRow label="Indice de santé du dos" subtitle="Flexibilité, endurance, abdominaux" score={computed.backHealth} href="#force-mobilite" />}
+          <CompositeRow label="Aptitude musculosquelettique globale" subtitle="Six tests" score={computed.musculoGlobal} href="#force-mobilite" />
         </div>
         {computed.overall.category && (
           <p className="ed-prose mt-8 text-base text-marine/65">{DOMAIN_ADVICE[computed.overall.category]}</p>
@@ -1478,24 +1501,12 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         id="cardio"
         backTop
         scores={[{ score: computed.aerobic }]}
-        eyebrow="Cœur et endurance"
+        eyebrow="Aptitude aérobie"
         title="La mesure qui prédit le mieux votre santé"
         lead="Le VO2max est le volume d’oxygène que votre corps sait utiliser à l’effort maximal. C’est le meilleur indicateur unique de longévité en bonne santé — et il répond vite à l’entraînement."
         tone="white"
       >
         <Measure label="VO2max" value={activeData.vo2max} unit="ml/kg/min" test="vo2max" {...measureProps} previousValue={compareData?.vo2max} history={historyOf('vo2max')} />
-
-        {fitAge !== null && (
-          <div className="mt-10 border-l-2 border-gold pl-6">
-            <p className="ed-eyebrow text-marine/40">Votre âge en forme</p>
-            <p className="ed-display mt-2 text-5xl tabular-nums text-marine">{fitAge} ans</p>
-            <p className="ed-prose mt-3 text-base text-marine/65">
-              {age !== null && fitAge < age
-                ? `Sur le plan cardiorespiratoire, votre corps se comporte comme celui d’une personne de ${fitAge} ans. C’est ${age - fitAge} an${age - fitAge > 1 ? 's' : ''} de moins que votre âge réel.`
-                : `Estimation obtenue en comparant votre VO2max à la valeur médiane de chaque âge.`}
-            </p>
-          </div>
-        )}
 
         {fcRepos !== null && (
           <div className="mt-10 border-l-2 border-gold pl-6">
@@ -1546,8 +1557,8 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         id="force-mobilite"
         backTop
         scores={[
-          ...(SHOW_BACK_HEALTH ? [{ label: 'Santé du dos', score: computed.backHealth }] : []),
-          { label: 'Force musculaire', score: computed.musculoGlobal }
+          ...(SHOW_BACK_HEALTH ? [{ label: 'Indice de santé du dos', score: computed.backHealth }] : []),
+          { label: 'Aptitude musculosquelettique globale', score: computed.musculoGlobal }
         ]}
         eyebrow="Force et mobilité"
         title="Six tests, six angles"

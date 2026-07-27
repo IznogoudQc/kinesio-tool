@@ -36,7 +36,6 @@ import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed } from '../lib/bilan
 import { bodyFatRisk, BF_RISK_HEX, bodyFatTargetWeights, bodyFatGridRating } from '../lib/body-fat-risk'
 import { principesFor, principesCountWord } from '../lib/principes'
 import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLossFromDeficit, DEFAULT_RATE_KG_PER_WEEK } from '../lib/nutrition'
-import { fitnessAge } from '../lib/fitness-age'
 import { kgToLb } from '../lib/units'
 import { dualWeight, estimatedGoalDate } from '../lib/objectif-format'
 import { formatMmSs } from '../lib/vo2max-calculator'
@@ -311,10 +310,10 @@ export function ReportPage() {
         overall={latestComputed.overall.score}
         overallCategory={latestComputed.overall.category}
         domains={[
-          { label: 'Composition', score: latestComputed.composition },
-          { label: 'Cœur', score: latestComputed.aerobic },
-          ...(SHOW_BACK_HEALTH ? [{ label: 'Dos', score: latestComputed.backHealth }] : []),
-          { label: 'Force', score: latestComputed.musculoGlobal }
+          { label: 'Composition corporelle', score: latestComputed.composition },
+          { label: 'Aptitude aérobie', score: latestComputed.aerobic, displayValue: latestComputed.vo2max, displayUnit: 'ml/kg/min' },
+          ...(SHOW_BACK_HEALTH ? [{ label: 'Indice de santé du dos', score: latestComputed.backHealth }] : []),
+          { label: 'Aptitude musculosquelettique', score: latestComputed.musculoGlobal }
         ]}
       />
       <OverviewSection client={client} synth={latestComputed} {...shared} />
@@ -460,7 +459,9 @@ function CoverPage({
   avatarUrl: string | null
   overall: number | null
   overallCategory?: Category | null
-  domains?: { label: string; score: CompositeScore }[]
+  /** `displayValue`/`displayUnit` : affiche une valeur brute au lieu de la note 0-4
+   *  (aptitude aérobie → VO2max, comme l'ancien rapport). */
+  domains?: { label: string; score: CompositeScore; displayValue?: number | null; displayUnit?: string }[]
 }) {
   const age = computeAge(client.birthdate)
   const subtitle = [age !== null ? `${age} ans` : null, client.sex ? SEX_LABEL[client.sex] : null]
@@ -508,7 +509,16 @@ function CoverPage({
                   <div key={d.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', borderBottom: `0.3mm solid ${GOLD_SOFT}66`, paddingBottom: '2mm' }}>
                     <span style={{ fontSize: '10.5pt', color: MARINE }}>{d.label}</span>
                     <span className="report-display" style={{ fontSize: '15pt', fontWeight: 700, color: d.score.category ? CAT_BG[d.score.category] : MARINE }}>
-                      {d.score.score === null ? '—' : d.score.score.toFixed(1)}
+                      {d.displayUnit !== undefined ? (
+                        <>
+                          {d.displayValue == null ? '—' : d.displayValue.toLocaleString('fr-CA', { maximumFractionDigits: 1 })}
+                          {d.displayValue != null && (
+                            <span style={{ fontSize: '8pt', fontWeight: 500, color: INK_SOFT }}>&nbsp;{d.displayUnit}</span>
+                          )}
+                        </>
+                      ) : (
+                        d.score.score === null ? '—' : d.score.score.toFixed(1)
+                      )}
                     </span>
                   </div>
                 ))}
@@ -527,7 +537,7 @@ function CoverPage({
   )
 }
 
-/** Anneau de score 0-5 en SVG (arc doré proportionnel). */
+/** Anneau de score 0-4 en SVG (arc doré proportionnel). */
 function ScoreRing({ score }: { score: number | null }) {
   const size = 200
   const r = 84
@@ -819,26 +829,12 @@ function OverviewSection({
   const oldest = chrono[0]
   // `latest` = synthèse (valeurs courantes) ; `oldest` = 1er vrai bilan (avant/après).
 
-  const fitAge = fitnessAge(num(latest.data.vo2max), profile.sex)
-  let fitAgeText = fitAge !== null
-    ? `Votre capacité cardiovasculaire (VO2max) équivaut à celle d'une personne de ${fitAge} ans.`
-    : ''
-  if (fitAge !== null && profile.age !== null) {
-    const d = profile.age - fitAge
-    if (d > 0) {
-      fitAgeText = `Votre capacité cardiovasculaire (VO2max) équivaut à celle d'une personne de ${fitAge} ans — soit ${d} an${d > 1 ? 's' : ''} de moins que votre âge réel (${profile.age} ans). Un excellent signe pour votre santé et votre longévité !`
-    } else if (d < 0) {
-      fitAgeText = `Votre capacité cardiovasculaire (VO2max) équivaut à celle d'une personne de ${fitAge} ans — soit ${-d} an${-d > 1 ? 's' : ''} de plus que votre âge réel (${profile.age} ans). Améliorer votre endurance est un levier puissant pour rajeunir ce chiffre.`
-    } else {
-      fitAgeText = `Votre capacité cardiovasculaire (VO2max) correspond exactement à votre âge réel (${profile.age} ans).`
-    }
-  }
 
   // `keys` = les sous-tests qui composent chaque score (alignés sur `computeSynthesis`).
   const cards: { title: string; score: CompositeScore; keys: (keyof BilanData)[] }[] = [
     { title: 'Composition corporelle', score: synth.composition, keys: ['imc', 'pourcentage_gras', 'tour_taille_cm'] },
-    { title: 'Cœur et endurance', score: synth.aerobic, keys: ['vo2max'] },
-    { title: 'Force musculaire', score: synth.musculoGlobal, keys: ['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'] },
+    { title: 'Aptitude aérobie', score: synth.aerobic, keys: ['vo2max'] },
+    { title: 'Aptitude musculosquelettique globale', score: synth.musculoGlobal, keys: ['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'] },
     ...(SHOW_BACK_HEALTH
       ? [{ title: 'Dos et souplesse', score: synth.backHealth, keys: ['flexion_tronc_cm', 'endurance_dos_sec', 'situps'] as (keyof BilanData)[] }]
       : [])
@@ -863,28 +859,9 @@ function OverviewSection({
     <ReportFlowSection
       title="Votre bilan en un coup d'œil"
       sectionNumber="Section 1"
-      intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 1 à 5 — plus il est élevé, meilleure est votre santé physique globale."
+      intro="Ce bilan évalue votre condition physique sur quatre grands axes. Votre score global les résume sur une échelle de 0 à 4 — plus il est élevé, meilleure est votre santé physique globale."
     >
       <div className="report-stack">
-      {/* Âge en forme — VO2max traduit en âge physiologique. */}
-      {fitAge !== null && (
-        <div
-          className="break-inside-avoid"
-          style={{ display: 'flex', alignItems: 'center', gap: '7mm', background: CREAM, borderRadius: '4mm', padding: '6mm 8mm' }}
-        >
-          <div style={{ textAlign: 'center', flexShrink: 0 }}>
-            <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.1em', color: GOLD, fontWeight: 700, marginBottom: '1mm' }}>
-              Âge en forme
-            </p>
-            <p className="report-display" style={{ fontSize: '34pt', fontWeight: 700, color: MARINE, lineHeight: 1 }}>
-              {fitAge}
-              <span style={{ fontSize: '13pt', color: INK_SOFT, fontWeight: 500 }}>&nbsp;ans</span>
-            </p>
-          </div>
-          <p style={{ fontSize: '11pt', color: '#3a3f52', lineHeight: 1.55 }}>{fitAgeText}</p>
-        </div>
-      )}
-
       {/* Score + 4 composites */}
       <div className="break-inside-avoid" style={{ display: 'flex', gap: '9mm', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flexShrink: 0, textAlign: 'center' }}>
@@ -1017,7 +994,7 @@ function CompositeBreakdown({ keys, latest, profile }: { keys: (keyof BilanData)
   )
 }
 
-/** Barre 5 segments pour un score composite 0-5. */
+/** Barre 5 segments (À améliorer → Excellent) pour un score composite 0-4. */
 function ScoreBar({ score }: { score: number | null }) {
   const segs: Category[] = ['A_AMELIORER', 'ACCEPTABLE', 'BIEN', 'TRES_BIEN', 'EXCELLENT']
   const pos = score === null ? null : Math.max(0, Math.min(100, (score / 4) * 100))
