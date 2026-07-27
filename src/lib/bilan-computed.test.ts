@@ -123,17 +123,17 @@ test('Nicholas — score composition ACCEPTABLE (IMC obèse + %gras élevé + to
   assert.ok(r.composition.score !== null && r.composition.score > 0.5 && r.composition.score < 1.5)
 })
 
-test('Nicholas — norme CPAFLA : repli ACSM pour VO2max / composition (scores non nuls)', () => {
+test('Nicholas — norme CPAFLA : VO2max replie sur ACSM ; composition suit la méthode CPAFLA', () => {
   const cpafla: BilanProfile = { age: 48, sex: 'M', norms: 'cpafla' }
   const r = computeBilan(RAW, cpafla)
   const acsm = computeBilan(RAW, NICHOLAS)
   // VO2max n'a pas de table CPAFLA → repli sur ACSM → aérobie coté (identique à ACSM).
   assert.equal(r.aerobic.score, acsm.aerobic.score)
   assert.notEqual(r.aerobic.score, null)
-  // Composition : IMC + tour de taille replient sur ACSM, % gras suit la grille de
-  // Marie (indépendante de la norme) → score identique à ACSM.
-  assert.equal(r.composition.score, acsm.composition.score)
-  assert.notEqual(r.composition.score, null)
+  // Composition CPAFLA : IMC 32,2 (plage 30-32,4) + CT 95 (94-101) → colonne B = 2
+  // (pas de mollet → repli IMC + CT). Distinct de la moyenne ACSM.
+  assert.equal(r.composition.score, 2)
+  assert.equal(r.composition.category, 'BIEN')
 })
 
 test('CPAFLA — note combinée musculo + dos via pondérations + nomogramme (H 25 ans)', () => {
@@ -155,6 +155,34 @@ test('CPAFLA — note combinée musculo + dos via pondérations + nomogramme (H 
   // Dos (taille absente → exclue) : obtenue flexion1 + situps4 + dos(4×2)=8 → 13,
   // max 4+4+8 = 16 → 13/16×4 = 3.25 → 3.
   assert.equal(r.backHealth.score, 3)
+})
+
+test('CPAFLA — composition corporelle : exemple du guide (femme) → Acceptable (1)', () => {
+  const p: BilanProfile = { age: 50, sex: 'F', norms: 'cpafla' }
+  // Femme, taille 168 / poids 72,7 → IMC 25,8 ; CT 91 ; 5 plis = 116,6 mm.
+  const r = computeBilan(
+    {
+      taille_cm: 168,
+      poids_kg: 72.7,
+      tour_taille_cm: 91,
+      pli_triceps: 22,
+      pli_biceps: 10.2,
+      pli_sous_scap: 26,
+      pli_iliaque: 32,
+      pli_mollet: 26.4
+    },
+    p
+  )
+  // (B=1 × 1,5 + C=2) / 2,5 = 1,4 → arrondi 1 → Acceptable.
+  assert.equal(r.composition.score, 1)
+  assert.equal(r.composition.category, 'ACCEPTABLE')
+})
+
+test('CPAFLA — composition : sans mollet → repli auto IMC + tour de taille (colonne B)', () => {
+  const p: BilanProfile = { age: 50, sex: 'F', norms: 'cpafla' }
+  const r = computeBilan({ taille_cm: 168, poids_kg: 72.7, tour_taille_cm: 91 }, p)
+  // Pas de S5PC → IMC (25-29,9) + CT 91 (>87) → colonne B = 1.
+  assert.equal(r.composition.score, 1)
 })
 
 test('Nicholas — score global calculé', () => {

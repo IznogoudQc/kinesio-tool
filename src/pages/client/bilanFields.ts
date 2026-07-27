@@ -71,6 +71,12 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
       { key: 'pli_sous_scap', label: 'Sous-scapulaire', unit: 'mm' },
       { key: 'pli_iliaque', label: 'Crête iliaque', unit: 'mm' },
       {
+        key: 'pli_mollet',
+        label: 'Mollet',
+        unit: 'mm',
+        hint: '5ᵉ pli — utilisé par la somme des 5 plis (composition CPAFLA). Facultatif.'
+      },
+      {
         key: 'pourcentage_gras',
         label: 'Pourcentage de gras',
         unit: '%',

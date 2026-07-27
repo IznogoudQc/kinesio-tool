@@ -2,6 +2,18 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.9 — Score de composition corporelle selon la méthode CPAFLA)
+
+Sous la norme **CPAFLA**, le score de composition corporelle suit la méthode du guide CPHV (Fig. 7-4/7-5 +
+formule p. 7-18) au lieu de la moyenne 0-4 : **IMC + tour de taille + somme des 5 plis**, avec les points de CT
+et de plis qui dépendent de la plage d'IMC, puis `arrondi[(B×1,5 + C)/2,5]`. Le **% de gras n'entre plus** dans
+ce score sous CPAFLA (il garde sa grille de Marie pour l'affichage). Nouveau module `cpafla-composition.ts`,
+validé sur l'exemple du guide. Champ **« Mollet »** ajouté au formulaire (5ᵉ pli) : **mode auto** — les 5 plis
+donnent la formule complète, sinon repli automatique sur IMC + tour de taille. Sous **ACSM** (défaut), le calcul
+historique est inchangé. Détail : ADR 0027.
+
+Version : 0.9.8 → 0.9.9.
+
 ## ✅ Fait (v0.9.8 — Taille et poids affichés en métrique ET impérial (comme l'ancien bilan))
 
 Dans la ligne d'info de « Composition corporelle », **Taille** et **Poids** montrent les deux unités façon
