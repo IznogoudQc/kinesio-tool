@@ -132,9 +132,12 @@ export function BilanMeasuresOverview({
     )
   }
 
+  // Détail : les **circonférences** de Marie sont toujours affichées toutes (« — »
+  // si non prise ce bilan-là) — c'est son set fixe. Les autres groupes n'affichent
+  // que les mesures présentes.
   const detailByGroup = (['circ', 'weights', 'composition'] as Group[]).map(g => ({
     group: g,
-    metrics: METRICS.filter(m => m.group === g && m.read(latest.data) !== null)
+    metrics: METRICS.filter(m => m.group === g && (g === 'circ' || m.read(latest.data) !== null))
   })).filter(x => x.metrics.length > 0)
 
   const groupsForPills: Group[] = ['circ', 'weights', 'composition']
@@ -174,7 +177,9 @@ export function BilanMeasuresOverview({
                       <span className="ml-auto text-marine font-semibold tabular-nums">
                         {nf(cur, m.digits)}{m.unit && <span className="text-marine/40 font-normal"> {m.unit}</span>}
                       </span>
-                      {delta !== null && Math.abs(delta) >= (m.digits === 2 ? 0.01 : 0.05) ? (
+                      {cur === null ? (
+                        <span className="w-16 text-right text-marine/25 text-xs">non prise</span>
+                      ) : delta !== null && Math.abs(delta) >= (m.digits === 2 ? 0.01 : 0.05) ? (
                         <span className={`text-xs font-medium tabular-nums w-16 text-right ${improved ? 'text-green-600' : 'text-red-500'}`}>
                           {delta > 0 ? '▲ +' : '▼ '}{nf(delta, m.digits)}
                         </span>
