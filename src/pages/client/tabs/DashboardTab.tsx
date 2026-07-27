@@ -11,7 +11,7 @@ import { SendBilanModal } from '../SendBilanModal'
 import { formatBilanDate } from '../bilanFields'
 import { computeAge, type NormsType } from '../../../lib/norms'
 import { computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
-import { fitnessAge } from '../../../lib/fitness-age'
+import { BloodPressureBar } from '../../../components/BloodPressureBar'
 import { dualWeight } from '../../../lib/objectif-format'
 import { buildObjectif } from '../../../lib/objectif'
 import { gatherBilanMetrics } from '../../../lib/ai-metrics'
@@ -307,11 +307,9 @@ export function DashboardTab() {
   const compareShortLabel =
     compareBilan === null ? null : compareId === 'prev' ? 'Bilan précédent' : formatBilanDate(compareBilan.date)
 
-  // Miroir du rapport : âge en forme (VO2max → âge) + objectif chiffré (si module activé).
-  const fitAge = fitnessAge(
-    computed.vo2max ?? (typeof activeData.vo2max === 'number' ? activeData.vo2max : null),
-    client.sex
-  )
+  // Pression artérielle du bilan actif (barres façon ancien rapport).
+  const paSys = typeof activeData.pa_systolique === 'number' && !Number.isNaN(activeData.pa_systolique) ? activeData.pa_systolique : null
+  const paDia = typeof activeData.pa_diastolique === 'number' && !Number.isNaN(activeData.pa_diastolique) ? activeData.pa_diastolique : null
   const objectif = buildObjectif(client, activeData, computed, age, (activeBilan ?? latest)!.date)
   const aiMetrics = gatherBilanMetrics(activeData, age, client.sex, norms)
   const healthFlags = detectHealthFlags(activeData, client.sex)
@@ -747,7 +745,15 @@ export function DashboardTab() {
         <SectionHead eyebrow="Aptitude aérobie" title="Votre cœur et votre souffle" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Vo2Card}
-          {fitAge !== null && <FitnessAgeCard fitAge={fitAge} age={age} />}
+          {(paSys !== null || paDia !== null) && (
+            <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
+              <p className="text-marine/50 text-xs uppercase tracking-wide font-medium mb-3">Pression artérielle</p>
+              <div className="space-y-4">
+                {paSys !== null && <BloodPressureBar value={paSys} kind="systolic" />}
+                {paDia !== null && <BloodPressureBar value={paDia} kind="diastolic" />}
+              </div>
+            </div>
+          )}
         </div>
         <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} />
       </section>
@@ -830,26 +836,6 @@ function Toast({ message }: { message: string }) {
  *  bilan actif. `null` si le module est désactivé ou le calcul impossible. */
 
 type ObjectifSummary = NonNullable<ReturnType<typeof buildObjectif>>
-
-function FitnessAgeCard({ fitAge, age }: { fitAge: number; age: number | null }) {
-  let sub = 'Votre VO2max traduit en âge physiologique.'
-  if (age !== null) {
-    const d = age - fitAge
-    if (d > 0) sub = `Soit ${d} an${d > 1 ? 's' : ''} de moins que votre âge réel (${age} ans) 🎉`
-    else if (d < 0) sub = `Soit ${-d} an${-d > 1 ? 's' : ''} de plus que votre âge réel (${age} ans).`
-    else sub = `Pile votre âge réel (${age} ans).`
-  }
-  return (
-    <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
-      <p className="text-marine/50 text-xs uppercase tracking-wide font-medium mb-1">Âge en forme</p>
-      <p className="text-marine font-bold text-4xl leading-none">
-        {fitAge}
-        <span className="text-lg font-semibold text-marine/45 ml-1.5">ans</span>
-      </p>
-      <p className="text-marine/55 text-sm mt-2">{sub}</p>
-    </div>
-  )
-}
 
 function ObjectifCard({ objectif, unit }: { objectif: ObjectifSummary; unit: 'kg' | 'lb' }) {
   const { goal, target, targetWeightKg, macros, weeks, goalDate, atGoal } = objectif

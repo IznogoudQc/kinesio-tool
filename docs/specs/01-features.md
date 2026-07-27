@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.26 — Section aérobie : « Âge en forme » remplacé par la pression artérielle)
+
+Dans le dashboard, section **Aptitude aérobie / « Votre cœur et votre souffle »**, la carte **Âge en forme**
+(VO2max traduit en âge) est retirée. À sa place, une carte **Pression artérielle** affiche les barres
+**systolique** et **diastolique** (composant `BloodPressureBar`, zones OMS : Optimale / Normale / Pré-hypertension /
+Hypertension 1-2), lues sur le bilan actif (`pa_systolique` / `pa_diastolique`). La carte n'apparaît que si au
+moins une des deux valeurs est saisie. Composant `FitnessAgeCard` et le calcul `fitnessAge` associés supprimés
+de la page.
+
+Version : 0.9.25 → 0.9.26.
+
 ## ✅ Fait (v0.9.25 — Aptitude aérobie notée en VO2max (pas 0-4) dans le dashboard)
 
 Comme l'ancien logiciel : la carte **Aptitude aérobie** du dashboard affiche le **VO2max** (ex. « 57,6 ml/kg/min »)
