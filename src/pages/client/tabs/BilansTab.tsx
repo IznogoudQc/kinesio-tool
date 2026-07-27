@@ -199,6 +199,7 @@ export function BilansTab() {
       {pending && (
         <ImportBilanModal
           clientId={client.id}
+          client={client}
           fileName={pending.fileName}
           result={pending.result}
           onCancel={() => setPending(null)}

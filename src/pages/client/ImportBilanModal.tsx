@@ -10,9 +10,12 @@ interface ImportBilanModalProps {
   result: ImportBilanResult
   onCancel: () => void
   onSaved: (summary: ImportBilansSummary) => void
+  /** Sexe/âge/unités du client — nécessaires au calcul VO2max (Bruce) et aux
+   *  percentiles dans l'aperçu du formulaire. Sinon « Sexe du client requis ». */
+  client: Pick<Client, 'birthdate' | 'sex' | 'unitLength' | 'unitWeight'>
 }
 
-export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved }: ImportBilanModalProps) {
+export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved, client }: ImportBilanModalProps) {
   const [date, setDate] = useState(result.extracted.date)
   const [data, setData] = useState<BilanData>(result.extracted.data)
   const [includeHistorical, setIncludeHistorical] = useState<boolean[]>(
@@ -117,6 +120,7 @@ export function ImportBilanModal({ clientId, fileName, result, onCancel, onSaved
                 data={data}
                 onDateChange={setDate}
                 onDataChange={setData}
+                client={client}
               />
             </div>
 

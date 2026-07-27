@@ -2,6 +2,15 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.24 — Import : « Sexe du client requis » corrigé (calcul Bruce))
+
+À l'import d'un .doc, l'aperçu du bilan affichait « Sexe du client requis pour le calcul Bruce » alors que le
+sexe est connu : `ImportBilanModal` rendait `BilanForm` **sans le prop `client`** (d'où sex = null). Le client
+(sexe/âge/unités) est maintenant transmis `BilansTab` → `ImportBilanModal` → `BilanForm` → le VO2max Bruce se
+calcule dans l'aperçu et les percentiles s'affichent.
+
+Version : 0.9.23 → 0.9.24.
+
 ## ✅ Fait (v0.9.23 — Poids cible affiché dans la carte objectif et le rapport)
 
 Le **poids cible** (v0.9.22) apparaît maintenant dans la **carte Objectif** du dashboard, dans le **rapport PDF**
