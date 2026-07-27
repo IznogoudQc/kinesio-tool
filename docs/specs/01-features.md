@@ -2,6 +2,19 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.27 — VO2max : bouton « Barème » + cartes de même taille)
+
+La carte **VO2max** du dashboard reçoit un bouton **Barème** (comme Composition corporelle) : il déplie
+la table des cinq cotes (À améliorer → Excellent) avec, pour chaque cote, la **plage de VO2max**
+correspondante pour l'âge et le sexe du client (percentiles ACSM P10/P25/P50/P75), la cote actuelle du
+client **surlignée**. `StatCardXL` accepte une prop `bareme` ; sous-composant `NormBareme`. La bascule est
+mémorisée (localStorage).
+
+De plus, les cartes **VO2max** et **Pression artérielle** de la section aérobie prennent la **même hauteur**
+(`h-full` + étirement de la grille), quel que soit leur contenu.
+
+Version : 0.9.26 → 0.9.27.
+
 ## ✅ Fait (v0.9.26 — Section aérobie : « Âge en forme » remplacé par la pression artérielle)
 
 Dans le dashboard, section **Aptitude aérobie / « Votre cœur et votre souffle »**, la carte **Âge en forme**

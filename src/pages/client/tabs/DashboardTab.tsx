@@ -523,6 +523,7 @@ export function DashboardTab() {
       previousValue={compareData?.vo2max}
       history={historyOf('vo2max')}
       compareLabel={compareLabel}
+      bareme
     />
   )
   const hasMultiple = count >= 2
@@ -746,7 +747,7 @@ export function DashboardTab() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Vo2Card}
           {(paSys !== null || paDia !== null) && (
-            <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
+            <div className="h-full bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
               <p className="text-marine/50 text-xs uppercase tracking-wide font-medium mb-3">Pression artérielle</p>
               <div className="space-y-4">
                 {paSys !== null && <BloodPressureBar value={paSys} kind="systolic" />}
