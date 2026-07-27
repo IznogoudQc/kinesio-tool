@@ -2,6 +2,14 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.7 — Composition corporelle : ajout taille + poids à la ligne d'info)
+
+La ligne d'info discrète de « Composition corporelle / Votre silhouette » liste maintenant **Taille · Poids ·
+IMC · Tour de taille** (poids en double unité via `dualWeight`, ex. « 92 kg (203 lb) »). Texte un peu plus gros
+(`text-base`, valeurs en marine plein) tout en restant une simple info sans cote ni barre. `DashboardTab`.
+
+Version : 0.9.6 → 0.9.7.
+
 ## ✅ Fait (v0.9.6 — Composition corporelle : IMC et tour de taille en info discrète)
 
 Dans la section **Composition corporelle / Votre silhouette** du dashboard, l'IMC et le tour de taille ne sont

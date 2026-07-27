@@ -660,20 +660,35 @@ export function DashboardTab() {
       {/* ── Composition corporelle ─────────────────────────────────────────── */}
       <section id="dash-composition" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '140ms' }}>
         <SectionHead eyebrow="Composition corporelle" title="Votre silhouette" />
-        {/* IMC + tour de taille : simple info, volontairement discrète (Marie ne
-            veut pas leur donner beaucoup d'importance — le % de gras est la mesure clé). */}
-        {(typeof activeData.imc === 'number' || typeof activeData.tour_taille_cm === 'number') && (
-          <div className="flex flex-wrap gap-x-8 gap-y-1.5 text-sm text-marine/55">
+        {/* Taille, poids, IMC, tour de taille : info simple (pas de cote ni de barre) —
+            Marie ne veut pas leur donner beaucoup d'importance, le % de gras reste la mesure clé. */}
+        {(typeof activeData.taille_cm === 'number' ||
+          typeof activeData.poids_kg === 'number' ||
+          typeof activeData.imc === 'number' ||
+          typeof activeData.tour_taille_cm === 'number') && (
+          <div className="flex flex-wrap gap-x-10 gap-y-2.5 text-base text-marine/70">
+            {typeof activeData.taille_cm === 'number' && (
+              <span>
+                <span className="text-marine/45">Taille</span>{' '}
+                <span className="font-semibold text-marine tabular-nums">{formatNumber(activeData.taille_cm)} cm</span>
+              </span>
+            )}
+            {typeof activeData.poids_kg === 'number' && (
+              <span>
+                <span className="text-marine/45">Poids</span>{' '}
+                <span className="font-semibold text-marine tabular-nums">{dualWeight(activeData.poids_kg, client.unitWeight ?? 'kg')}</span>
+              </span>
+            )}
             {typeof activeData.imc === 'number' && (
               <span>
-                <span className="text-marine/40">IMC</span>{' '}
-                <span className="font-semibold text-marine/75 tabular-nums">{formatNumber(activeData.imc)} kg/m²</span>
+                <span className="text-marine/45">IMC</span>{' '}
+                <span className="font-semibold text-marine tabular-nums">{formatNumber(activeData.imc)} kg/m²</span>
               </span>
             )}
             {typeof activeData.tour_taille_cm === 'number' && (
               <span>
-                <span className="text-marine/40">Tour de taille</span>{' '}
-                <span className="font-semibold text-marine/75 tabular-nums">{formatNumber(activeData.tour_taille_cm)} cm</span>
+                <span className="text-marine/45">Tour de taille</span>{' '}
+                <span className="font-semibold text-marine tabular-nums">{formatNumber(activeData.tour_taille_cm)} cm</span>
               </span>
             )}
           </div>
