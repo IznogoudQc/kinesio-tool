@@ -2,6 +2,14 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.20 — Poids : baisse affichée en vert)
+
+Dans « Mesures corporelles », une **baisse de poids** s'affiche désormais en **vert** (amélioration) — comme le
+tour de taille, l'IMC et le % de gras — au lieu de rouge. `lowerIsBetter` du poids passé à `true`
+(`BilanMeasuresOverview`). Affecte le détail et le sous-titre « Référence (bilan précédent) ».
+
+Version : 0.9.19 → 0.9.20.
+
 ## ✅ Fait (v0.9.19 — Nettoyage auto des circonférences aberrantes (bug d'import))
 
 Nettoyage unique au démarrage (`cleanupCircPliDuplicatesOnce`) qui efface les circonférences issues du bug
