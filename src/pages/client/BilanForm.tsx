@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Check, ChevronDown, ChevronRight } from 'lucide-react'
+import { Check, ChevronDown, ChevronRight, Lock } from 'lucide-react'
 import { BILAN_FIELD_GROUPS, type BilanFieldDef, type BilanFieldGroup } from './bilanFields'
 import { CategoryBadge } from '../../components/CategoryBadge'
 import { BilanSynthesisCards } from '../../components/BilanSynthesisCards'
@@ -100,9 +100,12 @@ export function BilanForm({
   const inputClass = isLight
     ? 'w-full px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors'
     : 'w-full px-2.5 py-1.5 border border-marine-light/50 rounded-md bg-marine/40 text-cream text-base focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors'
+  // Champ CALCULÉ : nettement distinct d'un champ à remplir — fond teinté, bordure
+  // pointillée, texte atténué. (L'ancien `bg-cream/40` sur un conteneur crème était
+  // quasi invisible : rien ne distinguait un champ calculé d'un champ saisissable.)
   const computedClass = isLight
-    ? 'w-full px-2.5 py-1.5 border border-cream-dark/60 rounded-md bg-cream/40 text-marine/80 text-base'
-    : 'w-full px-2.5 py-1.5 border border-marine-light/30 rounded-md bg-marine/20 text-cream/70 text-base'
+    ? 'w-full px-2.5 py-1.5 border border-dashed border-marine/25 rounded-md bg-marine/[0.06] text-marine/55 text-base cursor-not-allowed'
+    : 'w-full px-2.5 py-1.5 border border-dashed border-cream/20 rounded-md bg-marine/50 text-cream/50 text-base cursor-not-allowed'
 
   const age = useMemo(() => computeAge(client?.birthdate ?? null), [client?.birthdate])
   const sex = client?.sex ?? null
@@ -173,9 +176,14 @@ export function BilanForm({
 
     return (
       <div key={def.key} className={`min-w-0 ${fullWidth}`}>
-        <label className={`block text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
-          {def.label}
-          {def.unit && <span className="lowercase tracking-normal"> ({displayUnit})</span>}
+        <label className={`flex items-center gap-1 text-xs uppercase tracking-wide mb-1 ${labelClass}`}>
+          <span>
+            {def.label}
+            {def.unit && <span className="lowercase tracking-normal"> ({displayUnit})</span>}
+          </span>
+          {isComputed && !readOnly && (
+            <Lock size={10} className="shrink-0 opacity-45" aria-label="Champ calculé automatiquement" />
+          )}
         </label>
         {readOnly ? (
           <>
@@ -410,6 +418,18 @@ export function BilanForm({
               <p className={`text-xs ${isLight ? 'text-marine/45' : 'text-cream/45'} basis-full`}>
                 Les plis restent en mm. Tout est converti en métrique pour les calculs.
               </p>
+              {/* Légende : distinguer d'un coup d'œil ce qui se remplit de ce qui se calcule. */}
+              <div className={`flex items-center gap-4 basis-full text-xs ${isLight ? 'text-marine/55' : 'text-cream/55'}`}>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={`inline-block w-4 h-3 rounded-sm border ${isLight ? 'border-cream-dark bg-white' : 'border-marine-light/50 bg-marine/40'}`} />
+                  À remplir
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className={`inline-block w-4 h-3 rounded-sm border border-dashed ${isLight ? 'border-marine/25 bg-marine/[0.06]' : 'border-cream/20 bg-marine/50'}`} />
+                  <Lock size={10} className="opacity-45" />
+                  Calculé par l’application
+                </span>
+              </div>
             </>
           )
         })()}

@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.37 — Distinguer d'un coup d'œil les champs à remplir des champs calculés)
+
+Les champs calculés utilisaient `bg-cream/40` **sur un conteneur déjà crème** : rien ne les distinguait
+visuellement d'un champ à remplir. Ils ont maintenant un fond teinté, une **bordure pointillée**, un texte
+atténué, un curseur « interdit » et une petite **icône cadenas** dans le libellé.
+
+Une **légende** apparaît en tête du formulaire (à côté du choix des unités) : « À remplir » vs
+« Calculé par l'application ».
+
+Version : 0.9.36 → 0.9.37.
+
 ## ✅ Fait (v0.9.36 — Vue d'un bilan : même thème clair que la saisie)
 
 La vue « Voir / Modifier un bilan » était le seul écran de bilan en **marine foncé** (fond `bg-marine-light`,

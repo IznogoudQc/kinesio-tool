@@ -78,9 +78,12 @@ export function AerobicSection({ data, onDataChange, readOnly, variant, age, sex
   const inputClass = isLight
     ? 'w-full px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors'
     : 'w-full px-2.5 py-1.5 border border-marine-light/50 rounded-md bg-marine/40 text-cream text-base focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors'
+  // Champ CALCULÉ : nettement distinct d'un champ à remplir — fond teinté, bordure
+  // pointillée, texte atténué. (L'ancien `bg-cream/40` sur un conteneur crème était
+  // quasi invisible : rien ne distinguait un champ calculé d'un champ saisissable.)
   const computedClass = isLight
-    ? 'w-full px-2.5 py-1.5 border border-cream-dark/60 rounded-md bg-cream/40 text-marine/80 text-base'
-    : 'w-full px-2.5 py-1.5 border border-marine-light/30 rounded-md bg-marine/20 text-cream/70 text-base'
+    ? 'w-full px-2.5 py-1.5 border border-dashed border-marine/25 rounded-md bg-marine/[0.06] text-marine/55 text-base cursor-not-allowed'
+    : 'w-full px-2.5 py-1.5 border border-dashed border-cream/20 rounded-md bg-marine/50 text-cream/50 text-base cursor-not-allowed'
 
   // Marie n'utilise que le Bruce → en saisie, on force Bruce (plus de sélecteur).
   // En lecture seule, on respecte le test réellement utilisé (anciens bilans).
