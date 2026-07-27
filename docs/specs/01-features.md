@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.17 — Mesures corporelles : progression style « menu + ligne de référence »)
+
+Dans le Bilan complet, la section « Mesures corporelles » remplace le système à pills + périodes de l'évolution
+par le **même style que « Progression dans le temps »** du bilan : un **menu déroulant « Mesure »** (groupé
+Circonférences / Poids & ratios / Composition, seulement les mesures prises), un sous-titre **« Référence (bilan
+précédent) : X · Δ »**, et une **ligne pointillée de référence** au niveau du bilan précédent sur le graphe (ligne
+or, dernier point mis en valeur). Toujours alimenté par les bilans. `BilanMeasuresOverview.tsx`.
+
+Version : 0.9.16 → 0.9.17.
+
 ## ✅ Fait (v0.9.16 — Import .doc : circonférences de l'ancien logiciel mappées)
 
 À l'import d'un bilan `.doc`, la section « Circonférences » de l'ancien logiciel est lue et **mappée** vers les

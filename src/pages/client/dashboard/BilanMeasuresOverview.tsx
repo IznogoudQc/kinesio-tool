@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { ChevronDown, ChevronRight, Ruler, TrendingUp } from 'lucide-react'
 import { formatBilanDate, formatBilanMonth } from '../bilanFields'
 import { kgToWeightInput, weightUnitLabel } from '../../../lib/units'
@@ -9,7 +9,6 @@ import { kgToWeightInput, weightUnitLabel } from '../../../lib/units'
  *  système de l'onglet Mesures : détail dépliable + évolution (pills + périodes). */
 
 type Group = 'circ' | 'weights' | 'composition'
-type PeriodFilter = 'all' | '30d' | '90d' | '6m' | '1y'
 
 interface Metric {
   key: string
@@ -28,17 +27,7 @@ const GROUP_LABEL: Record<Group, string> = {
   composition: 'Composition corporelle'
 }
 
-const PERIOD_LABEL: Record<PeriodFilter, string> = { '30d': '30 j', '90d': '90 j', '6m': '6 mois', '1y': '1 an', all: 'Tout' }
-const PERIOD_DAYS: Record<PeriodFilter, number | null> = { '30d': 30, '90d': 90, '6m': 183, '1y': 365, all: null }
-
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : null)
-
-function daysSince(iso: string, today: number): number {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
-  if (!m) return 0
-  const d = Date.UTC(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10))
-  return Math.max(0, Math.floor((today - d) / 86_400_000))
-}
 
 function imcOf(d: BilanData): number | null {
   const direct = num(d.imc)
@@ -95,7 +84,6 @@ export function BilanMeasuresOverview({
   )
 
   const [selected, setSelected] = useState<string>('taille')
-  const [period, setPeriod] = useState<PeriodFilter>('all')
   const [showDetails, setShowDetails] = useState(false)
 
   // Bilans du plus ancien au plus récent (pour le tracé).
@@ -111,14 +99,14 @@ export function BilanMeasuresOverview({
 
   const activeMetric = METRICS.find(m => m.key === selected && available.has(m.key)) ?? METRICS.find(m => available.has(m.key)) ?? METRICS[0]
 
-  const chartData = useMemo(() => {
-    const days = PERIOD_DAYS[period]
-    const today = Date.now()
-    const rows = days === null ? chrono : chrono.filter(b => daysSince(b.date, today) <= days)
-    return rows
-      .map(b => ({ label: formatBilanMonth(b.date), value: activeMetric.read(b.data) }))
-      .filter(p => p.value !== null)
-  }, [chrono, period, activeMetric])
+  const chartData = useMemo(
+    () => chrono.map((b, i) => ({ label: formatBilanMonth(b.date), value: activeMetric.read(b.data), isLast: i === chrono.length - 1 })),
+    [chrono, activeMetric]
+  )
+  // Référence = bilan précédent (l'avant-dernier) ; delta = dernier − précédent.
+  const latestVal = activeMetric.read(latest?.data ?? {})
+  const prevVal = previous ? activeMetric.read(previous.data) : null
+  const pointsCount = chartData.filter(p => p.value !== null).length
 
   if (!latest) {
     return (
@@ -140,7 +128,7 @@ export function BilanMeasuresOverview({
     metrics: METRICS.filter(m => m.group === g && (g === 'circ' || m.read(latest.data) !== null))
   })).filter(x => x.metrics.length > 0)
 
-  const groupsForPills: Group[] = ['circ', 'weights', 'composition']
+  const pillGroups: Group[] = ['circ', 'weights', 'composition']
 
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
@@ -195,71 +183,94 @@ export function BilanMeasuresOverview({
         </div>
       )}
 
-      {/* Évolution dans le temps. */}
+      {/* Progression dans le temps — menu déroulant « Mesure » + ligne de référence
+          « Bilan précédent » (même style que la section Bilan/Progression). */}
       <div className="mt-5 pt-4 border-t border-cream-dark/40">
-        <div className="flex items-center gap-2 mb-3">
-          <TrendingUp size={15} className="text-gold-dark" />
-          <p className="dash-eyebrow text-gold-dark">Évolution dans le temps</p>
-        </div>
-
-        {groupsForPills.map(g => {
-          const metrics = METRICS.filter(m => m.group === g && available.has(m.key))
-          if (metrics.length === 0) return null
-          return (
-            <div key={g} className="mb-2">
-              <p className="text-marine/40 text-[10px] uppercase tracking-wide font-semibold mb-1">{GROUP_LABEL[g]}</p>
-              <div className="flex flex-wrap gap-1.5">
-                {metrics.map(m => {
-                  const active = m.key === activeMetric.key
-                  return (
-                    <button
-                      key={m.key}
-                      type="button"
-                      onClick={() => setSelected(m.key)}
-                      className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-                        active ? 'bg-marine text-cream border-marine' : 'bg-white text-marine/70 border-cream-dark hover:border-gold/50'
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
-
-        <div className="flex flex-wrap gap-1.5 mt-2 mb-3">
-          {(['30d', '90d', '6m', '1y', 'all'] as PeriodFilter[]).map(p => (
-            <button
-              key={p}
-              type="button"
-              onClick={() => setPeriod(p)}
-              className={`px-2 py-0.5 rounded text-[11px] font-medium border transition-colors ${
-                period === p ? 'bg-gold/20 text-gold-dark border-gold/40' : 'bg-white text-marine/55 border-cream-dark hover:border-gold/40'
-              }`}
+        <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+          <div className="flex items-center gap-2">
+            <TrendingUp size={15} className="text-gold-dark" />
+            <p className="dash-eyebrow text-gold-dark">Progression dans le temps</p>
+          </div>
+          <label className="flex items-center gap-1.5 text-xs text-marine/55">
+            <span>Mesure</span>
+            <select
+              value={activeMetric.key}
+              onChange={e => setSelected(e.target.value)}
+              className="rounded-md border border-cream-dark bg-cream/60 px-2 py-1 text-xs font-medium text-marine hover:bg-cream-dark focus:outline-none focus:ring-2 focus:ring-gold/50"
+              title="Mesure tracée dans le temps — seules celles prises en bilan sont proposées"
             >
-              {PERIOD_LABEL[p]}
-            </button>
-          ))}
+              {pillGroups
+                .filter(g => METRICS.some(m => m.group === g && available.has(m.key)))
+                .map(g => (
+                  <optgroup key={g} label={GROUP_LABEL[g]}>
+                    {METRICS.filter(m => m.group === g && available.has(m.key)).map(m => (
+                      <option key={m.key} value={m.key}>{m.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+            </select>
+          </label>
         </div>
 
-        {chartData.length >= 2 ? (
+        {prevVal !== null && (
+          <p className="text-marine/55 text-xs mb-3">
+            Référence (bilan précédent) :{' '}
+            <span className="font-semibold text-marine tabular-nums">{nf(prevVal, activeMetric.digits)} {activeMetric.unit}</span>
+            {latestVal !== null && (() => {
+              const d = latestVal - prevVal
+              if (Math.abs(d) < (activeMetric.digits === 2 ? 0.01 : 0.05)) return <span className="text-marine/40"> · = stable</span>
+              const improved = activeMetric.lowerIsBetter ? d < 0 : d > 0
+              return (
+                <span className={improved ? 'text-green-600 font-medium' : 'text-red-500 font-medium'}>
+                  {' · '}{d > 0 ? '▲ +' : '▼ '}{nf(d, activeMetric.digits)} {activeMetric.unit}
+                </span>
+              )
+            })()}
+          </p>
+        )}
+
+        {pointsCount >= 2 ? (
           <ResponsiveContainer width="100%" height={240}>
-            <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: -8 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(10,28,94,0.08)" />
-              <XAxis dataKey="label" tick={{ fill: 'rgba(10,28,94,0.45)', fontSize: 11 }} tickMargin={8} />
-              <YAxis tick={{ fill: 'rgba(10,28,94,0.35)', fontSize: 10 }} width={44} domain={['auto', 'auto']} />
+            <LineChart data={chartData} margin={{ top: 8, right: 16, bottom: 0, left: -8 }}>
+              <CartesianGrid stroke="rgba(10,28,94,0.08)" vertical={false} />
+              <XAxis dataKey="label" tick={{ fill: 'rgba(10,28,94,0.55)', fontSize: 11 }} stroke="rgba(10,28,94,0.15)" />
+              <YAxis tick={{ fill: 'rgba(10,28,94,0.55)', fontSize: 11 }} stroke="rgba(10,28,94,0.15)" width={46} domain={['auto', 'auto']} />
               <Tooltip
-                contentStyle={{ background: '#fff', border: '1px solid #d4a574', borderRadius: 8, fontSize: 12 }}
+                contentStyle={{ background: '#fff', border: '1px solid #d4a574', borderRadius: 8, color: '#0a1c5e', fontSize: 13 }}
                 formatter={(v: unknown) => [`${nf(typeof v === 'number' ? v : null, activeMetric.digits)} ${activeMetric.unit}`.trim(), activeMetric.label]}
               />
-              <Line type="monotone" dataKey="value" stroke="#c9a77a" strokeWidth={2.5} dot={{ r: 3, fill: '#001331' }} activeDot={{ r: 5 }} connectNulls />
+              {prevVal !== null && (
+                <ReferenceLine
+                  y={prevVal}
+                  stroke="#0a1c5e"
+                  strokeDasharray="6 3"
+                  strokeOpacity={0.55}
+                  label={{ value: 'Bilan précédent', fill: '#0a1c5e', fontSize: 11, position: 'insideTopLeft' }}
+                />
+              )}
+              <Line
+                type="monotone"
+                dataKey="value"
+                stroke="#b8834a"
+                strokeWidth={2.5}
+                dot={(props: { cx?: number; cy?: number; payload?: { isLast?: boolean }; index?: number }) => {
+                  const { cx, cy, payload, index = 0 } = props
+                  if (cx === undefined || cy === undefined) return <g key={`d-${index}`} />
+                  const last = payload?.isLast
+                  return (
+                    <circle key={`d-${index}`} cx={cx} cy={cy} r={last ? 6 : 4} fill={last ? '#d4a574' : '#b8834a'}
+                      stroke={last ? '#0a1c5e' : 'none'} strokeWidth={last ? 2 : 0} />
+                  )
+                }}
+                activeDot={{ r: 7 }}
+                connectNulls
+                isAnimationActive
+              />
             </LineChart>
           </ResponsiveContainer>
         ) : (
           <p className="text-marine/45 text-sm py-8 text-center">
-            Pas assez de bilans avec « {activeMetric.label} » sur cette période pour tracer une évolution.
+            Pas assez de bilans avec « {activeMetric.label} » pour tracer une progression.
           </p>
         )}
       </div>
