@@ -9,7 +9,7 @@ import { settingsService } from '../../../services/settings'
 import { reportsService } from '../../../services/reports'
 import { SendBilanModal } from '../SendBilanModal'
 import { formatBilanDate } from '../bilanFields'
-import { computeAge, getNormPercentiles, type NormsType } from '../../../lib/norms'
+import { computeAge, DEFAULT_NORMS, getNormPercentiles, type NormsType } from '../../../lib/norms'
 import { computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
 import { BloodPressureBar } from '../../../components/BloodPressureBar'
 import { dualWeight } from '../../../lib/objectif-format'
@@ -70,7 +70,7 @@ export function DashboardTab() {
   const [error, setError] = useState<string | null>(null)
 
   const [smtpReady, setSmtpReady] = useState<boolean | null>(null)
-  const [norms, setNorms] = useState<NormsType>('acsm')
+  const norms: NormsType = DEFAULT_NORMS
   const [showModal, setShowModal] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [generatingHtml, setGeneratingHtml] = useState(false)
@@ -114,10 +114,6 @@ export function DashboardTab() {
       .then(([cfg, hasPwd]) => setSmtpReady(Boolean(cfg && cfg.host && cfg.user && hasPwd)))
       .catch(() => setSmtpReady(false))
   }, [printMode])
-
-  useEffect(() => {
-    settingsService.getCategorizationNorms().then(setNorms).catch(() => undefined)
-  }, [])
 
   useEffect(() => {
     if (!toast) return

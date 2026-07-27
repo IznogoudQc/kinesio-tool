@@ -53,14 +53,6 @@ export const settingsService = {
     return window.api.settings.getDefaultNutritionEmailTemplate()
   },
 
-  async getCategorizationNorms(): Promise<'acsm' | 'cpafla'> {
-    return window.api.settings.getCategorizationNorms()
-  },
-
-  async setCategorizationNorms(value: 'acsm' | 'cpafla'): Promise<void> {
-    return window.api.settings.setCategorizationNorms(value)
-  },
-
   /** `null` : Marie-Eve n'a jamais choisi → toutes les circonférences sont saisies. */
   async getMesureFields(): Promise<MesureFieldKey[] | null> {
     return window.api.settings.getMesureFields()

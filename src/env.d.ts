@@ -500,8 +500,6 @@ interface Window {
       getNutritionEmailTemplate(): Promise<EmailTemplate>
       setNutritionEmailTemplate(data: EmailTemplate): Promise<void>
       getDefaultNutritionEmailTemplate(): Promise<EmailTemplate>
-      getCategorizationNorms(): Promise<'acsm' | 'cpafla'>
-      setCategorizationNorms(value: 'acsm' | 'cpafla'): Promise<void>
       /** `null` = réglage jamais enregistré → afficher toutes les circonférences. */
       getMesureFields(): Promise<MesureFieldKey[] | null>
       setMesureFields(value: MesureFieldKey[]): Promise<void>

@@ -3,10 +3,9 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Loader2, Pencil } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
 import { bilansService } from '../../../services/bilans'
-import { settingsService } from '../../../services/settings'
 import { BilanForm, deriveBilanFields } from '../BilanForm'
 import { formatBilanDate } from '../bilanFields'
-import { computeAge, getCategorization, type Category, type NormsType } from '../../../lib/norms'
+import { computeAge, DEFAULT_NORMS, getCategorization, type Category, type NormsType } from '../../../lib/norms'
 import { BILAN_TO_TEST_KEY } from '../../../lib/norms/bilan-keys'
 
 export function BilanDetailTab() {
@@ -22,11 +21,7 @@ export function BilanDetailTab() {
   const [draftDate, setDraftDate] = useState('')
   const [draftData, setDraftData] = useState<BilanData>({})
   const [saving, setSaving] = useState(false)
-  const [norms, setNorms] = useState<NormsType>('acsm')
-
-  useEffect(() => {
-    settingsService.getCategorizationNorms().then(setNorms).catch(() => undefined)
-  }, [])
+  const norms: NormsType = DEFAULT_NORMS
 
   const age = useMemo(() => computeAge(client.birthdate), [client.birthdate])
   const categorize = useMemo(() => {
@@ -138,7 +133,7 @@ export function BilanDetailTab() {
         <p className="text-cream/55 text-sm mb-6">
           {bilan.source === 'import_docx' ? 'Importé depuis un fichier .docx' : 'Saisie manuelle'}
           {' · '}
-          Catégorisation selon les normes <span className="font-medium">{norms === 'cpafla' ? 'CPAFLA' : 'ACSM'}</span> — modifiable dans Paramètres.
+          Catégorisation selon la norme <span className="font-medium">CPAFLA</span>.
         </p>
 
         {editing ? (

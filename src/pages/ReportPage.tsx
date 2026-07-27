@@ -24,6 +24,7 @@ import {
   getNormPercentiles,
   getPercentile,
   type Category,
+  DEFAULT_NORMS,
   type NormsType,
   type TestKey
 } from '../lib/norms'
@@ -192,7 +193,7 @@ export function ReportPage() {
   const [coachName, setCoachName] = useState('')
   const [signature, setSignature] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [norms, setNorms] = useState<NormsType>('acsm')
+  const norms: NormsType = DEFAULT_NORMS
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -205,11 +206,10 @@ export function ReportPage() {
         return
       }
       try {
-        const [all, bs, profile, activeNorms] = await Promise.all([
+        const [all, bs, profile] = await Promise.all([
           clientsService.list(),
           bilansService.getBilansForClient(id),
-          settingsService.getProfile(),
-          settingsService.getCategorizationNorms().catch(() => 'acsm' as NormsType)
+          settingsService.getProfile()
         ])
         if (cancelled) return
         const found = all.find(c => c.id === id) ?? null
@@ -221,7 +221,6 @@ export function ReportPage() {
         setBilans(bs)
         setCoachName(profile.name)
         setSignature(profile.signature)
-        setNorms(activeNorms)
         const avatarFile = found.avatarFilename
         if (avatarFile) {
           const url = await clientsService.getAvatarUrl(avatarFile).catch(() => null)
@@ -1061,7 +1060,7 @@ function ColorLegend() {
         ))}
       </div>
       <p style={{ fontSize: '8.5pt', color: AXIS, marginTop: '2.5mm' }}>
-        Chaque barre situe votre résultat sur cette échelle, selon les normes ACSM pour votre âge et votre sexe.
+        Chaque barre situe votre résultat sur cette échelle, selon les normes de référence pour votre âge et votre sexe.
       </p>
     </div>
   )

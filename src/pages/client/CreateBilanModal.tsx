@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, ArrowLeft, ArrowRight, ArrowUpCircle, Check, Loader2, PencilLine } from 'lucide-react'
 import { bilansService } from '../../services/bilans'
 import { clientsService } from '../../services/clients'
-import { settingsService } from '../../services/settings'
 import { BilanForm, deriveBilanFields } from './BilanForm'
-import { computeAge, type NormsType } from '../../lib/norms'
+import { computeAge, DEFAULT_NORMS, type NormsType } from '../../lib/norms'
 import { BILAN_FIELD_GROUPS, formatBilanDate } from './bilanFields'
 import { missingImportantFields, type ImportantField } from './bilan-required-fields'
 
@@ -64,7 +63,7 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
   const [data, setData] = useState<BilanData>({})
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [norms, setNorms] = useState<NormsType>('acsm')
+  const norms: NormsType = DEFAULT_NORMS
   const [previous, setPrevious] = useState<Bilan | null>(null)
   const [showPrefillModal, setShowPrefillModal] = useState(false)
   // Mode de saisie : 'scroll' = formulaire complet (défaut, rapide) ;
@@ -73,10 +72,6 @@ export function CreateBilanModal({ client, onCancel, onSaved }: CreateBilanModal
   const [stepIndex, setStepIndex] = useState(0)
   // Récapitulatif des champs importants manquants, affiché avant la sauvegarde.
   const [pendingMissing, setPendingMissing] = useState<ImportantField[] | null>(null)
-
-  useEffect(() => {
-    settingsService.getCategorizationNorms().then(setNorms).catch(() => undefined)
-  }, [])
 
   useEffect(() => {
     // Récupère le bilan le plus récent du client pour le pré-remplissage.

@@ -19,7 +19,8 @@ const KEYS = {
   smtp: 'smtp.config',
   emailTemplate: 'email.template',
   emailTemplateNutrition: 'email.template_nutrition',
-  categorizationNorms: 'categorization_norms',
+  // `categorization_norms` retiré (v0.9.31) : l'app suit uniquement le CPAFLA.
+  // Une éventuelle ligne résiduelle en base est simplement ignorée.
   mesureFields: 'mesures.fields',
   documentsFolder: 'documents.folder',
   supplements: 'nutrition.supplements',
@@ -48,10 +49,6 @@ const SupplementsSchema = z
   )
   .max(100)
 
-const CategorizationNormsSchema = z.enum(['acsm', 'cpafla'])
-// Doit rester aligné avec `DEFAULT_NORMS` (src/lib/norms/types.ts) — duplication
-// assumée à la frontière IPC. CPAFLA = référentiel du logiciel d'origine (ADR 0028).
-const DEFAULT_CATEGORIZATION_NORMS = 'cpafla' as const
 
 // Circonférences que Marie-Eve choisit de saisir. Absence de réglage → l'UI les
 // affiche toutes. Masquer un champ n'efface aucune donnée déjà en base.
@@ -211,18 +208,6 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:templateNutrition:set', async (_e, data: unknown) => {
     const validated = EmailTemplateSchema.parse(data)
     await writeKey(KEYS.emailTemplateNutrition, JSON.stringify(validated))
-  })
-
-  ipcMain.handle('settings:norms:get', async () => {
-    const raw = await readKey(KEYS.categorizationNorms)
-    if (!raw) return DEFAULT_CATEGORIZATION_NORMS
-    const parsed = CategorizationNormsSchema.safeParse(raw)
-    return parsed.success ? parsed.data : DEFAULT_CATEGORIZATION_NORMS
-  })
-
-  ipcMain.handle('settings:norms:set', async (_e, value: unknown) => {
-    const validated = CategorizationNormsSchema.parse(value)
-    await writeKey(KEYS.categorizationNorms, validated)
   })
 
   ipcMain.handle('settings:mesureFields:get', async () => {

@@ -101,10 +101,6 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('settings:templateNutrition:set', data),
     getDefaultNutritionEmailTemplate: () =>
       ipcRenderer.invoke('settings:templateNutrition:default'),
-    getCategorizationNorms: () =>
-      ipcRenderer.invoke('settings:norms:get'),
-    setCategorizationNorms: (value: 'acsm' | 'cpafla') =>
-      ipcRenderer.invoke('settings:norms:set', value),
     getMesureFields: () =>
       ipcRenderer.invoke('settings:mesureFields:get'),
     setMesureFields: (value: string[]) =>

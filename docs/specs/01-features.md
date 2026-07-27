@@ -2,6 +2,18 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.31 — Norme unique : CPAFLA (choix ACSM retiré))
+
+Le réglage « Normes de catégorisation » disparaît des Paramètres : l'app suit **uniquement le CPAFLA**,
+maintenant que la parité avec l'ancien logiciel est démontrée (v0.9.30). La carte des Paramètres devient
+informative (le bouton « Exporter les barèmes » y reste). Toute la plomberie du réglage est supprimée
+(service, preload, IPC, schéma, clé de stockage).
+
+Les **tables ACSM restent** comme repli : VO2max, IMC et tour de taille n'ont pas de barème CPAFLA. On
+retire le *choix*, pas le mécanisme. Voir ADR 0029.
+
+Version : 0.9.30 → 0.9.31.
+
 ## ✅ Fait (v0.9.30 — Indice de santé du dos & musculo : parité exacte avec l'ancien logiciel)
 
 L'**indice de santé du dos** et l'**aptitude musculosquelettique** reproduisent maintenant **à l'identique**
