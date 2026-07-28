@@ -659,6 +659,9 @@ function ObjectifBlock({
       {goal !== null && bodyFatPct !== null && target !== null && (
         <div style={{ background: '#fff', borderRadius: '3mm', padding: '5mm 6mm' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6mm', flexWrap: 'wrap' }}>
+            {num(latest.data.poids_kg) !== null && (
+              <ObjStat label="Poids actuel" value={w(num(latest.data.poids_kg) as number)} />
+            )}
             <ObjStat label="% de gras actuel" value={`${bodyFatPct.toFixed(1)} %`} />
             <span style={{ fontSize: '16pt', color: GOLD }}>→</span>
             <ObjStat label="% de gras visé" value={`${target} %`} accent />
@@ -1711,7 +1714,7 @@ function MetricBlock({ metric, latest, recent, profile }: { metric: MetricDef; l
           <Target size={11} style={{ display: 'inline', verticalAlign: '-1px', color: GOLD }} />{' '}
           Pour atteindre <strong>{CATEGORY_LABELS[norm.next.nextCategory]}</strong> :{' '}
           {norm.lowerIsBetter ? '≤' : '≥'} {fmt(norm.next.targetValue)} {metric.unit}
-          {norm.next.delta !== 0 && (
+          {Math.abs(norm.next.delta) >= 0.05 && (
             <span style={{ color: INK_SOFT }}>
               {' '}({norm.next.delta >= 0 ? '+' : ''}{fmt(norm.next.delta)} {metric.unit})
             </span>

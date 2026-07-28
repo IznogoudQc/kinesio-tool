@@ -2,6 +2,25 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.57 — PDF : parité avec les derniers correctifs du rapport HTML)
+
+Audit du PDF contre les changements du jour. La plupart avaient déjà suivi (les termes, l'échelle 0-4, le
+VO2max, le poids/grandeur, et surtout **IMC et tour de taille non évalués** — hérités automatiquement,
+le PDF cotant via le même mapping `BILAN_TO_TEST_KEY`).
+
+Deux écarts corrigés :
+
+- **« Poids actuel »** ajouté en tête du bloc Objectif, comme dans le HTML (v0.9.47). Il affichait le
+  % de gras actuel et visé, le poids cible — mais pas le poids de départ.
+- **Garde-fou « +0 »** aligné : le PDF testait `delta !== 0` (strict), donc un écart de 0,04 s'affichait
+  quand même « (+0,0) ». Passé à `|delta| >= 0.05`, comme le HTML.
+
+Nuance de formulation : le PDF écrit « Pour atteindre Acceptable : ≤ 30 kg/m² (+0,2) » — la phrase reste
+utile sans la parenthèse, donc seule celle-ci est masquée. Le HTML écrivait « +0 kg/m² pour atteindre
+Acceptable », phrase vide de sens sans l'écart : elle disparaît entièrement.
+
+Version : 0.9.56 → 0.9.57.
+
 ## ✅ Fait (v0.9.56 — « Comparer à » aligné comme dans le Bilan complet)
 
 Le sélecteur existait (v0.9.53) mais passait **sous** la rangée de pastilles au lieu de se placer à sa
