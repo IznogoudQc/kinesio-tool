@@ -1585,11 +1585,12 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
       detailKeys={['imc', 'tour_taille_cm']}
       heroKey="pourcentage_gras"
       composite={computeBilan(props.latest.data, props.profile).composition}
+      // Pas de courbe pour l'IMC ni le tour de taille : ils sont **mentionnés, pas
+      // évalués** (ADR/v0.9.44 & v0.9.46). Leur consacrer un graphique leur redonnerait
+      // l'importance qu'on vient de leur retirer. Leurs valeurs restent en tête de section.
       charts={[
         { kind: 'line', key: 'pourcentage_gras', title: '% de gras corporel', color: MARINE },
-        { kind: 'line', key: 'poids_kg', title: 'Poids (kg)', color: GOLD },
-        { kind: 'line', key: 'imc', title: 'IMC (kg/m²)', color: MARINE },
-        { kind: 'line', key: 'tour_taille_cm', title: 'Tour de taille (cm)', color: GOLD }
+        { kind: 'line', key: 'poids_kg', title: 'Poids (kg)', color: GOLD }
       ]}
       topExtra={
         <>

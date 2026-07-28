@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.61 — PDF : courbes IMC et tour de taille retirées)
+
+Les graphiques d'évolution de l'**IMC** et du **tour de taille** disparaissent de la section 2. Ces deux
+mesures sont **mentionnées mais pas évaluées** (v0.9.44 / v0.9.46) — leur consacrer un graphique leur
+rendait l'importance qu'on venait justement de leur retirer.
+
+Restent les deux courbes qui comptent : le **% de gras corporel** et le **poids**. Les valeurs d'IMC et de
+tour de taille restent lisibles en tête de section, dans la ligne de contexte.
+
+Version : 0.9.60 → 0.9.61.
+
 ## ✅ Fait (v0.9.60 — PDF : grille « Vos mesures » retirée)
 
 La grille de 8 vignettes de la section 2 disparaît — chacune faisait doublon ou n'apportait rien :
