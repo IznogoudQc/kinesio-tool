@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   CATEGORY_LABELS,
-  DEFAULT_NORMS,
-  computeAge,
   getCategorization,
   getNextCategoryTarget,
   type Category,

@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { ACSM_TABLES } from '../lib/norms/acsm'
 import { CPAFLA_TABLES } from '../lib/norms/cpafla'
+import { categoryCells, normSourceForTest } from '../lib/norms/bareme'
 import { getClinicalRange } from '../lib/norms/clinical'
-import type { NormRange, TestKey } from '../lib/norms/types'
+import type { NormPercentiles, NormRange, TestKey } from '../lib/norms/types'
 import { bodyFatRiskZones, type BfRiskZone } from '../lib/body-fat-risk'
 
 /** Document de référence des barèmes & formules — rendu pour export PDF via la
@@ -12,13 +13,13 @@ import { bodyFatRiskZones, type BfRiskZone } from '../lib/body-fat-risk'
  *  source résolue par test plutôt qu'écrite à la main (elle avait dérivé : elle
  *  annonçait ACSM pour des tests cotés en CPAFLA depuis v0.9.31). */
 
-const nf = (n: number) => n.toLocaleString('fr-CA', { maximumFractionDigits: 4 })
 
-/** Bornes des 5 catégories à partir des percentiles p10/p25/p50/p75. */
-function catRanges(p: { p10: number; p25: number; p50: number; p75: number }, lower: boolean): string[] {
-  if (!lower)
-    return [`< ${nf(p.p10)}`, `${nf(p.p10)}–${nf(p.p25)}`, `${nf(p.p25)}–${nf(p.p50)}`, `${nf(p.p50)}–${nf(p.p75)}`, `≥ ${nf(p.p75)}`]
-  return [`≥ ${nf(p.p10)}`, `${nf(p.p25)}–${nf(p.p10)}`, `${nf(p.p50)}–${nf(p.p25)}`, `${nf(p.p75)}–${nf(p.p50)}`, `< ${nf(p.p75)}`]
+/** Bornes des 5 catégories — rendu partagé avec le dashboard et le rapport PDF
+ *  (`src/lib/norms/bareme.ts`). L'ancienne version locale produisait des plages
+ *  qui se chevauchaient (`18–24` puis `24–29`) alors que 24 est « Bien ». */
+function catRanges(p: NormPercentiles, lower: boolean): string[] {
+  const c = categoryCells(p, lower)
+  return [c.A_AMELIORER, c.ACCEPTABLE, c.BIEN, c.TRES_BIEN, c.EXCELLENT]
 }
 
 function rowLabel(r: NormRange, merge: boolean): string {
@@ -43,7 +44,7 @@ function Baro({ meta }: { meta: Meta }) {
   const cpafla = CPAFLA_TABLES[meta.test] as NormRange[] | null
   const ranges = (cpafla && cpafla.length > 0 ? cpafla : (ACSM_TABLES[meta.test] as NormRange[] | null))
   if (!ranges) return null
-  const source = cpafla && cpafla.length > 0 ? 'CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd.' : meta.source
+  const source = cpafla && cpafla.length > 0 ? normSourceForTest(meta.test).full : meta.source
   const rows = meta.mergeSexes ? ranges.filter(r => r.sex === 'M') : ranges
   return (
     <div className="baro">

@@ -24,14 +24,13 @@ import {
   getNormPercentiles,
   getPercentile,
   type Category,
-  DEFAULT_NORMS,
-  type NormsType,
   type TestKey
 } from '../lib/norms'
 import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { cpaflaCompositionDetail } from '../lib/norms/cpafla-composition'
 import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
 import { buildBilanProfile } from '../lib/bilan-computed'
+import { categoryCells, commonNormSource, normSourceForTest } from '../lib/norms/bareme'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed } from '../lib/bilan-computed'
@@ -130,10 +129,6 @@ function fmt(v: number | null, decimals = 1): string {
 function reportDateLabel(): string {
   return new Date().toLocaleDateString('fr-CA', { year: 'numeric', month: 'long', day: 'numeric' })
 }
-/** Format compact d'un seuil : entier si rond, sinon 1 décimale. */
-function fmtThreshold(n: number): string {
-  return fmt(n, Number.isInteger(n) ? 0 : 1)
-}
 /** Teinte translucide d'une couleur hex (pour surligner la cellule du client). */
 function tint(hex: string, alpha: number): string {
   const r = parseInt(hex.slice(1, 3), 16)
@@ -141,27 +136,6 @@ function tint(hex: string, alpha: number): string {
   const b = parseInt(hex.slice(5, 7), 16)
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
-/** Plage numérique d'une catégorie pour un test donné (barème de référence). */
-function categoryRange(p: { p10: number; p25: number; p50: number; p75: number }, lowerIsBetter: boolean, cat: Category): string {
-  const f = fmtThreshold
-  if (!lowerIsBetter) {
-    switch (cat) {
-      case 'A_AMELIORER': return `< ${f(p.p10)}`
-      case 'ACCEPTABLE': return `${f(p.p10)}–${f(p.p25)}`
-      case 'BIEN': return `${f(p.p25)}–${f(p.p50)}`
-      case 'TRES_BIEN': return `${f(p.p50)}–${f(p.p75)}`
-      case 'EXCELLENT': return `≥ ${f(p.p75)}`
-    }
-  }
-  switch (cat) {
-    case 'A_AMELIORER': return `≥ ${f(p.p10)}`
-    case 'ACCEPTABLE': return `${f(p.p25)}–${f(p.p10)}`
-    case 'BIEN': return `${f(p.p50)}–${f(p.p25)}`
-    case 'TRES_BIEN': return `${f(p.p75)}–${f(p.p50)}`
-    case 'EXCELLENT': return `< ${f(p.p75)}`
-  }
-}
-
 /** Catégorisation complète d'une métrique du bilan, si elle a un barème. */
 interface MetricNorm {
   testKey: TestKey
@@ -194,7 +168,6 @@ export function ReportPage() {
   const [coachName, setCoachName] = useState('')
   const [signature, setSignature] = useState('')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const norms: NormsType = DEFAULT_NORMS
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -1816,9 +1789,13 @@ function MetricBlock({ metric, latest, recent, profile }: { metric: MetricDef; l
   )
 }
 
-/** Table de barème de référence ACSM : pour chaque test de la section, la plage
+/** Table de barème de référence : pour chaque test de la section, la plage
  *  numérique de chaque catégorie (À améliorer → Excellent) pour l'âge/sexe du
- *  client. La cellule de la catégorie actuelle du client est surlignée. */
+ *  client. La cellule de la catégorie actuelle du client est surlignée.
+ *
+ *  Le titre et la source sont **déduits** de la table réellement appliquée
+ *  (`normSourceForTest`) : ce bloc annonçait « ACSM » en dur alors qu'il
+ *  affichait les chiffres CPAFLA des six tests musculo. */
 function NormReferenceTable({ metrics, latest, profile }: { metrics: MetricDef[]; latest: Bilan; profile: BilanProfile }) {
   const cats: Category[] = ['A_AMELIORER', 'ACCEPTABLE', 'BIEN', 'TRES_BIEN', 'EXCELLENT']
   const rows = metrics
@@ -1826,10 +1803,21 @@ function NormReferenceTable({ metrics, latest, profile }: { metrics: MetricDef[]
       const value = num(latest.data[m.key])
       const norm = value !== null ? metricNorm(m.key, value, profile) : null
       if (!norm?.percentiles) return null
-      return { metric: m, percentiles: norm.percentiles, lowerIsBetter: norm.lowerIsBetter, current: norm.category }
+      return {
+        metric: m,
+        testKey: norm.testKey,
+        cells: categoryCells(norm.percentiles, norm.lowerIsBetter ?? false),
+        source: normSourceForTest(norm.testKey),
+        current: norm.category
+      }
     })
     .filter((r): r is NonNullable<typeof r> => r !== null)
   if (rows.length === 0) return null
+
+  // Groupe homogène → un seul libellé en titre. Groupe mixte (ex. aérobie ACSM
+  // + musculo CPAFLA) → pas de libellé global, la source part en note.
+  const shared = commonNormSource(rows.map(r => r.testKey))
+  const sources = [...new Set(rows.map(r => r.source.full))]
 
   const age = profile.age
   const bracket = age !== null ? `${profile.sex === 'M' ? 'H' : 'F'} ${Math.floor(age / 10) * 10}-${Math.floor(age / 10) * 10 + 9} ans` : ''
@@ -1837,7 +1825,10 @@ function NormReferenceTable({ metrics, latest, profile }: { metrics: MetricDef[]
 
   return (
     <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
-      <BlockTitle>Barème de référence — ACSM{bracket ? ` · ${bracket}` : ''}</BlockTitle>
+      <BlockTitle>
+        Barème de référence{shared ? ` — ${shared.short}` : ''}
+        {bracket ? ` · ${bracket}` : ''}
+      </BlockTitle>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5pt' }}>
           <thead>
@@ -1873,7 +1864,7 @@ function NormReferenceTable({ metrics, latest, profile }: { metrics: MetricDef[]
                         whiteSpace: 'nowrap'
                       }}
                     >
-                      {categoryRange(r.percentiles, r.lowerIsBetter, c)}
+                      {r.cells[c]}
                     </td>
                   )
                 })}
@@ -1883,7 +1874,7 @@ function NormReferenceTable({ metrics, latest, profile }: { metrics: MetricDef[]
         </table>
       </div>
       <p style={{ fontSize: '8pt', color: AXIS, marginTop: '2mm' }}>
-        Cellule surlignée = votre niveau actuel. Source : ACSM Guidelines, 11ᵉ édition.
+        Cellule surlignée = votre niveau actuel. Source&nbsp;: {sources.join(' · ')}.
       </p>
     </div>
   )

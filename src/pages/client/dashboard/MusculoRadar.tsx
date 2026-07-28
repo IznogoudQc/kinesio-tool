@@ -12,6 +12,7 @@ import {
   type TestKey
 } from '../../../lib/norms'
 import { TableProperties } from 'lucide-react'
+import { categoryCells } from '../../../lib/norms/bareme'
 import { CategoryBadge } from '../../../components/CategoryBadge'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
 import { MetricSelectable } from '../../../components/MetricSelectable'
@@ -292,14 +293,11 @@ function BaremeTable({ age, sex, rows }: { age: number; sex: 'F' | 'M'; rows: Ro
   const built = AXES.map(axis => {
     const range = getCpaflaRange(axis.test, age, sex)
     if (!range) return null
-    const p = range.percentiles
-    const cells: Record<Category, string> = {
-      A_AMELIORER: `≤ ${p.p10 - 1}`,
-      ACCEPTABLE: `${p.p10}–${p.p25 - 1}`,
-      BIEN: `${p.p25}–${p.p50 - 1}`,
-      TRES_BIEN: `${p.p50}–${p.p75 - 1}`,
-      EXCELLENT: `≥ ${p.p75}`
-    }
+    // Rendu partagé avec le rapport PDF et la feuille imprimable
+    // (`src/lib/norms/bareme.ts`) : c'était ici la seule des trois surfaces à
+    // produire des plages jointives, mais le « −1 » codé en dur n'aurait pas
+    // tenu sur une échelle décimale.
+    const cells = categoryCells(range.percentiles, range.lowerIsBetter ?? false)
     return { axis, cells, ageMin: range.ageMin, ageMax: range.ageMax, current: catByTest.get(axis.test) ?? null }
   }).filter((b): b is NonNullable<typeof b> => b !== null)
 
