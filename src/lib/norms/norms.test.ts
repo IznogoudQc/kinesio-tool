@@ -217,12 +217,26 @@ test('CPAFLA — tables musculosquelettiques encodées (guide CPHV 3e éd., Fig.
   assert.equal(getCategorization('backEndurance', 55, 35, 'M', 'cpafla'), 'A_AMELIORER')
 })
 
-test('CPAFLA — VO2max / % gras / IMC non encodés → getCpaflaRange null (repli géré ailleurs)', () => {
-  // Le repli sur ACSM (VO2max, IMC, tour de taille) vit dans index.getCategorization
+test('CPAFLA — % gras / IMC non encodés → getCpaflaRange null (repli géré ailleurs)', () => {
+  // Le repli sur ACSM (IMC, tour de taille) vit dans index.getCategorization
   // et bilan-computed.categorizeRaw — testé end-to-end dans bilan-computed.test.ts.
-  assert.equal(getCpaflaRange('vo2max', 35, 'M'), null)
+  // Le VO2max, lui, a désormais sa table CPAFLA (outil n° 26 SPAP-SCPE).
   assert.equal(getCpaflaRange('bodyFat', 35, 'F'), null)
   assert.equal(getCpaflaRange('bmi', 35, 'M'), null)
+})
+
+test('CPAFLA — VO2max encodé : la table de Marie, plus le repli ACSM', () => {
+  const r = getCpaflaRange('vo2max', 45, 'M')
+  assert.ok(r, 'table VO2max CPAFLA attendue pour H 40-49')
+  // Bornes basses lues sur l'outil n° 26 : Acceptable 31,9 / Bien 35,5 /
+  // Très bien 42,7 / Excellent 47,0.
+  assert.deepEqual(
+    [r.percentiles.p10, r.percentiles.p25, r.percentiles.p50, r.percentiles.p75],
+    [31.9, 35.5, 42.7, 47.0]
+  )
+  assert.equal(getCategorization('vo2max', 47.0, 45, 'M', 'cpafla'), 'EXCELLENT')
+  assert.equal(getCategorization('vo2max', 46.9, 45, 'M', 'cpafla'), 'TRES_BIEN')
+  assert.equal(getCategorization('vo2max', 31.8, 45, 'M', 'cpafla'), 'A_AMELIORER')
 })
 
 test('Valeur invalide → null', () => {
@@ -398,8 +412,9 @@ test('NextTarget — A_AMELIORER → ACCEPTABLE via p10', () => {
 })
 
 test('NextTarget — test hors barème → null', () => {
-  // legPower hors ACSM dans cpafla
-  assert.equal(getNextCategoryTarget('vo2max', 49, 35, 'M', 'cpafla'), null)
+  // Le % de gras est coté par la grille de Marie (ADR 0024), hors norme : ni
+  // table CPAFLA, ni repli — c'est le cas « pas de barème » qui subsiste.
+  assert.equal(getNextCategoryTarget('bodyFat', 22, 35, 'M', 'cpafla'), null)
 })
 
 test('NextTarget — valeur invalide → null', () => {

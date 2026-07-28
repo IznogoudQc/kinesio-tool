@@ -14,6 +14,7 @@ import {
   type NormsType,
   type TestKey
 } from '../../../lib/norms'
+import { categoryCells, normSourceForTest } from '../../../lib/norms/bareme'
 import { CategoryRangeBar } from '../../../components/CategoryRangeBar'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
 import { Sparkline } from '../../../components/Sparkline'
@@ -128,7 +129,7 @@ export function StatCardXL({
             className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
               showBareme ? 'bg-gold/15 text-gold-dark hover:bg-gold/25' : 'bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine'
             }`}
-            title={`Afficher le barème ${label} (percentiles ACSM par âge et sexe)`}
+            title={`Afficher le barème ${label}${test ? ` (${normSourceForTest(test).short} — par âge et sexe)` : ''}`}
           >
             <TableProperties size={13} />
             Barème
@@ -223,6 +224,7 @@ export function StatCardXL({
           unit={unit}
           ageBracket={ageBracket}
           activeCategory={category}
+          source={test ? normSourceForTest(test).full : null}
         />
       )}
     </div>
@@ -241,30 +243,37 @@ export function StatCardXL({
 /** Ordre d'affichage du barème : meilleure catégorie en haut. */
 const CAT_ORDER: Category[] = ['EXCELLENT', 'TRES_BIEN', 'BIEN', 'ACCEPTABLE', 'A_AMELIORER']
 
-/** Table des catégories (percentiles ACSM) pour un test « plus haut = mieux »
- *  (VO2max) : chaque ligne = catégorie + plage de valeurs, celle du client
- *  surlignée. Les seuils P10/P25/P50/P75 délimitent les cinq cotes. */
+/** Table des catégories pour un test « plus haut = mieux » (VO2max) : chaque
+ *  ligne = catégorie + plage de valeurs, celle du client surlignée.
+ *
+ *  Les plages viennent du rendu partagé (`src/lib/norms/bareme.ts`) : ce bloc
+ *  les construisait lui-même et elles **se chevauchaient** (`24 – 29` puis
+ *  `29 – 35`), alors que la cote bascule à `value >= p50`. La source est
+ *  déduite du test, plus annoncée « ACSM » en dur. */
 function NormBareme({
   title,
   percentiles: p,
   unit,
   ageBracket,
-  activeCategory
+  activeCategory,
+  source
 }: {
   title: string
   percentiles: NormPercentiles
   unit?: string
   ageBracket?: string
   activeCategory: Category | null
+  /** Provenance du barème, déduite par l'appelant depuis le test coté. */
+  source: string | null
 }) {
-  const nf = (n: number): string => n.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
   const u = unit ? ` ${unit}` : ''
+  const cells = categoryCells(p, false)
   const ranges: Record<Category, string> = {
-    EXCELLENT: `≥ ${nf(p.p75)}${u}`,
-    TRES_BIEN: `${nf(p.p50)} – ${nf(p.p75)}${u}`,
-    BIEN: `${nf(p.p25)} – ${nf(p.p50)}${u}`,
-    ACCEPTABLE: `${nf(p.p10)} – ${nf(p.p25)}${u}`,
-    A_AMELIORER: `< ${nf(p.p10)}${u}`
+    EXCELLENT: `${cells.EXCELLENT}${u}`,
+    TRES_BIEN: `${cells.TRES_BIEN}${u}`,
+    BIEN: `${cells.BIEN}${u}`,
+    ACCEPTABLE: `${cells.ACCEPTABLE}${u}`,
+    A_AMELIORER: `${cells.A_AMELIORER}${u}`
   }
   return (
     <div className="mt-4 pt-4 border-t border-cream-dark/40">
@@ -289,9 +298,11 @@ function NormBareme({
           )
         })}
       </div>
-      <p className="text-marine/40 text-[11px] mt-2">
-        Percentiles ACSM par âge et sexe ; la cote provient de ces seuils.
-      </p>
+      {source && (
+        <p className="text-marine/40 text-[11px] mt-2">
+          {source} — par âge et sexe ; la cote provient de ces seuils.
+        </p>
+      )}
     </div>
   )
 }

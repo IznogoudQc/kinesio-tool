@@ -29,13 +29,26 @@ export interface NormSource {
   full: string
 }
 
-const CPAFLA_SOURCE: NormSource = {
+/** Tables musculosquelettiques — Figures 7-18 / 7-19 du guide. */
+const CPAFLA_GUIDE: NormSource = {
   short: 'CPAFLA',
   full: 'CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd.'
+}
+/** Capacité aérobie — l'aide-mémoire est un document distinct du guide. Le
+ *  citer comme « Guide du conseiller » serait une source qui ment, du même
+ *  genre que le « ACSM » écrit en dur qu'on vient de retirer. */
+const CPAFLA_AEROBIE: NormSource = {
+  short: 'CPAFLA',
+  full: 'CPAFLA — Aide-mémoire SPAP-SCPE, outil n° 26'
 }
 const ACSM_SOURCE: NormSource = {
   short: 'ACSM',
   full: 'ACSM Guidelines, 11ᵉ édition'
+}
+
+/** Publication CPAFLA d'origine, par test. Défaut : le guide. */
+const CPAFLA_SOURCE_BY_TEST: Partial<Record<TestKey, NormSource>> = {
+  vo2max: CPAFLA_AEROBIE
 }
 
 /** Une table CPAFLA existe-t-elle pour ce test ? Même résolution que `getRange`
@@ -47,7 +60,8 @@ export function hasCpaflaTable(test: TestKey): boolean {
 
 /** Source du barème appliqué à ce test — déduite, jamais écrite à la main. */
 export function normSourceForTest(test: TestKey): NormSource {
-  return hasCpaflaTable(test) ? CPAFLA_SOURCE : ACSM_SOURCE
+  if (!hasCpaflaTable(test)) return ACSM_SOURCE
+  return CPAFLA_SOURCE_BY_TEST[test] ?? CPAFLA_GUIDE
 }
 
 /** Source commune à un groupe de tests, ou `null` si le groupe est mixte —

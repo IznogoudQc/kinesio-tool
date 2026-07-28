@@ -85,7 +85,10 @@ function Baro({ meta }: { meta: Meta }) {
   )
 }
 
-const CARDIO: Meta[] = [{ test: 'vo2max', label: 'VO2max', unit: 'ml/kg/min', source: 'ACSM 11ᵉ éd.' }]
+// `source` n'est qu'un repli : `Baro` déduit la provenance de la table retenue.
+const CARDIO: Meta[] = [
+  { test: 'vo2max', label: 'VO2max', unit: 'ml/kg/min', source: 'CPAFLA — aide-mémoire SPAP-SCPE, outil n° 26' }
+]
 const COMPO: Meta[] = [
   // Le % de gras utilise une grille de risque dédiée — voir <BodyFatRiskTable>.
 ]
@@ -278,6 +281,8 @@ masse maigre = poids × (1 − %gras/100)   ·   poids-cible = maigre / (1 − %
       <h2>10 · Sources</h2>
       <ul className="src-list">
         <li>ACSM's Guidelines for Exercise Testing and Prescription, 11ᵉ éd. (2021).</li>
+        <li><b>Capacité aérobie</b> — Aide-mémoire « Évaluation des avantages pour la santé », outil n° 26 (SPAP-SCPE) :
+          la table utilisée par Marie. Valeurs pour adultes de 20 à 65 ans, population nord-américaine.</li>
         <li>Durnin &amp; Womersley (1974), avec conversion densité → % de gras de Siri (1961) — plis cutanés.</li>
         <li><b>Grille de risque du % de gras</b> (palier &lt; 70 ans) — reprise de l'ancien logiciel de Marie, <b>source à valider</b>.</li>
         <li>Foster/Pollock (1984), Cooper (1968), Léger (1988) — VO2max.</li>

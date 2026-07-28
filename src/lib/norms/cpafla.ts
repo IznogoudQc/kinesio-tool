@@ -2,9 +2,10 @@
  *  Guide du conseiller en condition physique et habitudes de vie, 3e éd.).
  *
  *  STATUT : **tables musculosquelettiques encodées** depuis les Figures 7-18
- *  (hommes) et 7-19 (femmes) du guide fourni par Marie-Eve. Encore `null` (→
- *  repli sur ACSM dans `getCategorization`) : VO2max (mCAFT), IMC et tour de
- *  taille (seuils Santé Canada, indépendants de la norme fitness). Le % de gras
+ *  (hommes) et 7-19 (femmes) du guide fourni par Marie-Eve, et **capacité
+ *  aérobie encodée** depuis l'aide-mémoire SPAP-SCPE (outil n° 26). Encore
+ *  `null` (→ repli sur ACSM dans `getCategorization`) : IMC et tour de taille
+ *  (seuils Santé Canada, indépendants de la norme fitness). Le % de gras
  *  n'utilise plus la norme du tout — il suit la grille de Marie (ADR 0024).
  *  Source à compléter (plis cutanés, etc.) au besoin — Marie a le livre complet.
  *
@@ -41,7 +42,9 @@ export function pct(p10: number, p25: number, p50: number, p75: number, p90: num
  *  ce qui reproduit exactement les intervalles contigus du guide.
  *  Tous les tests musculosquelettiques CPAFLA sont « plus haut = mieux ». */
 function band(ageMin: number, ageMax: number, sex: 'F' | 'M', a: number, b: number, tb: number, e: number): NormRange {
-  return { ageMin, ageMax, sex, percentiles: pct(a, b, tb, e, 2 * e - tb) }
+  // Arrondi au dixième : sur les bornes décimales du VO2max, `2·e − tb` produit
+  // sinon des flottants sales (2×36,6 − 34,0 = 39,199999999999996).
+  return { ageMin, ageMax, sex, percentiles: pct(a, b, tb, e, Math.round((2 * e - tb) * 10) / 10) }
 }
 
 // ── Tables CPAFLA — encodées depuis le Guide du conseiller CPHV, 3e éd. ────────
@@ -109,10 +112,31 @@ const BACK_ENDURANCE: Ranges = [
   band(50, 59, 'F', 15, 47, 75, 110), band(60, 69, 'F', 6, 19, 40, 91)
 ]
 
+// Capacité aérobie (VO2max, ml·kg⁻¹·min⁻¹) — Aide-mémoire « Évaluation des
+// avantages pour la santé », outil n° 26 SPAP-SCPE, fourni par Marie-Eve. C'est
+// la table qu'elle utilise ; elle remplace le repli sur l'ACSM, qui donnait des
+// catégories différentes pour la même valeur.
+//
+// Les valeurs concernent les adultes de 20 à 65 ans et sont basées sur la
+// population nord-américaine (85 % de Blancs) — mention portée par la feuille
+// elle-même, conservée ici car elle limite la portée de l'interprétation.
+//
+// La feuille nomme la catégorie basse « Médiocre » ; l'app l'affiche
+// « À améliorer » partout (CATEGORY_LABELS), formulation retenue avec Marie
+// pour les documents remis au client.
+const VO2MAX: Ranges = [
+  band(15, 19, 'M', 43.6, 48.8, 52.4, 57.4), band(20, 29, 'M', 41.6, 47.2, 50.6, 55.6),
+  band(30, 39, 'M', 33.7, 40.1, 45.4, 48.8), band(40, 49, 'M', 31.9, 35.5, 42.7, 47.0),
+  band(50, 59, 'M', 26.0, 30.1, 36.5, 41.8), band(60, 69, 'M', 23.5, 28.7, 32.8, 38.4),
+  band(15, 19, 'F', 36.8, 39.5, 43.7, 49.0), band(20, 29, 'F', 35.0, 37.8, 42.0, 47.2),
+  band(30, 39, 'F', 33.0, 36.0, 40.1, 45.4), band(40, 49, 'F', 27.1, 31.9, 35.1, 40.0),
+  band(50, 59, 'F', 24.6, 31.0, 34.0, 36.6), band(60, 69, 'F', 23.5, 29.6, 32.8, 35.8)
+]
+
 /** Exportée pour la feuille de référence des barèmes (`BaremesPage`), afin qu'elle
  *  documente les tables **réellement** utilisées pour coter, et non un autre jeu. */
 export const CPAFLA_TABLES: Record<TestKey, Ranges | null> = {
-  vo2max: null, // mCAFT — pas de table CPAFLA ; repli sur ACSM (aérobie).
+  vo2max: VO2MAX,
   bodyFat: null, // % de gras coté par la grille de Marie (ADR 0024), hors norme.
   pushups: PUSHUPS,
   situps: SITUPS,

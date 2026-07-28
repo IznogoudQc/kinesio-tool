@@ -21,12 +21,19 @@ test('les six tests musculo sont cotés en CPAFLA (le PDF annonçait ACSM)', () 
   assert.equal(commonNormSource(musculo)?.short, 'CPAFLA')
 })
 
-test('le VO2max reste ACSM — aucune table CPAFLA fiable pour le mCAFT', () => {
-  assert.equal(normSourceForTest('vo2max').short, 'ACSM')
+test('le VO2max est CPAFLA depuis l’encodage de l’outil n° 26 (SPAP-SCPE)', () => {
+  // Il retombait sur l'ACSM tant que la table de Marie n'était pas encodée ;
+  // le libellé des rapports suit automatiquement, puisqu'il est déduit.
+  assert.equal(normSourceForTest('vo2max').short, 'CPAFLA')
+  // …et cite l'aide-mémoire, pas le Guide du conseiller : ce sont deux
+  // publications distinctes, et la table aérobie vient de l'aide-mémoire.
+  assert.match(normSourceForTest('vo2max').full, /outil n° 26/)
+  assert.match(normSourceForTest('pushups').full, /Guide du conseiller/)
 })
 
 test('un groupe mixte ne reçoit pas de source unique', () => {
-  assert.equal(commonNormSource(['pushups', 'vo2max']), null)
+  // Le % de gras n'a pas de table CPAFLA (grille de Marie, ADR 0024).
+  assert.equal(commonNormSource(['pushups', 'bodyFat']), null)
   assert.equal(commonNormSource([]), null)
 })
 

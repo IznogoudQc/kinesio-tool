@@ -1,4 +1,5 @@
 import { getDeltaVsAverage, getPercentile, getPopulationAverage, type NormsType, type TestKey } from '../lib/norms'
+import { normSourceForTest } from '../lib/norms/bareme'
 
 interface PercentileIndicatorProps {
   test: TestKey
@@ -49,7 +50,7 @@ export function PercentileIndicator({
     `${Math.round(percentile)}${suffixe(percentile)} percentile : ${Math.round(percentile)} % des ${sexLabel === 'H' ? 'hommes' : 'femmes'} de ${bracket} ans ` +
     `ont un résultat inférieur au vôtre. ` +
     (average !== null ? `Moyenne population (P50) ≈ ${average}. ` : '') +
-    `Source : ACSM Guidelines 11e édition.`
+    `Source : ${normSourceForTest(test).full}.`
 
   // Mini-barre 0-100 avec marqueur P50 et position du client.
   const clientPos = Math.max(0, Math.min(100, percentile))

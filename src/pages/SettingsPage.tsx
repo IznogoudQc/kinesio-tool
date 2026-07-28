@@ -484,7 +484,8 @@ function NormsCard() {
         </p>
         <p className="text-marine/55 text-sm mt-2">
           Le <strong className="font-medium">% de gras</strong> suit la grille de Marie. Le
-          <strong className="font-medium"> VO2max</strong>, l’<strong className="font-medium">IMC</strong> et le
+          <strong className="font-medium"> VO2max</strong> est coté par la table CPAFLA de capacité aérobie
+          (aide-mémoire SPAP-SCPE, outil n° 26). L’<strong className="font-medium">IMC</strong> et le
           <strong className="font-medium"> tour de taille</strong> n’ont pas de table CPAFLA : ils sont cotés
           avec les tables ACSM. (Dans l’indice de santé du dos, le tour de taille est en revanche coté par les
           tables de composition CPAFLA.)
