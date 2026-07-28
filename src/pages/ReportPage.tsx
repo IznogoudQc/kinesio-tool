@@ -1400,7 +1400,7 @@ function CompositionCpaflaPdf({ latest, computed, sex }: { latest: Bilan; comput
   )
 }
 
-function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null }) {
+function CompositionExtras({ latest, computed, sex }: { latest: Bilan; computed: BilanComputed; sex: 'F' | 'M' | null }) {
   const d = latest.data as Record<string, unknown>
   const plis = [
     { label: 'Triceps', key: 'pli_triceps' },
@@ -1409,37 +1409,9 @@ function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bila
     { label: 'Crête iliaque', key: 'pli_iliaque' }
   ]
   const plisPresents = plis.map(p => ({ ...p, value: num(d[p.key]) })).filter(p => p.value !== null)
-  const durnin4 = ['pli_triceps', 'pli_biceps', 'pli_sous_scap', 'pli_iliaque'].map(k => num(d[k]))
-  const sommePlis = durnin4.every(v => v !== null) ? (durnin4 as number[]).reduce((a, b) => a + b, 0) : null
-
-  const tailleCm = num(d.taille_cm)
-  const stats: { label: string; value: string; hint?: string }[] = [
-    { label: 'Poids', value: dualWeight(num(d.poids_kg), weightUnit) },
-    {
-      label: 'Grandeur',
-      value: tailleCm === null ? '—' : `${cmToFeetInches(tailleCm)} (${fmt(tailleCm)} cm)`
-    },
-    { label: 'IMC', value: computed.imc === null ? '—' : `${fmt(computed.imc)} kg/m²` },
-    { label: 'Tour de taille', value: num(d.tour_taille_cm) === null ? '—' : `${fmt(num(d.tour_taille_cm))} cm` },
-    { label: 'Ratio taille / hanche', value: computed.ratioTailleHanche === null ? '—' : fmt(computed.ratioTailleHanche, 2) },
-    { label: 'Poids optimal max', value: dualWeight(computed.poidsOptimalMaxKg, weightUnit), hint: 'Poids pour un IMC de 25' },
-    { label: '% de gras', value: computed.pourcentageGrasDurnin === null ? '—' : `${fmt(computed.pourcentageGrasDurnin)} %`, hint: 'Méthode Durnin-Womersley (4 plis)' },
-    { label: 'Somme des 4 plis', value: sommePlis === null ? '—' : `${fmt(sommePlis)} mm` }
-  ]
 
   return (
     <div style={{ marginBottom: '8mm' }}>
-      <BlockTitle>Vos mesures</BlockTitle>
-      <div className="break-inside-avoid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm', marginBottom: plisPresents.length ? '6mm' : 0 }}>
-        {stats.map(s => (
-          <div key={s.label} style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm' }}>
-            <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT }}>{s.label}</p>
-            <p className="report-display" style={{ fontSize: '20pt', fontWeight: 700, color: MARINE, marginTop: '1mm' }}>{s.value}</p>
-            {s.hint && <p style={{ fontSize: '8pt', color: AXIS, marginTop: '0.5mm' }}>{s.hint}</p>}
-          </div>
-        ))}
-      </div>
-
       <PdfBodyFatZones
         pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)}
         sex={sex}
@@ -1623,7 +1595,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
         <>
           <AnthropoLine latest={props.latest} weightUnit={props.weightUnit} />
           <CompositionCpaflaPdf latest={props.latest} computed={computed} sex={props.profile.sex} />
-          <CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} sex={props.profile.sex} />
+          <CompositionExtras latest={props.latest} computed={computed} sex={props.profile.sex} />
         </>
       }
     />

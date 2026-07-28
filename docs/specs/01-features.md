@@ -2,6 +2,21 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.60 — PDF : grille « Vos mesures » retirée)
+
+La grille de 8 vignettes de la section 2 disparaît — chacune faisait doublon ou n'apportait rien :
+
+- **Poids, Grandeur, IMC, Tour de taille** → repris par la ligne de contexte ajoutée en v0.9.59, en tête
+  de la même section.
+- **Poids optimal max (IMC 25)** → non pertinent. Les poids-repères utiles restent : ceux dérivés du
+  **% de gras** (poids optimal ≤ 15 %, poids santé max ≤ 30 %), affichés plus bas.
+- **% de gras** et **Somme des 4 plis** → repris plus loin dans la section, avec la grille de risque et
+  le détail des plis.
+
+Conservés : la grille de risque du % de gras, les poids-repères, et le détail des plis cutanés.
+
+Version : 0.9.59 → 0.9.60.
+
 ## ✅ Fait (v0.9.59 — PDF section 2 : la note de composition s'explique)
 
 La section « Votre composition corporelle » affichait un **4 / 4** sans dire d'où il venait. Elle reprend
