@@ -1157,7 +1157,7 @@ function DomainSection({
         <div style={{ marginTop: '2mm' }}>
           <BlockTitle>Évolution dans le temps</BlockTitle>
           {chartData.map((c, i) => (
-            <BigChartCard key={i} title={c.title}>
+            <BigChartCard key={i} title={c.title} height="48mm" marginBottom="6mm">
               {c.cfg.kind === 'line' ? (
                 <SingleLineChart data={c.data as ChartPoint[]} color={c.cfg.color} scoreAxis={c.cfg.scoreAxis} />
               ) : (
@@ -1169,7 +1169,7 @@ function DomainSection({
       )}
 
       {interp && (
-        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '7mm 9mm', marginTop: '12mm' }}>
+        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '6mm 8mm', marginTop: '6mm' }}>
           <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '3mm' }}>
             Ce que ça veut dire pour vous
           </p>

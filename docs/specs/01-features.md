@@ -2,6 +2,18 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.62 — PDF : graphiques plus compacts pour garder l'interprétation sur la page)
+
+Les deux graphiques d'évolution faisaient **72 mm** de haut chacun, plus 10 mm de marge — près de 200 mm
+sur une page A4 utile d'environ 250 mm. Le bloc **« Ce que ça veut dire pour vous »** basculait donc
+systématiquement à la page suivante, séparé des courbes qu'il commente.
+
+Hauteur ramenée à **48 mm** et marges resserrées (6 mm entre les cartes, 6 mm avant l'interprétation) :
+environ 56 mm libérés, de quoi ramener le texte sur la même page. Les courbes restent parfaitement
+lisibles à cette taille — elles n'ont que quatre points.
+
+Version : 0.9.61 → 0.9.62.
+
 ## ✅ Fait (v0.9.61 — PDF : courbes IMC et tour de taille retirées)
 
 Les graphiques d'évolution de l'**IMC** et du **tour de taille** disparaissent de la section 2. Ces deux
