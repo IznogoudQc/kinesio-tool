@@ -579,13 +579,17 @@ export function MesuresOverview() {
 
       {/* ── Sélecteur de prise (Synthèse + une pill par date) + référence ── */}
       {unifiedDates.length > 0 && (
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <MesureSelectorPills
-            dates={unifiedDates}
-            selectedKey={selectedMesureKey}
-            onSelect={setSelectedMesureKey}
-            synthesisLatestDate={synthesisCirc?.latestContributionDate ?? null}
-          />
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          {/* `min-w-0 flex-1` : la carte des pastilles occupe la place restante et
+              laisse le sélecteur à sa droite — même structure que le Bilan complet. */}
+          <div className="min-w-0 flex-1">
+            <MesureSelectorPills
+              dates={unifiedDates}
+              selectedKey={selectedMesureKey}
+              onSelect={setSelectedMesureKey}
+              synthesisLatestDate={synthesisCirc?.latestContributionDate ?? null}
+            />
+          </div>
           {compareOptions.length > 0 && (
             <label className="flex items-center gap-1.5 text-xs text-marine/55 shrink-0">
               <span>Comparer à</span>

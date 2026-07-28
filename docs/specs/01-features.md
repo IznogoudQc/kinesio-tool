@@ -2,6 +2,16 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.56 — « Comparer à » aligné comme dans le Bilan complet)
+
+Le sélecteur existait (v0.9.53) mais passait **sous** la rangée de pastilles au lieu de se placer à sa
+droite : `MesureSelectorPills` rend une carte pleine largeur, qui ne laissait aucune place à côté.
+
+La structure du Bilan complet est reprise à l'identique — la carte est enveloppée dans un
+`min-w-0 flex-1` et le sélecteur devient son voisin de droite dans une rangée `flex justify-between`.
+
+Version : 0.9.55 → 0.9.56.
+
 ## ✅ Fait (v0.9.55 — Config eslint réparée : les règles de hooks React s'appliquent enfin)
 
 Suite du plantage v0.9.54. Deux défauts de la config expliquaient qu'il soit passé au travers :
