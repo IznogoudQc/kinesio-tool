@@ -132,7 +132,10 @@ async function buildStandaloneHtml(
     },
     avatarDataUrl: await avatarDataUrl(client.avatarFilename),
     bilans: list,
-    norms: readSetting('categorization_norms') === 'cpafla' ? 'cpafla' : 'acsm',
+    // Pas de `norms` dans le payload : le renderer suit `DEFAULT_NORMS`, comme le
+    // dashboard et le PDF. On lisait ici `categorization_norms`, un réglage retiré
+    // en v0.9.31 — la lecture retombait donc toujours sur ACSM et le HTML cotait
+    // dans une autre norme que l'écran.
     kinesiologist,
     // Le mot de la fin, comme dans le PDF. `data.notes` du bilan = observations
     // que Marie-Eve destine au client (à ne pas confondre avec ses notes privées).

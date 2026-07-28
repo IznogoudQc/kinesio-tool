@@ -30,6 +30,8 @@ import {
 import { cpaflaComposition, cpaflaWaistPoints } from './norms/cpafla-composition.ts'
 import { systolicRatingLegacy } from './norms/clinical.ts'
 import { BILAN_TO_TEST_KEY } from './norms/bilan-keys.ts'
+import { computeAge } from './norms/index.ts'
+import { DEFAULT_NORMS } from './norms/types.ts'
 import type { Category, NormsType, TestKey } from './norms/types.ts'
 
 export type { Category, NormsType }
@@ -53,6 +55,27 @@ export interface BilanProfile {
   age: number | null
   sex: 'F' | 'M' | null
   norms: NormsType
+}
+
+/**
+ * Profil de cotation d'un client — **point d'entrée unique** du dashboard, du
+ * rapport PDF et du rapport HTML autonome.
+ *
+ * Les trois construisaient ce profil chacun de leur côté, et ils ont divergé :
+ * le HTML alimentait `norms` depuis le réglage `categorization_norms`, retiré
+ * en v0.9.31, si bien que sa lecture retombait toujours sur ACSM. Le même
+ * client affichait une composition corporelle de 3,0 dans le document remis et
+ * de 4,0 à l'écran. Passer par ce helper garantit que les trois surfaces cotent
+ * sur les mêmes bases : même âge (calculé à la date du jour) et même norme.
+ */
+export function buildBilanProfile(
+  client: { birthdate?: string | null; sex?: 'F' | 'M' | null } | null | undefined
+): BilanProfile {
+  return {
+    age: computeAge(client?.birthdate),
+    sex: client?.sex ?? null,
+    norms: DEFAULT_NORMS
+  }
 }
 
 export interface CompositeScore {

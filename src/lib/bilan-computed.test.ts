@@ -13,7 +13,8 @@
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { computeBilan, mergeComputedIntoBilan, type BilanProfile } from './bilan-computed.ts'
+import { buildBilanProfile, computeBilan, mergeComputedIntoBilan, type BilanProfile } from './bilan-computed.ts'
+import { computeAge } from './norms/index.ts'
 
 const NICHOLAS: BilanProfile = { age: 48, sex: 'M', norms: 'acsm' }
 
@@ -268,4 +269,64 @@ test('import : puissance conservée si Sayers est impossible (saut ou poids manq
   const p: BilanProfile = { age: 49, sex: 'M', norms: 'cpafla' }
   const merged = mergeComputedIntoBilan(raw, computeBilan(raw, p))
   assert.equal(merged.puissance_jambes_watts, 4725)
+})
+
+// ── Profil partagé dashboard / PDF / HTML ────────────────────────────────────
+//
+// Le dashboard, le rapport PDF et le rapport HTML autonome construisaient leur
+// `BilanProfile` chacun de leur côté, et ils ont divergé : le HTML tirait sa
+// norme du réglage `categorization_norms`, retiré en v0.9.31, si bien que sa
+// lecture retombait toujours sur ACSM. Le document remis au client affichait
+// une composition corporelle de 3,0 là où Marie-Eve lisait 4,0 à l'écran.
+// Les trois passent désormais par `buildBilanProfile`.
+
+test('buildBilanProfile : cote en CPAFLA, jamais en ACSM', () => {
+  const p = buildBilanProfile({ birthdate: '1977-03-14', sex: 'M' })
+  assert.equal(p.norms, 'cpafla')
+})
+
+test('buildBilanProfile : âge dérivé de la date de naissance, sexe repris tel quel', () => {
+  const p = buildBilanProfile({ birthdate: '1977-03-14', sex: 'F' })
+  assert.equal(p.age, computeAge('1977-03-14'))
+  assert.equal(p.sex, 'F')
+})
+
+test('buildBilanProfile : client absent ou incomplet → âge et sexe nuls (pas de plantage)', () => {
+  for (const c of [null, undefined, {}, { birthdate: null, sex: null }] as const) {
+    const p = buildBilanProfile(c)
+    assert.equal(p.age, null)
+    assert.equal(p.sex, null)
+    assert.equal(p.norms, 'cpafla')
+  }
+})
+
+test('le profil partagé reproduit les scores du dashboard (et pas ceux d’ACSM)', () => {
+  // Bilan réel Nicholas du 25 juin 2026, tel qu'affiché à l'écran.
+  const raw: BilanData = {
+    taille_cm: 176,
+    poids_kg: 91.8,
+    tour_taille_cm: 93,
+    pushups: 55,
+    situps: 49,
+    flexion_tronc_cm: 27,
+    endurance_dos_sec: 180,
+    saut_vertical_cm: 48,
+    vo2max: 57.6,
+    pa_systolique: 112,
+    pli_triceps: 7,
+    pli_biceps: 5.5,
+    pli_sous_scap: 18.5,
+    pli_iliaque: 17
+  }
+  const shared = buildBilanProfile({ birthdate: '1977-03-14', sex: 'M' })
+  const r = computeBilan(raw, { ...shared, age: 49 })
+  const r1 = (n: number | null) => (n === null ? null : Math.round(n * 10) / 10)
+  assert.equal(r1(r.composition.score), 4)
+  assert.equal(r1(r.musculoGlobal.score), 3.7)
+  assert.equal(r1(r.overall.score), 4)
+
+  // L'ancienne norme du HTML donnait d'autres chiffres : c'est bien un écart
+  // visible par le client, pas une subtilité d'arrondi.
+  const acsm = computeBilan(raw, { age: 49, sex: 'M', norms: 'acsm' })
+  assert.notEqual(r1(acsm.composition.score), r1(r.composition.score))
 })

@@ -31,6 +31,7 @@ import {
 import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
 import { cpaflaCompositionDetail } from '../lib/norms/cpafla-composition'
 import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
+import { buildBilanProfile } from '../lib/bilan-computed'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed } from '../lib/bilan-computed'
@@ -258,10 +259,9 @@ export function ReportPage() {
     }
   }, [loading])
 
-  const profile = useMemo<BilanProfile>(
-    () => ({ age: computeAge(client?.birthdate), sex: client?.sex ?? null, norms }),
-    [client, norms]
-  )
+  // Helper partagé avec le dashboard et le rapport HTML : les trois surfaces
+  // doivent coter sur le même âge et la même norme (cf. `buildBilanProfile`).
+  const profile = useMemo<BilanProfile>(() => buildBilanProfile(client), [client])
   // Du plus ancien au plus récent.
   const chrono = useMemo(() => [...bilans].reverse(), [bilans])
   const syntheses = useMemo(() => chrono.map(b => computeBilan(b.data, profile)), [chrono, profile])

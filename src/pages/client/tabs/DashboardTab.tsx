@@ -10,7 +10,7 @@ import { reportsService } from '../../../services/reports'
 import { SendBilanModal } from '../SendBilanModal'
 import { formatBilanDate } from '../bilanFields'
 import { computeAge, DEFAULT_NORMS, getNormPercentiles, type NormsType } from '../../../lib/norms'
-import { computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
+import { buildBilanProfile, computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
 import { BloodPressureBar } from '../../../components/BloodPressureBar'
 import { dualWeight } from '../../../lib/objectif-format'
 import { buildObjectif } from '../../../lib/objectif'
@@ -123,7 +123,9 @@ export function DashboardTab() {
   }, [toast])
 
   const age = useMemo(() => computeAge(client.birthdate), [client.birthdate])
-  const profile = useMemo<BilanProfile>(() => ({ age, sex: client.sex, norms }), [age, client.sex, norms])
+  // Helper partagé avec le rapport PDF et le rapport HTML : les trois surfaces
+  // doivent coter sur le même âge et la même norme (cf. `buildBilanProfile`).
+  const profile = useMemo<BilanProfile>(() => buildBilanProfile(client), [client])
 
   // Mode synthèse : sentinel `'synthesis'` ou absence du paramètre `?bilan=`.
   // Marie-Eve atterrit dessus par défaut — c'est le plus utile pour consulter

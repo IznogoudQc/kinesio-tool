@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   CATEGORY_LABELS,
+  DEFAULT_NORMS,
   computeAge,
   getCategorization,
   getNextCategoryTarget,
@@ -8,7 +9,13 @@ import {
   type NormsType,
   type TestKey
 } from '../lib/norms'
-import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed, type BilanProfile, type CompositeScore } from '../lib/bilan-computed'
+import {
+  buildBilanProfile,
+  computeBilan,
+  SHOW_BACK_HEALTH,
+  type BilanComputed,
+  type CompositeScore
+} from '../lib/bilan-computed'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../lib/synthesisBilan'
 import { detectWins } from '../lib/dashboard-wins'
 import { buildActionPlan } from '../lib/action-plan'
@@ -87,7 +94,6 @@ export interface StandaloneData {
   /** Photo du client en data URI, ou `null` — le fichier reste autonome. */
   avatarDataUrl: string | null
   bilans: Bilan[]
-  norms: NormsType
   kinesiologist: string
   /** Bloc de signature du PDF (« Marie-Eve Riendeau 
  Kinésiologue »). */
@@ -1210,8 +1216,8 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
   const firstName = client.name.trim().split(/\s+/)[0]
 
   // Objectif chiffré & macros — mêmes calculs que le bilan (synthèse des bilans).
-  const age = computeAge(client.birthdate)
-  const profile: BilanProfile = { age, sex: client.sex, norms: data.norms }
+  const profile = buildBilanProfile(client)
+  const age = profile.age
   const synth = data.bilans.length > 0 ? buildSynthesisBilan(data.bilans) : null
   const objectifData = synth?.data ?? {}
   const objectifComputed = computeBilan(objectifData, profile)
@@ -1325,9 +1331,14 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
 // ── Document ─────────────────────────────────────────────────────────────────
 
 export function EditorialReport({ data }: { data: StandaloneData }) {
-  const { client, bilans, norms } = data
-  const age = computeAge(client.birthdate)
-  const profile: BilanProfile = { age, sex: client.sex, norms }
+  const { client, bilans } = data
+  // La norme n'est PAS transportée dans le payload : le HTML doit coter comme le
+  // dashboard et le PDF, via le helper partagé. Le payload portait un réglage
+  // `categorization_norms` supprimé en v0.9.31, dont la lecture retombait donc
+  // toujours sur ACSM — le HTML affichait une composition de 3,0 là où le
+  // dashboard affichait 4,0.
+  const profile = buildBilanProfile(client)
+  const { age, norms } = profile
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [compareId, setCompareId] = useState<string>('prev')
