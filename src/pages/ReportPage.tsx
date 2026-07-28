@@ -834,9 +834,23 @@ function OverviewSection({
 
 
   // `keys` = les sous-tests qui composent chaque score (alignés sur `computeSynthesis`).
-  const cards: { title: string; score: CompositeScore; keys: (keyof BilanData)[] }[] = [
+  const cards: {
+    title: string
+    score: CompositeScore
+    keys: (keyof BilanData)[]
+    /** Affiche cette valeur + unité au lieu de la note 0-4 (aérobie → VO2max),
+     *  comme l'ancien rapport et le dashboard. La cote reste celle du composite. */
+    displayValue?: number | null
+    displayUnit?: string
+  }[] = [
     { title: 'Composition corporelle', score: synth.composition, keys: ['imc', 'pourcentage_gras', 'tour_taille_cm'] },
-    { title: 'Aptitude aérobie', score: synth.aerobic, keys: ['vo2max'] },
+    {
+      title: 'Aptitude aérobie',
+      score: synth.aerobic,
+      keys: ['vo2max'],
+      displayValue: synth.vo2max,
+      displayUnit: 'ml/kg/min'
+    },
     { title: 'Aptitude musculosquelettique globale', score: synth.musculoGlobal, keys: ['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'] },
     ...(SHOW_BACK_HEALTH
       ? [{ title: 'Dos et souplesse', score: synth.backHealth, keys: ['flexion_tronc_cm', 'endurance_dos_sec', 'situps'] as (keyof BilanData)[] }]
@@ -881,9 +895,17 @@ function OverviewSection({
               <p className="report-display" style={{ fontSize: '13pt', fontWeight: 600, color: MARINE }}>{c.title}</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '2mm', margin: '1.5mm 0 1mm' }}>
                 <span className="report-display" style={{ fontSize: '26pt', fontWeight: 700, color: MARINE }}>
-                  {c.score.score === null ? '—' : c.score.score.toFixed(1)}
+                  {c.displayUnit !== undefined
+                    ? c.displayValue == null
+                      ? '—'
+                      : c.displayValue.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
+                    : c.score.score === null
+                      ? '—'
+                      : c.score.score.toFixed(1)}
                 </span>
-                <span style={{ fontSize: '10pt', color: INK_SOFT }}>/ 4</span>
+                <span style={{ fontSize: '10pt', color: INK_SOFT }}>
+                  {c.displayUnit !== undefined ? c.displayUnit : '/ 4'}
+                </span>
                 {c.score.category && (
                   <span style={{ marginLeft: 'auto' }}>
                     <CategoryPill category={c.score.category} />

@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.58 — PDF section 1 : aptitude aérobie notée en VO2max)
+
+Dans « Votre bilan en un coup d'œil », la carte **Aptitude aérobie** affichait encore la note 0-4. Elle
+montre maintenant le **VO2max en ml/kg/min**, comme le dashboard et l'ancien rapport — la cote et la
+pastille de catégorie restent celles du composite.
+
+À noter : la page **couverture** avait déjà été corrigée en v0.9.42 ; ce sont deux endroits distincts du
+PDF, d'où l'oubli.
+
+Version : 0.9.57 → 0.9.58.
+
 ## ✅ Fait (v0.9.57 — PDF : parité avec les derniers correctifs du rapport HTML)
 
 Audit du PDF contre les changements du jour. La plupart avaient déjà suivi (les termes, l'échelle 0-4, le
