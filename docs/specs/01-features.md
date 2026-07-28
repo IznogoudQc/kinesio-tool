@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.63 — Correctif : « Comparer à » sans effet en mode Synthèse)
+
+Le sélecteur (v0.9.53) ne changeait rien. Cause : `activeView` a **deux branches** — mode Synthèse
+(« Dernières valeurs ») et mode date — et je n'avais câblé la comparaison que dans la seconde. Or la
+synthèse est le **mode par défaut**, donc le sélecteur semblait inerte pour la plupart des consultations.
+
+La branche Synthèse honore maintenant le choix : date précise, « Aucune comparaison », ou la mesure
+précédente par défaut. Les plis s'y alignent sur la date choisie, comme dans l'autre branche.
+
+Version : 0.9.62 → 0.9.63.
+
 ## ✅ Fait (v0.9.62 — PDF : graphiques plus compacts pour garder l'interprétation sur la page)
 
 Les deux graphiques d'évolution faisaient **72 mm** de haut chacun, plus 10 mm de marge — près de 200 mm

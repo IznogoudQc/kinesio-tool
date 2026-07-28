@@ -232,11 +232,25 @@ export function MesuresOverview() {
   const activeView = useMemo(() => {
     if (!circList) return null
     if (isSynthesisMode) {
+      // La référence suit « Comparer à » ici AUSSI : c'est le mode par défaut, donc
+      // l'ignorer rendait le sélecteur inerte pour la plupart des consultations.
+      let synthRefCirc: Partial<MesureCirconferences> = (previousSynthesisCirc?.data ?? {}) as Partial<MesureCirconferences>
+      let synthRefPlis: MesurePlisCutanes | null = findPreviousPlis(plisList ?? [])
+      if (compareKey === 'none') {
+        synthRefCirc = {}
+        synthRefPlis = null
+      } else if (compareKey) {
+        const chosen = circList.find(c => c.id === compareKey) ?? null
+        if (chosen) {
+          synthRefCirc = chosen
+          synthRefPlis = findPlisAtOrBefore(plisList ?? [], chosen.date)
+        }
+      }
       return {
         circ: (synthesisCirc?.data ?? {}) as Partial<MesureCirconferences>,
         plis: findLatestPlis(plisList ?? []),
-        previousCirc: (previousSynthesisCirc?.data ?? {}) as Partial<MesureCirconferences>,
-        previousPlis: findPreviousPlis(plisList ?? []),
+        previousCirc: synthRefCirc,
+        previousPlis: synthRefPlis,
         circDate: synthesisCirc?.latestContributionDate ?? null,
         plisDate: plisList?.[0]?.date ?? null,
         mode: 'synthesis' as const
