@@ -2,6 +2,25 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.64 — Feuille des barèmes : elle documentait les mauvaises tables)
+
+Question de Nicholas : « la partie force musculaire, c'est bien CPAFLA / ÉCPHV 3ᵉ éd. ? » — vérification
+faite, **oui pour la cotation, non pour ce que la feuille annonçait**.
+
+`BaremesPage` lisait `ACSM_TABLES` en dur et affichait « ACSM 11ᵉ éd. » comme source, alors que l'app cote
+en **CPAFLA** depuis v0.9.31. Les valeurs imprimées ne correspondaient donc pas à celles utilisées — et
+l'écart est important : redressements assis, médiane annoncée **30** contre **18** réellement appliquée.
+Un client à 25 reps est coté « Excellent » (p75 CPAFLA) alors que la feuille le situe sous la médiane.
+
+La feuille lit maintenant les tables dans le même ordre que le moteur (**CPAFLA d'abord, repli ACSM**) et
+**déduit la source** par test au lieu de l'avoir écrite à la main — elle ne peut plus dériver.
+
+Résultat : les six tests musculo (pompes, redressements, flexion du tronc, endurance du dos, saut vertical,
+puissance des jambes) sont annoncés **CPAFLA / ÉCPHV 3ᵉ éd.** ; le **VO2max** reste **ACSM**, faute de table
+CPAFLA — ce qui est exact.
+
+Version : 0.9.63 → 0.9.64.
+
 ## ✅ Fait (v0.9.63 — Correctif : « Comparer à » sans effet en mode Synthèse)
 
 Le sélecteur (v0.9.53) ne changeait rien. Cause : `activeView` a **deux branches** — mode Synthèse

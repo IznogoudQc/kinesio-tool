@@ -109,7 +109,9 @@ const BACK_ENDURANCE: Ranges = [
   band(50, 59, 'F', 15, 47, 75, 110), band(60, 69, 'F', 6, 19, 40, 91)
 ]
 
-const TABLES: Record<TestKey, Ranges | null> = {
+/** Exportée pour la feuille de référence des barèmes (`BaremesPage`), afin qu'elle
+ *  documente les tables **réellement** utilisées pour coter, et non un autre jeu. */
+export const CPAFLA_TABLES: Record<TestKey, Ranges | null> = {
   vo2max: null, // mCAFT — pas de table CPAFLA ; repli sur ACSM (aérobie).
   bodyFat: null, // % de gras coté par la grille de Marie (ADR 0024), hors norme.
   pushups: PUSHUPS,
@@ -129,7 +131,7 @@ const TABLES: Record<TestKey, Ranges | null> = {
 /** Retourne la plage CPAFLA pour (test, âge, sexe), ou `null` si non encodée.
  *  Structure identique à `getAcsmRange` — fonctionnera dès que `TABLES` sera rempli. */
 export function getCpaflaRange(test: TestKey, age: number, sex: 'F' | 'M'): NormRange | null {
-  const ranges = TABLES[test]
+  const ranges = CPAFLA_TABLES[test]
   if (!ranges) return null
   return ranges.find(r => r.sex === sex && age >= r.ageMin && age <= r.ageMax) ?? null
 }
@@ -137,7 +139,7 @@ export function getCpaflaRange(test: TestKey, age: number, sex: 'F' | 'M'): Norm
 /** Vrai si au moins une table CPAFLA est encodée. Permet à l'UI (Paramètres)
  *  d'annoncer honnêtement l'état : tables disponibles vs en attente de source. */
 export function cpaflaHasTables(): boolean {
-  return Object.values(TABLES).some(r => r !== null && r.length > 0)
+  return Object.values(CPAFLA_TABLES).some(r => r !== null && r.length > 0)
 }
 
 export const cpaflaNorms: NormSet = {

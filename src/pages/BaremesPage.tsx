@@ -1,12 +1,16 @@
 import { useEffect } from 'react'
 import { ACSM_TABLES } from '../lib/norms/acsm'
+import { CPAFLA_TABLES } from '../lib/norms/cpafla'
 import { getClinicalRange } from '../lib/norms/clinical'
 import type { NormRange, TestKey } from '../lib/norms/types'
 import { bodyFatRiskZones, type BfRiskZone } from '../lib/body-fat-risk'
 
 /** Document de référence des barèmes & formules — rendu pour export PDF via la
  *  fenêtre cachée (report-generator `generateBaremesPdf`). Les tables de
- *  catégorisation sont lues depuis `ACSM_TABLES` → toujours synchro avec le code. */
+ *  catégorisation sont lues depuis le code (CPAFLA d'abord, repli ACSM) — cette
+ *  feuille documente donc les barèmes **réellement** utilisés pour coter, avec la
+ *  source résolue par test plutôt qu'écrite à la main (elle avait dérivé : elle
+ *  annonçait ACSM pour des tests cotés en CPAFLA depuis v0.9.31). */
 
 const nf = (n: number) => n.toLocaleString('fr-CA', { maximumFractionDigits: 4 })
 
@@ -35,15 +39,18 @@ interface Meta {
 }
 
 function Baro({ meta }: { meta: Meta }) {
-  const ranges = ACSM_TABLES[meta.test] as NormRange[] | null
+  // Même résolution que `getRange` : CPAFLA en premier, ACSM en repli.
+  const cpafla = CPAFLA_TABLES[meta.test] as NormRange[] | null
+  const ranges = (cpafla && cpafla.length > 0 ? cpafla : (ACSM_TABLES[meta.test] as NormRange[] | null))
   if (!ranges) return null
+  const source = cpafla && cpafla.length > 0 ? 'CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd.' : meta.source
   const rows = meta.mergeSexes ? ranges.filter(r => r.sex === 'M') : ranges
   return (
     <div className="baro">
       <div className="baro-t">
         <h3>{meta.label}</h3>
         <span className="u">{meta.unit}</span>
-        {meta.hors && <span className="badge low">hors ACSM</span>}
+        {meta.hors && !(cpafla && cpafla.length > 0) && <span className="badge low">hors ACSM</span>}
       </div>
       <table>
         <thead>
@@ -72,7 +79,7 @@ function Baro({ meta }: { meta: Meta }) {
           })}
         </tbody>
       </table>
-      <p className="src">Source : {meta.source}.</p>
+      <p className="src">Source : {source}.</p>
     </div>
   )
 }
