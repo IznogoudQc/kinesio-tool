@@ -29,6 +29,7 @@ import {
   type TestKey
 } from '../lib/norms'
 import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
+import { cpaflaCompositionDetail } from '../lib/norms/cpafla-composition'
 import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
@@ -1316,6 +1317,89 @@ function PdfTargetWeights({ pct, weightKg, sex }: { pct: number | null; weightKg
 }
 
 // Composition — extras (chiffres clés + plis cutanés).
+/** Ligne de contexte en tête de la section composition — les quatre mesures d'où
+ *  découle la note, sur une seule ligne, comme le dashboard. */
+function AnthropoLine({ latest, weightUnit }: { latest: Bilan; weightUnit: 'kg' | 'lb' }) {
+  const d = latest.data
+  const tailleCm = num(d.taille_cm)
+  const poidsKg = num(d.poids_kg)
+  const imc = num(d.imc)
+  const ct = num(d.tour_taille_cm)
+  const items: { label: string; value: string }[] = []
+  if (tailleCm !== null) items.push({ label: 'Taille', value: `${cmToFeetInches(tailleCm)} · ${fmt(tailleCm)} cm` })
+  if (poidsKg !== null) items.push({ label: 'Poids', value: dualWeight(poidsKg, weightUnit) })
+  if (imc !== null) items.push({ label: 'IMC', value: `${fmt(imc)} kg/m²` })
+  if (ct !== null) items.push({ label: 'Tour de taille', value: `${fmt(ct)} cm` })
+  if (items.length === 0) return null
+  return (
+    <div className="break-inside-avoid" style={{ display: 'flex', flexWrap: 'wrap', gap: '8mm', marginBottom: '5mm' }}>
+      {items.map(i => (
+        <span key={i.label} style={{ fontSize: '10pt', color: INK_SOFT }}>
+          {i.label} <strong style={{ color: MARINE, fontWeight: 700 }}>{i.value}</strong>
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/** Explique la note de composition (méthode CPAFLA) : plage d'IMC, points du tour
+ *  de taille et des 5 plis, puis le calcul. Pendant PDF de `CompositionCpaflaCard`
+ *  du dashboard — c'est ce qui manquait au client pour comprendre son 4 / 4. */
+function CompositionCpaflaPdf({ latest, computed, sex }: { latest: Bilan; computed: BilanComputed; sex: 'F' | 'M' | null }) {
+  if (sex !== 'F' && sex !== 'M') return null
+  const d = latest.data
+  const plis5 = [d.pli_triceps, d.pli_biceps, d.pli_sous_scap, d.pli_iliaque, d.pli_mollet]
+  const s5pc = plis5.every(v => typeof v === 'number' && Number.isFinite(v))
+    ? (plis5 as number[]).reduce((a, b) => a + b, 0)
+    : null
+  const ct = num(d.tour_taille_cm)
+  const detail = cpaflaCompositionDetail({ imc: computed.imc, ct, s5pc, sex })
+  if (detail.score === null || detail.combo === null) return null
+
+  const rows: { label: string; value: string; pts: string }[] = []
+  if (detail.imcBandLabel !== null) {
+    rows.push({ label: 'IMC', value: computed.imc === null ? '—' : `${fmt(computed.imc)} kg/m²`, pts: `plage ${detail.imcBandLabel}` })
+  }
+  if (detail.b !== null) rows.push({ label: 'Tour de taille', value: ct === null ? '—' : `${fmt(ct)} cm`, pts: `${detail.b} pt${detail.b > 1 ? 's' : ''}` })
+  if (detail.c !== null) rows.push({ label: 'Somme des 5 plis', value: s5pc === null ? '—' : `${fmt(s5pc)} mm`, pts: `${detail.c} pt${detail.c > 1 ? 's' : ''}` })
+
+  const calcul =
+    detail.combo === 'imc+ct+s5pc'
+      ? `Calcul CPAFLA : (tour de taille ${detail.b} × 1,5 + plis ${detail.c}) ÷ 2,5 = ${fmt(detail.raw as number, 2)} → arrondi à ${detail.score}.`
+      : detail.combo === 'imc+ct'
+        ? `Somme des 5 plis non mesurée (mollet manquant) → la note repose sur l’IMC et le tour de taille : ${detail.b} sur 4.`
+        : detail.combo === 'imc+s5pc'
+          ? `Tour de taille non mesuré → la note repose sur l’IMC et la somme des 5 plis : ${detail.c} sur 4.`
+          : detail.combo === 'ct'
+            ? `IMC non disponible → la note repose sur le tour de taille (référence IMC 27) : ${detail.b} sur 4.`
+            : `Seul l’IMC est disponible → note ${detail.a} sur 4.`
+
+  return (
+    <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm', marginBottom: '6mm' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '4mm', marginBottom: '3mm' }}>
+        <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: GOLD, fontWeight: 700 }}>
+          D’où vient cette note
+        </p>
+        <span style={{ fontSize: '13pt', fontWeight: 700, color: MARINE }}>
+          {detail.score}
+          <span style={{ fontSize: '9pt', color: INK_SOFT, fontWeight: 500 }}> / 4</span>
+        </span>
+      </div>
+      {rows.map(r => (
+        <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', gap: '4mm', fontSize: '10pt', padding: '1.5mm 0', borderTop: `0.2mm solid ${GRID}` }}>
+          <span style={{ color: INK_SOFT }}>{r.label}</span>
+          <span style={{ marginLeft: 'auto', color: MARINE, fontWeight: 600 }}>{r.value}</span>
+          <span style={{ width: '32mm', textAlign: 'right', color: INK_SOFT }}>{r.pts}</span>
+        </div>
+      ))}
+      <p style={{ fontSize: '9.5pt', color: MARINE, marginTop: '3mm', lineHeight: 1.5 }}>{calcul}</p>
+      <p style={{ fontSize: '8.5pt', color: INK_SOFT, marginTop: '1.5mm' }}>
+        Méthode du Physitest canadien (CPAFLA) : IMC, tour de taille et somme des cinq plis cutanés.
+      </p>
+    </div>
+  )
+}
+
 function CompositionExtras({ latest, computed, weightUnit, sex }: { latest: Bilan; computed: BilanComputed; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null }) {
   const d = latest.data as Record<string, unknown>
   const plis = [
@@ -1535,7 +1619,13 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
         { kind: 'line', key: 'imc', title: 'IMC (kg/m²)', color: MARINE },
         { kind: 'line', key: 'tour_taille_cm', title: 'Tour de taille (cm)', color: GOLD }
       ]}
-      topExtra={<CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} sex={props.profile.sex} />}
+      topExtra={
+        <>
+          <AnthropoLine latest={props.latest} weightUnit={props.weightUnit} />
+          <CompositionCpaflaPdf latest={props.latest} computed={computed} sex={props.profile.sex} />
+          <CompositionExtras latest={props.latest} computed={computed} weightUnit={props.weightUnit} sex={props.profile.sex} />
+        </>
+      }
     />
   )
 }

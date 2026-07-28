@@ -2,6 +2,23 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.59 — PDF section 2 : la note de composition s'explique)
+
+La section « Votre composition corporelle » affichait un **4 / 4** sans dire d'où il venait. Elle reprend
+maintenant ce que montre le dashboard :
+
+- **Ligne de contexte** en tête — Taille · Poids · IMC · Tour de taille, les quatre mesures d'où découle
+  la note, en métrique et impérial.
+- **Carte « D'où vient cette note »** — plage d'IMC, points du tour de taille, points de la somme des
+  5 plis, puis le calcul CPAFLA écrit en toutes lettres
+  (« (tour de taille 4 × 1,5 + plis 3) ÷ 2,5 = 3,6 → arrondi à 4 »). Elle s'adapte aux mesures
+  disponibles : sans le pli du mollet, elle explique le repli sur IMC + tour de taille.
+
+**Référence du PDF** : vérifié que tous les écarts ▲▼ se calculent déjà contre le **premier bilan** du
+client (`oldest = chrono[0]`), avec sa date en en-tête de colonne. Rien à changer.
+
+Version : 0.9.58 → 0.9.59.
+
 ## ✅ Fait (v0.9.58 — PDF section 1 : aptitude aérobie notée en VO2max)
 
 Dans « Votre bilan en un coup d'œil », la carte **Aptitude aérobie** affichait encore la note 0-4. Elle
