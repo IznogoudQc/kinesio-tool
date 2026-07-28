@@ -2,6 +2,17 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.54 — Correctif : plantage de la vue Mesures (React #310))
+
+L'onglet Mesures plantait (« Minified React error #310 ») : deux `useMemo` ajoutés en v0.9.52/0.9.53
+avaient été écrits **après les `return` conditionnels** du composant, ce qui change le nombre de hooks
+appelés d'un rendu à l'autre — interdit par React.
+
+Les deux hooks sont remontés au-dessus de la ligne `// ─── Tous les hooks ont été appelés`, qui balise
+justement cette frontière dans le fichier.
+
+Version : 0.9.53 → 0.9.54.
+
 ## ✅ Fait (v0.9.53 — Vue Mesures : sélecteur « Comparer à »)
 
 Dernier des trois emprunts au dashboard Bilan. La comparaison était **figée** sur la prise immédiatement

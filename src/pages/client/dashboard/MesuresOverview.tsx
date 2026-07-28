@@ -409,6 +409,28 @@ export function MesuresOverview() {
     return delta < 0 ? 'down' : 'up'
   }, [activeMetric, circList, plisList])
 
+  // Référence du graphique : la même métrique sur la prise précédente.
+  const referenceValue = useMemo(() => {
+    if (!activeView || !activeMetric) return null
+    const raw = activeMetric.accessor(
+      (activeView.previousCirc ?? null) as MesureCirconferences | null,
+      activeView.previousPlis ?? null
+    )
+    if (raw === null || !Number.isFinite(raw)) return null
+    return activeMetric.convert ? activeMetric.convert(raw) : raw
+  }, [activeView, activeMetric])
+  const referenceLabel =
+    activeView?.previousCirc?.date != null
+      ? `Mesure du ${formatBilanDate(activeView.previousCirc.date)}`
+      : 'Mesure précédente'
+
+  // Prises proposées comme référence : uniquement celles antérieures à l'active.
+  const compareOptions = useMemo(() => {
+    if (!circList) return []
+    const activeDate = activeView?.circDate ?? null
+    return circList.filter(c => (activeDate ? c.date < activeDate : true))
+  }, [circList, activeView])
+
   // ─── Tous les hooks ont été appelés — early returns autorisés à partir d'ici.
 
   if (!client) {
@@ -446,28 +468,6 @@ export function MesuresOverview() {
   }
 
   // ── Helpers locaux pour lire la vue active (synthèse ou snapshot date) ────
-  // Référence du graphique : la même métrique sur la prise précédente.
-  const referenceValue = useMemo(() => {
-    if (!activeView || !activeMetric) return null
-    const raw = activeMetric.accessor(
-      (activeView.previousCirc ?? null) as MesureCirconferences | null,
-      activeView.previousPlis ?? null
-    )
-    if (raw === null || !Number.isFinite(raw)) return null
-    return activeMetric.convert ? activeMetric.convert(raw) : raw
-  }, [activeView, activeMetric])
-  const referenceLabel =
-    activeView?.previousCirc?.date != null
-      ? `Mesure du ${formatBilanDate(activeView.previousCirc.date)}`
-      : 'Mesure précédente'
-
-  // Prises proposées comme référence : uniquement celles antérieures à l'active.
-  const compareOptions = useMemo(() => {
-    if (!circList) return []
-    const activeDate = activeView?.circDate ?? null
-    return circList.filter(c => (activeDate ? c.date < activeDate : true))
-  }, [circList, activeView])
-
   const lastDate = activeView?.circDate ?? activeView?.plisDate ?? null
   const lastDays = lastDate ? daysSince(lastDate) : null
   const totalSessions = (circList?.length ?? 0) + (plisList?.length ?? 0)
