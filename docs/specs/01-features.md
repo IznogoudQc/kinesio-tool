@@ -2,6 +2,26 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.55 — Config eslint réparée : les règles de hooks React s'appliquent enfin)
+
+Suite du plantage v0.9.54. Deux défauts de la config expliquaient qu'il soit passé au travers :
+
+1. **`eslint-plugin-react-hooks` n'était pas installé.** Les règles de hooks n'existaient donc pas — le
+   bug qui a fait planter l'onglet Mesures ne pouvait pas être détecté. Installé, avec
+   `rules-of-hooks` en **erreur** (bloquante) et `exhaustive-deps` en avertissement.
+2. **Les `ignores` n'étaient pas globaux.** Placés à côté d'autres clés dans un objet de config, ils ne
+   valaient que pour cet objet ; `out/**` était donc analysé. C'est de là que venaient les « 3 erreurs de
+   baseline » qu'on avait pris l'habitude d'ignorer — elles portaient sur l'artefact de build, pas sur le
+   code source.
+
+**Vérifié en ré-introduisant volontairement le bug** : la règle le signale avec le message exact
+(« Did you accidentally call a React Hook after an early return? »).
+
+Le projet passe maintenant à **0 erreur** (contre 3 fantômes), sans aucune violation de hooks et sans
+avertissement `exhaustive-deps`.
+
+Version : 0.9.54 → 0.9.55.
+
 ## ✅ Fait (v0.9.54 — Correctif : plantage de la vue Mesures (React #310))
 
 L'onglet Mesures plantait (« Minified React error #310 ») : deux `useMemo` ajoutés en v0.9.52/0.9.53

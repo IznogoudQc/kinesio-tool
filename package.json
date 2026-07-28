@@ -1,6 +1,6 @@
 {
   "name": "kinesio-tool",
-  "version": "0.9.54",
+  "version": "0.9.55",
   "description": "Application locale pour Marie-Eve kinésiologue",
   "main": "out/main/index.js",
   "author": "Kinésio Conseil",
@@ -47,6 +47,7 @@
     "electron-builder": "^25.0.0",
     "electron-vite": "^3.0.0",
     "eslint": "^9.0.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.0.0"
