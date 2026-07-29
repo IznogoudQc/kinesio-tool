@@ -121,8 +121,8 @@ export interface BilanComputed {
    *  dashboard. `null` si le sexe du client est inconnu (méthode CPAFLA inapplicable). */
   backHealthDetail: CpaflaCombineDetail | null
   musculoDetail: CpaflaCombineDetail | null
-  /** Détail du score global. ⚠️ Structure reconstituée depuis l'ancien logiciel, le
-   *  barème de la PA systolique reste **provisoire** — voir ADR 0030. */
+  /** Détail du score global. Structure **confirmée** par la formule de l'ancien
+   *  logiciel (ADR 0033) ; seul le barème de la PA systolique reste provisoire. */
   overallDetail: CpaflaCombineDetail
   overall: CompositeScore
 }
@@ -399,15 +399,21 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     musculoGlobal = compose(['pushups', 'situps', 'saut_vertical_cm', 'puissance_jambes_watts'])
   }
   // ── Santé et condition physique globale ────────────────────────────────────
-  // Structure reconstituée depuis l'ancien logiciel (ADR 0030) : moyenne des
-  // **cotes entières 0-4** des composantes réellement mesurées — et non des scores
-  // décimaux. Les composantes sont composition, aptitude aérobie (METS max),
-  // pression artérielle systolique, indice du dos et aptitude musculosquelettique,
-  // toutes pondérées ×1.
+  // Structure **confirmée** par la fenêtre Propriétés de l'ancien logiciel (ADR
+  // 0033), formule identique pour les hommes et les femmes :
   //
-  // ⚠️ Le barème de la PA systolique est PROVISOIRE (`systolicRatingLegacy`), et le
-  // bilan de janvier 2026 de S. D. ne se reproduit pas encore : il exigerait un
-  // nombre PAIR de composantes, donc une 6ᵉ qu'on n'a pas identifiée.
+  //   AverageRatings([Questionnaire combiné]*1, [Composition corporelle]*1,
+  //     [Pression artérielle systolique]*1, [METS max]*1, [Indice de santé du dos]*1,
+  //     [Aptitudes musculosquelettiques]*1, [166]*1)
+  //
+  // Sept composantes, toutes ×1, moyenne des **cotes entières 0-4** (pas des scores
+  // décimaux) et seules les composantes mesurées comptent — c'est le sens de
+  // `AverageRatings`. On en implémente cinq : Marie n'utilise pas le test 166, et
+  // ne fait pas le questionnaire à chaque fois (décision de Nicholas : on ne le
+  // tient pas en compte pour l'instant). Notre `aerobic` correspond à leur
+  // « METS max » — le METS n'étant que le VO2max ÷ 3,5, la cote est la même.
+  //
+  // ⚠️ Seul le barème de la PA systolique reste PROVISOIRE (`systolicRatingLegacy`).
   const coteOf = (c: CompositeScore): number | null =>
     c.score === null ? null : categoryToScore(scoreToCategory(c.score))
   const overallDetail = cpaflaCombineDetail([

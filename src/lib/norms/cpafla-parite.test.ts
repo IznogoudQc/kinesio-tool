@@ -181,7 +181,7 @@ test('PA : toute échelle à 5 niveaux exigerait des zones d’environ 1 mmHg', 
   // Conclusion : la règle binaire « < 120 → 4, sinon 0 » reste la seule tenable.
 })
 
-test('Sabrina 2026-01 : n doit valoir 6, et la composante manquante vaut 2', () => {
+test('Sabrina 2026-01 : la 6ᵉ composante est le questionnaire, coté 2', () => {
   const r1 = (n: number) => Math.round(n * 10) / 10
   const connu = 0 + 0 + 1 + 2 // composition, aérobie, dos, musculo
   const sommesPour = (n: number) =>
@@ -199,4 +199,12 @@ test('Sabrina 2026-01 : n doit valoir 6, et la composante manquante vaut 2', () 
   // PA 117 < 120 → 4 selon la règle en vigueur, donc l'inconnue vaut 2.
   assert.equal(systolicRatingLegacy(117), 4)
   assert.equal(6 - 4, 2)
+  // IDENTIFIÉE : la fenêtre Propriétés de l'ancien logiciel liste sept
+  // composantes — [Questionnaire combiné], [Composition corporelle], [Pression
+  // artérielle systolique], [METS max], [Indice de santé du dos], [Aptitudes
+  // musculosquelettiques] et [166], toutes ×1. Marie n'utilise pas le 166 et ne
+  // fait pas le questionnaire à chaque fois : ce jour-là elle l'avait fait, d'où
+  // la 6ᵉ composante. Coté 2, il donne 9/6 = 1,5 — la seule valeur qui colle.
+  const cotes = [0, 0, 1, 2, 4, 2] // + questionnaire 2
+  assert.equal(r1(cotes.reduce((a, b) => a + b, 0) / cotes.length), 1.5)
 })

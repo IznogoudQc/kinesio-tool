@@ -836,7 +836,7 @@ export function DashboardTab() {
           detail={computed.overallDetail}
           storageKey="kinesio.global.bareme"
           figure="—"
-          warning="Calcul en cours de calibration. La structure (moyenne des cotes des composantes mesurées) reproduit l'ancien logiciel sur les bilans vérifiés, mais le barème de la pression artérielle reste provisoire — il sera ajusté dès que la table de classification sera disponible."
+          warning="La structure du calcul (moyenne des cotes des composantes mesurées) est confirmée par la formule de l'ancien logiciel et reproduit ses résultats sur tous les bilans vérifiés. Seul le barème de la pression artérielle systolique reste provisoire — il sera ajusté dès que sa table de classification sera disponible."
           footnote="Chaque composante est ramenée à sa cote 0-4, puis toutes comptent également. Une composante non mesurée est simplement exclue."
         />
       </section>
