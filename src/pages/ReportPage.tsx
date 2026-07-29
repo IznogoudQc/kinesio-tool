@@ -28,6 +28,11 @@ import {
 } from '../lib/norms'
 import { BILAN_TO_TEST_KEY, isLowerBetter } from '../lib/norms/bilan-keys'
 import { cpaflaCompositionDetail } from '../lib/norms/cpafla-composition'
+import {
+  componentLabelInline,
+  globalScoreSummary,
+  GLOBAL_BLURB
+} from '../lib/global-score-summary'
 import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
 import { buildBilanProfile } from '../lib/bilan-computed'
 import { categoryCells, commonNormSource, normSourceForTest } from '../lib/norms/bareme'
@@ -302,6 +307,7 @@ export function ReportPage() {
       <CardioSection {...shared} computed={latestComputed} />
       <ForceSection {...shared} />
       {SHOW_BACK_HEALTH && <DosSection {...shared} />}
+      <GlobalScoreSection computed={latestComputed} profile={profile} />
       <ObjectifSection client={client} latest={latest} chrono={chrono} profile={profile} />
       <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} customPrincipe={{ title: client.principePersoTitre, line: client.principePersoTexte }} />
     </article>
@@ -769,6 +775,86 @@ function MacroChip({ label, value, unit }: { label: string; value: string; unit:
   )
 }
 
+// ── Section 6 : Santé et condition physique globale ──────────────────────────
+
+/**
+ * Le score qui résume tout le bilan, et **d'où il vient**.
+ *
+ * Le dashboard l'affiche déjà, mais il manquait au PDF : le client repartait
+ * avec quatre notes de domaine sans le chiffre qui les résume. Le détail vient
+ * de `computed.overallDetail` — la même source que l'écran, pas un second
+ * calcul qui pourrait diverger.
+ */
+function GlobalScoreSection({ computed, profile }: { computed: BilanComputed; profile: BilanProfile }) {
+  // Chiffres ET formulations viennent du module partagé avec le document HTML,
+  // pour que les deux documents ne racontent jamais deux histoires différentes.
+  const summary = globalScoreSummary(computed)
+  if (!summary) return null
+  const { score, category, components, missing, strongest, weakest, formula } = summary
+
+  return (
+    <ReportFlowSection
+      title="Votre santé et condition physique globale"
+      sectionNumber="Section 6"
+      intro="Ce score résume tout votre bilan en un seul chiffre. Chaque grand volet est d’abord ramené à une cote de 0 à 4, puis tous comptent également — aucun ne pèse plus qu’un autre."
+      score={computed.overall}
+    >
+      <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm', marginBottom: '6mm' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '4mm', marginBottom: '3mm' }}>
+          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: GOLD, fontWeight: 700 }}>
+            D’où vient cette note
+          </p>
+          <span style={{ fontSize: '13pt', fontWeight: 700, color: MARINE }}>
+            {fmt(score)}
+            <span style={{ fontSize: '9pt', color: INK_SOFT, fontWeight: 500 }}> / 4</span>
+          </span>
+        </div>
+        {components.map(r => (
+          <div
+            key={r.key}
+            style={{ display: 'flex', justifyContent: 'space-between', gap: '4mm', fontSize: '10pt', padding: '1.8mm 0', borderTop: `0.2mm solid ${GRID}` }}
+          >
+            <span style={{ color: INK_SOFT }}>{r.label}</span>
+            <span style={{ width: '24mm', textAlign: 'right', color: MARINE, fontWeight: 600 }}>
+              {r.cote} <span style={{ color: INK_SOFT, fontWeight: 500 }}>/ 4</span>
+            </span>
+          </div>
+        ))}
+        <p style={{ fontSize: '9.5pt', color: MARINE, marginTop: '3mm', lineHeight: 1.5 }}>
+          Moyenne des {components.length} volets mesurés : {formula} = <strong>{fmt(score)}</strong> sur 4.
+        </p>
+        {missing.length > 0 && (
+          <p style={{ fontSize: '8.5pt', color: INK_SOFT, marginTop: '1.5mm' }}>
+            Non mesuré ce jour-là, donc exclu du calcul plutôt que compté zéro :{' '}
+            {missing.map(r => componentLabelInline(r.key)).join(', ')}.
+          </p>
+        )}
+      </div>
+
+      <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '5mm 8mm' }}>
+        <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '3mm' }}>
+          Ce que ça veut dire pour vous
+        </p>
+        <p style={{ fontSize: '11pt', lineHeight: 1.6, color: '#3a3f52' }}>
+          {category ? GLOBAL_BLURB[category] : ''}
+          {strongest && weakest && (
+            <>
+              {' '}Votre point fort est {componentLabelInline(strongest.key)} ({strongest.cote} / 4) ; c’est{' '}
+              {componentLabelInline(weakest.key)} ({weakest.cote} / 4) qui pèse le plus sur le résultat, et donc là que le
+              prochain effort rapportera le plus.
+            </>
+          )}
+        </p>
+        <p style={{ fontSize: '8.5pt', color: INK_SOFT, marginTop: '3mm', lineHeight: 1.45 }}>
+          Méthode du Physitest canadien (CPAFLA) : chaque volet est ramené à sa cote 0-4 avant d’être moyenné, à poids égaux.
+          Un volet non mesuré est exclu du calcul, jamais compté zéro.
+          {profile.age !== null && ` Cotes établies pour ${profile.sex === 'F' ? 'une femme' : 'un homme'} de ${profile.age} ans.`}
+        </p>
+      </div>
+    </ReportFlowSection>
+  )
+}
+
 /** Section dédiée « Votre objectif », placée en fin de rapport (juste avant la
  *  clôture). Rendue uniquement s'il y a un objectif : texte libre OU cible
  *  chiffrée (module nutrition). Le contenu détaillé vit dans `ObjectifBlock`. */
@@ -783,7 +869,7 @@ function ObjectifSection({ client, latest, chrono, profile }: { client: Client; 
   return (
     <ReportFlowSection
       title="Votre objectif"
-      sectionNumber="Section 6"
+      sectionNumber="Section 7"
       intro="Votre cible de composition corporelle et les repères pour l'atteindre — à ajuster avec votre kinésiologue."
     >
       <div className="report-stack">
@@ -1998,7 +2084,7 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature, customPrin
   const signOff = signature.trim() || `${coachName || 'Marie-Eve Bélanger'}\nKinésiologue`
 
   return (
-    <ReportSection title="Vos forces" sectionNumber="Section 7">
+    <ReportSection title="Vos forces" sectionNumber="Section 8">
       <div style={{ marginTop: '2mm', marginBottom: '9mm' }}>
         <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
           <Trophy size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Vos forces

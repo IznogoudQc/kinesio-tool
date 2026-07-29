@@ -15,6 +15,11 @@ import {
   type CompositeScore
 } from '../lib/bilan-computed'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../lib/synthesisBilan'
+import {
+  componentLabelInline,
+  globalScoreSummary,
+  GLOBAL_BLURB
+} from '../lib/global-score-summary'
 import { detectWins } from '../lib/dashboard-wins'
 import { buildActionPlan } from '../lib/action-plan'
 import { buildObjectif, type Objectif } from '../lib/objectif'
@@ -1327,6 +1332,82 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
   )
 }
 
+/**
+ * Le score qui résume tout le bilan, et d'où il vient.
+ *
+ * Pendant HTML de la section 6 du PDF. Chiffres **et** formulations viennent de
+ * `globalScoreSummary`, partagé avec le PDF : les deux documents remis au même
+ * client ne peuvent donc pas raconter deux histoires différentes.
+ */
+function GlobalScoreBody({ computed }: { computed: BilanComputed }) {
+  const summary = globalScoreSummary(computed)
+  if (!summary) return null
+  const { score, category, components, missing, strongest, weakest, formula } = summary
+
+  return (
+    <Section
+      id="global"
+      backTop
+      tone="white"
+      scores={[{ score: computed.overall }]}
+      eyebrow="Santé et condition physique globale"
+      title="Votre bilan en un seul chiffre"
+      lead="Chaque grand volet est d’abord ramené à une cote de 0 à 4, puis tous comptent également — aucun ne pèse plus qu’un autre."
+    >
+      <div className="rounded-xl border border-cream-dark/40 bg-cream/50 p-6">
+        <div className="flex items-baseline justify-between gap-4 mb-3">
+          <p className="text-gold-dark text-xs font-bold uppercase tracking-widest">D’où vient cette note</p>
+          <span className="text-marine text-xl font-bold tabular-nums">
+            {score.toFixed(1)}
+            <span className="text-marine/40 text-sm font-medium"> / 4</span>
+          </span>
+        </div>
+        {components.map(c => (
+          <div
+            key={c.key}
+            className="flex items-baseline justify-between gap-4 border-t border-cream-dark/40 py-2 text-sm"
+          >
+            <span className="text-marine/60">{c.label}</span>
+            <span className="text-marine font-semibold tabular-nums shrink-0">
+              {c.cote} <span className="text-marine/40 font-medium">/ 4</span>
+            </span>
+          </div>
+        ))}
+        <p className="text-marine text-sm mt-3 leading-relaxed">
+          Moyenne des {components.length} volets mesurés : {formula} ={' '}
+          <strong className="font-semibold">{score.toFixed(1)}</strong> sur 4.
+        </p>
+        {missing.length > 0 && (
+          <p className="text-marine/45 text-xs mt-2">
+            Non mesuré ce jour-là, donc exclu du calcul plutôt que compté zéro :{' '}
+            {missing.map(m => componentLabelInline(m.key)).join(', ')}.
+          </p>
+        )}
+      </div>
+
+      <div className="mt-6 rounded-xl bg-cream/50 border border-cream-dark/40 p-6">
+        <p className="text-gold-dark text-xs font-bold uppercase tracking-widest mb-3">
+          Ce que ça veut dire pour vous
+        </p>
+        <p className="text-marine/80 leading-relaxed">
+          {category ? GLOBAL_BLURB[category] : ''}
+          {strongest && weakest && (
+            <>
+              {' '}Votre point fort est {componentLabelInline(strongest.key)} ({strongest.cote} / 4) ; c’est{' '}
+              {componentLabelInline(weakest.key)} ({weakest.cote} / 4) qui pèse le plus sur le résultat, et donc là que
+              le prochain effort rapportera le plus.
+            </>
+          )}
+        </p>
+        <p className="text-marine/45 text-xs mt-4 leading-relaxed">
+          Méthode du Physitest canadien (CPAFLA) : chaque volet est ramené à sa cote 0-4 avant d’être moyenné, à poids
+          égaux. Un volet non mesuré est exclu du calcul, jamais compté zéro.
+        </p>
+      </div>
+    </Section>
+  )
+}
+
 // ── Document ─────────────────────────────────────────────────────────────────
 
 export function EditorialReport({ data }: { data: StandaloneData }) {
@@ -1643,6 +1724,8 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
       >
         <MusculoRadar current={activeData} compare={compareData} compareLabel={compareLabel} age={age} sex={client.sex} norms={norms} />
       </Section>
+
+      <GlobalScoreBody computed={computed} />
 
       {bilans.length >= 2 && (
         <Section
