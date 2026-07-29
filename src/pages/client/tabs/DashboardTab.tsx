@@ -32,6 +32,7 @@ import { detectWins } from '../../../lib/dashboard-wins'
 import { detectHealthFlags } from '../../../lib/health-flags'
 import { HealthFlags } from '../dashboard/HealthFlags'
 import { BodyFatRiskBar } from '../../../components/BodyFatRiskBar'
+import { HealthRiskLine } from '../../../components/HealthRiskLine'
 import { BodyFatTrend } from '../../../components/BodyFatTrend'
 import { Vo2maxTrend } from '../../../components/Vo2maxTrend'
 import { ScoreTrend } from '../../../components/ScoreTrend'
@@ -679,6 +680,15 @@ export function DashboardTab() {
             )}
           </div>
         )}
+        {/* Lecture santé de l'IMC ET du tour de taille (aide-mémoire ÉAS). Ni cote
+            ni percentile : les deux mesures alimentent déjà la composition et
+            l'indice du dos par les tables CPAFLA. */}
+        <HealthRiskLine
+          imc={typeof activeData.imc === 'number' ? activeData.imc : null}
+          waist={typeof activeData.tour_taille_cm === 'number' ? activeData.tour_taille_cm : null}
+          sex={client.sex}
+          className="mt-3"
+        />
         {norms === 'cpafla' &&
           (client.sex === 'M' || client.sex === 'F') &&
           (() => {

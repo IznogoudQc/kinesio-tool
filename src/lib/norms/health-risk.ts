@@ -48,6 +48,12 @@ export interface BmiBand {
   /** Libellé de la plage tel qu'imprimé (« 18,5–24,9 »). */
   label: string
   risk: HealthRisk
+  /** Tour de taille (cm) à partir duquel le risque combiné s'applique, par
+   *  sexe. `null` sous 18,5 : la feuille n'y évalue pas le tour de taille. */
+  waist: { M: number; F: number } | null
+  /** Risque quand l'IMC est dans cette bande ET que le tour de taille atteint
+   *  le seuil. `null` là où la feuille imprime « – ». */
+  combined: HealthRisk | null
 }
 
 /**
@@ -59,12 +65,12 @@ export interface BmiBand {
  * titre que l'excès.
  */
 export const BMI_BANDS: BmiBand[] = [
-  { ltImc: 18.5, label: 'moins de 18,5', risk: 'ACCRU' },
-  { ltImc: 25, label: '18,5–24,9', risk: 'MOINDRE' },
-  { ltImc: 30, label: '25,0–29,9', risk: 'ACCRU' },
-  { ltImc: 35, label: '30,0–34,9', risk: 'ELEVE' },
-  { ltImc: 40, label: '35,0–39,9', risk: 'TRES_ELEVE' },
-  { ltImc: Infinity, label: '40 et plus', risk: 'EXTREMEMENT_ELEVE' }
+  { ltImc: 18.5, label: 'moins de 18,5', risk: 'ACCRU', waist: null, combined: null },
+  { ltImc: 25, label: '18,5–24,9', risk: 'MOINDRE', waist: { M: 90, F: 80 }, combined: 'ELEVE' },
+  { ltImc: 30, label: '25,0–29,9', risk: 'ACCRU', waist: { M: 100, F: 90 }, combined: 'TRES_ELEVE' },
+  { ltImc: 35, label: '30,0–34,9', risk: 'ELEVE', waist: { M: 110, F: 105 }, combined: 'EXTREMEMENT_ELEVE' },
+  { ltImc: 40, label: '35,0–39,9', risk: 'TRES_ELEVE', waist: { M: 125, F: 115 }, combined: 'EXTREMEMENT_ELEVE' },
+  { ltImc: Infinity, label: '40 et plus', risk: 'EXTREMEMENT_ELEVE', waist: { M: 125, F: 125 }, combined: 'EXTREMEMENT_ELEVE' }
 ]
 
 export interface BmiRiskResult {
@@ -80,15 +86,90 @@ export function bmiRisk(imc: number | null | undefined): BmiRiskResult | null {
   return band ? { risk: band.risk, band: band.label } : null
 }
 
-// ── Risque combiné IMC + tour de taille — EN ATTENTE ─────────────────────────
-//
-// La feuille donne aussi des seuils de tour de taille par sexe et un risque
-// combiné. Volontairement NON encodé : sur la photo fournie, les colonnes
-// « TT, hommes » et « TT, femmes » sont décalées d'environ une demi-ligne par
-// rapport aux tranches d'IMC (6 tranches d'IMC pour 5 valeurs de tour de
-// taille, et « ≥ 125 » lu deux fois de suite chez les hommes). Les chiffres
-// sont lisibles, leur ligne d'appartenance ne l'est pas.
-//
-// Se tromper d'une ligne ferait afficher « risque extrêmement élevé » à un
-// client dont le risque est « élevé ». À encoder dès qu'une photo à plat de ce
-// seul tableau sera disponible.
+// ── Risque combiné IMC + tour de taille ──────────────────────────────────────
+
+export interface HealthRiskResult {
+  risk: HealthRisk
+  /** Libellé de la bande d'IMC (« 25,0–29,9 »), pour situer la valeur. */
+  band: string
+  /** `true` si le tour de taille a fait monter le risque au-dessus de celui de
+   *  l'IMC seul — c'est l'information que la feuille sert à faire ressortir. */
+  waistRaised: boolean
+  /** Seuil de tour de taille de la ligne (cm), ou `null` si la feuille n'en
+   *  prévoit pas (IMC sous 18,5) ou si le sexe est inconnu. */
+  waistThreshold: number | null
+  /** Le tour de taille a-t-il réellement été mesuré ? Distingue « mesuré et
+   *  sous le seuil » de « pas mesuré » — sans quoi on affirmerait qu'un tour de
+   *  taille absent est sous le seuil, ce qui est faux. */
+  waistKnown: boolean
+}
+
+export interface HealthRiskInput {
+  imc: number | null | undefined
+  /** Tour de taille en cm. */
+  waist?: number | null
+  sex?: 'F' | 'M' | null
+}
+
+/**
+ * Risque santé combiné, tel que l'imprime l'aide-mémoire.
+ *
+ * Le tour de taille ne fait que **relever** le risque : sous le seuil (ou s'il
+ * est inconnu), c'est le risque de l'IMC seul qui vaut. Un homme d'IMC normal
+ * mais de tour de taille ≥ 90 cm passe ainsi de « Moindre » à « Élevé » — c'est
+ * exactement le cas que ce tableau existe pour attraper, et la raison pour
+ * laquelle on n'affiche jamais la colonne IMC toute seule.
+ */
+export function healthRisk({ imc, waist, sex }: HealthRiskInput): HealthRiskResult | null {
+  if (typeof imc !== 'number' || Number.isNaN(imc) || imc <= 0) return null
+  const band = BMI_BANDS.find(b => imc < b.ltImc)
+  if (!band) return null
+
+  const threshold = band.waist && (sex === 'M' || sex === 'F') ? band.waist[sex] : null
+  const waistKnown = typeof waist === 'number' && !Number.isNaN(waist)
+  const reaches = threshold !== null && waistKnown && (waist as number) >= threshold
+
+  if (reaches && band.combined) {
+    return {
+      risk: band.combined,
+      band: band.label,
+      waistRaised: true,
+      waistThreshold: threshold,
+      waistKnown
+    }
+  }
+  return { risk: band.risk, band: band.label, waistRaised: false, waistThreshold: threshold, waistKnown }
+}
+
+/**
+ * Phrase d'explication sous le risque — **une seule** implémentation pour le
+ * dashboard, le PDF et le HTML. Chaque surface l'écrivait de son côté ; c'est
+ * exactement ainsi qu'on se retrouve avec trois textes qui divergent (cf. les
+ * barèmes, v0.9.64 à 0.9.66).
+ */
+export function healthRiskExplanation(r: HealthRiskResult): string {
+  if (r.waistThreshold === null) return `Plage d’IMC ${r.band}.`
+  if (r.waistRaised) {
+    return `Relevé par le tour de taille : à partir de ${r.waistThreshold} cm dans la plage d’IMC ${r.band}, le risque monte au-dessus de celui de l’IMC seul.`
+  }
+  if (!r.waistKnown) {
+    // Ne jamais affirmer qu'un tour de taille non mesuré est sous le seuil.
+    return `Plage d’IMC ${r.band} · tour de taille non mesuré, le risque combiné n’a pas pu être évalué (seuil ${r.waistThreshold} cm).`
+  }
+  return `Plage d’IMC ${r.band} · tour de taille sous ${r.waistThreshold} cm, qui ne relève donc pas le risque.`
+}
+
+/** Couleurs de l'échelle de risque — partagées par le dashboard, le PDF et le
+ *  document HTML, pour qu'un même risque ait la même couleur partout.
+ *  Progression volontairement distincte des couleurs de catégorie de condition
+ *  physique : ce n'est pas la même échelle et le vert n'y est pas un but. */
+export const HEALTH_RISK_HEX: Record<HealthRisk, string> = {
+  MOINDRE: '#15803d',
+  ACCRU: '#ca8a04',
+  ELEVE: '#ea580c',
+  TRES_ELEVE: '#dc2626',
+  EXTREMEMENT_ELEVE: '#991b1b'
+}
+
+/** Source à citer sous l'affichage — le libellé exact de la feuille de Marie. */
+export const HEALTH_RISK_SOURCE = 'Aide-mémoire ÉAS (SPAP-SCPE) — adultes de 20 à 65 ans'

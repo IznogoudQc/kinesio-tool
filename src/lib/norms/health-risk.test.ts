@@ -6,7 +6,13 @@
 
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { BMI_BANDS, bmiRisk, HEALTH_RISK_ORDER } from './health-risk.ts'
+import {
+  BMI_BANDS,
+  bmiRisk,
+  healthRisk,
+  healthRiskExplanation,
+  HEALTH_RISK_ORDER
+} from './health-risk.ts'
 
 test('les six bandes de la feuille, à leurs bornes exactes', () => {
   assert.equal(bmiRisk(18.4)?.risk, 'ACCRU')
@@ -56,4 +62,100 @@ test('les bandes couvrent la droite réelle sans trou ni chevauchement', () => {
 test('l’ordre de gravité est complet et sans doublon', () => {
   assert.equal(new Set(HEALTH_RISK_ORDER).size, HEALTH_RISK_ORDER.length)
   for (const b of BMI_BANDS) assert.ok(HEALTH_RISK_ORDER.includes(b.risk))
+})
+
+// ── Risque combiné IMC + tour de taille ──────────────────────────────────────
+
+test('les 6 lignes de la feuille, colonne « Risque IMC + TT »', () => {
+  // Seuil atteint → le risque combiné imprimé sur la ligne.
+  const cases: [number, number, 'F' | 'M', string][] = [
+    [22, 90, 'M', 'ELEVE'],
+    [22, 80, 'F', 'ELEVE'],
+    [27, 100, 'M', 'TRES_ELEVE'],
+    [27, 90, 'F', 'TRES_ELEVE'],
+    [32, 110, 'M', 'EXTREMEMENT_ELEVE'],
+    [32, 105, 'F', 'EXTREMEMENT_ELEVE'],
+    [37, 125, 'M', 'EXTREMEMENT_ELEVE'],
+    [37, 115, 'F', 'EXTREMEMENT_ELEVE'],
+    [42, 125, 'M', 'EXTREMEMENT_ELEVE'],
+    [42, 125, 'F', 'EXTREMEMENT_ELEVE']
+  ]
+  for (const [imc, waist, sex, expected] of cases) {
+    const r = healthRisk({ imc, waist, sex })
+    assert.equal(r?.risk, expected, `IMC ${imc} / TT ${waist} ${sex}`)
+    assert.equal(r?.waistRaised, true, `IMC ${imc} / TT ${waist} ${sex} : le TT devrait relever`)
+  }
+})
+
+test('sous le seuil, le tour de taille ne relève pas le risque', () => {
+  // 89 cm chez un homme d'IMC normal : on reste à « Moindre ».
+  const r = healthRisk({ imc: 22, waist: 89, sex: 'M' })
+  assert.equal(r?.risk, 'MOINDRE')
+  assert.equal(r?.waistRaised, false)
+  assert.equal(r?.waistThreshold, 90)
+})
+
+test('le tour de taille pèse plus que l’IMC — le cas que la feuille sert à attraper', () => {
+  // Homme d'IMC normal, 92 cm → « Élevé ».
+  const mince = healthRisk({ imc: 23, waist: 92, sex: 'M' })
+  // Homme en embonpoint, 95 cm (sous son seuil de 100) → « Accru » seulement.
+  const rond = healthRisk({ imc: 27, waist: 95, sex: 'M' })
+  assert.equal(mince?.risk, 'ELEVE')
+  assert.equal(rond?.risk, 'ACCRU')
+  // Conséquence assumée : l'IMC le plus bas porte ici le risque le plus haut.
+})
+
+test('sous 18,5 la feuille n’évalue pas le tour de taille', () => {
+  const r = healthRisk({ imc: 17, waist: 130, sex: 'M' })
+  assert.equal(r?.risk, 'ACCRU')
+  assert.equal(r?.waistRaised, false)
+  assert.equal(r?.waistThreshold, null)
+})
+
+test('tour de taille ou sexe manquant → risque de l’IMC seul, sans invention', () => {
+  for (const input of [
+    { imc: 27, sex: 'M' as const },
+    { imc: 27, waist: 120, sex: null },
+    { imc: 27, waist: null, sex: 'F' as const },
+    { imc: 27, waist: Number.NaN, sex: 'M' as const }
+  ]) {
+    const r = healthRisk(input)
+    assert.equal(r?.risk, 'ACCRU', JSON.stringify(input))
+    assert.equal(r?.waistRaised, false)
+  }
+})
+
+test('healthRisk et bmiRisk s’accordent quand le tour de taille est absent', () => {
+  for (let imc = 15; imc < 50; imc += 0.5) {
+    assert.equal(healthRisk({ imc })?.risk, bmiRisk(imc)?.risk, `IMC ${imc}`)
+  }
+})
+
+test('IMC absent ou aberrant → null', () => {
+  for (const imc of [null, undefined, Number.NaN, 0, -3]) {
+    assert.equal(healthRisk({ imc, waist: 100, sex: 'M' }), null)
+  }
+})
+
+test('tour de taille non mesuré : ne jamais affirmer qu’il est sous le seuil', () => {
+  const absent = healthRisk({ imc: 27, sex: 'M' })!
+  assert.equal(absent.waistKnown, false)
+  assert.match(healthRiskExplanation(absent), /non mesuré/)
+  assert.doesNotMatch(healthRiskExplanation(absent), /sous 100 cm, qui ne relève/)
+
+  const mesure = healthRisk({ imc: 27, waist: 95, sex: 'M' })!
+  assert.equal(mesure.waistKnown, true)
+  assert.match(healthRiskExplanation(mesure), /sous 100 cm/)
+})
+
+test('la phrase d’explication couvre les quatre situations, sans trou', () => {
+  const cas = [
+    healthRisk({ imc: 17, waist: 130, sex: 'M' })!, // pas de seuil sous 18,5
+    healthRisk({ imc: 23, waist: 92, sex: 'M' })!, // relevé par le TT
+    healthRisk({ imc: 23, waist: 85, sex: 'M' })!, // mesuré, sous le seuil
+    healthRisk({ imc: 23, sex: 'M' })! // non mesuré
+  ]
+  const phrases = cas.map(healthRiskExplanation)
+  for (const p of phrases) assert.ok(p.length > 0 && p.endsWith('.'))
+  assert.equal(new Set(phrases).size, 4, 'les quatre situations doivent se distinguer')
 })

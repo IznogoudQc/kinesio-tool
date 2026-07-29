@@ -31,6 +31,13 @@ import { cpaflaCompositionDetail } from '../lib/norms/cpafla-composition'
 import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
 import { buildBilanProfile } from '../lib/bilan-computed'
 import { categoryCells, commonNormSource, normSourceForTest } from '../lib/norms/bareme'
+import {
+  healthRisk,
+  healthRiskExplanation,
+  HEALTH_RISK_HEX,
+  HEALTH_RISK_LABELS,
+  HEALTH_RISK_SOURCE
+} from '../lib/norms/health-risk'
 import type { BilanProfile, CompositeScore } from '../lib/norms/scoring'
 import { buildSynthesisBilan } from '../lib/synthesisBilan'
 import { computeBilan, SHOW_BACK_HEALTH, type BilanComputed } from '../lib/bilan-computed'
@@ -1292,7 +1299,7 @@ function PdfTargetWeights({ pct, weightKg, sex }: { pct: number | null; weightKg
 // Composition — extras (chiffres clés + plis cutanés).
 /** Ligne de contexte en tête de la section composition — les quatre mesures d'où
  *  découle la note, sur une seule ligne, comme le dashboard. */
-function AnthropoLine({ latest, weightUnit }: { latest: Bilan; weightUnit: 'kg' | 'lb' }) {
+function AnthropoLine({ latest, weightUnit, sex }: { latest: Bilan; weightUnit: 'kg' | 'lb'; sex: 'F' | 'M' | null }) {
   const d = latest.data
   const tailleCm = num(d.taille_cm)
   const poidsKg = num(d.poids_kg)
@@ -1304,13 +1311,31 @@ function AnthropoLine({ latest, weightUnit }: { latest: Bilan; weightUnit: 'kg' 
   if (imc !== null) items.push({ label: 'IMC', value: `${fmt(imc)} kg/m²` })
   if (ct !== null) items.push({ label: 'Tour de taille', value: `${fmt(ct)} cm` })
   if (items.length === 0) return null
+  // Lecture santé de l'IMC ET du tour de taille (aide-mémoire ÉAS). Aucune cote :
+  // les deux mesures alimentent déjà la note de composition par les tables CPAFLA.
+  const risk = healthRisk({ imc, waist: ct, sex })
   return (
-    <div className="break-inside-avoid" style={{ display: 'flex', flexWrap: 'wrap', gap: '8mm', marginBottom: '5mm' }}>
-      {items.map(i => (
-        <span key={i.label} style={{ fontSize: '10pt', color: INK_SOFT }}>
-          {i.label} <strong style={{ color: MARINE, fontWeight: 700 }}>{i.value}</strong>
-        </span>
-      ))}
+    <div className="break-inside-avoid" style={{ marginBottom: '5mm' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8mm' }}>
+        {items.map(i => (
+          <span key={i.label} style={{ fontSize: '10pt', color: INK_SOFT }}>
+            {i.label} <strong style={{ color: MARINE, fontWeight: 700 }}>{i.value}</strong>
+          </span>
+        ))}
+      </div>
+      {risk && (
+        <div style={{ marginTop: '3mm' }}>
+          <span style={{ fontSize: '10pt', color: INK_SOFT }}>
+            Risque pour la santé{' '}
+            <strong style={{ color: HEALTH_RISK_HEX[risk.risk], fontWeight: 700 }}>
+              {HEALTH_RISK_LABELS[risk.risk]}
+            </strong>
+          </span>
+          <p style={{ fontSize: '8pt', color: AXIS, marginTop: '1mm' }}>
+            {healthRiskExplanation(risk)} {HEALTH_RISK_SOURCE}.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -1567,7 +1592,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
       ]}
       topExtra={
         <>
-          <AnthropoLine latest={props.latest} weightUnit={props.weightUnit} />
+          <AnthropoLine latest={props.latest} weightUnit={props.weightUnit} sex={props.profile.sex} />
           <CompositionCpaflaPdf latest={props.latest} computed={computed} sex={props.profile.sex} />
           <CompositionExtras latest={props.latest} computed={computed} sex={props.profile.sex} />
         </>

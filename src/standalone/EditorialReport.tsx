@@ -35,6 +35,7 @@ import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
 import { Sparkline } from '../components/Sparkline'
 import { BodyFatRiskBar } from '../components/BodyFatRiskBar'
+import { HealthRiskLine } from '../components/HealthRiskLine'
 import { bodyFatTargetWeights } from '../lib/body-fat-risk'
 import { BloodPressureBar } from '../components/BloodPressureBar'
 import { classifyBloodPressure } from '../lib/norms/clinical'
@@ -1562,6 +1563,14 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         />
         <Measure label="Indice de masse corporelle" value={activeData.imc} unit="kg/m²" {...measureProps} previousValue={compareData?.imc} lowerIsBetter history={historyOf('imc')} />
         <Measure label="Tour de taille" value={activeData.tour_taille_cm} unit="cm" {...measureProps} previousValue={compareData?.tour_taille_cm} lowerIsBetter history={historyOf('tour_taille_cm')} />
+        {/* Lecture santé des deux mesures ensemble (aide-mémoire ÉAS) — placée
+            juste après elles, avant le % de gras qui a sa propre grille. */}
+        <HealthRiskLine
+          imc={typeof activeData.imc === 'number' ? activeData.imc : null}
+          waist={typeof activeData.tour_taille_cm === 'number' ? activeData.tour_taille_cm : null}
+          sex={client.sex}
+          className="mt-6"
+        />
         <Measure id="pourcentage-gras" label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />
       </Section>
 
