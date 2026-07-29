@@ -139,3 +139,64 @@ test('barème PA provisoire : seuil à 120 (cohérent avec les 4 points connus)'
   assert.equal(systolicRatingLegacy(129), 0)
   assert.equal(systolicRatingLegacy(undefined), null) // non mesurée → exclue
 })
+
+// ── Pistes ÉCARTÉES pour le barème PA (ne pas les retenter) ──────────────────
+//
+// Nicholas a proposé de coter la PA systolique sur 5 niveaux, comme la barre
+// « Optimale / Normale / Pré-hypertension / Hypertension 1 / Hypertension 2 »
+// qu'affiche l'ancien logiciel. L'idée est bonne mais les chiffres la refusent.
+
+test('PA : le barème clinique standard (120/130/140/160) est incompatible', () => {
+  const cote5 = (v: number, t: [number, number, number, number]) =>
+    v < t[0] ? 4 : v < t[1] ? 3 : v < t[2] ? 2 : v < t[3] ? 1 : 0
+  const std: [number, number, number, number] = [120, 130, 140, 160]
+  // Les deux valeurs basses passent…
+  assert.equal(cote5(112, std), 4)
+  assert.equal(cote5(113, std), 4)
+  // …mais les deux hautes donnent 3 là où l'ancien logiciel impose 0.
+  assert.equal(cote5(122, std), 3)
+  assert.equal(cote5(129, std), 3)
+  assert.notEqual(cote5(122, std), 0)
+})
+
+test('PA : toute échelle à 5 niveaux exigerait des zones d’environ 1 mmHg', () => {
+  // Recherche exhaustive des seuils compatibles avec les 4 points connus.
+  const cote5 = (v: number, t: number[]) =>
+    v < t[0] ? 4 : v < t[1] ? 3 : v < t[2] ? 2 : v < t[3] ? 1 : 0
+  const points: [number, number][] = [[112, 4], [113, 4], [122, 0], [129, 0]]
+  const compatibles: number[][] = []
+  for (let a = 100; a <= 180; a++)
+    for (let b = a + 1; b <= 181; b++)
+      for (let c = b + 1; c <= 182; c++)
+        for (let d = c + 1; d <= 183; d++)
+          if (points.every(([v, exp]) => cote5(v, [a, b, c, d]) === exp)) compatibles.push([a, b, c, d])
+
+  assert.ok(compatibles.length > 0, 'des solutions existent, mais…')
+  // …toutes tiennent dans une fenêtre de 9 mmHg, soit ~1 mmHg par zone.
+  const min = Math.min(...compatibles.map(t => t[0]))
+  const max = Math.max(...compatibles.map(t => t[3]))
+  assert.equal(min, 114)
+  assert.equal(max, 122)
+  assert.ok(max - min <= 9, 'un barème de PA réaliste ne tient pas dans 9 mmHg')
+  // Conclusion : la règle binaire « < 120 → 4, sinon 0 » reste la seule tenable.
+})
+
+test('Sabrina 2026-01 : n doit valoir 6, et la composante manquante vaut 2', () => {
+  const r1 = (n: number) => Math.round(n * 10) / 10
+  const connu = 0 + 0 + 1 + 2 // composition, aérobie, dos, musculo
+  const sommesPour = (n: number) =>
+    Array.from({ length: 4 * n + 1 }, (_, s) => s).filter(s => r1(s / n) === 1.5)
+
+  // Une moyenne de cotes entières ne peut donner 1,5 que pour n pair.
+  for (const n of [3, 5, 7]) assert.deepEqual(sommesPour(n), [], `n=${n} devrait être impossible`)
+  assert.deepEqual(sommesPour(4), [6])
+  assert.deepEqual(sommesPour(6), [9])
+
+  // n=4 est exclu : les 4 composantes connues somment déjà à 3, pas 6.
+  assert.notEqual(connu, 6)
+  // Donc n=6 : il reste 9 − 3 = 6 pour la PA + la composante inconnue.
+  assert.equal(9 - connu, 6)
+  // PA 117 < 120 → 4 selon la règle en vigueur, donc l'inconnue vaut 2.
+  assert.equal(systolicRatingLegacy(117), 4)
+  assert.equal(6 - 4, 2)
+})
