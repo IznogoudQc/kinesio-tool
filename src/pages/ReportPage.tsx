@@ -664,7 +664,7 @@ function ObjectifBlock({
       )}
 
       {goal !== null && bodyFatPct !== null && target !== null && (
-        <div style={{ background: '#fff', borderRadius: '3mm', padding: '5mm 6mm' }}>
+        <div className="break-inside-avoid" style={{ background: '#fff', borderRadius: '3mm', padding: '5mm 6mm' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6mm', flexWrap: 'wrap' }}>
             {num(latest.data.poids_kg) !== null && (
               <ObjStat label="Poids actuel" value={w(num(latest.data.poids_kg) as number)} />
@@ -783,7 +783,7 @@ function ObjStat({ label, value, accent }: { label: string; value: string; accen
 
 function MacroChip({ label, value, unit }: { label: string; value: string; unit: string }) {
   return (
-    <div style={{ flex: '1 1 0', minWidth: '28mm', background: CREAM, borderRadius: '2.5mm', padding: '3mm 4mm', textAlign: 'center' }}>
+    <div className="break-inside-avoid" style={{ flex: '1 1 0', minWidth: '28mm', background: CREAM, borderRadius: '2.5mm', padding: '3mm 4mm', textAlign: 'center' }}>
       <p style={{ fontSize: '15pt', fontWeight: 700, color: MARINE, lineHeight: 1 }}>
         {value}
         <span style={{ fontSize: '9pt', fontWeight: 500, color: INK_SOFT }}>&nbsp;{unit}</span>
@@ -982,7 +982,7 @@ function OverviewSection({
         </div>
         <div style={{ flex: 1, minWidth: '110mm', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '5mm' }}>
           {cards.map(c => (
-            <div key={c.title} style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm' }}>
+            <div key={c.title} className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm' }}>
               <p className="report-display" style={{ fontSize: '13pt', fontWeight: 600, color: MARINE }}>{c.title}</p>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '2mm', margin: '1.5mm 0 1mm' }}>
                 <span className="report-display" style={{ fontSize: '26pt', fontWeight: 700, color: MARINE }}>
@@ -1012,9 +1012,13 @@ function OverviewSection({
 
       {/* Parcours : hero + timeline + avant/après */}
       {single ? (
-        <div style={{ border: `1px dashed ${GOLD_SOFT}`, borderRadius: '4mm', padding: '12mm', textAlign: 'center', background: CREAM }}>
-          <p className="report-display" style={{ fontSize: '18pt', color: MARINE, fontWeight: 600 }}>Premier bilan</p>
-          <p style={{ fontSize: '11pt', color: INK_SOFT, maxWidth: '120mm', margin: '3mm auto 0' }}>
+        // Filet doré plutôt qu'un cadre pointillé centré : c'était le seul bloc
+        // centré du rapport, et ses 12 mm de marge intérieure en faisaient une
+        // grande boîte presque vide. Aligné à gauche comme le reste, il est aussi
+        // deux fois moins haut — donc bien moins exposé à la coupure de page.
+        <div className="break-inside-avoid" style={{ borderLeft: `0.8mm solid ${GOLD}`, paddingLeft: '7mm', margin: '2mm 0' }}>
+          <p className="report-display" style={{ fontSize: '16pt', color: MARINE, fontWeight: 600 }}>Premier bilan</p>
+          <p style={{ fontSize: '11pt', color: INK_SOFT, maxWidth: '135mm', margin: '2mm 0 0', lineHeight: 1.55 }}>
             La progression de {client.name.split(' ')[0]} deviendra visible dès le prochain bilan. Ce document présente
             l’état actuel comme point de départ.
           </p>
@@ -1547,7 +1551,7 @@ function CompositionExtras({ latest, computed, sex }: { latest: Bilan; computed:
           <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: INK_SOFT, marginBottom: '2.5mm', breakAfter: 'avoid' }}>Plis cutanés (mm)</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4mm' }}>
             {plisPresents.map(p => (
-              <div key={p.key} style={{ background: CREAM, borderRadius: '2mm', padding: '3mm 5mm', minWidth: '30mm' }}>
+              <div key={p.key} className="break-inside-avoid" style={{ background: CREAM, borderRadius: '2mm', padding: '3mm 5mm', minWidth: '30mm' }}>
                 <span style={{ fontSize: '9pt', color: INK_SOFT }}>{p.label} </span>
                 <span style={{ fontSize: '11pt', fontWeight: 600, color: MARINE }}>{fmt(p.value)}</span>
               </div>
@@ -2114,7 +2118,7 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature, customPrin
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm' }}>
             {forces.map(f => (
-              <div key={f.metric.key as string} style={{ background: CREAM, borderRadius: '3mm', padding: '4mm 5mm' }}>
+              <div key={f.metric.key as string} className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '4mm 5mm' }}>
                 <div className="flex items-center justify-between" style={{ marginBottom: '1mm' }}>
                   <span style={{ fontSize: '10.5pt', fontWeight: 600, color: MARINE }}>{f.metric.label}</span>
                   <CategoryPill category={f.category} />
@@ -2129,7 +2133,7 @@ function ForcesEtPlanSection({ latest, profile, coachName, signature, customPrin
       </div>
 
 
-      <div style={{ marginTop: '12mm', background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
+      <div className="break-inside-avoid" style={{ marginTop: '12mm', background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
         <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>Le mot de votre kinésiologue</p>
         {notes !== '' && <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '5mm' }}>{notes}</p>}
         <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: notes !== '' ? 'italic' : 'normal' }}>{signOff}</p>

@@ -77,3 +77,51 @@
 /* Sections « flow » : peuvent s'étaler sur plusieurs pages A4 (sections par
  * domaine avec grands graphiques). Les blocs internes portent la classe
  * Tailwind `break-inside-avoid` pour ne pas être coupés au milieu d'une page. */
+
+/* ── Coupures de texte : l'équivalent des protections de Word ────────────────
+ *
+ * `break-inside: avoid` empêche un BLOC d'être coupé, mais ne dit rien de
+ * l'intérieur d'un paragraphe : un texte de six lignes pouvait laisser sa
+ * dernière ligne seule en haut de la page suivante, ou sa première seule en bas
+ * de la précédente. C'est ce que Word appelle « veuves et orphelines ».
+ *
+ * `orphans` = lignes minimales laissées en BAS d'une page ; `widows` = lignes
+ * minimales reportées en HAUT de la suivante. À 3, un paragraphe se coupe
+ * seulement s'il peut laisser au moins trois lignes de chaque côté — sinon il
+ * part entier sur la page suivante.
+ *
+ * Réglage global : inutile de le répéter bloc par bloc, et un futur paragraphe
+ * en hérite sans qu'on ait à y penser. */
+.report-body {
+  orphans: 3;
+  widows: 3;
+}
+
+/* Un titre ne reste jamais seul en bas de page, séparé de ce qu'il annonce —
+ * « paragraphes solidaires » dans Word. `BlockTitle` le porte déjà en style
+ * inline ; on couvre ici les titres de section et tout futur intitulé. */
+.report-body h1,
+.report-body h2,
+.report-body h3,
+.report-body h4 {
+  break-after: avoid;
+  break-inside: avoid;
+}
+
+/* Tableaux : une ligne ne se coupe pas en deux, et l'en-tête reste collé à la
+ * première ligne (sinon on obtient un en-tête orphelin en bas de page). */
+.report-body tr {
+  break-inside: avoid;
+}
+.report-body thead {
+  break-inside: avoid;
+  break-after: avoid;
+}
+
+/* Saut de page manuel, à la façon de Word : poser cette classe sur un élément le
+ * pousse en tête de page. Non utilisée pour l'instant — les sections gèrent déjà
+ * leurs propres sauts (`break-before: page` plus haut) — mais disponible dès
+ * qu'un contenu précis devra démarrer sur une page neuve. */
+.report-page-break {
+  break-before: page;
+}
