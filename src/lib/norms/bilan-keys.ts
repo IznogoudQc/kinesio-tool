@@ -23,3 +23,41 @@ export const BILAN_TO_TEST_KEY: Partial<Record<keyof BilanData, TestKey>> = {
   pa_diastolique: 'bloodPressureDiastolic',
   fc_repos: 'restingHeartRate'
 }
+
+/**
+ * Sens de progression d'une mesure — `true` quand **plus bas est mieux**.
+ *
+ * C'est une propriété de la MESURE, pas du barème. Le rapport PDF la déduisait
+ * de `lowerIsBetter` de la table de normes ; or `imc` et `tour_taille_cm` n'ont
+ * plus de `TestKey` (voir ci-dessus), donc la lecture retombait sur `false` et
+ * une **baisse** de l'IMC s'affichait en rouge avec une flèche « dégradation ».
+ * Un client voyait son tour de taille passer de 99 à 93 cm annoncé comme un
+ * recul.
+ *
+ * Déclaré ici, à côté du mapping dont la suppression a causé le défaut, pour que
+ * les deux se lisent ensemble. `bilan-keys.test.ts` vérifie que cette table
+ * s'accorde avec les tables de normes partout où les deux existent.
+ */
+export const BILAN_LOWER_IS_BETTER: Partial<Record<keyof BilanData, boolean>> = {
+  // Mentionnées sans être évaluées — sans barème, donc sans autre source.
+  imc: true,
+  tour_taille_cm: true,
+  // Cotées : redondant avec les tables, mais déclaré pour que le sens ne dépende
+  // jamais de la présence d'un barème.
+  pourcentage_gras: true,
+  pa_systolique: true,
+  pa_diastolique: true,
+  fc_repos: true,
+  vo2max: false,
+  pushups: false,
+  situps: false,
+  saut_vertical_cm: false,
+  puissance_jambes_watts: false,
+  flexion_tronc_cm: false,
+  endurance_dos_sec: false
+}
+
+/** Plus bas est-il mieux pour cette mesure ? Défaut : non (plus haut = mieux). */
+export function isLowerBetter(key: keyof BilanData): boolean {
+  return BILAN_LOWER_IS_BETTER[key] ?? false
+}

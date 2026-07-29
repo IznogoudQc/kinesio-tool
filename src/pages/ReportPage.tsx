@@ -26,7 +26,7 @@ import {
   type Category,
   type TestKey
 } from '../lib/norms'
-import { BILAN_TO_TEST_KEY } from '../lib/norms/bilan-keys'
+import { BILAN_TO_TEST_KEY, isLowerBetter } from '../lib/norms/bilan-keys'
 import { cpaflaCompositionDetail } from '../lib/norms/cpafla-composition'
 import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
 import { buildBilanProfile } from '../lib/bilan-computed'
@@ -847,11 +847,15 @@ function OverviewSection({
       const to = num(latest.data[m.key])
       if (to === null) continue
       const from = num(oldest.data[m.key])
-      const lower = metricNorm(m.key, to, profile)?.lowerIsBetter ?? false
+      // Sens déclaré par mesure : `metricNorm` renvoie null pour l'IMC et le tour
+      // de taille (pas de TestKey), et leur baisse s'affichait alors en rouge.
+      const lower = isLowerBetter(m.key)
       rows.push({ label: m.label, unit: m.unit, from, to, lower })
     }
     return rows
-  }, [single, oldest, latest, profile])
+    // `profile` n'est plus lu ici : le sens de progression vient de la table
+    // déclarative, pas du barème.
+  }, [single, oldest, latest])
 
   return (
     <ReportFlowSection
@@ -1121,7 +1125,7 @@ function DomainSection({
       {topExtra}
 
       {presentDetails.length > 0 && (
-        <div style={{ marginBottom: '8mm', display: 'flex', flexDirection: 'column', gap: '5mm' }}>
+        <div style={{ marginBottom: '6mm', display: 'flex', flexDirection: 'column', gap: '3mm' }}>
           <BlockTitle>Vos résultats</BlockTitle>
           {presentDetails.map(m => (
             <MetricBlock key={m.key} metric={m} latest={latest} recent={recent} profile={profile} />
@@ -1137,7 +1141,7 @@ function DomainSection({
         <div style={{ marginTop: '2mm' }}>
           <BlockTitle>Évolution dans le temps</BlockTitle>
           {chartData.map((c, i) => (
-            <BigChartCard key={i} title={c.title} height="48mm" marginBottom="6mm">
+            <BigChartCard key={i} title={c.title} height="44mm" marginBottom="5mm">
               {c.cfg.kind === 'line' ? (
                 <SingleLineChart data={c.data as ChartPoint[]} color={c.cfg.color} scoreAxis={c.cfg.scoreAxis} />
               ) : (
@@ -1149,7 +1153,7 @@ function DomainSection({
       )}
 
       {interp && (
-        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '6mm 8mm', marginTop: '6mm' }}>
+        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '5mm 8mm', marginTop: '5mm' }}>
           <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, fontWeight: 700, marginBottom: '3mm' }}>
             Ce que ça veut dire pour vous
           </p>
@@ -1210,7 +1214,7 @@ function domainInterpretation({
     const from = series[0]
     const to = series[series.length - 1]
     if (from !== to) {
-      const lower = metricNorm(heroKey, to, profile)?.lowerIsBetter ?? false
+      const lower = isLowerBetter(heroKey)
       const improved = lower ? to < from : to > from
       const heroLabel = METRIC_BY_KEY[heroKey]?.label.toLowerCase() ?? 'votre indicateur clé'
       parts.push(
@@ -1766,6 +1770,40 @@ function MetricBlock({ metric, latest, recent, profile }: { metric: MetricDef; l
   const spark = recent.slice().reverse().map(b => num(b.data[metric.key])).filter((v): v is number => v !== null)
   const blurb = norm?.category ? EXPLANATION_BY_CATEGORY[norm.category] : null
 
+  // Mesure **mentionnée sans être évaluée** (IMC, tour de taille) : pas de barème,
+  // donc ni cote ni objectif à afficher. Une carte pleine hauteur terminée par
+  // « Pas de barème normatif pour cette mesure » donnait beaucoup de place à une
+  // mesure dont on a justement décidé de réduire l'importance, et se lisait comme
+  // un message d'erreur. Forme compacte : la valeur, sa tendance, rien d'autre.
+  if (!norm?.percentiles) {
+    return (
+      <div
+        className="break-inside-avoid"
+        style={{
+          background: CREAM,
+          borderRadius: '3mm',
+          padding: '3mm 6mm',
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: '5mm'
+        }}
+      >
+        <span className="report-display" style={{ fontSize: '12pt', fontWeight: 600, color: MARINE, flex: 1 }}>
+          {metric.label}
+        </span>
+        <span>
+          <span className="report-display" style={{ fontSize: '17pt', fontWeight: 700, color: MARINE }}>{fmt(value)}</span>
+          <span style={{ fontSize: '9.5pt', color: INK_SOFT, marginLeft: '1.5mm' }}>{metric.unit}</span>
+        </span>
+        {spark.length >= 2 && (
+          <span style={{ flexShrink: 0, position: 'relative', top: '1.5mm' }}>
+            <MiniSpark values={spark} />
+          </span>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm' }}>
       <div className="flex items-center justify-between">
@@ -1785,11 +1823,9 @@ function MetricBlock({ metric, latest, recent, profile }: { metric: MetricDef; l
           </div>
         )}
         <div style={{ flex: 1 }}>
-          {norm?.percentiles ? (
-            <CategoryRangeBar value={value} percentiles={norm.percentiles} unit={metric.unit} lowerIsBetter={norm.lowerIsBetter} variant="compact" />
-          ) : (
-            <p style={{ fontSize: '9pt', color: AXIS }}>Pas de barème normatif pour cette mesure.</p>
-          )}
+          {/* Le cas « sans barème » est traité plus haut par le rendu compact :
+              à partir d'ici, `norm.percentiles` est toujours présent. */}
+          <CategoryRangeBar value={value} percentiles={norm.percentiles} unit={metric.unit} lowerIsBetter={norm.lowerIsBetter} variant="compact" />
         </div>
       </div>
       {norm?.next && !norm.next.isAtTop && (
