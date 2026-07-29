@@ -1099,6 +1099,20 @@ function DomainSection({
   const recent = bilans.slice(0, 4)
   const presentDetails = detailKeys.map(k => METRIC_BY_KEY[k]).filter((m): m is MetricDef => !!m && num(latest.data[m.key]) !== null)
 
+  // Un groupe « Vos résultats » composé uniquement de mesures **mentionnées sans
+  // être évaluées** (IMC, tour de taille) ne fait qu'une quinzaine de mm par
+  // ligne : on le garde d'un seul tenant, sinon l'IMC reste orphelin en bas de
+  // page pendant que le tour de taille passe à la suivante.
+  //
+  // Volontairement PAS généralisé : la section musculo aligne six cartes pleines,
+  // et lui interdire de se couper laisserait une demi-page blanche.
+  const detailsCompacts =
+    presentDetails.length > 0 &&
+    presentDetails.every(m => {
+      const v = num(latest.data[m.key])
+      return v === null || !metricNorm(m.key, v, profile)?.percentiles
+    })
+
   // Graphiques : on ne garde que ceux qui ont ≥ 2 points de données. Le graphique
   // de poids est converti dans l'unité du client (kg stocké → lb affiché).
   const chartData = charts
@@ -1125,7 +1139,10 @@ function DomainSection({
       {topExtra}
 
       {presentDetails.length > 0 && (
-        <div style={{ marginBottom: '6mm', display: 'flex', flexDirection: 'column', gap: '3mm' }}>
+        <div
+          className={detailsCompacts ? 'break-inside-avoid' : undefined}
+          style={{ marginBottom: '6mm', display: 'flex', flexDirection: 'column', gap: '3mm' }}
+        >
           <BlockTitle>Vos résultats</BlockTitle>
           {presentDetails.map(m => (
             <MetricBlock key={m.key} metric={m} latest={latest} recent={recent} profile={profile} />
