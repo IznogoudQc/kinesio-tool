@@ -18,6 +18,14 @@ import { getDocumentsFolder, getSmtpCredentials } from './settings'
 
 const ClientIdSchema = z.string().uuid()
 
+/** Arguments des generateurs de rapport. `bilanId` absent = bilan de synthese
+ *  (toutes les valeurs les plus recentes), comme avant. Fourni = rapport de CE
+ *  bilan-la, avec l'historique borne a sa date. */
+const ReportArgsSchema = z.object({
+  clientId: ClientIdSchema,
+  bilanId: z.string().uuid().optional()
+})
+
 const SendReportSchema = z.object({
   clientId: ClientIdSchema,
   subject: z.string().min(1).max(500),
@@ -28,16 +36,16 @@ const SendReportSchema = z.object({
 
 export function registerReportsHandlers(): void {
   // ── Génération du rapport PDF ────────────────────────────────────────────────
-  ipcMain.handle('reports:generate-pdf', async (_e, clientId: unknown) => {
-    const id = ClientIdSchema.parse(clientId)
-    return generateClientReportPdf(id)
+  ipcMain.handle('reports:generate-pdf', async (_e, args: unknown) => {
+    const { clientId, bilanId } = ReportArgsSchema.parse(args)
+    return generateClientReportPdf(clientId, bilanId)
   })
 
   // Génère le PDF « Barèmes de référence » (aucun paramètre — lit le code).
   // Document interactif seul — même fichier que celui joint au courriel.
-  ipcMain.handle('reports:generate-html', async (_e, clientId: unknown) => {
-    const id = ClientIdSchema.parse(clientId)
-    return generateInteractiveReportHtml(id)
+  ipcMain.handle('reports:generate-html', async (_e, args: unknown) => {
+    const { clientId, bilanId } = ReportArgsSchema.parse(args)
+    return generateInteractiveReportHtml(clientId, bilanId)
   })
 
   // Document HTML autonome dédié à la nutrition & au jeûne (distinct du bilan).

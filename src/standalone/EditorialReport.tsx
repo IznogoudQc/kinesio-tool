@@ -15,6 +15,7 @@ import {
   type CompositeScore
 } from '../lib/bilan-computed'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../lib/synthesisBilan'
+import { compareCandidates } from '../lib/report-scope'
 import {
   componentLabelInline,
   globalScoreSummary,
@@ -98,6 +99,8 @@ export interface StandaloneData {
   /** Photo du client en data URI, ou `null` — le fichier reste autonome. */
   avatarDataUrl: string | null
   bilans: Bilan[]
+  /** Bilan a ouvrir par defaut. `null`/absent = bilan de synthese. */
+  selectedBilanId?: string | null
   kinesiologist: string
   /** Bloc de signature du PDF (« Marie-Eve Riendeau 
  Kinésiologue »). */
@@ -1420,7 +1423,9 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   const profile = buildBilanProfile(client)
   const { age, norms } = profile
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  // Ouvre sur le bilan choisi par Marie au moment de generer le document ; le
+  // lecteur reste libre de basculer ensuite. `null` = bilan de synthese.
+  const [selectedId, setSelectedId] = useState<string | null>(data.selectedBilanId ?? null)
   const [compareId, setCompareId] = useState<string>('prev')
 
   const synthesis = bilans.length > 0 ? buildSynthesisBilan(bilans) : null
@@ -1455,10 +1460,10 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         return i >= 0 ? bilans[i + 1] ?? null : null
       })()
 
-  const compareOptions = bilans
-    .filter(b => b.id !== activeBilan.id && b.id !== previousBilan?.id)
-    .slice()
-    .sort((a, b) => b.date.localeCompare(a.date))
+  // Uniquement des bilans **antérieurs** à celui affiché : comparer un bilan de
+  // 2024 à un bilan de 2026 afficherait des « progressions » qui n'avaient pas
+  // encore eu lieu à la date du rapport.
+  const compareOptions = compareCandidates(bilans, activeBilan, previousBilan?.id)
 
   const compareBilan =
     compareId === 'none' ? null : compareId === 'prev' ? previousBilan : bilans.find(b => b.id === compareId) ?? null

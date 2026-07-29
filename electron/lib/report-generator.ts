@@ -136,7 +136,7 @@ export async function htmlFileToPdf(htmlPath: string): Promise<Buffer> {
  * `/report/:id` dans une fenêtre cachée, puis `webContents.printToPDF()`.
  * Retourne le chemin du PDF écrit dans le dossier temporaire.
  */
-export async function generateClientReportPdf(clientId: string): Promise<string> {
+export async function generateClientReportPdf(clientId: string, bilanId?: string): Promise<string> {
   const client = getClientOrThrow(clientId)
 
   const win = new BrowserWindow({
@@ -152,7 +152,9 @@ export async function generateClientReportPdf(clientId: string): Promise<string>
   })
 
   try {
-    const hash = `/report/${clientId}`
+    // `?bilan=` : la page de rapport bascule alors sur CE bilan et borne son
+    // historique a sa date. Absent = bilan de synthese, comportement d'origine.
+    const hash = bilanId ? `/report/${clientId}?bilan=${bilanId}` : `/report/${clientId}`
     if (isDev && process.env['ELECTRON_RENDERER_URL']) {
       await win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#${hash}`)
     } else {

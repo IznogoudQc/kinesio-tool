@@ -28,6 +28,7 @@ import { TrainingZones } from '../dashboard/TrainingZones'
 import { StrengthsAndWeaknesses } from '../dashboard/StrengthsAndWeaknesses'
 import { BilanSelectorPills } from '../dashboard/BilanSelectorPills'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../../../lib/synthesisBilan'
+import { compareCandidates } from '../../../lib/report-scope'
 import { detectWins } from '../../../lib/dashboard-wins'
 import { detectHealthFlags } from '../../../lib/health-flags'
 import { HealthFlags } from '../dashboard/HealthFlags'
@@ -213,12 +214,21 @@ export function DashboardTab() {
     navigate(`/clients/${client.id}/bilans`)
   }
 
+  // Les documents suivent le bilan AFFICHE : si Marie consulte le bilan de 2011,
+  // c'est celui-la qu'elle imprime. `null` en mode synthese (comportement
+  // d'origine). L'URL est la source de verite du bilan selectionne.
+  const reportBilanId =
+    selectedBilanIdFromUrl && selectedBilanIdFromUrl !== 'synthesis' ? selectedBilanIdFromUrl : undefined
+  const reportBilanLabel = reportBilanId
+    ? formatBilanDate(bilans?.find(b => b.id === reportBilanId)?.date ?? '')
+    : ''
+
   async function handleGenerateReport() {
     setGenerating(true)
     try {
-      const path = await reportsService.generatePdfForClient(client.id)
+      const path = await reportsService.generatePdfForClient(client.id, reportBilanId)
       await reportsService.openPdf(path)
-      setToast('Rapport PDF généré')
+      setToast(reportBilanId ? `Rapport PDF généré (bilan du ${reportBilanLabel})` : 'Rapport PDF généré')
     } catch (err) {
       setToast(err instanceof Error ? err.message : 'Erreur lors de la génération du rapport.')
     } finally {
@@ -229,11 +239,11 @@ export function DashboardTab() {
   async function handleGenerateHtml() {
     setGeneratingHtml(true)
     try {
-      const path = await reportsService.generateInteractiveHtml(client.id)
+      const path = await reportsService.generateInteractiveHtml(client.id, reportBilanId)
       // `openPath` lance le navigateur par défaut : c'est exactement ce que fera
       // le client en ouvrant la pièce jointe.
       await reportsService.openPdf(path)
-      setToast('Document interactif généré')
+      setToast(reportBilanId ? `Document interactif généré (bilan du ${reportBilanLabel})` : 'Document interactif généré')
     } catch (err) {
       setToast(err instanceof Error ? err.message : 'Erreur lors de la génération du document.')
     } finally {
@@ -364,11 +374,14 @@ export function DashboardTab() {
   )
   // Bilans proposés comme point de comparaison (hero stats + radar musculo). On
   // retire celui affiché et le précédent (déjà couvert par « Bilan précédent »).
-  const compareOptions = (bilans ?? [])
-    .filter(b => b.id !== (activeBilan ?? latest)!.id && b.id !== previousActiveBilan?.id)
-    .slice()
-    .sort((a, b) => b.date.localeCompare(a.date))
-    .map(b => ({ id: b.id, date: b.date, data: b.data }))
+  // Uniquement des bilans **antérieurs** à celui affiché : comparer un bilan de
+  // 2024 à un bilan de 2026 afficherait des « progressions » qui n'avaient pas
+  // encore eu lieu à la date du bilan consulté.
+  const compareOptions = compareCandidates(bilans ?? [], (activeBilan ?? latest)!, previousActiveBilan?.id).map(b => ({
+    id: b.id,
+    date: b.date,
+    data: b.data
+  }))
   // Victoires à célébrer (Dashboard uniquement — jamais dans le PDF).
   const wins = printMode
     ? []

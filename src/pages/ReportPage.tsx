@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import {
   CartesianGrid,
   LabelList,
@@ -35,6 +35,7 @@ import {
 } from '../lib/global-score-summary'
 import { bloodPressureBar, type BpKind } from '../lib/norms/clinical'
 import { buildBilanProfile } from '../lib/bilan-computed'
+import { scopeBilansTo } from '../lib/report-scope'
 import { categoryCells, commonNormSource, normSourceForTest } from '../lib/norms/bareme'
 import {
   healthRisk,
@@ -175,6 +176,11 @@ function metricNorm(key: keyof BilanData, value: number, profile: BilanProfile):
 // ── Composant principal ──────────────────────────────────────────────────────
 export function ReportPage() {
   const { id } = useParams<{ id: string }>()
+  // `?bilan=<id>` : rapport d'un bilan precis plutot que du bilan de synthese.
+  // Hook place ICI, avec les autres, et jamais apres un retour conditionnel
+  // (React #310 — c'est ce qui avait fait planter l'onglet Mesures en v0.9.54).
+  const [searchParams] = useSearchParams()
+  const requestedBilanId = searchParams.get('bilan')
   const [client, setClient] = useState<Client | null>(null)
   const [bilans, setBilans] = useState<Bilan[]>([])
   const [coachName, setCoachName] = useState('')
@@ -247,8 +253,16 @@ export function ReportPage() {
   // Helper partagé avec le dashboard et le rapport HTML : les trois surfaces
   // doivent coter sur le même âge et la même norme (cf. `buildBilanProfile`).
   const profile = useMemo<BilanProfile>(() => buildBilanProfile(client), [client])
+  // Rapport d'un bilan précis : l'historique est borné à SA date. Sans ça, un
+  // rapport daté de 2011 tracerait des courbes montant jusqu'en 2026 et
+  // comparerait à des bilans qui n'existaient pas encore à sa date.
+  const requestedBilan = useMemo(
+    () => (requestedBilanId ? bilans.find(b => b.id === requestedBilanId) ?? null : null),
+    [bilans, requestedBilanId]
+  )
+  const scopedBilans = useMemo(() => scopeBilansTo(bilans, requestedBilanId), [bilans, requestedBilanId])
   // Du plus ancien au plus récent.
-  const chrono = useMemo(() => [...bilans].reverse(), [bilans])
+  const chrono = useMemo(() => [...scopedBilans].reverse(), [scopedBilans])
   const syntheses = useMemo(() => chrono.map(b => computeBilan(b.data, profile)), [chrono, profile])
 
   if (loading) {
@@ -258,21 +272,27 @@ export function ReportPage() {
     return <div className="report-body p-10 text-base" style={{ color: '#b91c1c' }}>{error ?? 'Client introuvable.'}</div>
   }
 
-  // « Bilan courant » = SYNTHÈSE (dernière valeur non-null de chaque champ sur
-  // tous les bilans) — identique au mode par défaut du Dashboard, pour que le
-  // score global et les composites du PDF correspondent exactement à l'écran.
+  // « Bilan courant » :
+  //  · avec `?bilan=` → CE bilan tel qu'il a été saisi, sans mélange avec les
+  //    valeurs des autres dates. C'est ce que Marie voit à l'écran quand elle
+  //    sélectionne une date, et donc ce qu'elle s'attend à imprimer.
+  //  · sans → SYNTHÈSE (dernière valeur non-null de chaque champ), le mode par
+  //    défaut du Dashboard, pour que le score global et les composites du PDF
+  //    correspondent exactement à l'écran.
   // La progression (frise, avant/après) utilise `chrono` = les vrais bilans.
-  const synthResult = bilans.length ? buildSynthesisBilan(bilans) : null
-  const latest: Bilan | null = synthResult
-    ? {
-        id: 'synthesis',
-        clientId: client.id,
-        date: synthResult.latestContributionDate ?? bilans[0].date,
-        data: synthResult.data,
-        source: 'manuel',
-        createdAt: bilans[0].createdAt
-      }
-    : null
+  const synthResult = scopedBilans.length ? buildSynthesisBilan(scopedBilans) : null
+  const latest: Bilan | null =
+    requestedBilan ??
+    (synthResult
+      ? {
+          id: 'synthesis',
+          clientId: client.id,
+          date: synthResult.latestContributionDate ?? scopedBilans[0].date,
+          data: synthResult.data,
+          source: 'manuel',
+          createdAt: scopedBilans[0].createdAt
+        }
+      : null)
   const latestComputed = latest ? computeBilan(latest.data, profile) : null
 
   if (!latest || !latestComputed) {
@@ -283,7 +303,7 @@ export function ReportPage() {
     )
   }
 
-  const shared = { latest, bilans, chrono, syntheses, profile, weightUnit: client.unitWeight }
+  const shared = { latest, bilans: scopedBilans, chrono, syntheses, profile, weightUnit: client.unitWeight }
 
   return (
     <article className="report-body" style={{ color: MARINE, background: '#fff' }}>
@@ -291,7 +311,7 @@ export function ReportPage() {
         client={client}
         latest={latest}
         coachName={coachName}
-        totalBilans={bilans.length}
+        totalBilans={scopedBilans.length}
         avatarUrl={avatarUrl}
         overall={latestComputed.overall.score}
         overallCategory={latestComputed.overall.category}

@@ -536,11 +536,12 @@ interface Window {
     }
     reports: {
       /** Génère le rapport PDF d'un client (route React `/report/:id`) — retourne le chemin du PDF. */
-      generatePdf(clientId: string): Promise<string>
+      /** `bilanId` absent = bilan de synthese ; fourni = rapport de ce bilan. */
+      generatePdf(clientId: string, bilanId?: string): Promise<string>
       /** Génère le PDF « Barèmes de référence » (route `/baremes`) — retourne le chemin du PDF. */
       generateBaremes(): Promise<string>
       /** Génère le document HTML interactif du client — retourne le chemin du fichier. */
-      generateInteractiveHtml(clientId: string): Promise<string>
+      generateInteractiveHtml(clientId: string, bilanId?: string): Promise<string>
       /** Génère le document HTML nutrition & jeûne du client — retourne le chemin du fichier. */
       generateNutritionHtml(clientId: string): Promise<string>
       /** Génère le journal alimentaire vierge imprimable — retourne le chemin du fichier. */

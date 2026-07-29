@@ -8,6 +8,7 @@ import { getDb } from '../../db/client'
 import { bilans, clients, settings } from '../../db/schema'
 import { getAvatarPath } from './avatars'
 import { safeClientFileName, todayISODate } from './report-generator'
+import { scopeBilansTo } from '../../src/lib/report-scope'
 
 /** Gabarit HTML autonome produit par `vite.standalone.config.ts` + `scripts/inline-standalone.mjs`. */
 function templatePath(): string {
@@ -46,8 +47,8 @@ async function avatarDataUrl(filename: string | null): Promise<string | null> {
  * contient que ce que le client peut voir : ni notes cliniques, ni conseils IA,
  * ni signaux à surveiller (voir ADR 0019).
  */
-export async function generateInteractiveReportHtml(clientId: string): Promise<string> {
-  return buildStandaloneHtml(clientId, 'report', 'Bilan-interactif')
+export async function generateInteractiveReportHtml(clientId: string, bilanId?: string): Promise<string> {
+  return buildStandaloneHtml(clientId, 'report', 'Bilan-interactif', bilanId)
 }
 
 /**
@@ -67,7 +68,9 @@ export async function generateFoodJournalHtml(clientId: string): Promise<string>
 async function buildStandaloneHtml(
   clientId: string,
   docType: 'report' | 'nutrition' | 'foodlog',
-  filePrefix: string
+  filePrefix: string,
+  /** Bilan a ouvrir par defaut. Absent = bilan de synthese. */
+  bilanId?: string
 ): Promise<string> {
   const tpl = templatePath()
   if (!existsSync(tpl)) {
@@ -82,7 +85,7 @@ async function buildStandaloneHtml(
 
   // Le renderer attend la liste du plus récent au plus ancien (comme le Dashboard).
   const rows = db.select().from(bilans).where(eq(bilans.clientId, clientId)).orderBy(asc(bilans.date)).all()
-  const list = rows
+  const all = rows
     .map(b => ({
       id: b.id,
       clientId: b.clientId,
@@ -92,6 +95,13 @@ async function buildStandaloneHtml(
       createdAt: b.createdAt
     }))
     .reverse()
+
+  // Rapport d'un bilan précis : on borne l'historique à SA date. Sans ça, un
+  // document daté de 2011 montrerait des courbes montant jusqu'en 2026 et
+  // proposerait de se comparer à des bilans qui n'existaient pas encore.
+  const cible = bilanId ? all.find(b => b.id === bilanId) ?? null : null
+  const list = scopeBilansTo(all, bilanId)
+
 
   const kinesiologist = readSetting('profile.name') ?? 'Marie-Eve Riendeau'
 
@@ -132,6 +142,8 @@ async function buildStandaloneHtml(
     },
     avatarDataUrl: await avatarDataUrl(client.avatarFilename),
     bilans: list,
+    /** Bilan ouvert par défaut. `null` = bilan de synthèse (toutes dernières valeurs). */
+    selectedBilanId: cible?.id ?? null,
     // Pas de `norms` dans le payload : le renderer suit `DEFAULT_NORMS`, comme le
     // dashboard et le PDF. On lisait ici `categorization_norms`, un réglage retiré
     // en v0.9.31 — la lecture retombait donc toujours sur ACSM et le HTML cotait

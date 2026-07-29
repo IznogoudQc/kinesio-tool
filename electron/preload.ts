@@ -135,12 +135,12 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('transfer:import', { filePath, mode })
   },
   reports: {
-    generatePdf: (clientId: string) =>
-      ipcRenderer.invoke('reports:generate-pdf', clientId),
+    generatePdf: (clientId: string, bilanId?: string) =>
+      ipcRenderer.invoke('reports:generate-pdf', { clientId, bilanId }),
     generateBaremes: () =>
       ipcRenderer.invoke('reports:generate-baremes'),
-    generateInteractiveHtml: (clientId: string) =>
-      ipcRenderer.invoke('reports:generate-html', clientId),
+    generateInteractiveHtml: (clientId: string, bilanId?: string) =>
+      ipcRenderer.invoke('reports:generate-html', { clientId, bilanId }),
     generateNutritionHtml: (clientId: string) =>
       ipcRenderer.invoke('reports:generate-nutrition-html', clientId),
     generateFoodlogHtml: (clientId: string) =>
