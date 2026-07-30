@@ -79,6 +79,12 @@ body {
   }
 }
 
+/* ⚠️ `both` conserve le `transform: translateY(0)` de la keyframe finale, et une
+ * transform non nulle cree un NOUVEAU REFERENTIEL pour les descendants
+ * `position: fixed`. Toute modale rendue a l'interieur d'une `.dash-rise` se
+ * positionne donc contre la section et non contre la fenetre : elle depasse en
+ * bas de l'ecran et son pied devient inatteignable (constate sur le panneau IA,
+ * v0.9.79). Un tel overlay doit passer par `createPortal(…, document.body)`. */
 .dash-rise {
   animation: dash-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

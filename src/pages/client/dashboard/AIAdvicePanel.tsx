@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Bot, CheckCircle2, ClipboardCopy, Info, KeyRound, Lightbulb, Loader2, X } from 'lucide-react'
 import type { MetricSelection } from '../../../contexts/AIAdviceContext'
@@ -352,7 +353,20 @@ interface ModalProps {
  * ampute `vh` et la boîte dépassait encore.
  */
 function Modal({ title, icon: Icon, onClose, wide, footer, children }: ModalProps) {
-  return (
+  // ── Portail obligatoire, et pas un detail ────────────────────────────────
+  //
+  // Ce panneau est rendu dans une `<section className="dash-rise">` du
+  // dashboard, dont l'animation utilise `animation-fill-mode: both` : la section
+  // CONSERVE donc `transform: translateY(0)` apres l'animation. Une transform
+  // non nulle cree un nouveau referentiel pour les descendants
+  // `position: fixed`, si bien que `inset-0` se resolvait contre la SECTION et
+  // non contre la fenetre. La modale n'etait donc pas ancree a l'ecran : elle
+  // depassait en bas, son pied devenait inatteignable, et sa barre de
+  // defilement ne servait a rien.
+  //
+  // `createPortal` la monte sur `document.body`, hors de tout ancetre
+  // transforme. Ne pas retirer ce portail en croyant simplifier.
+  return createPortal(
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-4">
       <div
         className={`bg-cream rounded-lg shadow-2xl border border-cream-dark w-full flex flex-col max-h-[calc(100dvh-2rem)] ${
@@ -376,6 +390,7 @@ function Modal({ title, icon: Icon, onClose, wide, footer, children }: ModalProp
           <div className="shrink-0 px-5 py-3 border-t border-cream-dark bg-cream rounded-b-lg">{footer}</div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
