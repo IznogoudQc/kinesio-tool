@@ -84,7 +84,13 @@ export function BilanMeasuresOverview({
   const METRICS = useMemo<Metric[]>(
     () => [
       { key: 'taille', label: 'Tour de taille', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: true, read: d => num(d.tour_taille_cm) },
-      { key: 'hanche', label: 'Hanche', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: false, read: d => num(d.tour_hanche_cm) },
+      // La hanche suit l'OBJECTIF du client, comme le poids. Elle était réglée
+      // sur « plus haut = mieux » par voisinage avec les circonférences
+      // musculaires ci-dessous, si bien qu'un client perdant 5 cm de hanche
+      // voyait sa progression affichée en rouge. Ce n'est pas un site
+      // musculaire : c'est surtout de l'adiposité, et c'est le dénominateur du
+      // ratio taille/hanche, que ce même tableau compte en « plus bas = mieux ».
+      { key: 'hanche', label: 'Hanche', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: weightLossGoal, read: d => num(d.tour_hanche_cm) },
       { key: 'biceps', label: 'Biceps fléchi', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: false, read: d => num(d.circ_biceps_flechi_cm) },
       { key: 'cuisse', label: 'Cuisse (2 po du genou)', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: false, read: d => num(d.circ_cuisse_cm) },
       { key: 'epaule', label: 'Épaules et pec', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: false, read: d => num(d.circ_epaules_pec_cm) },
