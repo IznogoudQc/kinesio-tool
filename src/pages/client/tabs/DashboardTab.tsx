@@ -567,7 +567,14 @@ export function DashboardTab() {
       ? currentWeightKg >= client.nutritionTargetWeightKg
       : (objectif?.goal.toLoseKg ?? 0) >= 0
   const MesuresPanel = (
-    <BilanMeasuresOverview bilans={bilans ?? []} unitWeight={client.unitWeight ?? 'kg'} weightLossGoal={weightLossGoal} />
+    <BilanMeasuresOverview
+      bilans={bilans ?? []}
+      current={(activeBilan ?? latest)!}
+      compare={compareBilan}
+      compareLabel={compareShortLabel}
+      unitWeight={client.unitWeight ?? 'kg'}
+      weightLossGoal={weightLossGoal}
+    />
   )
 
   return (

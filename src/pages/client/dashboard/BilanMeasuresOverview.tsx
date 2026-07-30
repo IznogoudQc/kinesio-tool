@@ -55,11 +55,25 @@ const nf = (n: number | null, digits: number): string =>
 
 export function BilanMeasuresOverview({
   bilans,
+  current,
+  compare,
+  compareLabel,
   unitWeight = 'kg',
   weightLossGoal = true
 }: {
   /** Du plus récent au plus ancien (ordre de `bilansService.list`). */
   bilans: Bilan[]
+  /** Bilan affiché — celui choisi dans la frise du dashboard. Ce bloc lisait
+   *  `bilans[0]` en dur : il montrait toujours le dernier bilan, même quand
+   *  Marie en consultait un ancien. */
+  current: Bilan
+  /** Bilan de référence choisi dans « Comparer à ». `null` = aucune comparaison
+   *  demandée. Auparavant figé sur `bilans[1]`, donc le sélecteur n'avait aucun
+   *  effet ici : la ligne annonçait « Référence (bilan précédent) » quoi qu'il
+   *  arrive. */
+  compare: Bilan | null
+  /** Libellé du bilan de référence (« Bilan précédent », « 4 sept. 2025 »). */
+  compareLabel?: string | null
   unitWeight?: 'kg' | 'lb'
   /** Objectif du client : `true` = perdre du poids (baisse = vert), `false` = prendre
    *  (hausse = vert). Défaut `true` (le cas courant). */
@@ -92,8 +106,9 @@ export function BilanMeasuresOverview({
 
   // Bilans du plus ancien au plus récent (pour le tracé).
   const chrono = useMemo(() => [...bilans].reverse(), [bilans])
-  const latest = bilans[0]
-  const previous = bilans[1]
+  const latest = current
+  const previous = compare
+  const referenceLabel = compareLabel ?? 'bilan précédent'
 
   const available = useMemo<Set<string>>(() => {
     const s = new Set<string>()
@@ -107,7 +122,7 @@ export function BilanMeasuresOverview({
     () => chrono.map((b, i) => ({ label: formatBilanMonth(b.date), value: activeMetric.read(b.data), isLast: i === chrono.length - 1 })),
     [chrono, activeMetric]
   )
-  // Référence = bilan précédent (l'avant-dernier) ; delta = dernier − précédent.
+  // Référence = le bilan choisi dans « Comparer à » ; delta = affiché − référence.
   const latestVal = activeMetric.read(latest?.data ?? {})
   const prevVal = previous ? activeMetric.read(previous.data) : null
   const pointsCount = chartData.filter(p => p.value !== null).length
@@ -140,7 +155,10 @@ export function BilanMeasuresOverview({
         <Ruler size={16} className="text-gold-dark" />
         <h3 className="dash-eyebrow text-gold-dark">Mesures corporelles</h3>
       </div>
-      <p className="text-marine/45 text-xs mb-4">Prises lors des bilans · dernier : {formatBilanDate(latest.date)}</p>
+      <p className="text-marine/45 text-xs mb-4">
+        Prises lors des bilans · bilan du {formatBilanDate(latest.date)}
+        {previous && <> · comparé au {referenceLabel.toLowerCase()}</>}
+      </p>
 
       {/* Détail dépliable — mesures du dernier bilan + écart vs bilan précédent. */}
       <button
@@ -176,7 +194,13 @@ export function BilanMeasuresOverview({
                           {delta > 0 ? '▲ +' : '▼ '}{nf(delta, m.digits)}
                         </span>
                       ) : (
-                        <span className="w-16 text-right text-marine/30 text-xs">{prev === null ? '1ʳᵉ' : '='}</span>
+                        <span className="w-16 text-right text-marine/30 text-xs">
+                          {/* « 1ʳᵉ » = cette mesure n'existe pas dans le bilan de
+                              référence. À ne pas afficher quand AUCUNE référence
+                              n'est demandée : toutes les lignes annonceraient une
+                              première mesure, ce qui serait faux. */}
+                          {previous === null ? '' : prev === null ? '1ʳᵉ' : '='}
+                        </span>
                       )}
                     </div>
                   )
@@ -218,7 +242,7 @@ export function BilanMeasuresOverview({
 
         {prevVal !== null && (
           <p className="text-marine/55 text-xs mb-3">
-            Référence (bilan précédent) :{' '}
+            Référence ({referenceLabel.toLowerCase()}) :{' '}
             <span className="font-semibold text-marine tabular-nums">{nf(prevVal, activeMetric.digits)} {activeMetric.unit}</span>
             {latestVal !== null && (() => {
               const d = latestVal - prevVal
@@ -249,7 +273,7 @@ export function BilanMeasuresOverview({
                   stroke="#0a1c5e"
                   strokeDasharray="6 3"
                   strokeOpacity={0.55}
-                  label={{ value: 'Bilan précédent', fill: '#0a1c5e', fontSize: 11, position: 'insideTopLeft' }}
+                  label={{ value: referenceLabel, fill: '#0a1c5e', fontSize: 11, position: 'insideTopLeft' }}
                 />
               )}
               <Line
