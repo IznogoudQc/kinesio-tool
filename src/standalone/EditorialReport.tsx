@@ -21,7 +21,7 @@ import {
   globalScoreSummary,
   GLOBAL_BLURB
 } from '../lib/global-score-summary'
-import { detectWins } from '../lib/dashboard-wins'
+import { detectWins, noWinsMessage } from '../lib/dashboard-wins'
 import { buildActionPlan } from '../lib/action-plan'
 import { buildObjectif, type Objectif } from '../lib/objectif'
 import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
@@ -1479,6 +1479,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   const previousComputed = previousBilan ? computeBilan(previousBilan.data, profile) : undefined
 
   const wins = detectWins({ computed, previous: previousComputed, bilans, currentData: activeData })
+  const noWins = noWinsMessage(previousComputed !== undefined)
   // On garde les « forces » (mises en valeur pour le client), pas les priorités
   // auto — retirées à la demande de Marie (peu utiles, pas toujours le focus réel).
   const plan = buildActionPlan(activeData, profile)
@@ -1587,6 +1588,21 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
           </div>
         </div>
       </div>
+
+      {/* Aucune victoire → message neutre, tourné vers la suite. Même bandeau
+          marine, pour que le client ne perçoive pas une section « en moins ».
+          Texte partagé avec le dashboard (`noWinsMessage`). */}
+      {wins.length === 0 && (
+        <section className="bg-marine-light/95 text-cream">
+          <div className="mx-auto max-w-5xl px-6 py-14 sm:px-8">
+            <Reveal>
+              <p className="ed-eyebrow text-gold">La suite</p>
+              <h2 className="ed-display ed-section-title mt-3">{noWins.title}</h2>
+              <p className="mt-6 max-w-3xl text-base leading-relaxed text-cream/85 sm:text-lg">{noWins.text}</p>
+            </Reveal>
+          </div>
+        </section>
+      )}
 
       {wins.length > 0 && (
         <section className="bg-marine-light/95 text-cream">

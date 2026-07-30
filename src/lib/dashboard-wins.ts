@@ -95,3 +95,36 @@ export function detectWins(opts: {
 
   return wins.slice(0, 5)
 }
+
+/**
+ * Message affiché **à la place** des victoires quand il n'y en a aucune.
+ *
+ * Décision de Nicholas : ne jamais laisser un client devant un constat de recul.
+ * `detectWins` ne produit déjà que du positif ; il restait le cas où la liste est
+ * vide. Plutôt qu'un blanc (première version) ou qu'un « aucun progrès » (qui
+ * serait exactement le découragement qu'on veut éviter), on tourne la page vers
+ * la suite.
+ *
+ * Deux situations bien distinctes, et les confondre sonnerait faux :
+ *  · Aucun bilan précédent → il n'y a rien à comparer, ce n'est pas un échec.
+ *  · Un précédent existe, mais rien ne s'est amélioré → on ne le nomme pas. Le
+ *    reste du document montre déjà les chiffres ; les répéter ici en négatif
+ *    n'apporterait rien au client.
+ */
+export interface NoWinsMessage {
+  title: string
+  text: string
+}
+
+export function noWinsMessage(hasPrevious: boolean): NoWinsMessage {
+  if (!hasPrevious) {
+    return {
+      title: 'Votre point de départ',
+      text: 'Ce premier bilan sert de repère. C’est à partir de lui que se mesureront vos progrès — rendez-vous au prochain pour voir le chemin parcouru.'
+    }
+  }
+  return {
+    title: 'La suite se joue maintenant',
+    text: 'Ce bilan sert de base pour la période qui vient. Chaque séance compte, et les prochains résultats se construisent à partir d’aujourd’hui — votre kinésiologue vous accompagne pour cibler les prochains gains.'
+  }
+}

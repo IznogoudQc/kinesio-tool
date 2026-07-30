@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Download, FileText, FileUp, FolderOpen, Globe, Info, Mail, PartyPopper } from 'lucide-react'
+import { Download, FileText, FileUp, FolderOpen, Globe, Info, Mail, PartyPopper, Sparkles } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
 import { ClientAvatar } from '../../../components/ClientAvatar'
 import { bilansService } from '../../../services/bilans'
@@ -29,7 +29,7 @@ import { StrengthsAndWeaknesses } from '../dashboard/StrengthsAndWeaknesses'
 import { BilanSelectorPills } from '../dashboard/BilanSelectorPills'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../../../lib/synthesisBilan'
 import { compareCandidates } from '../../../lib/report-scope'
-import { detectWins } from '../../../lib/dashboard-wins'
+import { detectWins, noWinsMessage } from '../../../lib/dashboard-wins'
 import { detectHealthFlags } from '../../../lib/health-flags'
 import { HealthFlags } from '../dashboard/HealthFlags'
 import { BodyFatRiskBar } from '../../../components/BodyFatRiskBar'
@@ -392,6 +392,9 @@ export function DashboardTab() {
         currentData: activeData,
         objectifAtGoal: objectif?.atGoal
       })
+  // Message de remplacement quand il n'y a rien à célébrer — le contenu dépend
+  // de l'existence d'un bilan précédent (premier bilan ≠ absence de progrès).
+  const noWins = noWinsMessage(previousComputed !== undefined)
   // Vrai si Marie-Eve regarde un bilan ANCIEN spécifique (pas la synthèse,
   // pas le plus récent). Sert au bandeau gold « vous consultez un bilan ancien ».
   const isViewingOlder =
@@ -628,6 +631,22 @@ export function DashboardTab() {
             Revenir aux dernières valeurs
           </button>
         </div>
+      )}
+
+      {/* Aucune victoire → message neutre et tourné vers la suite, jamais un
+          constat de recul. Deux formulations selon qu'il existe ou non un bilan
+          précédent (cf. `noWinsMessage`). */}
+      {!printMode && wins.length === 0 && (
+        <section
+          className="dash-rise rounded-xl border border-cream-dark/50 bg-cream/60 p-5 shadow-sm"
+          aria-label="Prochaine étape"
+        >
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles size={18} className="text-gold-dark shrink-0" />
+            <h3 className="text-marine font-bold text-base">{noWins.title}</h3>
+          </div>
+          <p className="text-marine/75 text-sm leading-relaxed">{noWins.text}</p>
+        </section>
       )}
 
       {wins.length > 0 && (
