@@ -81,15 +81,26 @@ export function BilanMeasuresOverview({
 }) {
   const wLabel = weightUnitLabel(unitWeight)
 
+  // ── Sens de progression : le groupe est ANATOMIQUE, pas directionnel ────────
+  //
+  // Le groupe `circ` mélange volontairement les trois cas, et c'est ce qui a
+  // piégé la hanche : rangée à côté des mesures musculaires, elle avait pris
+  // leur « plus haut = mieux » et un client perdant 5 cm voyait du rouge.
+  // Chaque ligne porte donc son sens explicitement — ne jamais l'aligner sur
+  // ses voisines de groupe.
+  //
+  //  · Tour de taille        → plus bas est mieux (adiposité centrale).
+  //  · Hanche                → suit l'objectif du client, comme le poids.
+  //                            Adiposité, et dénominateur du ratio taille/hanche.
+  //  · Biceps, cuisse, épaules → plus haut est mieux : ce sont des SITES
+  //                            MUSCULAIRES (confirmé par Marie via Nicholas,
+  //                            2026-07-29). Gagner du tour de bras pendant une
+  //                            perte de gras est une bonne nouvelle, et la
+  //                            cuisse est lue comme du muscle malgré sa prise
+  //                            à 2 po du genou.
   const METRICS = useMemo<Metric[]>(
     () => [
       { key: 'taille', label: 'Tour de taille', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: true, read: d => num(d.tour_taille_cm) },
-      // La hanche suit l'OBJECTIF du client, comme le poids. Elle était réglée
-      // sur « plus haut = mieux » par voisinage avec les circonférences
-      // musculaires ci-dessous, si bien qu'un client perdant 5 cm de hanche
-      // voyait sa progression affichée en rouge. Ce n'est pas un site
-      // musculaire : c'est surtout de l'adiposité, et c'est le dénominateur du
-      // ratio taille/hanche, que ce même tableau compte en « plus bas = mieux ».
       { key: 'hanche', label: 'Hanche', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: weightLossGoal, read: d => num(d.tour_hanche_cm) },
       { key: 'biceps', label: 'Biceps fléchi', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: false, read: d => num(d.circ_biceps_flechi_cm) },
       { key: 'cuisse', label: 'Cuisse (2 po du genou)', unit: 'cm', group: 'circ', digits: 1, lowerIsBetter: false, read: d => num(d.circ_cuisse_cm) },
