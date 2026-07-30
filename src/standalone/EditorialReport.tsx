@@ -1746,6 +1746,13 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
             activeBilanId={activeBilan.id}
             compareBilan={compareBilan}
             compareLabel={compareShortLabel}
+            /* Même formule que le dashboard : sans ça, le tour de hanche et le
+               poids seraient jugés dans un sens ici et dans l'autre à l'écran. */
+            weightLossGoal={
+              client.nutritionTargetWeightKg != null && typeof activeData.poids_kg === 'number'
+                ? activeData.poids_kg >= client.nutritionTargetWeightKg
+                : (objectif?.goal.toLoseKg ?? 0) >= 0
+            }
           />
         </Section>
       )}

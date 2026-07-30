@@ -879,6 +879,7 @@ export function DashboardTab() {
             bodyFatGoalLabel={objectif?.goalDate ?? null}
             compareBilan={compareBilan}
             compareLabel={compareShortLabel}
+            weightLossGoal={weightLossGoal}
           />
         </section>
       ) : (

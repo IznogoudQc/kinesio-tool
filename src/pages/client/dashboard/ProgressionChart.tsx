@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { TrendingUp } from 'lucide-react'
 import { formatBilanMonth } from '../bilanFields'
+import { isLowerBetter } from '../../../lib/norms/bilan-keys'
 import { getPopulationAverage, type TestKey } from '../../../lib/norms'
 import { computeBilan, type BilanProfile } from '../../../lib/bilan-computed'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
@@ -18,7 +19,7 @@ import { DeltaIndicator } from '../../../components/DeltaIndicator'
 /** `'overall'` est recalculé ; les autres clés sont lues telles quelles dans BilanData. */
 type MetricKey = 'overall' | keyof BilanData
 
-type MetricGroup = 'Vue d’ensemble' | 'Composition' | 'Cardio' | 'Musculosquelettique'
+type MetricGroup = 'Vue d’ensemble' | 'Composition' | 'Circonférences' | 'Plis cutanés' | 'Cardio' | 'Musculosquelettique'
 
 interface Metric {
   key: MetricKey
@@ -27,8 +28,6 @@ interface Metric {
   group: MetricGroup
   /** Trace la ligne « moyenne population » quand la norme publie des percentiles. */
   testKey?: TestKey
-  /** Une baisse est une amélioration (% gras, IMC, tour de taille, FC, PA). */
-  lowerIsBetter?: boolean
 }
 
 const METRICS: Metric[] = [
@@ -36,16 +35,34 @@ const METRICS: Metric[] = [
 
   { key: 'poids_kg', label: 'Poids', unit: 'kg', group: 'Composition' },
   // IMC et tour de taille : mentionnés, jamais évalués → pas de `testKey` (pas de zones).
-  { key: 'imc', label: 'IMC', unit: 'kg/m²', group: 'Composition', lowerIsBetter: true },
-  { key: 'pourcentage_gras', label: '% de gras', unit: '%', group: 'Composition', testKey: 'bodyFat', lowerIsBetter: true },
-  { key: 'tour_taille_cm', label: 'Tour de taille', unit: 'cm', group: 'Composition', lowerIsBetter: true },
-  { key: 'tour_hanche_cm', label: 'Tour de hanche', unit: 'cm', group: 'Composition', lowerIsBetter: true },
+  { key: 'imc', label: 'IMC', unit: 'kg/m²', group: 'Composition' },
+  { key: 'pourcentage_gras', label: '% de gras', unit: '%', group: 'Composition', testKey: 'bodyFat' },
+  { key: 'tour_taille_cm', label: 'Tour de taille', unit: 'cm', group: 'Composition' },
+  { key: 'tour_hanche_cm', label: 'Tour de hanche', unit: 'cm', group: 'Composition' },
+  { key: 'taille_cm', label: 'Grandeur', unit: 'cm', group: 'Composition' },
+
+  // Circonférences musculaires : sites de MUSCLE (confirmé par Marie), donc pas
+  // de `lowerIsBetter` — grossir est l'objectif. Même convention que l'onglet
+  // Mesures ; le tour de taille et le tour de hanche restent en Composition,
+  // ce sont des mesures d'adiposité.
+  { key: 'circ_biceps_flechi_cm', label: 'Biceps fléchi', unit: 'cm', group: 'Circonférences' },
+  { key: 'circ_cuisse_cm', label: 'Cuisse (2 po du genou)', unit: 'cm', group: 'Circonférences' },
+  { key: 'circ_epaules_pec_cm', label: 'Épaules et pec', unit: 'cm', group: 'Circonférences' },
+
+  // Plis cutanés : moins = mieux. Ils étaient absents de la liste alors que les
+  // champs existent depuis toujours — un client suivi sur ses plis ne pouvait
+  // pas voir leur évolution.
+  { key: 'pli_triceps', label: 'Pli triceps', unit: 'mm', group: 'Plis cutanés' },
+  { key: 'pli_biceps', label: 'Pli biceps', unit: 'mm', group: 'Plis cutanés' },
+  { key: 'pli_sous_scap', label: 'Pli sous-scapulaire', unit: 'mm', group: 'Plis cutanés' },
+  { key: 'pli_iliaque', label: 'Pli crête iliaque', unit: 'mm', group: 'Plis cutanés' },
+  { key: 'pli_mollet', label: 'Pli mollet', unit: 'mm', group: 'Plis cutanés' },
 
   { key: 'vo2max', label: 'VO2max', unit: 'ml/kg/min', group: 'Cardio', testKey: 'vo2max' },
   { key: 'met_equivalent', label: 'MET équivalent', unit: 'MET', group: 'Cardio' },
-  { key: 'fc_repos', label: 'FC de repos', unit: 'bpm', group: 'Cardio', testKey: 'restingHeartRate', lowerIsBetter: true },
-  { key: 'pa_systolique', label: 'Pression systolique', unit: 'mmHg', group: 'Cardio', testKey: 'bloodPressureSystolic', lowerIsBetter: true },
-  { key: 'pa_diastolique', label: 'Pression diastolique', unit: 'mmHg', group: 'Cardio', testKey: 'bloodPressureDiastolic', lowerIsBetter: true },
+  { key: 'fc_repos', label: 'FC de repos', unit: 'bpm', group: 'Cardio', testKey: 'restingHeartRate' },
+  { key: 'pa_systolique', label: 'Pression systolique', unit: 'mmHg', group: 'Cardio', testKey: 'bloodPressureSystolic' },
+  { key: 'pa_diastolique', label: 'Pression diastolique', unit: 'mmHg', group: 'Cardio', testKey: 'bloodPressureDiastolic' },
 
   { key: 'pushups', label: 'Push-ups', unit: 'reps', group: 'Musculosquelettique', testKey: 'pushups' },
   { key: 'situps', label: 'Sit-ups', unit: 'reps', group: 'Musculosquelettique', testKey: 'situps' },
@@ -55,7 +72,14 @@ const METRICS: Metric[] = [
   { key: 'endurance_dos_sec', label: 'Endurance du dos', unit: 's', group: 'Musculosquelettique', testKey: 'backEndurance' }
 ]
 
-const GROUP_ORDER: MetricGroup[] = ['Vue d’ensemble', 'Composition', 'Cardio', 'Musculosquelettique']
+const GROUP_ORDER: MetricGroup[] = [
+  'Vue d’ensemble',
+  'Composition',
+  'Circonférences',
+  'Plis cutanés',
+  'Cardio',
+  'Musculosquelettique'
+]
 
 /** Les reps/W n'ont pas de décimale utile ; l'IMC et le % de gras si. */
 const fmt = (v: number): string => v.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
@@ -80,6 +104,9 @@ interface ProgressionChartProps {
   compareBilan?: Bilan | null
   /** Nom court du bilan comparé, pour l'étiquette de la ligne (« 10 juin 2024 »). */
   compareLabel?: string | null
+  /** Objectif du client : `true` = perdre du poids. Ne concerne que les mesures
+   *  de `BILAN_GOAL_DEPENDENT` (poids, tour de hanche). Défaut `true`. */
+  weightLossGoal?: boolean
 }
 
 export function ProgressionChart({
@@ -89,7 +116,8 @@ export function ProgressionChart({
   bodyFatTarget,
   bodyFatGoalLabel,
   compareBilan,
-  compareLabel
+  compareLabel,
+  weightLossGoal = true
 }: ProgressionChartProps) {
   const [metric, setMetric] = useState<MetricKey>('vo2max')
 
@@ -197,7 +225,11 @@ export function ProgressionChart({
                 current={currentValue}
                 previous={compareValue}
                 unit={current.unit}
-                lowerIsBetter={current.lowerIsBetter}
+                lowerIsBetter={
+                  current.key === 'overall'
+                    ? false
+                    : isLowerBetter(current.key as keyof BilanData, weightLossGoal)
+                }
               />
             </span>
           )}

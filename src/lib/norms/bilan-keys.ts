@@ -42,6 +42,19 @@ export const BILAN_LOWER_IS_BETTER: Partial<Record<keyof BilanData, boolean>> = 
   // Mentionnées sans être évaluées — sans barème, donc sans autre source.
   imc: true,
   tour_taille_cm: true,
+  // Plis cutanés : moins de gras sous-cutané est toujours l'objectif.
+  pli_triceps: true,
+  pli_biceps: true,
+  pli_sous_scap: true,
+  pli_iliaque: true,
+  pli_mollet: true,
+  pli_cuisse: true,
+  // Circonférences MUSCULAIRES : grossir est l'objectif (confirmé par Marie —
+  // voir le commentaire de `BilanMeasuresOverview`). À ne pas confondre avec le
+  // tour de taille et le tour de hanche, qui mesurent de l'adiposité.
+  circ_biceps_flechi_cm: false,
+  circ_cuisse_cm: false,
+  circ_epaules_pec_cm: false,
   // Cotées : redondant avec les tables, mais déclaré pour que le sens ne dépende
   // jamais de la présence d'un barème.
   pourcentage_gras: true,
@@ -57,7 +70,29 @@ export const BILAN_LOWER_IS_BETTER: Partial<Record<keyof BilanData, boolean>> = 
   endurance_dos_sec: false
 }
 
-/** Plus bas est-il mieux pour cette mesure ? Défaut : non (plus haut = mieux). */
-export function isLowerBetter(key: keyof BilanData): boolean {
+/**
+ * Mesures dont le sens dépend de l'OBJECTIF du client, et non de la mesure
+ * elle-même. Le poids en est l'évidence ; le tour de hanche aussi, puisque c'est
+ * de l'adiposité chez un client qui s'allège mais du muscle fessier chez un
+ * client qui prend de la masse.
+ *
+ * Sans cette notion, le sens divergeait d'un écran à l'autre : l'onglet Mesures
+ * faisait suivre l'objectif au tour de hanche, le graphique de progression le
+ * figeait sur « baisse = mieux ».
+ */
+export const BILAN_GOAL_DEPENDENT: ReadonlySet<keyof BilanData> = new Set<keyof BilanData>([
+  'poids_kg',
+  'tour_hanche_cm'
+])
+
+/**
+ * Plus bas est-il mieux pour cette mesure ?
+ *
+ * `weightLossGoal` ne sert qu'aux mesures de `BILAN_GOAL_DEPENDENT` ; ailleurs il
+ * est ignoré. Défaut `true` : la perte de poids est le cas courant, et c'est déjà
+ * le défaut retenu ailleurs dans l'app.
+ */
+export function isLowerBetter(key: keyof BilanData, weightLossGoal = true): boolean {
+  if (BILAN_GOAL_DEPENDENT.has(key)) return weightLossGoal
   return BILAN_LOWER_IS_BETTER[key] ?? false
 }

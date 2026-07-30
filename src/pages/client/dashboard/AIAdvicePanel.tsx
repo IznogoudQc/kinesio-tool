@@ -104,7 +104,30 @@ export function AIAnalysisPanel({ sex, age, metrics }: AIAnalysisPanelProps) {
 
       {/* Modal payload preview */}
       {stage === 'payload' && (
-        <Modal title="Analyse du bilan par l'IA" icon={Bot} onClose={() => setStage('idle')} wide>
+        <Modal
+          title="Analyse du bilan par l'IA"
+          icon={Bot}
+          onClose={() => setStage('idle')}
+          wide
+          footer={
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setStage('idle')}
+                className="px-4 py-2 text-marine/70 hover:text-marine border border-cream-dark rounded-md text-sm transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerate}
+                className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-sm hover:bg-gold-dark transition-colors"
+              >
+                Analyser
+              </button>
+            </div>
+          }
+        >
           <p className="text-marine/65 text-sm mb-3">
             Données anonymes envoyées ({metrics.length} métrique{metrics.length > 1 ? 's' : ''}) :
           </p>
@@ -153,22 +176,6 @@ export function AIAnalysisPanel({ sex, age, metrics }: AIAnalysisPanelProps) {
           {error && (
             <div className="text-red-700 text-sm bg-red-50 border border-red-200 rounded-md px-3 py-2 mb-3">{error}</div>
           )}
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setStage('idle')}
-              className="px-4 py-2 text-marine/70 hover:text-marine border border-cream-dark rounded-md text-sm transition-colors"
-            >
-              Annuler
-            </button>
-            <button
-              type="button"
-              onClick={handleGenerate}
-              className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-sm hover:bg-gold-dark transition-colors"
-            >
-              Analyser
-            </button>
-          </div>
         </Modal>
       )}
 
@@ -185,7 +192,32 @@ export function AIAnalysisPanel({ sex, age, metrics }: AIAnalysisPanelProps) {
 
       {/* Modal NO_API_KEY */}
       {stage === 'no-key' && (
-        <Modal title="Clé API requise" icon={KeyRound} onClose={() => setStage('idle')}>
+        <Modal
+          title="Clé API requise"
+          icon={KeyRound}
+          onClose={() => setStage('idle')}
+          footer={
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setStage('idle')}
+                className="px-4 py-2 text-marine/70 hover:text-marine border border-cream-dark rounded-md text-sm transition-colors"
+              >
+                Plus tard
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStage('idle')
+                  navigate('/settings')
+                }}
+                className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-sm hover:bg-gold-dark transition-colors"
+              >
+                Ouvrir les réglages
+              </button>
+            </div>
+          }
+        >
           <p className="text-marine/75 text-sm mb-4">
             Aucune clé API Anthropic configurée. Allez dans{' '}
             <span className="font-medium text-marine">Réglages → Conseils IA</span> pour en ajouter une.
@@ -193,31 +225,36 @@ export function AIAnalysisPanel({ sex, age, metrics }: AIAnalysisPanelProps) {
           <p className="text-marine/50 text-xs mb-5">
             Vous pouvez obtenir une clé sur <span className="font-mono">console.anthropic.com</span>.
           </p>
-          <div className="flex items-center justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setStage('idle')}
-              className="px-4 py-2 text-marine/70 hover:text-marine border border-cream-dark rounded-md text-sm transition-colors"
-            >
-              Plus tard
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setStage('idle')
-                navigate('/settings')
-              }}
-              className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-sm hover:bg-gold-dark transition-colors"
-            >
-              Ouvrir les réglages
-            </button>
-          </div>
         </Modal>
       )}
 
       {/* Modal résultat */}
       {stage === 'result' && advice && (
-        <Modal title="Forces & à travailler — analyse IA" icon={Bot} onClose={() => setStage('idle')} wide>
+        <Modal
+          title="Forces & à travailler — analyse IA"
+          icon={Bot}
+          onClose={() => setStage('idle')}
+          wide
+          footer={
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="inline-flex items-center gap-2 px-3.5 py-2 text-marine/75 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors"
+              >
+                <ClipboardCopy size={14} />
+                {copied ? '✓ Copié' : 'Copier en texte'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setStage('idle')}
+                className="px-4 py-2 bg-marine text-cream font-semibold rounded-md text-sm hover:bg-marine-light transition-colors"
+              >
+                Fermer
+              </button>
+            </div>
+          }
+        >
           <div className="space-y-5">
             {advice.synthese && (
               <p className="text-marine/80 text-sm leading-relaxed bg-cream/50 border border-cream-dark/40 rounded-md px-4 py-3">
@@ -284,23 +321,6 @@ export function AIAnalysisPanel({ sex, age, metrics }: AIAnalysisPanelProps) {
             )}
           </div>
 
-          <div className="flex items-center justify-end gap-2 mt-6 pt-4 border-t border-cream-dark/40">
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex items-center gap-2 px-3.5 py-2 text-marine/75 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors"
-            >
-              <ClipboardCopy size={14} />
-              {copied ? '✓ Copié' : 'Copier en texte'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setStage('idle')}
-              className="px-4 py-2 bg-marine text-cream font-semibold rounded-md text-sm hover:bg-marine-light transition-colors"
-            >
-              Fermer
-            </button>
-          </div>
         </Modal>
       )}
     </>
@@ -314,14 +334,32 @@ interface ModalProps {
   icon: React.ComponentType<{ size?: number; className?: string }>
   onClose?: () => void
   wide?: boolean
+  /** Barre d'actions, TOUJOURS visible : elle ne défile pas avec le contenu. */
+  footer?: React.ReactNode
   children: React.ReactNode
 }
 
-function Modal({ title, icon: Icon, onClose, wide, children }: ModalProps) {
+/**
+ * Fenêtre modale bornée à la hauteur de l'écran.
+ *
+ * Le fond portait `overflow-y-auto` et la boîte grandissait librement : sur une
+ * fenêtre d'application courte, le contenu ET les boutons d'action sortaient de
+ * l'écran, et la barre de défilement du fond ne permettait pas de les atteindre.
+ * Le contenu était donc inaccessible — pas seulement inconfortable.
+ *
+ * Structure en trois bandes : en-tête et pied fixes, seul le contenu défile.
+ * `100dvh` plutôt que `100vh` : sur un écran court, la barre d'outils du système
+ * ampute `vh` et la boîte dépassait encore.
+ */
+function Modal({ title, icon: Icon, onClose, wide, footer, children }: ModalProps) {
   return (
-    <div className="fixed inset-0 z-40 flex items-start justify-center bg-marine/40 backdrop-blur-sm p-6 overflow-y-auto">
-      <div className={`bg-cream rounded-lg shadow-2xl border border-cream-dark my-6 w-full ${wide ? 'max-w-3xl' : 'max-w-lg'}`}>
-        <div className="px-5 py-4 border-b border-cream-dark flex items-center gap-2.5">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-4">
+      <div
+        className={`bg-cream rounded-lg shadow-2xl border border-cream-dark w-full flex flex-col max-h-[calc(100dvh-2rem)] ${
+          wide ? 'max-w-3xl' : 'max-w-lg'
+        }`}
+      >
+        <div className="shrink-0 px-5 py-4 border-b border-cream-dark flex items-center gap-2.5">
           <Icon size={18} className="text-gold-dark" />
           <h3 className="text-marine font-semibold text-lg flex-1">{title}</h3>
           {onClose && (
@@ -330,7 +368,13 @@ function Modal({ title, icon: Icon, onClose, wide, children }: ModalProps) {
             </button>
           )}
         </div>
-        <div className="px-5 py-4">{children}</div>
+        {/* `min-h-0` est indispensable : sans lui, un enfant flex refuse de
+            rétrécir sous sa hauteur de contenu et le défilement ne s'active
+            jamais. C'est la cause classique d'une modale qui déborde. */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-5 py-4">{children}</div>
+        {footer && (
+          <div className="shrink-0 px-5 py-3 border-t border-cream-dark bg-cream rounded-b-lg">{footer}</div>
+        )}
       </div>
     </div>
   )
