@@ -14,7 +14,11 @@ import {
 } from './norms'
 import { BILAN_TO_TEST_KEY } from './norms/bilan-keys'
 
-const CATEGORY_FR: Record<Category, string> = {
+/** Libelles francais des categories, tels qu'envoyes a l'IA et affiches dans
+ *  l'apercu du payload. Exporte pour que l'apercu puisse RETROUVER la categorie
+ *  a partir du libelle et la colorer comme partout ailleurs, sans ajouter de
+ *  champ a `MetricSelection` — cet objet part tel quel vers l'API. */
+export const CATEGORY_FR: Record<Category, string> = {
   A_AMELIORER: 'À améliorer',
   ACCEPTABLE: 'Acceptable',
   BIEN: 'Bien',

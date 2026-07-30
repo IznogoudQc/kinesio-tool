@@ -3,6 +3,26 @@ import { useNavigate } from 'react-router-dom'
 import { AlertTriangle, Bot, CheckCircle2, ClipboardCopy, Info, KeyRound, Lightbulb, Loader2, X } from 'lucide-react'
 import type { MetricSelection } from '../../../contexts/AIAdviceContext'
 import { AIAdviceError, aiAdviceService, formatAdviceAsText, type AIAdvice } from '../../../services/aiAdvice'
+import { CATEGORY_FR } from '../../../lib/ai-metrics'
+import { CATEGORY_COLORS, type Category } from '../../../lib/norms'
+
+/**
+ * Couleur d'une catégorie à partir de son libellé français.
+ *
+ * `MetricSelection` ne transporte que le libellé, pas la clé de catégorie — et
+ * on ne lui en ajoute pas : cet objet part **tel quel** vers l'API, sa forme
+ * n'est donc pas un détail d'affichage. On inverse `CATEGORY_FR` pour retrouver
+ * la clé et réutiliser la palette du reste de l'app. Table dérivée : si un
+ * libellé change, la couleur suit.
+ */
+const CATEGORY_BY_LABEL = Object.fromEntries(
+  (Object.entries(CATEGORY_FR) as [Category, string][]).map(([key, label]) => [label, key])
+) as Record<string, Category | undefined>
+
+function categoryClass(label: string): string {
+  const key = CATEGORY_BY_LABEL[label]
+  return key ? CATEGORY_COLORS[key] : 'text-marine/60'
+}
 
 interface AIAnalysisPanelProps {
   sex: 'F' | 'M' | null
@@ -84,29 +104,47 @@ export function AIAnalysisPanel({ sex, age, metrics }: AIAnalysisPanelProps) {
 
       {/* Modal payload preview */}
       {stage === 'payload' && (
-        <Modal title="Analyse du bilan par l'IA" icon={Bot} onClose={() => setStage('idle')}>
+        <Modal title="Analyse du bilan par l'IA" icon={Bot} onClose={() => setStage('idle')} wide>
           <p className="text-marine/65 text-sm mb-3">
             Données anonymes envoyées ({metrics.length} métrique{metrics.length > 1 ? 's' : ''}) :
           </p>
-          <div className="bg-cream/50 border border-cream-dark/40 rounded-md p-3 text-marine text-sm font-mono space-y-1 mb-4 max-h-64 overflow-y-auto">
-            <div>
-              <span className="text-marine/60">Sexe :</span> {sex === 'F' ? 'Femme' : sex === 'M' ? 'Homme' : '—'}
-              {'  ·  '}
-              <span className="text-marine/60">Âge :</span> {age !== null ? `${age} ans` : '—'}
+          {/* Tableau aligné plutôt qu'un bloc à chasse fixe : les valeurs, les
+              catégories et les percentiles étaient enfilés sur une même ligne
+              séparés par des points médians, dans une fenêtre de 512 px avec sa
+              propre barre de défilement — deux barres imbriquées, et rien
+              d'alignable à l'œil. Ici chaque information a sa colonne, les
+              nombres sont en chiffres tabulaires et la fenêtre est élargie. */}
+          <div className="rounded-md border border-cream-dark/40 bg-cream/40 mb-4 overflow-hidden">
+            <div className="px-4 py-2.5 border-b border-cream-dark/40 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="text-marine/45 text-xs uppercase tracking-wide font-semibold">Profil</span>
+              <span className="text-marine text-sm font-medium">
+                {sex === 'F' ? 'Femme' : sex === 'M' ? 'Homme' : 'Sexe non renseigné'}
+                {age !== null && ` · ${age} ans`}
+              </span>
             </div>
-            {metrics.map(m => (
-              <div key={m.key}>
-                <span className="text-marine/60">{m.label} :</span>{' '}
-                <span className="font-semibold">
-                  {m.value}
-                  {m.unit && ` ${m.unit}`}
-                </span>
-                {m.category && <span className="text-marine/60"> · {m.category}</span>}
-                {typeof m.percentile === 'number' && (
-                  <span className="text-marine/60"> · {Math.round(m.percentile)}ᵉ perc.</span>
-                )}
-              </div>
-            ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <tbody>
+                  {metrics.map(m => (
+                    <tr key={m.key} className="border-t border-cream-dark/30">
+                      <td className="px-4 py-2 text-marine/60">{m.label}</td>
+                      <td className="px-2 py-2 text-right text-marine font-semibold tabular-nums whitespace-nowrap">
+                        {m.value}
+                        {m.unit && <span className="text-marine/40 font-normal"> {m.unit}</span>}
+                      </td>
+                      <td className="px-2 py-2 whitespace-nowrap">
+                        {m.category && (
+                          <span className={`font-medium ${categoryClass(m.category)}`}>{m.category}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2 text-right text-marine/40 tabular-nums whitespace-nowrap">
+                        {typeof m.percentile === 'number' ? `${Math.round(m.percentile)}ᵉ perc.` : ''}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
           <div className="bg-gold/10 border border-gold/30 rounded-md p-3 text-marine/70 text-xs flex items-start gap-2 mb-4">
             <Info size={14} className="text-gold-dark shrink-0 mt-0.5" />
