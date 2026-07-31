@@ -22,7 +22,6 @@ import {
   GLOBAL_BLURB
 } from '../lib/global-score-summary'
 import { detectWins, noWinsMessage } from '../lib/dashboard-wins'
-import { buildActionPlan } from '../lib/action-plan'
 import { buildObjectif, type Objectif } from '../lib/objectif'
 import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
 import { ACTIVITY_LABELS, DEFAULT_MEALS_PER_DAY, macrosPerMeal } from '../lib/nutrition'
@@ -1482,7 +1481,6 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   const noWins = noWinsMessage(previousComputed !== undefined)
   // On garde les « forces » (mises en valeur pour le client), pas les priorités
   // auto — retirées à la demande de Marie (peu utiles, pas toujours le focus réel).
-  const plan = buildActionPlan(activeData, profile)
   const objectif = buildObjectif(client, activeData, computed, age, activeBilan.date)
   // Objectif en texte libre saisi par Marie/le client — affiché même sans module nutrition.
   const objectifText = typeof activeData.objectif === 'string' ? activeData.objectif.trim() : ''
@@ -1785,32 +1783,16 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         </Section>
       )}
 
-      {(plan.forces.length > 0 || motDuKine) && (
-        <Section eyebrow="Et maintenant ?" title={plan.forces.length > 0 ? 'Vos forces' : 'En terminant'} tone="white" backTop>
-          {plan.forces.length > 0 && (
-            <div>
-              <p className="ed-eyebrow mb-4 text-gold-dark">Vos forces</p>
-              <div className="grid gap-4 sm:grid-cols-3">
-                {plan.forces.map(f => (
-                  <div key={f.metric.key as string} className="rounded-lg border border-marine/10 p-4">
-                    <p className="text-sm font-semibold text-marine">{f.metric.label}</p>
-                    <p className="mt-1 text-sm text-marine/55">
-                      {f.value.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} {f.metric.unit} ·{' '}
-                      {CATEGORY_LABELS[f.category]}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {motDuKine && (
-            <div className="mt-14 rounded-xl bg-cream p-8 sm:p-10">
-              <p className="ed-eyebrow text-gold-dark">Le mot de votre kinésiologue</p>
-              <p className="ed-prose mt-4 whitespace-pre-line text-base leading-relaxed text-marine">{motDuKine}</p>
-              <p className="mt-6 whitespace-pre-line text-sm italic text-marine/60">{data.signature}</p>
-            </div>
-          )}
+      {/* Le bloc « Vos forces » a été retiré (v0.9.82, décision de Nicholas) :
+          chaque test est déjà présenté avec sa cote plus haut. La section reste
+          pour le mot du kinésiologue et la clôture. */}
+      {motDuKine && (
+        <Section eyebrow="Et maintenant ?" title="En terminant" tone="white" backTop>
+          <div className="rounded-xl bg-cream p-8 sm:p-10">
+            <p className="ed-eyebrow text-gold-dark">Le mot de votre kinésiologue</p>
+            <p className="ed-prose mt-4 whitespace-pre-line text-base leading-relaxed text-marine">{motDuKine}</p>
+            <p className="mt-6 whitespace-pre-line text-sm italic text-marine/60">{data.signature}</p>
+          </div>
         </Section>
       )}
 

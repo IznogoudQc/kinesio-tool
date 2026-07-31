@@ -25,7 +25,6 @@ import { CompositionCpaflaCard } from '../dashboard/CompositionCpaflaCard'
 import { CompositeCpaflaCard } from '../dashboard/CompositeCpaflaCard'
 import { cpaflaCompositionDetail } from '../../../lib/norms/cpafla-composition'
 import { TrainingZones } from '../dashboard/TrainingZones'
-import { StrengthsAndWeaknesses } from '../dashboard/StrengthsAndWeaknesses'
 import { BilanSelectorPills } from '../dashboard/BilanSelectorPills'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../../../lib/synthesisBilan'
 import { compareCandidates } from '../../../lib/report-scope'
@@ -907,14 +906,19 @@ export function DashboardTab() {
         </div>
       )}
 
-      <section className="dash-rise space-y-4" style={{ animationDelay: '240ms' }}>
-        <SectionHead
-          eyebrow="Analyse"
-          title="Forces et axes de progrès"
-          right={!printMode && <AIAnalysisPanel sex={client.sex} age={age} metrics={aiMetrics} />}
-        />
-        <StrengthsAndWeaknesses data={activeData} age={age} sex={client.sex} norms={norms} />
-      </section>
+      {/* « Forces et axes de progrès » retiré (v0.9.82, décision de Nicholas) : le
+          bilan liste déjà chaque test avec sa cote, et la carte « À travailler »
+          se réduisait souvent à « Aucun test… — bravo ! ». La section reste, car
+          c'est elle qui porte le bouton d'analyse par l'IA. */}
+      {!printMode && (
+        <section className="dash-rise space-y-4" style={{ animationDelay: '240ms' }}>
+          <SectionHead
+            eyebrow="Analyse"
+            title="Analyse du bilan"
+            right={<AIAnalysisPanel sex={client.sex} age={age} metrics={aiMetrics} />}
+          />
+        </section>
+      )}
 
       {showModal && (
         <SendBilanModal

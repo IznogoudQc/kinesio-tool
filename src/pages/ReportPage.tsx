@@ -329,7 +329,7 @@ export function ReportPage() {
       {SHOW_BACK_HEALTH && <DosSection {...shared} />}
       <GlobalScoreSection computed={latestComputed} profile={profile} />
       <ObjectifSection client={client} latest={latest} chrono={chrono} profile={profile} />
-      <ForcesEtPlanSection latest={latest} profile={profile} coachName={coachName} signature={signature} customPrincipe={{ title: client.principePersoTitre, line: client.principePersoTexte }} />
+      <ForcesEtPlanSection latest={latest} coachName={coachName} signature={signature} customPrincipe={{ title: client.principePersoTitre, line: client.principePersoTexte }} />
     </article>
   )
 }
@@ -2091,49 +2091,18 @@ function MiniSpark({ values }: { values: number[] }) {
   )
 }
 
-// ── Section 7 — Forces & clôture ─────────────────────────────────────────────
-function ForcesEtPlanSection({ latest, profile, coachName, signature, customPrincipe }: { latest: Bilan; profile: BilanProfile; coachName: string; signature: string; customPrincipe: { title: string | null; line: string | null } }) {
-  const ranked = METRICS.map(m => {
-    const value = num(latest.data[m.key])
-    if (value === null) return null
-    const norm = metricNorm(m.key, value, profile)
-    if (!norm?.category) return null
-    return { metric: m, value, category: norm.category, percentile: norm.percentile, next: norm.next, lowerIsBetter: norm.lowerIsBetter }
-  }).filter((x): x is NonNullable<typeof x> => x !== null)
-
-  // Priorités auto retirées à la demande de Marie — on ne garde que les forces.
-  const forces = ranked.filter(r => r.category === 'EXCELLENT' || r.category === 'TRES_BIEN').sort((a, b) => SCORE_OF[b.category] - SCORE_OF[a.category]).slice(0, 3)
-
+// ── Section 8 — Clôture (mot du kinésiologue + principes) ────────────────────
+function ForcesEtPlanSection({ latest, coachName, signature, customPrincipe }: { latest: Bilan; coachName: string; signature: string; customPrincipe: { title: string | null; line: string | null } }) {
   const notes = typeof latest.data.notes === 'string' ? latest.data.notes.trim() : ''
   const signOff = signature.trim() || `${coachName || 'Marie-Eve Bélanger'}\nKinésiologue`
 
+  // Le bloc « Vos forces » a été retiré (v0.9.82, décision de Nicholas) : chaque
+  // test est déjà présenté avec sa cote dans les sections par domaine, le
+  // répéter ici n'ajoutait rien. La section reste — elle porte le mot du
+  // kinésiologue, les principes et le pied de page.
   return (
-    <ReportSection title="Vos forces" sectionNumber="Section 8">
-      <div style={{ marginTop: '2mm', marginBottom: '9mm' }}>
-        <p className="report-display" style={{ fontSize: '15pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>
-          <Trophy size={16} style={{ display: 'inline', verticalAlign: '-2px', color: GOLD }} /> Vos forces
-        </p>
-        {forces.length === 0 ? (
-          <p style={{ fontSize: '10pt', color: INK_SOFT }}>Continuez vos efforts — vos forces apparaîtront à mesure que vos résultats progressent.</p>
-        ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5mm' }}>
-            {forces.map(f => (
-              <div key={f.metric.key as string} className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '4mm 5mm' }}>
-                <div className="flex items-center justify-between" style={{ marginBottom: '1mm' }}>
-                  <span style={{ fontSize: '10.5pt', fontWeight: 600, color: MARINE }}>{f.metric.label}</span>
-                  <CategoryPill category={f.category} />
-                </div>
-                <p style={{ fontSize: '9.5pt', color: INK_SOFT }}>
-                  {fmt(f.value)} {f.metric.unit}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-
-      <div className="break-inside-avoid" style={{ marginTop: '12mm', background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
+    <ReportSection title="En terminant" sectionNumber="Section 8">
+      <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
         <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>Le mot de votre kinésiologue</p>
         {notes !== '' && <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '5mm' }}>{notes}</p>}
         <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: notes !== '' ? 'italic' : 'normal' }}>{signOff}</p>
