@@ -141,6 +141,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('reports:generate-baremes'),
     generateQaap: (questionnaireId: string, clientName: string) =>
       ipcRenderer.invoke('reports:generate-qaap', { questionnaireId, clientName }),
+    archiveQaap: (questionnaireId: string) =>
+      ipcRenderer.invoke('reports:archive-qaap', { questionnaireId }),
     generateInteractiveHtml: (clientId: string, bilanId?: string) =>
       ipcRenderer.invoke('reports:generate-html', { clientId, bilanId }),
     generateNutritionHtml: (clientId: string) =>

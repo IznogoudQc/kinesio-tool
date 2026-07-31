@@ -19,6 +19,11 @@ export const reportsService = {
     return window.api.reports.generateQaap(questionnaireId, clientName)
   },
 
+  /** Dépose le PDF d'un Q-AAP signé dans « Questionnaires et Notes » du client. */
+  async archiveQaap(questionnaireId: string): Promise<{ path: string }> {
+    return window.api.reports.archiveQaap(questionnaireId)
+  },
+
   /** Génère le document HTML interactif du client (le même que celui joint au courriel). */
   async generateInteractiveHtml(clientId: string, bilanId?: string): Promise<string> {
     return window.api.reports.generateInteractiveHtml(clientId, bilanId)

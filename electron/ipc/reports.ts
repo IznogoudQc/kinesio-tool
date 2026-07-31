@@ -16,8 +16,19 @@ import {
 } from '../lib/report-generator'
 import { generateFoodJournalHtml, generateInteractiveReportHtml, generateNutritionDocumentHtml } from '../lib/standalone-report'
 import { getDocumentsFolder, getSmtpCredentials } from './settings'
+import { CLIENT_FOLDERS, CLIENT_FOLDER_NAMES } from '../../src/lib/client-folders'
+import { asQaapData, qaapIsSigned } from '../../src/lib/qaap'
+import { questionnaires } from '../../db/schema'
 
 const ClientIdSchema = z.string().uuid()
+
+/** Crée le dossier du client et ses trois sous-dossiers. Idempotent. */
+async function ensureClientFolders(clientDir: string): Promise<void> {
+  await fs.mkdir(clientDir, { recursive: true })
+  for (const nom of CLIENT_FOLDER_NAMES) {
+    await fs.mkdir(join(clientDir, nom), { recursive: true })
+  }
+}
 
 /** Arguments des generateurs de rapport. `bilanId` absent = bilan de synthese
  *  (toutes les valeurs les plus recentes), comme avant. Fourni = rapport de CE
@@ -92,8 +103,14 @@ export function registerReportsHandlers(): void {
     if (!folder) throw new Error('Aucun dossier configuré. Choisissez-le dans les Paramètres.')
 
     const clientDir = join(folder, safeClientFileName(client.name))
-    await fs.mkdir(clientDir, { recursive: true })
+    // Les trois sous-dossiers sont créés même si une étape échoue : Marie doit
+    // retrouver la même structure chez tous ses clients, pas un dossier dont
+    // l'arborescence dépend de ce qui a pu être généré ce jour-là.
+    await ensureClientFolders(clientDir)
     const stem = `${safeClientFileName(client.name)}-${todayISODate()}`
+    const dirBilans = join(clientDir, CLIENT_FOLDERS.bilans)
+    const dirNutrition = join(clientDir, CLIENT_FOLDERS.nutrition)
+    const dirQuestionnaires = join(clientDir, CLIENT_FOLDERS.questionnaires)
 
     const temps: string[] = []
     let written = 0
@@ -108,13 +125,13 @@ export function registerReportsHandlers(): void {
     await step(async () => {
       const p = await generateClientReportPdf(id)
       temps.push(p)
-      await fs.copyFile(p, join(clientDir, `Bilan-${stem}.pdf`))
+      await fs.copyFile(p, join(dirBilans, `Bilan-${stem}.pdf`))
       written++
     })
     await step(async () => {
       const p = await generateInteractiveReportHtml(id)
       temps.push(p)
-      await fs.copyFile(p, join(clientDir, `Bilan-interactif-${stem}.html`))
+      await fs.copyFile(p, join(dirBilans, `Bilan-interactif-${stem}.html`))
       written++
     })
 
@@ -123,21 +140,35 @@ export function registerReportsHandlers(): void {
       const p = await generateNutritionDocumentHtml(id)
       temps.push(p)
       nutriHtml = p
-      await fs.copyFile(p, join(clientDir, `Nutrition-${stem}.html`))
+      await fs.copyFile(p, join(dirNutrition, `Nutrition-${stem}.html`))
       written++
     })
     await step(async () => {
       if (!nutriHtml) return
       const buf = await htmlFileToPdf(nutriHtml)
-      await fs.writeFile(join(clientDir, `Nutrition-${stem}.pdf`), buf)
+      await fs.writeFile(join(dirNutrition, `Nutrition-${stem}.pdf`), buf)
       written++
     })
 
     await step(async () => {
       const p = await generateFoodJournalHtml(id)
       temps.push(p)
-      await fs.copyFile(p, join(clientDir, `Journal-alimentaire-${stem}.html`))
+      await fs.copyFile(p, join(dirNutrition, `Journal-alimentaire-${stem}.html`))
       written++
+    })
+
+    // Q-AAP signés — « Télécharger tous les documents » doit vraiment tout
+    // prendre. Les non signés sont ignorés : un formulaire d'attestation sans
+    // signature n'a pas sa place dans le dossier archivé.
+    await step(async () => {
+      const qs = getDb().select().from(questionnaires).where(eq(questionnaires.clientId, id)).all()
+      for (const q of qs) {
+        if (q.type !== 'qaap' || !qaapIsSigned(asQaapData(q.data))) continue
+        const p = await generateQaapPdf(q.id, client.name)
+        temps.push(p)
+        await fs.copyFile(p, join(dirQuestionnaires, `Q-AAP-${q.date}.pdf`))
+        written++
+      }
     })
 
     for (const t of temps) {
@@ -151,6 +182,46 @@ export function registerReportsHandlers(): void {
     return { dir: clientDir, count: written }
   })
 
+  /**
+   * Archive un Q-AAP SIGNÉ dans « Questionnaires et Notes » du dossier client.
+   *
+   * Appelé automatiquement à l'enregistrement du questionnaire. Le refus d'un
+   * Q-AAP non signé est vérifié ICI aussi, et pas seulement dans l'interface :
+   * la règle « on n'archive pas une attestation sans signature » est le cœur de
+   * la fonctionnalité, elle ne doit pas dépendre d'un écran.
+   */
+  ipcMain.handle('reports:archive-qaap', async (_e, args: unknown) => {
+    const { questionnaireId } = z.object({ questionnaireId: z.string().uuid() }).parse(args)
+    const db = getDb()
+    const q = db.select().from(questionnaires).where(eq(questionnaires.id, questionnaireId)).get()
+    if (!q) throw new Error('Questionnaire introuvable.')
+    if (q.type !== 'qaap') throw new Error("Ce document n'est pas un Q-AAP.")
+    if (!qaapIsSigned(asQaapData(q.data))) {
+      throw new Error("Le Q-AAP n'est pas signé — il n'a pas été archivé.")
+    }
+
+    const client = db.select().from(clients).where(eq(clients.id, q.clientId)).get()
+    if (!client) throw new Error('Client introuvable.')
+    const folder = await getDocumentsFolder()
+    if (!folder) throw new Error('Aucun dossier configuré. Choisissez-le dans les Paramètres.')
+
+    const clientDir = join(folder, safeClientFileName(client.name))
+    await ensureClientFolders(clientDir)
+    const dest = join(clientDir, CLIENT_FOLDERS.questionnaires, `Q-AAP-${q.date}.pdf`)
+
+    const temp = await generateQaapPdf(q.id, client.name)
+    try {
+      await fs.copyFile(temp, dest)
+    } finally {
+      try {
+        await fs.unlink(temp)
+      } catch {
+        // best effort
+      }
+    }
+    return { path: dest }
+  })
+
   // Ouvre le sous-dossier du client dans l'explorateur (le crée au besoin).
   ipcMain.handle('reports:open-client-folder', async (_e, clientId: unknown) => {
     const id = ClientIdSchema.parse(clientId)
@@ -159,7 +230,7 @@ export function registerReportsHandlers(): void {
     const folder = await getDocumentsFolder()
     if (!folder) throw new Error('Aucun dossier configuré. Choisissez-le dans les Paramètres.')
     const clientDir = join(folder, safeClientFileName(client.name))
-    await fs.mkdir(clientDir, { recursive: true })
+    await ensureClientFolders(clientDir)
     const err = await shell.openPath(clientDir)
     if (err) throw new Error(err)
   })

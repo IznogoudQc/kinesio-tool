@@ -25,7 +25,9 @@
     "src/lib/pain-suggestions.ts",
     "src/lib/email-templates.ts",
     "src/lib/measure-sync-map.ts",
-    "src/lib/report-scope.ts"
+    "src/lib/report-scope.ts",
+    "src/lib/client-folders.ts",
+    "src/lib/qaap.ts"
   ],
   "exclude": ["electron/**/*.test.ts"]
 }

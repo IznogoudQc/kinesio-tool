@@ -98,6 +98,8 @@ export function QuestionnairesTab() {
   const [deleting, setDeleting] = useState<Questionnaire | null>(null)
 
   const [editing, setEditing] = useState<Draft | null>(null)
+  /** Avertissement d'archivage (Q-AAP non signé, ou dépôt impossible). */
+  const [archiveWarn, setArchiveWarn] = useState<{ titre: string; texte: string } | null>(null)
   const [saving, setSaving] = useState(false)
 
   const reload = useCallback(async () => {
@@ -153,14 +155,51 @@ export function QuestionnairesTab() {
     setSaving(true)
     setError(null)
     try {
-      if (editing.id) {
-        await questionnairesService.update(editing.id, { date: editing.date, data: editing.data })
+      let id = editing.id
+      if (id) {
+        await questionnairesService.update(id, { date: editing.date, data: editing.data })
       } else {
-        await questionnairesService.create(client.id, { type: editing.type, date: editing.date, data: editing.data })
+        const cree = await questionnairesService.create(client.id, {
+          type: editing.type,
+          date: editing.date,
+          data: editing.data
+        })
+        id = cree.id
       }
+      const type = editing.type
+      const qaapSigne = type === 'qaap' && qaapIsSigned(editing.data as QaapData)
       setEditing(null)
       await reload()
-      setToast(`${TYPE_LABEL[editing.type]} enregistré`)
+      setToast(`${TYPE_LABEL[type]} enregistré`)
+
+      // ── Archivage automatique du Q-AAP ────────────────────────────────────
+      //
+      // Signé → le PDF part dans « Questionnaires et Notes » du dossier client,
+      // sans que Marie ait à y penser. Non signé → on ne dépose RIEN et on le
+      // lui dit : un formulaire d'attestation sans signature n'a pas sa place
+      // dans le dossier, et un archivage silencieusement omis serait pire qu'un
+      // avertissement.
+      if (type === 'qaap' && id) {
+        if (qaapSigne) {
+          try {
+            const { path } = await reportsService.archiveQaap(id)
+            setToast(`Q-AAP archivé dans ${path.split(/[\/]/).slice(-2).join(' / ')}`)
+          } catch (err) {
+            // L'enregistrement en base a réussi : c'est seulement le classement
+            // du PDF qui a échoué. On le dit sans faire croire à une perte.
+            setArchiveWarn({
+              titre: 'Q-AAP enregistré, mais pas archivé',
+              texte: cleanErr(err, 'Le PDF n’a pas pu être déposé dans le dossier du client.')
+            })
+          }
+        } else {
+          setArchiveWarn({
+            titre: 'Q-AAP non signé',
+            texte:
+              'Le questionnaire est enregistré, mais il n’a pas été déposé dans le dossier du client : il n’est pas signé. Ouvrez-le et faites-le signer par le client pour qu’il soit archivé.'
+          })
+        }
+      }
     } catch (err) {
       setError(cleanErr(err, "Erreur lors de l'enregistrement."))
     } finally {
@@ -272,6 +311,32 @@ export function QuestionnairesTab() {
             </ul>
           )}
         </section>
+      )}
+
+      {/* Avertissement d'archivage. Modale plutôt qu'un toast : c'est une
+          information que Marie doit acquitter — un Q-AAP non archivé ne se
+          rattrape pas tout seul. */}
+      {archiveWarn && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-4">
+          <div className="bg-cream rounded-lg shadow-2xl border border-cream-dark w-full max-w-md">
+            <div className="px-5 py-4 border-b border-cream-dark flex items-center gap-2.5">
+              <AlertTriangle size={18} className="text-amber-600 shrink-0" />
+              <h3 className="text-marine font-semibold text-lg">{archiveWarn.titre}</h3>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-marine/75 text-sm leading-relaxed">{archiveWarn.texte}</p>
+            </div>
+            <div className="px-5 py-3 border-t border-cream-dark flex justify-end">
+              <button
+                type="button"
+                onClick={() => setArchiveWarn(null)}
+                className="px-4 py-2 bg-marine text-cream font-semibold rounded-md text-sm hover:bg-marine-light transition-colors"
+              >
+                Compris
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {deleting && (

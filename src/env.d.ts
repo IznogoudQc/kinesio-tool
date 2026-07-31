@@ -545,6 +545,8 @@ interface Window {
       generateBaremes(): Promise<string>
       /** Q-AAP signé en PDF. */
       generateQaap(questionnaireId: string, clientName: string): Promise<string>
+      /** Archive un Q-AAP SIGNÉ dans le dossier du client. Rejette s'il ne l'est pas. */
+      archiveQaap(questionnaireId: string): Promise<{ path: string }>
       /** Génère le document HTML interactif du client — retourne le chemin du fichier. */
       generateInteractiveHtml(clientId: string, bilanId?: string): Promise<string>
       /** Génère le document HTML nutrition & jeûne du client — retourne le chemin du fichier. */
