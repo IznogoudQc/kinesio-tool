@@ -22,6 +22,7 @@ import { questionnairesService } from '../../../services/questionnaires'
 import { reportsService } from '../../../services/reports'
 import { formatBilanDate } from '../bilanFields'
 import {
+  asQaapData as asQaap,
   QAAP_QUESTIONS,
   emptyQaap,
   qaapExpiryDate,
@@ -67,19 +68,6 @@ const TYPE_LABEL: Record<QuestionnaireType, string> = {
   qaap: 'Q-AAP',
   objectifs: 'Objectifs & habitudes de vie',
   sante: 'Questionnaire de santé'
-}
-
-/** Normalise les données brutes (unknown) d'un Q-AAP vers une forme sûre. */
-function asQaap(data: unknown): QaapData {
-  const d = (data ?? {}) as Partial<QaapData>
-  const answers = Array.isArray(d.answers) ? d.answers.slice(0, 7) : []
-  while (answers.length < 7) answers.push(null)
-  return {
-    answers: answers.map(a => (a === true ? true : a === false ? false : null)),
-    precision: d.precision,
-    notes: d.notes,
-    signature: d.signature
-  }
 }
 
 function asObjectifs(data: unknown): ObjectifsData {

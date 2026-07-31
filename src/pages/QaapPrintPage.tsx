@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { clientsService } from '../services/clients'
 import { questionnairesService } from '../services/questionnaires'
 import {
+  asQaapData,
   QAAP_QUESTIONS,
   QAAP_VALIDITY_MONTHS,
   qaapExpiryDate,
@@ -54,7 +55,7 @@ export function QaapPrintPage() {
         const clients = await clientsService.list()
         const c = clients.find(x => x.id === q.clientId) ?? null
         if (annule) return
-        setData(JSON.parse(String(q.data)) as QaapData)
+        setData(asQaapData(q.data))
         setMeta({ clientName: c?.name ?? '—', birthdate: c?.birthdate ?? null, date: q.date })
       } catch (e) {
         if (!annule) setError(e instanceof Error ? e.message : 'Lecture impossible.')

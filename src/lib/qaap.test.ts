@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
+  asQaapData,
   QAAP_QUESTIONS,
   QAAP_QUESTION_COUNT,
   emptyQaap,
@@ -136,4 +137,48 @@ test('la signature n’empêche pas les autres règles de fonctionner', () => {
   assert.equal(qaapHasWarning(d), true, 'un OUI reste un OUI, signé ou non')
   assert.equal(qaapIsComplete(d), true)
   assert.deepEqual(qaapYesIndices(d), [2])
+})
+
+// ── Normalisation des données brutes ─────────────────────────────────────────
+
+test('objet déjà désérialisé (ce que renvoie l’IPC) → lu correctement', () => {
+  // C'est LE cas qui a produit un PDF vide affichant
+  // « "[object Object]" is not valid JSON » : la page d'impression faisait un
+  // JSON.parse sur une valeur que l'IPC avait déjà désérialisée.
+  const d = asQaapData({ answers: [true, false, null, null, null, null, null], precision: 'test' })
+  assert.equal(d.answers[0], true)
+  assert.equal(d.answers[1], false)
+  assert.equal(d.precision, 'test')
+})
+
+test('chaîne JSON → lue aussi (lecture directe de la base)', () => {
+  const d = asQaapData(JSON.stringify({ answers: [false, false, false, false, false, false, false] }))
+  assert.equal(d.answers.length, QAAP_QUESTION_COUNT)
+  assert.equal(qaapIsComplete(d), true)
+})
+
+test('la signature survit à la normalisation', () => {
+  const sig = {
+    dataUrl: SIG_PNG,
+    signerName: 'Nicholas Jean',
+    signedAt: '2026-07-29T20:15:00.000Z',
+    answersAtSigning: [false, false, false, false, false, false, false]
+  }
+  const d = asQaapData({ answers: sig.answersAtSigning, signature: sig })
+  assert.equal(qaapIsSigned(d), true)
+  assert.equal(d.signature?.signerName, 'Nicholas Jean')
+  assert.equal(qaapSignatureStale(d), false)
+})
+
+test('données absurdes → questionnaire vierge, jamais un plantage', () => {
+  for (const brut of [null, undefined, 42, 'pas du json', '{{{', [], { answers: 'oups' }]) {
+    const d = asQaapData(brut)
+    assert.equal(d.answers.length, QAAP_QUESTION_COUNT, JSON.stringify(brut))
+    assert.equal(qaapIsBlank(d), true, JSON.stringify(brut))
+  }
+})
+
+test('réponses en trop ou en moins → toujours exactement 7', () => {
+  assert.equal(asQaapData({ answers: [true] }).answers.length, QAAP_QUESTION_COUNT)
+  assert.equal(asQaapData({ answers: Array(20).fill(true) }).answers.length, QAAP_QUESTION_COUNT)
 })

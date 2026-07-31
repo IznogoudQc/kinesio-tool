@@ -62,6 +62,38 @@ export interface QaapSignature {
 /** Validité réglementaire du Q-AAP, en mois, à compter de la date de passation. */
 export const QAAP_VALIDITY_MONTHS = 12
 
+/**
+ * Normalise des données brutes vers un `QaapData` sûr.
+ *
+ * Vivait dans `QuestionnairesTab`, donc la page d'impression avait sa propre
+ * lecture — et elle était fausse : elle faisait `JSON.parse` sur une valeur que
+ * l'IPC a DÉJÀ désérialisée, ce qui produisait « "[object Object]" is not valid
+ * JSON » dans le PDF. Une seule lecture partagée évite ce genre d'écart.
+ *
+ * Accepte aussi une chaîne JSON, au cas où l'appelant lirait la base sans passer
+ * par l'IPC. Toute forme inattendue retombe sur un questionnaire vierge plutôt
+ * que de faire échouer l'affichage.
+ */
+export function asQaapData(raw: unknown): QaapData {
+  let src: unknown = raw
+  if (typeof src === 'string') {
+    try {
+      src = JSON.parse(src)
+    } catch {
+      src = {}
+    }
+  }
+  const d = (src ?? {}) as Partial<QaapData>
+  const answers = Array.isArray(d.answers) ? d.answers.slice(0, QAAP_QUESTION_COUNT) : []
+  while (answers.length < QAAP_QUESTION_COUNT) answers.push(null)
+  return {
+    answers: answers.map(a => (a === true ? true : a === false ? false : null)),
+    precision: typeof d.precision === 'string' ? d.precision : undefined,
+    notes: typeof d.notes === 'string' ? d.notes : undefined,
+    signature: d.signature
+  }
+}
+
 /** Crée un Q-AAP vierge (7 réponses non renseignées). */
 export function emptyQaap(): QaapData {
   return { answers: Array<boolean | null>(QAAP_QUESTION_COUNT).fill(null) }
