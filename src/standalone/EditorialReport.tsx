@@ -1823,7 +1823,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
             <h2 className="ed-display ed-section-title mt-3 text-cream">{principesCountWord({ title: client.principePersoTitre, line: client.principePersoTexte })} principes essentiels</h2>
             <p className="ed-prose mt-4 text-base text-cream/70 sm:text-lg">
               À garder en tête avec le plan proposé à la suite de votre bilan — la forme physique se construit
-              autant à la table, au lit et dans la tête qu’à l’entraînement.
+              autant à la table, dans le sommeil et dans la tête qu’à l’entraînement.
             </p>
           </Reveal>
           <Reveal delay={80}>
