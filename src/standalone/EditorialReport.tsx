@@ -1726,7 +1726,8 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         )}
 
         <div className="mt-12">
-          <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} />
+          {/* Pas de `onSaveFcMax` : document remis au client, lecture seule. */}
+          <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} fcMaxSource={computed.fcMaxSource} />
         </div>
       </Section>
 

@@ -25,6 +25,8 @@ export const clientsService = {
       unitWeight?: 'kg' | 'lb'
       nutritionEnabled?: boolean
       nutritionTargetBodyFat?: number | null
+      /** FC max saisie manuellement (bpm) ; `null` = prédiction de Tanaka. */
+      fcMaxManuel?: number | null
       nutritionTargetWeightKg?: number | null
       nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
       nutritionRateKgPerWeek?: number | null

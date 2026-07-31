@@ -28,6 +28,18 @@ export const clients = sqliteTable('clients', {
   // variation de poids (perte vs gain) selon le sens voulu par le client. `null`
   // = pas d'objectif de poids explicite (on retombe sur la cible de % de gras).
   nutritionTargetWeightKg: real('nutrition_target_weight_kg'),
+  /**
+   * FC max (bpm) saisie par Marie-Eve, qui remplace la prédiction de Tanaka
+   * (208 − 0,7 × âge) pour CE client. `null` = on garde la prédiction.
+   *
+   * Les cinq zones d'entraînement en découlent entièrement : un client sous
+   * bêta-bloquants ou très entraîné s'écarte beaucoup de la formule, et
+   * prescrire des zones fausses n'a aucun intérêt. Porté par le client et non
+   * par le bilan : une zone d'entraînement est une prescription, pas une mesure
+   * ponctuelle — elle doit être la même sur le dashboard et sur les documents
+   * remis, quel que soit le bilan consulté.
+   */
+  fcMaxManuel: real('fc_max_manuel'),
   nutritionActivityLevel: text('nutrition_activity_level', {
     enum: ['sedentaire', 'leger', 'modere', 'actif', 'tres_actif']
   }),

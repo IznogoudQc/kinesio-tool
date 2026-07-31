@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Download, FileText, FileUp, FolderOpen, Globe, Info, Mail, PartyPopper, Sparkles } from 'lucide-react'
-import { useClient } from '../ClientDetailLayout'
+import { useClientContext } from '../ClientDetailLayout'
 import { ClientAvatar } from '../../../components/ClientAvatar'
 import { bilansService } from '../../../services/bilans'
+import { clientsService } from '../../../services/clients'
 import { BilanMeasuresOverview } from '../dashboard/BilanMeasuresOverview'
 import { settingsService } from '../../../services/settings'
 import { reportsService } from '../../../services/reports'
@@ -59,7 +60,7 @@ function SectionHead({ eyebrow, title, right }: { eyebrow?: string; title: strin
 }
 
 export function DashboardTab() {
-  const client = useClient()
+  const { client, onClientUpdated } = useClientContext()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const printMode = searchParams.get('print') === '1'
@@ -825,7 +826,23 @@ export function DashboardTab() {
             <Vo2maxTrend series={vo2maxSeries} percentiles={vo2maxPercentiles} />
           </div>
         )}
-        <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} />
+        <TrainingZones
+          fcMax={computed.fcMaxPredite}
+          fcZones={computed.fcZones}
+          fcMaxSource={computed.fcMaxSource}
+          /* En mode impression, pas de champ de saisie. */
+          onSaveFcMax={
+            printMode
+              ? undefined
+              : async bpm => {
+                  const maj = await clientsService.update(client.id, { fcMaxManuel: bpm })
+                  // Remonte au layout : l'en-tête et les autres onglets suivent
+                  // sans rechargement, et le profil se reconstruit avec la
+                  // nouvelle FC max.
+                  onClientUpdated?.(maj)
+                }
+          }
+        />
       </section>
 
       {/* ── Force et mobilité ──────────────────────────────────────────────── */}

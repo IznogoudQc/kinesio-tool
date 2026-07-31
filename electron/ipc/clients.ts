@@ -50,6 +50,8 @@ const UpdateClientSchema = z.object({
   nutritionEnabled: z.boolean().optional(),
   nutritionTargetBodyFat: BodyFatTarget,
   nutritionTargetWeightKg: z.union([z.number().min(0).max(500), z.null()]).optional(),
+  /** FC max saisie par Marie-Eve ; `null` = prediction de Tanaka. */
+  fcMaxManuel: z.union([z.number().int().min(100).max(230), z.null()]).optional(),
   nutritionActivityLevel: NutritionActivity,
   nutritionRateKgPerWeek: RateKgPerWeek,
   nutritionProteinPerLbLean: ProteinPerLbLean,

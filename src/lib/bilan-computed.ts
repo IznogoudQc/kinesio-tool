@@ -55,6 +55,17 @@ export interface BilanProfile {
   age: number | null
   sex: 'F' | 'M' | null
   norms: NormsType
+  /**
+   * FC max saisie par Marie-Eve pour ce client, qui remplace la prédiction de
+   * Tanaka. `null`/absent = on garde la prédiction.
+   *
+   * Portée par le PROFIL et non par un paramètre séparé : le dashboard, le
+   * rapport PDF et le document HTML construisent tous leur profil avec
+   * `buildBilanProfile(client)`, donc l'ajustement les atteint tous les trois
+   * sans câblage supplémentaire — et surtout sans qu'une surface puisse
+   * l'oublier.
+   */
+  fcMaxManuel?: number | null
 }
 
 /**
@@ -69,12 +80,16 @@ export interface BilanProfile {
  * sur les mêmes bases : même âge (calculé à la date du jour) et même norme.
  */
 export function buildBilanProfile(
-  client: { birthdate?: string | null; sex?: 'F' | 'M' | null } | null | undefined
+  client:
+    | { birthdate?: string | null; sex?: 'F' | 'M' | null; fcMaxManuel?: number | null }
+    | null
+    | undefined
 ): BilanProfile {
   return {
     age: computeAge(client?.birthdate),
     sex: client?.sex ?? null,
-    norms: DEFAULT_NORMS
+    norms: DEFAULT_NORMS,
+    fcMaxManuel: client?.fcMaxManuel ?? null
   }
 }
 
@@ -106,7 +121,10 @@ export interface BilanComputed {
   // ── Aérobie
   vo2max: number | null
   metEquivalent: number | null
+  /** FC max retenue : saisie manuelle si elle existe, sinon prédiction Tanaka. */
   fcMaxPredite: number | null
+  /** D'où vient `fcMaxPredite` — pour que l'affichage ne mente pas. */
+  fcMaxSource: 'manuel' | 'tanaka' | null
   fcZones: FcZones | null
   // ── Musculo
   sautVerticalCm: number | null
@@ -296,8 +314,18 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
   const vo2max = computeVo2maxByProtocol(raw, age, sex)
   const metRaw = computeMet(vo2max ?? undefined)
   const metEquivalent = metRaw === null ? null : round1(metRaw)
+  // FC max saisie par Marie-Eve si elle existe, sinon prédiction de Tanaka. Les
+  // cinq zones en découlent entièrement, d'où l'importance de ne pas se tromper
+  // de source : `fcMaxSource` permet à l'affichage de dire laquelle est utilisée
+  // plutôt que d'annoncer « prédite » quoi qu'il arrive.
   const fcMaxRaw = computeFcMaxPredite(age)
-  const fcMaxPredite = fcMaxRaw === null ? null : Math.round(fcMaxRaw)
+  const fcMaxPreditRounded = fcMaxRaw === null ? null : Math.round(fcMaxRaw)
+  const manuel = typeof profile.fcMaxManuel === 'number' && Number.isFinite(profile.fcMaxManuel)
+    ? Math.round(profile.fcMaxManuel)
+    : null
+  const fcMaxPredite = manuel ?? fcMaxPreditRounded
+  const fcMaxSource: 'manuel' | 'tanaka' | null =
+    manuel !== null ? 'manuel' : fcMaxPreditRounded === null ? null : 'tanaka'
   const fcZones = computeFcZones(fcMaxPredite)
 
   // Musculo
@@ -437,6 +465,7 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     vo2max,
     metEquivalent,
     fcMaxPredite,
+    fcMaxSource,
     fcZones,
     sautVerticalCm,
     puissanceJambesW,

@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `fc_max_manuel` real;

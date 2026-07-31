@@ -1642,8 +1642,14 @@ function CardioExtras({ latest, computed }: { latest: Bilan; computed: BilanComp
         <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
           <BlockTitle>Zones d'entraînement cardiaque</BlockTitle>
           <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '3mm' }}>
-            Fréquences cibles selon votre FC maximale prédite
-            {computed.fcMaxPredite !== null ? ` (${computed.fcMaxPredite} bpm, formule de Tanaka)` : ''}. Pour développer l'endurance, visez 60-75 % ; au-delà de 80 %, l'effort devient intense.
+            {/* La source suit la valeur réellement utilisée : annoncer « prédite »
+                sur une FC max mesurée par la kinésiologue serait faux. */}
+            Fréquences cibles selon votre FC maximale{' '}
+            {computed.fcMaxSource === 'manuel' ? 'mesurée' : 'prédite'}
+            {computed.fcMaxPredite !== null
+              ? ` (${computed.fcMaxPredite} bpm${computed.fcMaxSource === 'manuel' ? ', relevée par votre kinésiologue' : ', formule de Tanaka'})`
+              : ''}
+            . Pour développer l'endurance, visez 60-75 % ; au-delà de 80 %, l'effort devient intense.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '9mm' }}>
             {zoneRows.map(zr => (

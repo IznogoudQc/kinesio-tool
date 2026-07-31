@@ -330,3 +330,74 @@ test('le profil partagé reproduit les scores du dashboard (et pas ceux d’ACSM
   const acsm = computeBilan(raw, { age: 49, sex: 'M', norms: 'acsm' })
   assert.notEqual(r1(acsm.composition.score), r1(r.composition.score))
 })
+
+// ── FC max ajustable par client (zones d'entraînement) ───────────────────────
+//
+// Marie-Eve peut saisir la FC max réellement observée : un client sous
+// bêta-bloquants ou très entraîné s'écarte beaucoup de Tanaka, et prescrire des
+// zones fausses n'a aucun intérêt. L'ajustement voyage dans le PROFIL, donc il
+// atteint le dashboard, le PDF et le document HTML sans câblage par surface.
+
+test('sans ajustement : FC max prédite par Tanaka', () => {
+  const c = computeBilan({ vo2max: 50 }, buildBilanProfile({ birthdate: '1977-03-14', sex: 'M' }))
+  assert.equal(c.fcMaxSource, 'tanaka')
+  // 208 − 0,7 × 49 = 173,7 → 174
+  assert.equal(c.fcMaxPredite, 174)
+})
+
+test('avec ajustement : la FC max saisie remplace la prédiction', () => {
+  const c = computeBilan({ vo2max: 50 }, buildBilanProfile({ birthdate: '1977-03-14', sex: 'M', fcMaxManuel: 186 }))
+  assert.equal(c.fcMaxSource, 'manuel')
+  assert.equal(c.fcMaxPredite, 186)
+})
+
+test('les CINQ zones se recalculent, pas seulement l’affichage', () => {
+  const base = computeBilan({}, buildBilanProfile({ birthdate: '1977-03-14', sex: 'M' }))
+  const ajuste = computeBilan({}, buildBilanProfile({ birthdate: '1977-03-14', sex: 'M', fcMaxManuel: 186 }))
+  assert.ok(base.fcZones && ajuste.fcZones)
+  for (const k of ['z60', 'z65', 'z70', 'z75', 'z80', 'z85', 'z90'] as const) {
+    assert.ok(ajuste.fcZones[k] > base.fcZones[k], `${k} devrait monter avec une FC max plus haute`)
+  }
+  // Et proportionnellement : 60 % de 186 = 111,6 → 112.
+  assert.equal(ajuste.fcZones.z60, Math.round(186 * 0.6))
+  assert.equal(ajuste.fcZones.z90, Math.round(186 * 0.9))
+})
+
+test('bêta-bloquants : une FC max BASSE abaisse bien les zones', () => {
+  const c = computeBilan({}, buildBilanProfile({ birthdate: '1977-03-14', sex: 'M', fcMaxManuel: 140 }))
+  assert.equal(c.fcMaxPredite, 140)
+  assert.equal(c.fcZones?.z60, 84)
+  // Sans l'ajustement, la zone 1 démarrerait à 104 bpm — au-dessus du seuil
+  // lactique réel de ce client. C'est tout l'intérêt de la fonctionnalité.
+  assert.ok((c.fcZones?.z60 ?? 0) < 104)
+})
+
+test('ajustement absent, nul ou aberrant → on retombe sur Tanaka', () => {
+  for (const fcMaxManuel of [null, undefined, Number.NaN]) {
+    const c = computeBilan({}, { age: 49, sex: 'M', norms: 'cpafla', fcMaxManuel })
+    assert.equal(c.fcMaxSource, 'tanaka', String(fcMaxManuel))
+    assert.equal(c.fcMaxPredite, 174)
+  }
+})
+
+test('sans date de naissance ET sans ajustement : aucune zone', () => {
+  const c = computeBilan({}, buildBilanProfile({ sex: 'M' }))
+  assert.equal(c.fcMaxPredite, null)
+  assert.equal(c.fcMaxSource, null)
+  assert.equal(c.fcZones, null)
+})
+
+test('sans date de naissance MAIS avec ajustement : les zones existent quand même', () => {
+  // Un client sans date de naissance n'a pas de prédiction ; la valeur mesurée
+  // suffit pourtant à prescrire des zones.
+  const c = computeBilan({}, buildBilanProfile({ sex: 'M', fcMaxManuel: 180 }))
+  assert.equal(c.fcMaxPredite, 180)
+  assert.equal(c.fcMaxSource, 'manuel')
+  assert.equal(c.fcZones?.z60, 108)
+})
+
+test('buildBilanProfile transporte l’ajustement — c’est ce qui synchronise les 3 surfaces', () => {
+  assert.equal(buildBilanProfile({ fcMaxManuel: 186 }).fcMaxManuel, 186)
+  assert.equal(buildBilanProfile({ birthdate: '1977-03-14' }).fcMaxManuel, null)
+  assert.equal(buildBilanProfile(null).fcMaxManuel, null)
+})
