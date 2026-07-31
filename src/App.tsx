@@ -6,6 +6,7 @@ import { ClientsPage } from './pages/ClientsPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { ReportPage } from './pages/ReportPage'
 import { BaremesPage } from './pages/BaremesPage'
+import { QaapPrintPage } from './pages/QaapPrintPage'
 import { ClientDetailLayout } from './pages/client/ClientDetailLayout'
 import { DashboardLayout } from './pages/client/dashboard/DashboardLayout'
 import { MesuresOverview } from './pages/client/dashboard/MesuresOverview'
@@ -74,6 +75,7 @@ const router = createHashRouter([
   // Routes dédiées à la génération PDF — layout autonome, sans le shell de l'app.
   { path: '/report/:id', element: <ReportPage /> },
   { path: '/baremes', element: <BaremesPage /> },
+  { path: '/qaap/:id', element: <QaapPrintPage /> },
   {
     element: <AppShell />,
     children: [

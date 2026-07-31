@@ -8,6 +8,7 @@ import { getDb } from '../../db/client'
 import { clients } from '../../db/schema'
 import {
   generateBaremesPdf,
+  generateQaapPdf,
   generateClientReportPdf,
   htmlFileToPdf,
   safeClientFileName,
@@ -43,6 +44,14 @@ export function registerReportsHandlers(): void {
 
   // Génère le PDF « Barèmes de référence » (aucun paramètre — lit le code).
   // Document interactif seul — même fichier que celui joint au courriel.
+  // Q-AAP signé — le nom du client sert uniquement à nommer le fichier.
+  ipcMain.handle('reports:generate-qaap', async (_e, args: unknown) => {
+    const { questionnaireId, clientName } = z
+      .object({ questionnaireId: z.string().uuid(), clientName: z.string().min(1) })
+      .parse(args)
+    return generateQaapPdf(questionnaireId, clientName)
+  })
+
   ipcMain.handle('reports:generate-html', async (_e, args: unknown) => {
     const { clientId, bilanId } = ReportArgsSchema.parse(args)
     return generateInteractiveReportHtml(clientId, bilanId)

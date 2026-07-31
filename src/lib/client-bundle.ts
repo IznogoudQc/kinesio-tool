@@ -43,6 +43,13 @@ export interface ExportedClient {
   circonferences: Record<string, unknown>[]
   plis: Record<string, unknown>[]
   notes: Record<string, unknown>[]
+  /**
+   * Q-AAP, objectifs et questionnaire de santé — donc les SIGNATURES.
+   *
+   * Facultatif : les fichiers exportés avant la v0.9.85 n'en contiennent pas et
+   * doivent rester importables.
+   */
+  questionnaires?: Record<string, unknown>[]
   /** `{ 'uuid.webp': '<base64>' }` — avatar carré et/ou photo pleine hauteur. */
   avatars: Record<string, string>
 }

@@ -32,6 +32,31 @@ export interface QaapData {
   precision?: string
   /** Note interne de Marie (jamais montrée au client). */
   notes?: string
+  /** Signature du client. Absente tant qu'il n'a pas signé. */
+  signature?: QaapSignature
+}
+
+/**
+ * Signature manuscrite du client, tracée à l'écran.
+ *
+ * On conserve **le nom saisi** en plus du tracé : une signature manuscrite seule
+ * est souvent illisible, et un dossier doit rester interprétable des années plus
+ * tard par quelqu'un d'autre que Marie.
+ *
+ * `answersAtSigning` est la copie des 7 réponses au moment de la signature. Sans
+ * elle, on ne pourrait pas distinguer « signé tel quel » de « signé, puis
+ * modifié » — un formulaire de consentement dont les réponses ont bougé après la
+ * signature ne vaut plus rien, et il faut pouvoir le voir.
+ */
+export interface QaapSignature {
+  /** Tracé, en PNG encodé data-URI. */
+  dataUrl: string
+  /** Nom écrit par le signataire, tel qu'il l'a saisi. */
+  signerName: string
+  /** Horodatage ISO complet de la signature. */
+  signedAt: string
+  /** Les 7 réponses telles qu'elles étaient au moment de signer. */
+  answersAtSigning: (boolean | null)[]
 }
 
 /** Validité réglementaire du Q-AAP, en mois, à compter de la date de passation. */
@@ -55,6 +80,26 @@ export function qaapIsBlank(data: QaapData): boolean {
 /** `true` si les 7 questions ont une réponse (OUI ou NON). */
 export function qaapIsComplete(data: QaapData): boolean {
   return data.answers.length === QAAP_QUESTION_COUNT && data.answers.every(a => a !== null)
+}
+
+/** `true` si le Q-AAP porte une signature. */
+export function qaapIsSigned(data: QaapData): boolean {
+  return typeof data.signature?.dataUrl === 'string' && data.signature.dataUrl.length > 0
+}
+
+/**
+ * `true` si les réponses ont changé APRÈS la signature.
+ *
+ * Le cas à attraper : Marie corrige une réponse après coup, et le document
+ * continue d'afficher une signature qui n'atteste plus le bon contenu. On ne
+ * supprime pas la signature automatiquement — ce serait perdre une information —
+ * mais l'app doit le signaler et le document doit le dire.
+ */
+export function qaapSignatureStale(data: QaapData): boolean {
+  const sig = data.signature
+  if (!sig) return false
+  if (sig.answersAtSigning.length !== data.answers.length) return true
+  return sig.answersAtSigning.some((a, i) => a !== data.answers[i])
 }
 
 /** Indices (1-based) des questions répondues « OUI ». */

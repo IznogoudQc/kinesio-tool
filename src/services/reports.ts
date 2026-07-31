@@ -14,6 +14,11 @@ export const reportsService = {
     return window.api.reports.generateBaremes()
   },
 
+  /** Génère le PDF d'un Q-AAP (questionnaire signé) et retourne son chemin. */
+  async generateQaapPdf(questionnaireId: string, clientName: string): Promise<string> {
+    return window.api.reports.generateQaap(questionnaireId, clientName)
+  },
+
   /** Génère le document HTML interactif du client (le même que celui joint au courriel). */
   async generateInteractiveHtml(clientId: string, bilanId?: string): Promise<string> {
     return window.api.reports.generateInteractiveHtml(clientId, bilanId)

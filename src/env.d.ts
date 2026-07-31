@@ -543,6 +543,8 @@ interface Window {
       generatePdf(clientId: string, bilanId?: string): Promise<string>
       /** Génère le PDF « Barèmes de référence » (route `/baremes`) — retourne le chemin du PDF. */
       generateBaremes(): Promise<string>
+      /** Q-AAP signé en PDF. */
+      generateQaap(questionnaireId: string, clientName: string): Promise<string>
       /** Génère le document HTML interactif du client — retourne le chemin du fichier. */
       generateInteractiveHtml(clientId: string, bilanId?: string): Promise<string>
       /** Génère le document HTML nutrition & jeûne du client — retourne le chemin du fichier. */

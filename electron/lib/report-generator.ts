@@ -188,6 +188,49 @@ export async function generateClientReportPdf(clientId: string, bilanId?: string
  * (document autonome, données lues depuis le code → toujours synchro). Retourne
  * le chemin du PDF dans le dossier temporaire.
  */
+/**
+ * Q-AAP signé, en PDF. Rend `/qaap/:id` dans une fenêtre cachée.
+ *
+ * Une signature qu'on ne peut pas produire hors de l'application ne sert à
+ * rien : c'est en cas de contestation qu'il faut sortir le document.
+ */
+export async function generateQaapPdf(questionnaireId: string, clientName: string): Promise<string> {
+  const win = new BrowserWindow({
+    show: false,
+    width: 1100,
+    height: 1400,
+    webPreferences: {
+      preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
+    }
+  })
+
+  try {
+    const hash = `/qaap/${questionnaireId}`
+    if (isDev && process.env['ELECTRON_RENDERER_URL']) {
+      await win.loadURL(`${process.env['ELECTRON_RENDERER_URL']}#${hash}`)
+    } else {
+      await win.loadFile(join(__dirname, '../renderer/index.html'), { hash })
+    }
+
+    await waitForReportReady(win)
+
+    const pdfData = await win.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'A4',
+      margins: { top: 0.55, bottom: 0.55, left: 0.4, right: 0.4 }
+    })
+
+    const outPath = join(app.getPath('temp'), `Q-AAP-${safeClientFileName(clientName)}-${todayISODate()}.pdf`)
+    await fs.writeFile(outPath, pdfData)
+    return outPath
+  } finally {
+    win.destroy()
+  }
+}
+
 export async function generateBaremesPdf(): Promise<string> {
   const win = new BrowserWindow({
     show: false,

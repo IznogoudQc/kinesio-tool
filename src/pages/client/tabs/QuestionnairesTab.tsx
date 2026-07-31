@@ -4,9 +4,11 @@ import {
   AlertTriangle,
   CheckCircle2,
   ClipboardList,
+  FileText,
   HeartPulse,
   Loader2,
   PencilLine,
+  PenLine,
   Plus,
   Save,
   ShieldAlert,
@@ -15,7 +17,9 @@ import {
   Trash2
 } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
+import { SignaturePad } from '../../../components/SignaturePad'
 import { questionnairesService } from '../../../services/questionnaires'
+import { reportsService } from '../../../services/reports'
 import { formatBilanDate } from '../bilanFields'
 import {
   QAAP_QUESTIONS,
@@ -24,6 +28,8 @@ import {
   qaapHasWarning,
   qaapIsComplete,
   qaapIsExpired,
+  qaapIsSigned,
+  qaapSignatureStale,
   qaapYesIndices,
   type QaapData
 } from '../../../lib/qaap'
@@ -71,7 +77,8 @@ function asQaap(data: unknown): QaapData {
   return {
     answers: answers.map(a => (a === true ? true : a === false ? false : null)),
     precision: d.precision,
-    notes: d.notes
+    notes: d.notes,
+    signature: d.signature
   }
 }
 
@@ -219,6 +226,7 @@ export function QuestionnairesTab() {
       {editing?.type === 'qaap' && (
         <QaapForm
           value={editing}
+          clientName={client.name}
           onChange={setEditing}
           onCancel={() => setEditing(null)}
           onSave={save}
@@ -260,7 +268,13 @@ export function QuestionnairesTab() {
             <ul className="space-y-3">
               {list.map(q =>
                 q.type === 'qaap' ? (
-                  <QaapHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
+                  <QaapHistoryCard
+                    key={q.id}
+                    q={q}
+                    clientName={client.name}
+                    onEdit={() => startEdit(q)}
+                    onDelete={() => setDeleting(q)}
+                  />
                 ) : q.type === 'objectifs' ? (
                   <ObjectifsHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
                 ) : (
@@ -344,8 +358,36 @@ function TypeChip({ type }: { type: QuestionnaireType }) {
 
 // ── Q-AAP ─────────────────────────────────────────────────────────────────────
 
-function QaapHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: () => void; onDelete: () => void }) {
+function QaapHistoryCard({
+  q,
+  clientName,
+  onEdit,
+  onDelete
+}: {
+  q: Questionnaire
+  clientName: string
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const [pdf, setPdf] = useState(false)
+  const [pdfErr, setPdfErr] = useState<string | null>(null)
   const data = asQaap(q.data)
+  const signe = qaapIsSigned(data)
+  const caduque = qaapSignatureStale(data)
+
+  async function imprimer() {
+    setPdf(true)
+    setPdfErr(null)
+    try {
+      const chemin = await reportsService.generateQaapPdf(q.id, clientName)
+      await reportsService.openPdf(chemin)
+    } catch (e) {
+      setPdfErr(cleanErr(e, 'Impossible de produire le PDF.'))
+    } finally {
+      setPdf(false)
+    }
+  }
+
   const warn = qaapHasWarning(data)
   const yes = qaapYesIndices(data)
   const expired = qaapIsExpired(q.date, todayISO())
@@ -368,6 +410,16 @@ function QaapHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: ()
                 <CheckCircle2 size={12} /> Aucun « OUI »
               </span>
             )}
+            {signe && !caduque && (
+              <span className="inline-flex items-center gap-1 text-green-700 bg-green-50 border border-green-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                <PenLine size={12} /> Signé
+              </span>
+            )}
+            {signe && caduque && (
+              <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-50 border border-amber-300 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                <AlertTriangle size={12} /> Signature à refaire
+              </span>
+            )}
             {expired ? (
               <span className="inline-flex items-center gap-1 text-red-600 bg-red-50 border border-red-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
                 Expiré
@@ -384,18 +436,33 @@ function QaapHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: ()
           {data.precision}
         </p>
       )}
+      <div className="mt-3 border-t border-cream-dark/40 pt-2.5">
+        <button
+          type="button"
+          onClick={imprimer}
+          disabled={pdf}
+          className="inline-flex items-center gap-1.5 rounded-md border border-cream-dark px-3 py-1.5 text-xs font-medium text-marine/75 hover:border-gold/60 hover:text-marine transition-colors disabled:opacity-50"
+        >
+          <FileText size={13} />
+          {pdf ? 'Génération…' : 'PDF du questionnaire'}
+        </button>
+        {pdfErr && <p className="text-red-600 text-xs mt-1.5">{pdfErr}</p>}
+      </div>
     </li>
   )
 }
 
 function QaapForm({
   value,
+  clientName,
   onChange,
   onCancel,
   onSave,
   saving
 }: {
   value: Extract<Draft, { type: 'qaap' }>
+  /** Pré-remplit le nom du signataire — corrigeable si ce n'est pas lui qui signe. */
+  clientName: string
   onChange: (v: Draft) => void
   onCancel: () => void
   onSave: () => void
@@ -464,6 +531,13 @@ function QaapForm({
         />
       </div>
 
+      <QaapSignatureBlock
+        data={data}
+        clientName={clientName}
+        complete={complete}
+        onChange={next => onChange({ ...value, data: next })}
+      />
+
       <FormActions
         saving={saving}
         editing={!!value.id}
@@ -472,6 +546,147 @@ function QaapForm({
         hint={complete ? undefined : 'Astuce : répondez aux 7 questions.'}
       />
     </section>
+  )
+}
+
+/**
+ * Attestation et signature du client.
+ *
+ * Trois règles de conception, toutes destinées à ce que la signature veuille
+ * dire quelque chose :
+ *
+ *  · On ne peut pas signer un formulaire incomplet — attester des réponses qui
+ *    n'existent pas n'a aucun sens.
+ *  · Le nom saisi accompagne le tracé : une signature manuscrite est souvent
+ *    illisible, et le dossier doit rester interprétable dans dix ans.
+ *  · Si une réponse change après la signature, celle-ci est signalée comme
+ *    caduque plutôt que supprimée en silence — Marie doit voir ce qui s'est
+ *    passé et refaire signer en connaissance de cause.
+ */
+function QaapSignatureBlock({
+  data,
+  clientName,
+  complete,
+  onChange
+}: {
+  data: QaapData
+  clientName: string
+  complete: boolean
+  onChange: (next: QaapData) => void
+}) {
+  const [nom, setNom] = useState(data.signature?.signerName ?? clientName)
+  const [trace, setTrace] = useState<string | null>(data.signature?.dataUrl ?? null)
+  const signe = qaapIsSigned(data)
+  const caduque = qaapSignatureStale(data)
+
+  function enregistrer() {
+    if (!trace || nom.trim() === '') return
+    onChange({
+      ...data,
+      signature: {
+        dataUrl: trace,
+        signerName: nom.trim(),
+        signedAt: new Date().toISOString(),
+        answersAtSigning: [...data.answers]
+      }
+    })
+  }
+
+  function retirer() {
+    // Copie puis `delete` plutôt qu'une déstructuration qui énumère les champs
+    // conservés : un futur champ de `QaapData` serait sinon perdu en silence.
+    const suivant = { ...data }
+    delete suivant.signature
+    setTrace(null)
+    onChange(suivant)
+  }
+
+  return (
+    <div className="rounded-lg border border-cream-dark/60 bg-cream/30 p-4">
+      <p className="text-marine font-semibold text-sm mb-1">Attestation du client</p>
+      <p className="text-marine/55 text-sm mb-3 leading-relaxed">
+        « J'atteste avoir lu, compris et rempli ce questionnaire à ma satisfaction, et avoir répondu
+        honnêtement à chacune des sept questions. »
+      </p>
+
+      {signe && !caduque && (
+        <div className="rounded-md border border-green-300 bg-green-50 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-green-800 text-sm font-medium">Signé par {data.signature!.signerName}</p>
+              <p className="text-green-800/70 text-xs mt-0.5">
+                le{' '}
+                {new Date(data.signature!.signedAt).toLocaleString('fr-CA', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={retirer}
+              className="shrink-0 rounded-md px-2 py-1 text-xs font-medium text-marine/60 hover:bg-cream-dark hover:text-marine transition-colors"
+            >
+              Refaire signer
+            </button>
+          </div>
+          <img
+            src={data.signature!.dataUrl}
+            alt={`Signature de ${data.signature!.signerName}`}
+            className="mt-2 h-20 bg-white rounded border border-green-200"
+          />
+        </div>
+      )}
+
+      {signe && caduque && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 mb-3">
+          <p className="text-amber-900 text-sm font-medium">Signature à refaire</p>
+          <p className="text-amber-900/75 text-xs mt-1 leading-relaxed">
+            Des réponses ont été modifiées depuis la signature du{' '}
+            {new Date(data.signature!.signedAt).toLocaleDateString('fr-CA')}. Elle n'atteste donc plus le
+            contenu actuel du questionnaire.
+          </p>
+          <button
+            type="button"
+            onClick={retirer}
+            className="mt-2 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 transition-colors"
+          >
+            Retirer et refaire signer
+          </button>
+        </div>
+      )}
+
+      {!signe && (
+        <>
+          <label className="text-marine/60 text-sm font-medium block mb-1.5" htmlFor="qaap-signataire">
+            Nom du signataire
+          </label>
+          <input
+            id="qaap-signataire"
+            value={nom}
+            onChange={e => setNom(e.target.value)}
+            className="w-full mb-3 px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+          />
+          <SignaturePad onChange={setTrace} disabled={!complete} />
+          {!complete && (
+            <p className="text-amber-700 text-xs mt-2">
+              Répondez d'abord aux 7 questions : on ne peut pas attester un formulaire incomplet.
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={enregistrer}
+            disabled={!complete || !trace || nom.trim() === ''}
+            className="mt-3 rounded-md bg-gold px-4 py-2 text-sm font-semibold text-marine hover:bg-gold-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Apposer la signature
+          </button>
+        </>
+      )}
+    </div>
   )
 }
 

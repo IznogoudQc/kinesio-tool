@@ -5,7 +5,14 @@ import { basename } from 'path'
 import { z } from 'zod'
 import { eq, inArray } from 'drizzle-orm'
 import { getDb } from '../../db/client'
-import { bilans, clientNotes, clients, mesuresCirconferences, mesuresPlisCutanes } from '../../db/schema'
+import {
+  bilans,
+  clientNotes,
+  clients,
+  mesuresCirconferences,
+  mesuresPlisCutanes,
+  questionnaires
+} from '../../db/schema'
 import { ensureAvatarsDir, getAvatarPath } from '../lib/avatars'
 import {
   BUNDLE_FORMAT,
@@ -36,6 +43,14 @@ const BundleSchema = z.object({
       circonferences: z.array(RowSchema),
       plis: z.array(RowSchema),
       notes: z.array(RowSchema),
+      /**
+       * Q-AAP, objectifs, questionnaire de santé — et donc les SIGNATURES.
+       *
+       * `optional()` : les fichiers exportés avant l'ajout de cette table (tous
+       * ceux d'avant la v0.9.85) restent importables. Sans ça, un ancien
+       * `.kinesio` serait rejeté à la validation.
+       */
+      questionnaires: z.array(RowSchema).optional(),
       avatars: z.record(z.string())
     })
   )
@@ -87,6 +102,7 @@ function fromLegacy(raw: z.infer<typeof LegacyBundleSchema>): ClientBundle {
     circonferences: withIds(raw.mesures_circonferences),
     plis: withIds(raw.mesures_plis_cutanes),
     notes: [],
+    questionnaires: [],
     avatars: {}
   }
 
@@ -172,6 +188,11 @@ export function registerTransferHandlers(): void {
           string,
           unknown
         >[],
+        questionnaires: db
+          .select()
+          .from(questionnaires)
+          .where(eq(questionnaires.clientId, row.id))
+          .all() as unknown as Record<string, unknown>[],
         avatars: await collectAvatars(row)
       })
     }
@@ -260,6 +281,7 @@ export function registerTransferHandlers(): void {
             tx.delete(mesuresCirconferences).where(eq(mesuresCirconferences.clientId, targetId)).run()
             tx.delete(mesuresPlisCutanes).where(eq(mesuresPlisCutanes.clientId, targetId)).run()
             tx.delete(clientNotes).where(eq(clientNotes.clientId, targetId)).run()
+            tx.delete(questionnaires).where(eq(questionnaires.clientId, targetId)).run()
           }
         } else {
           tx.insert(clients).values(c.client as never).run()
@@ -269,7 +291,12 @@ export function registerTransferHandlers(): void {
         // Fusion : une ligne de même id met à jour l'existante au lieu de la dupliquer.
         // C'est ce qui rend un réimport idempotent.
         const upsert = (
-          table: typeof bilans | typeof mesuresCirconferences | typeof mesuresPlisCutanes | typeof clientNotes,
+          table:
+            | typeof bilans
+            | typeof mesuresCirconferences
+            | typeof mesuresPlisCutanes
+            | typeof clientNotes
+            | typeof questionnaires,
           rows: Record<string, unknown>[]
         ): void => {
           for (const row of rows) {
@@ -284,6 +311,8 @@ export function registerTransferHandlers(): void {
         upsert(mesuresCirconferences, c.circonferences)
         upsert(mesuresPlisCutanes, c.plis)
         upsert(clientNotes, c.notes)
+        // `?? []` : fichier exporté avant que les questionnaires soient inclus.
+        upsert(questionnaires, c.questionnaires ?? [])
       }
     })
 
