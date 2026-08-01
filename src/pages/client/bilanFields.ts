@@ -39,7 +39,8 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
       { key: 'pa_diastolique', label: 'PA diastolique (repos)', unit: 'mmHg' },
       { key: 'fc_repos', label: 'FC au repos', unit: 'bpm' },
       { key: 'pa_recup_sys', label: 'PA récup — systolique', unit: 'mmHg' },
-      { key: 'pa_recup_dia', label: 'PA récup — diastolique', unit: 'mmHg' }
+      { key: 'pa_recup_dia', label: 'PA récup — diastolique', unit: 'mmHg' },
+      { key: 'fc_recup', label: 'FC récup', unit: 'bpm' }
     ]
   },
   {

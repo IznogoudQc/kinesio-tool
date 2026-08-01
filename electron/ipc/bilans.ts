@@ -57,6 +57,7 @@ const BilanDataSchema = z
     pa_systolique: bounded('pa_systolique'),
     pa_diastolique: bounded('pa_diastolique'),
     pa_recup_sys: bounded('pa_recup_sys'),
+    fc_recup: bounded('fc_recup'),
     pa_recup_dia: bounded('pa_recup_dia'),
     recup_1min_pa_sys: bounded('recup_1min_pa_sys'),
     recup_1min_pa_dia: bounded('recup_1min_pa_dia'),

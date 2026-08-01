@@ -150,6 +150,8 @@ interface BilanData {
   /** PA de récupération (feuille papier) — systolique / diastolique (2 chiffres). */
   pa_recup_sys?: number
   pa_recup_dia?: number
+  /** FC de récupération (feuille papier) — relevée après la PA de récupération. */
+  fc_recup?: number
   /** Récupération détaillée à 1, 3 et 5 min (ancien modèle / imports .docx — conservé). */
   recup_1min_pa_sys?: number
   recup_1min_pa_dia?: number

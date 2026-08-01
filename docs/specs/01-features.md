@@ -2,6 +2,33 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.98 — FC de récupération, et la PA de récup qui n'apparaissait nulle part)
+
+Demande de Marie : « ajout FC de récupération après PA ». La section « Signes vitaux » avait bien la PA de
+récupération (systolique / diastolique) mais aucune fréquence cardiaque. Champ **FC récup** ajouté juste
+après, symétrique aux deux autres — un seul relevé, sans horodatage, comme sur sa feuille papier.
+
+**Défaut découvert en le branchant** : `pa_recup_sys` et `pa_recup_dia`, saisies depuis la **v0.3.3**
+(17 juillet), n'étaient affichées **nulle part** — ni au dashboard, ni dans le PDF, ni dans le document
+client. La section « Récupération post-effort » du rapport était câblée en dur sur l'ancien modèle 1/3/5 min,
+que le formulaire ne propose plus depuis cette même version, et `hasRecoveryData` ne regardait que lui. Marie
+saisissait donc trois valeurs qui disparaissaient. Ajouter la FC seule aurait fait une troisième.
+
+Nouveau helper pur `recoveryRows()` : il rend les lignes à afficher quel que soit le modèle — le relevé
+unique de la feuille papier (qui prime, c'est la saisie actuelle) ou les 1/3/5 min des imports .docx, dont
+seules les lignes réellement renseignées sortent. Une ligne « 5 min » à trois tirets se lirait comme une
+mesure ratée.
+
+Bornes : la FC de récupération utilise l'échelle large (30–220), pas celle du repos (30–120) — juste après
+l'effort elle dépasse largement 120 bpm.
+
+Le champ est déclaré dans le schéma zod de l'IPC. Sans cette ligne, `.strip()` l'aurait supprimé en silence à
+l'enregistrement, exactement comme la signature du Q-AAP en v0.9.85.
+
+561 tests (552 avant).
+
+Version : 0.9.97 → 0.9.98.
+
 ## ✅ Fait (v0.9.97 — La somme des plis disparaît aussi de l'affichage)
 
 Nicholas, après la v0.9.96 : « je suis un peu mêlé, est-ce qu'on utilise ou pas la somme des 5 plis ? »

@@ -52,6 +52,9 @@ export const BILAN_FIELD_BOUNDS: Record<string, FieldBound> = {
   cooper_distance_m: { softMin: 800, softMax: 4500, hardMin: 0, hardMax: 6000 },
   leger_palier: { softMin: 1, softMax: 21, hardMin: 0, hardMax: 25 },
   fc_repos: { softMin: 30, softMax: 120, hardMin: 0, hardMax: 250 },
+  // FC de récupération : bornes larges (FC), pas celles du repos — juste après
+  // l'effort elle dépasse largement 120 bpm.
+  fc_recup: FC,
   pa_systolique: PA_SYS,
   pa_diastolique: PA_DIA,
   recup_1min_pa_sys: PA_SYS,

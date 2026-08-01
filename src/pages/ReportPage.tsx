@@ -60,7 +60,7 @@ import { bodyFatGoal, estimateMacros, weeksToGoal, dailyDeficitForRate, weeklyLo
 import { kgToLb, cmToFeetInches } from '../lib/units'
 import { dualWeight, estimatedGoalDate } from '../lib/objectif-format'
 import { formatMmSs } from '../lib/vo2max-calculator'
-import { hasRecoveryData, aerobicProtocolLabel } from '../lib/report-helpers'
+import { hasRecoveryData, recoveryRows, aerobicProtocolLabel } from '../lib/report-helpers'
 import logo from '../assets/logo-conseil.png'
 import '../print.css'
 
@@ -1740,11 +1740,12 @@ function CardioExtras({ latest, computed }: { latest: Bilan; computed: BilanComp
 function RecoveryTable({ latest }: { latest: Bilan }) {
   const data = latest.data as Record<string, unknown>
   if (!hasRecoveryData(data)) return null
-  const intervals = [
-    { label: '1 min', sys: 'recup_1min_pa_sys', dia: 'recup_1min_pa_dia', fc: 'recup_1min_fc' },
-    { label: '3 min', sys: 'recup_3min_pa_sys', dia: 'recup_3min_pa_dia', fc: 'recup_3min_fc' },
-    { label: '5 min', sys: 'recup_5min_pa_sys', dia: 'recup_5min_pa_dia', fc: 'recup_5min_fc' }
-  ]
+  // Les lignes viennent du helper, qui gère les deux modèles : le relevé unique
+  // de la feuille papier (saisie actuelle) et les 1/3/5 min des imports .docx.
+  // Le tableau était auparavant câblé en dur sur le second, si bien que la
+  // section ne s'ouvrait jamais pour un bilan saisi dans l'app.
+  const intervals = recoveryRows(data)
+  if (intervals.length === 0) return null
   const th: React.CSSProperties = { textAlign: 'right', padding: '2.5mm 3mm', fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.04em', color: INK_SOFT }
   const td: React.CSSProperties = { textAlign: 'right', padding: '3mm', color: MARINE, fontWeight: 600 }
   return (
@@ -1766,9 +1767,9 @@ function RecoveryTable({ latest }: { latest: Bilan }) {
           {intervals.map(iv => (
             <tr key={iv.label} style={{ borderBottom: `1px solid ${GRID}` }}>
               <td style={{ padding: '3mm', color: MARINE, fontWeight: 600 }}>{iv.label}</td>
-              <td style={td}>{fmt(num(data[iv.fc]), 0)}</td>
-              <td style={td}>{fmt(num(data[iv.sys]), 0)}</td>
-              <td style={td}>{fmt(num(data[iv.dia]), 0)}</td>
+              <td style={td}>{fmt(iv.fc, 0)}</td>
+              <td style={td}>{fmt(iv.sys, 0)}</td>
+              <td style={td}>{fmt(iv.dia, 0)}</td>
             </tr>
           ))}
         </tbody>
