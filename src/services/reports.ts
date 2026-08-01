@@ -39,6 +39,17 @@ export const reportsService = {
     return window.api.reports.generateFoodlogHtml(clientId)
   },
 
+  /**
+   * Écrit le formulaire d'habitudes de vie et retourne son chemin.
+   *
+   * Le HTML est construit ici, côté renderer (`renderFantasticForm`), et non
+   * dans le processus principal : celui-ci ne peut pas importer les modules du
+   * questionnaire sans dupliquer les 25 énoncés. Voir `writeFantasticFormHtml`.
+   */
+  async writeFantasticForm(clientId: string, html: string): Promise<string> {
+    return window.api.reports.writeFantasticForm({ clientId, html })
+  },
+
   /** Ouvre un PDF (ou tout autre fichier) avec l'application par défaut du système. */
   async openPdf(filePath: string): Promise<void> {
     return window.api.reports.openPath(filePath)
@@ -55,13 +66,16 @@ export const reportsService = {
   },
 
   /** Génère le(s) document(s), les attache et les envoie au client par courriel (SMTP des
-   *  Paramètres). `kind` : `bilan` (PDF + interactif) ou `nutrition` (document nutrition). */
+   *  Paramètres). `kind` : `bilan` (PDF + interactif), `nutrition` (document nutrition)
+   *  ou `questionnaire` (formulaire d'habitudes de vie à remplir). */
   async sendReportByEmail(
     clientId: string,
     subject: string,
     body: string,
-    kind: 'bilan' | 'nutrition' = 'bilan'
+    kind: 'bilan' | 'nutrition' | 'questionnaire' = 'bilan',
+    /** Requis pour `questionnaire` — le formulaire construit par le renderer. */
+    html?: string
   ): Promise<void> {
-    await window.api.reports.sendEmail({ clientId, subject, body, kind })
+    await window.api.reports.sendEmail({ clientId, subject, body, kind, html })
   }
 }

@@ -11,6 +11,7 @@ import {
   PenLine,
   Plus,
   Save,
+  Send,
   ShieldAlert,
   Sparkles,
   Target,
@@ -44,6 +45,10 @@ import {
   type SanteData,
   type ZoneMark
 } from '../../../lib/sante'
+import { asFantasticData, emptyFantasticData, fantasticLevel, fantasticScore } from '../../../lib/fantastic'
+import { renderFantasticForm } from '../../../lib/fantastic-form-html'
+import { FantasticForm, type FantasticDraft } from '../questionnaires/FantasticForm'
+import { FantasticImportModal } from '../questionnaires/FantasticImportModal'
 import { suggestionsForRegion, type PainSuggestionLib } from '../../../lib/pain-suggestions'
 import { settingsService } from '../../../services/settings'
 import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
@@ -67,7 +72,8 @@ function cleanErr(err: unknown, fallback: string): string {
 const TYPE_LABEL: Record<QuestionnaireType, string> = {
   qaap: 'Q-AAP',
   objectifs: 'Objectifs & habitudes de vie',
-  sante: 'Questionnaire de santé'
+  sante: 'Questionnaire de santé',
+  fantastic: 'Habitudes de vie'
 }
 
 function asObjectifs(data: unknown): ObjectifsData {
@@ -87,6 +93,7 @@ type Draft =
   | { id: string | null; type: 'qaap'; date: string; data: QaapData }
   | { id: string | null; type: 'objectifs'; date: string; data: ObjectifsData }
   | { id: string | null; type: 'sante'; date: string; data: SanteData }
+  | FantasticDraft
 
 /** Onglet Questionnaires — admission du client : Q-AAP + Objectifs & habitudes de vie. */
 export function QuestionnairesTab() {
@@ -101,6 +108,55 @@ export function QuestionnairesTab() {
   /** Avertissement d'archivage (Q-AAP non signé, ou dépôt impossible). */
   const [archiveWarn, setArchiveWarn] = useState<{ titre: string; texte: string } | null>(null)
   const [saving, setSaving] = useState(false)
+  /** Modale d'import d'un code de réponses renvoyé par le client. */
+  const [importing, setImporting] = useState(false)
+  /** Envoi du formulaire vierge au client (`null` = au repos). */
+  const [envoi, setEnvoi] = useState<'envoi' | null>(null)
+
+  /**
+   * Envoie le questionnaire d'habitudes de vie, vierge et remplissable.
+   *
+   * Le HTML est construit ICI : le processus principal ne peut pas importer les
+   * modules du questionnaire sans dupliquer les 25 énoncés (voir
+   * `writeFantasticFormHtml`). Il ne reçoit que le document fini.
+   */
+  async function envoyerFormulaire() {
+    if (!client.email?.trim()) {
+      setError('Ce client n’a pas d’adresse courriel. Ajoutez-la dans sa fiche.')
+      return
+    }
+    setEnvoi('envoi')
+    setError(null)
+    try {
+      const [profil, smtp] = await Promise.all([
+        settingsService.getProfile().catch(() => null),
+        settingsService.getSmtpConfig().catch(() => null)
+      ])
+      const html = renderFantasticForm({
+        clientName: client.name,
+        kineName: profil?.name ?? '',
+        // L'adresse de retour est celle du compte d'envoi : c'est là que le
+        // client répondra naturellement, et la boîte que Marie consulte.
+        replyTo: smtp?.user ?? ''
+      })
+      await reportsService.sendReportByEmail(
+        client.id,
+        'Votre questionnaire sur les habitudes de vie',
+        `Bonjour ${client.name.split(' ')[0]},\n\n` +
+          'Voici un court questionnaire à remplir avant notre rencontre. Ouvrez la pièce jointe ' +
+          'dans votre navigateur, répondez aux énoncés, puis renvoyez-moi le code affiché à la fin.\n\n' +
+          'Cela prend une dizaine de minutes. Il n’y a pas de bonne ou de mauvaise réponse.\n\n' +
+          `Au plaisir,\n${profil?.name ?? ''}`,
+        'questionnaire',
+        html
+      )
+      setToast(`Questionnaire envoyé à ${client.email}`)
+    } catch (err) {
+      setError(cleanErr(err, 'Le questionnaire n’a pas pu être envoyé.'))
+    } finally {
+      setEnvoi(null)
+    }
+  }
 
   const reload = useCallback(async () => {
     setLoading(true)
@@ -127,26 +183,41 @@ export function QuestionnairesTab() {
   const dirty = editing !== null
   const blocker = useBlocker(dirty && !saving)
 
+  /**
+   * Construit un brouillon pour un type donné.
+   *
+   * Une table plutôt que des ternaires imbriqués : à quatre types ceux-ci
+   * devenaient illisibles, et surtout leur dernière branche était un fourre-tout
+   * — tout type non reconnu retombait silencieusement sur « santé ». Ici, un
+   * type oublié est une erreur de compilation.
+   */
+  function makeDraft(type: QuestionnaireType, id: string | null, date: string, data: unknown): Draft {
+    switch (type) {
+      case 'qaap':
+        return { id, type, date, data: asQaap(data) }
+      case 'objectifs':
+        return { id, type, date, data: asObjectifs(data) }
+      case 'sante':
+        return { id, type, date, data: asSante(data) }
+      case 'fantastic':
+        return { id, type, date, data: asFantasticData(data) }
+    }
+  }
+
   function startNew(type: QuestionnaireType) {
     const date = todayISO()
-    setEditing(
-      type === 'qaap'
-        ? { id: null, type: 'qaap', date, data: emptyQaap() }
-        : type === 'objectifs'
-          ? { id: null, type: 'objectifs', date, data: emptyObjectifs() }
-          : { id: null, type: 'sante', date, data: emptySante() }
-    )
+    const vierge: Record<QuestionnaireType, unknown> = {
+      qaap: emptyQaap(),
+      objectifs: emptyObjectifs(),
+      sante: emptySante(),
+      fantastic: emptyFantasticData()
+    }
+    setEditing(makeDraft(type, null, date, vierge[type]))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function startEdit(q: Questionnaire) {
-    setEditing(
-      q.type === 'qaap'
-        ? { id: q.id, type: 'qaap', date: q.date, data: asQaap(q.data) }
-        : q.type === 'objectifs'
-          ? { id: q.id, type: 'objectifs', date: q.date, data: asObjectifs(q.data) }
-          : { id: q.id, type: 'sante', date: q.date, data: asSante(q.data) }
-    )
+    setEditing(makeDraft(q.type, q.id, q.date, q.data))
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -242,6 +313,23 @@ export function QuestionnairesTab() {
             >
               <Plus size={17} /> Santé
             </button>
+            <button
+              type="button"
+              onClick={() => startNew('fantastic')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-marine font-semibold rounded-md text-base border border-cream-dark hover:border-gold/60 transition-colors shadow-sm"
+            >
+              <Plus size={17} /> Habitudes de vie
+            </button>
+            <button
+              type="button"
+              onClick={envoyerFormulaire}
+              disabled={envoi !== null}
+              title={`Envoyer le questionnaire d'habitudes de vie à ${client.email || 'ce client'}`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white text-marine font-semibold rounded-md text-base border border-cream-dark hover:border-gold/60 transition-colors shadow-sm disabled:opacity-50"
+            >
+              {envoi === 'envoi' ? <Loader2 size={17} className="animate-spin" /> : <Send size={17} />}
+              Envoyer au client
+            </button>
           </div>
         )}
       </header>
@@ -278,6 +366,39 @@ export function QuestionnairesTab() {
           saving={saving}
         />
       )}
+      {editing?.type === 'fantastic' && (
+        <FantasticForm
+          value={editing}
+          onChange={setEditing}
+          onCancel={() => setEditing(null)}
+          onSave={save}
+          saving={saving}
+          onImport={() => setImporting(true)}
+        />
+      )}
+
+      {/* Import des réponses renvoyées par le client. */}
+      {importing && editing?.type === 'fantastic' && (
+        <FantasticImportModal
+          clientName={client.name}
+          onCancel={() => setImporting(false)}
+          onConfirm={answers => {
+            setEditing({
+              ...editing,
+              data: {
+                ...editing.data,
+                answers,
+                // On trace la provenance : Marie doit pouvoir distinguer ce que
+                // le client a déclaré de ce qu'elle a saisi pour lui.
+                source: 'client',
+                receivedAt: new Date().toISOString()
+              }
+            })
+            setImporting(false)
+            setToast('Réponses importées — pensez à enregistrer')
+          }}
+        />
+      )}
 
       {/* Historique */}
       {!editing && (
@@ -304,6 +425,8 @@ export function QuestionnairesTab() {
                   />
                 ) : q.type === 'objectifs' ? (
                   <ObjectifsHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
+                ) : q.type === 'fantastic' ? (
+                  <FantasticHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
                 ) : (
                   <SanteHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
                 )
@@ -397,15 +520,88 @@ function TypeChip({ type }: { type: QuestionnaireType }) {
   const style: Record<QuestionnaireType, string> = {
     qaap: 'bg-gold/20 text-gold-dark',
     objectifs: 'bg-marine/10 text-marine',
-    sante: 'bg-rose-100 text-rose-700'
+    sante: 'bg-rose-100 text-rose-700',
+    fantastic: 'bg-teal-100 text-teal-800'
   }
-  const icon =
-    type === 'qaap' ? <ClipboardList size={11} /> : type === 'objectifs' ? <Target size={11} /> : <HeartPulse size={11} />
+  const icon: Record<QuestionnaireType, React.ReactNode> = {
+    qaap: <ClipboardList size={11} />,
+    objectifs: <Target size={11} />,
+    sante: <HeartPulse size={11} />,
+    fantastic: <Sparkles size={11} />
+  }
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${style[type]}`}>
-      {icon}
+      {icon[type]}
       {TYPE_LABEL[type]}
     </span>
+  )
+}
+
+// ── Habitudes de vie (FANTASTIC) ─────────────────────────────────────────────
+
+function FantasticHistoryCard({
+  q,
+  onEdit,
+  onDelete
+}: {
+  q: Questionnaire
+  onEdit: () => void
+  onDelete: () => void
+}) {
+  const data = asFantasticData(q.data)
+  const score = fantasticScore(data.answers)
+  const niveau = fantasticLevel(score.sur100)
+  const ton =
+    score.sur100 === null
+      ? 'bg-cream-dark/40 text-marine/60 border-cream-dark'
+      : score.sur100 >= 70
+        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+        : score.sur100 >= 55
+          ? 'bg-sky-50 text-sky-800 border-sky-200'
+          : 'bg-amber-50 text-amber-800 border-amber-200'
+
+  return (
+    <li className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <TypeChip type="fantastic" />
+            <p className="text-marine font-semibold text-sm">{formatBilanDate(q.date)}</p>
+          </div>
+          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+            {score.sur100 === null ? (
+              <span className="text-marine/45 text-xs">Aucune réponse</span>
+            ) : (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${ton}`}
+              >
+                <span className="tabular-nums">{score.sur100}</span> / 100 — {niveau}
+              </span>
+            )}
+            {!score.complete && score.answered > 0 && (
+              <span className="text-marine/45 text-xs">
+                {score.answered} énoncé{score.answered > 1 ? 's' : ''} sur 25
+              </span>
+            )}
+            {data.source === 'client' && (
+              <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                <CheckCircle2 size={12} /> Rempli par le client
+              </span>
+            )}
+          </div>
+        </div>
+        <HistoryActions
+          label={`Questionnaire d'habitudes de vie du ${formatBilanDate(q.date)}`}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
+      </div>
+      {data.notes?.trim() && (
+        <p className="text-marine/70 text-sm mt-2.5 whitespace-pre-wrap leading-relaxed border-t border-cream-dark/40 pt-2.5">
+          {data.notes}
+        </p>
+      )}
+    </li>
   )
 }
 

@@ -369,7 +369,7 @@ interface ClientNoteInput {
 }
 
 /** Questionnaire d'admission daté d'un client. */
-type QuestionnaireType = 'qaap' | 'objectifs' | 'sante'
+type QuestionnaireType = 'qaap' | 'objectifs' | 'sante' | 'fantastic'
 interface Questionnaire {
   id: string
   clientId: string
@@ -553,6 +553,8 @@ interface Window {
       generateNutritionHtml(clientId: string): Promise<string>
       /** Génère le journal alimentaire vierge imprimable — retourne le chemin du fichier. */
       generateFoodlogHtml(clientId: string): Promise<string>
+      /** Écrit le formulaire d'habitudes de vie (construit par le renderer) — retourne le chemin du fichier. */
+      writeFantasticForm(data: { clientId: string; html: string }): Promise<string>
       /** Ouvre un fichier local avec l'application par défaut du système. */
       openPath(filePath: string): Promise<void>
       /** Génère et exporte tous les documents du client dans le dossier configuré. */
@@ -560,7 +562,13 @@ interface Window {
       /** Ouvre le sous-dossier du client dans l'explorateur (le crée au besoin). */
       openClientFolder(clientId: string): Promise<void>
       /** Génère le(s) document(s), les attache et les envoie au client par courriel, puis supprime les fichiers temp. */
-      sendEmail(data: { clientId: string; subject: string; body: string; kind?: 'bilan' | 'nutrition' }): Promise<{ sentTo: string }>
+      sendEmail(data: {
+        clientId: string
+        subject: string
+        body: string
+        kind?: 'bilan' | 'nutrition' | 'questionnaire'
+        html?: string
+      }): Promise<{ sentTo: string }>
     }
     bilans: {
       pickDocxFile(): Promise<PickedDocx>

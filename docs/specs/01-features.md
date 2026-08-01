@@ -2,6 +2,43 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.89 — Questionnaire d'habitudes de vie, remplissable par le client)
+
+Demande de Marie : « pouvoir envoyer un PDF interactif par courriel ». Le questionnaire fourni est le
+**FANTASTIC** — 9 sections, 25 énoncés, 5 colonnes cotées 0-4 de gauche à droite, donc un score sur 100.
+
+**Un PDF remplissable n'était pas la bonne réponse.** L'app produit ses PDF avec le moteur d'impression
+d'Electron, qui rend du HTML en PDF *statique* : il ne sait pas fabriquer de champs de formulaire. Et les
+lecteurs PDF des téléphones gèrent mal les formulaires, alors que tous ont un navigateur. Le client reçoit
+donc un **HTML autonome** (43 Ko, aucune requête réseau, imprimable s'il préfère le papier).
+
+**Le retour des réponses** est le point qui décide de tout : un formulaire que Marie doit ensuite retaper
+ne fait gagner à personne. Le client obtient un **code de 30 caractères** (`FT1` + 25 chiffres + 2 de
+contrôle) qu'il colle dans un courriel — recopiable depuis un téléphone, là où joindre un fichier échoue
+souvent. Un fichier téléchargeable existe aussi. L'app relit l'un ou l'autre et remplit le dossier sans
+ressaisie. La somme de contrôle est **pondérée par position** : elle détecte l'inversion de deux chiffres
+voisins, l'erreur classique de recopie, qu'une simple somme laisserait passer. Un code abîmé est refusé
+avec sa raison plutôt qu'importé à moitié — une mauvaise réponse écrite en silence serait invisible
+jusqu'à ce qu'un score étonne.
+
+**Le client ne voit pas son score.** Le FANTASTIC se lit avec un professionnel ; un « 46 sur 100 — À
+améliorer » reçu seul devant son écran décourage sans rien apprendre. Il voit sa progression de
+remplissage, Marie voit le résultat. Un test verrouille cette décision.
+
+Modules purs : `fantastic.ts` (contenu + cotation), `fantastic-code.ts` (codec), `fantastic-form-html.ts`
+(le formulaire). Le script inline de la page **duplique** l'encodeur — une page isolée ne peut rien
+importer — alors un test extrait ce script du HTML produit, l'exécute, et vérifie qu'il donne exactement
+les mêmes codes que la version TypeScript. Une divergence casse les tests au lieu de casser un client.
+
+Le HTML est construit **côté renderer**, pas dans le processus principal : `tsconfig.node` émet, donc il ne
+peut pas activer `allowImportingTsExtensions`, et tout module de `src/lib/` partagé avec le main doit être
+autonome. Recopier les 25 énoncés côté Electron aurait créé une seconde source de vérité. Le main ne reçoit
+que le document fini.
+
+47 tests ajoutés (434 → 481).
+
+Version : 0.9.88 → 0.9.89.
+
 ## ✅ Fait (v0.9.64 — Feuille des barèmes : elle documentait les mauvaises tables)
 
 Question de Nicholas : « la partie force musculaire, c'est bien CPAFLA / ÉCPHV 3ᵉ éd. ? » — vérification

@@ -147,6 +147,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('reports:generate-html', { clientId, bilanId }),
     generateNutritionHtml: (clientId: string) =>
       ipcRenderer.invoke('reports:generate-nutrition-html', clientId),
+    writeFantasticForm: (data: { clientId: string; html: string }) =>
+      ipcRenderer.invoke('reports:write-fantastic-form', data),
     generateFoodlogHtml: (clientId: string) =>
       ipcRenderer.invoke('reports:generate-foodlog-html', clientId),
     openPath: (filePath: string) =>
@@ -155,8 +157,13 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('reports:export-client-documents', clientId),
     openClientFolder: (clientId: string) =>
       ipcRenderer.invoke('reports:open-client-folder', clientId),
-    sendEmail: (data: { clientId: string; subject: string; body: string; kind?: 'bilan' | 'nutrition' }) =>
-      ipcRenderer.invoke('reports:send-email', data)
+    sendEmail: (data: {
+      clientId: string
+      subject: string
+      body: string
+      kind?: 'bilan' | 'nutrition' | 'questionnaire'
+      html?: string
+    }) => ipcRenderer.invoke('reports:send-email', data)
   },
   bilans: {
     pickDocxFile: () =>

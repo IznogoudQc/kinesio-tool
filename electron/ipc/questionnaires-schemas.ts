@@ -86,13 +86,31 @@ const SanteDataSchema = z
   })
   .strip()
 
+// FANTASTIC — habitudes de vie : 25 énoncés cotés 0-4, ou null si non répondu.
+//
+// ⚠️ Même piège que le Q-AAP ci-dessus : `.strip()` supprime en silence ce qui
+// n'est pas déclaré ici. `source` et `receivedAt` sont indispensables — sans eux
+// Marie ne saurait plus distinguer ce que le client a déclaré lui-même de ce
+// qu'elle a saisi pour lui.
+const FantasticDataSchema = z
+  .object({
+    // Clés « section.item ». On borne à 0-4 : une valeur hors échelle fausserait
+    // le score sans que rien ne le signale.
+    answers: z.record(z.string().max(40), z.number().int().min(0).max(4).nullable()).optional(),
+    notes: z.string().max(5000).optional(),
+    source: z.enum(['kine', 'client']).optional(),
+    receivedAt: z.string().datetime().optional()
+  })
+  .strip()
+
 const TYPE_SCHEMAS: Record<string, z.ZodTypeAny> = {
   qaap: QaapDataSchema,
   objectifs: ObjectifsDataSchema,
-  sante: SanteDataSchema
+  sante: SanteDataSchema,
+  fantastic: FantasticDataSchema
 }
 
-export const QuestionnaireType = z.enum(['qaap', 'objectifs', 'sante'])
+export const QuestionnaireType = z.enum(['qaap', 'objectifs', 'sante', 'fantastic'])
 
 /** Valide `data` selon `type`. Rejette un type inconnu. */
 export function parseDataForType(type: string, data: unknown): unknown {

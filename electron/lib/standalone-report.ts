@@ -65,6 +65,32 @@ export async function generateFoodJournalHtml(clientId: string): Promise<string>
   return buildStandaloneHtml(clientId, 'foodlog', 'Journal-alimentaire')
 }
 
+/**
+ * Écrit le formulaire d'habitudes de vie dans un fichier temporaire.
+ *
+ * Le HTML est **construit par le renderer**, pas ici. Ce n'est pas un caprice :
+ * `tsconfig.node` émet du JavaScript, donc il ne peut pas activer
+ * `allowImportingTsExtensions` — et par conséquent tout module de `src/lib/`
+ * partagé avec le processus principal doit être autonome, sans import de frère
+ * (c'est le cas de `report-scope`, `client-folders`, `qaap`…). Or le générateur
+ * du formulaire a besoin des 25 énoncés et du format de code. Les recopier ici
+ * pour satisfaire le compilateur créerait deux sources de vérité, exactement le
+ * genre de divergence qui a coûté plusieurs correctifs à ce projet.
+ *
+ * Le processus principal ne fait donc qu'écrire les octets qu'on lui donne.
+ */
+export async function writeFantasticFormHtml(clientId: string, html: string): Promise<string> {
+  const client = getDb().select().from(clients).where(eq(clients.id, clientId)).get()
+  if (!client) throw new Error('Client introuvable.')
+
+  const outPath = join(
+    tmpdir(),
+    `Questionnaire-habitudes-de-vie-${safeClientFileName(client.name)}-${todayISODate()}.html`
+  )
+  await writeFile(outPath, html, 'utf-8')
+  return outPath
+}
+
 async function buildStandaloneHtml(
   clientId: string,
   docType: 'report' | 'nutrition' | 'foodlog',

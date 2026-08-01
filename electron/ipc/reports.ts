@@ -14,7 +14,12 @@ import {
   safeClientFileName,
   todayISODate
 } from '../lib/report-generator'
-import { generateFoodJournalHtml, generateInteractiveReportHtml, generateNutritionDocumentHtml } from '../lib/standalone-report'
+import {
+  writeFantasticFormHtml,
+  generateFoodJournalHtml,
+  generateInteractiveReportHtml,
+  generateNutritionDocumentHtml
+} from '../lib/standalone-report'
 import { getDocumentsFolder, getSmtpCredentials } from './settings'
 import { CLIENT_FOLDERS, CLIENT_FOLDER_NAMES } from '../../src/lib/client-folders'
 import { asQaapData, qaapIsSigned } from '../../src/lib/qaap'
@@ -38,12 +43,29 @@ const ReportArgsSchema = z.object({
   bilanId: z.string().uuid().optional()
 })
 
+/**
+ * Formulaire d'habitudes de vie construit par le renderer.
+ *
+ * La borne de taille n'est pas décorative : le document fait ~43 Ko, 2 Mo laisse
+ * une marge très large tout en empêchant qu'un contenu arbitraire finisse écrit
+ * sur le disque à travers ce canal.
+ */
+const FantasticFormSchema = z.object({
+  clientId: ClientIdSchema,
+  html: z.string().min(1).max(2_000_000).startsWith('<!doctype html>', 'Document inattendu.')
+})
+
 const SendReportSchema = z.object({
   clientId: ClientIdSchema,
   subject: z.string().min(1).max(500),
   body: z.string().min(1).max(20000),
-  /** `bilan` (défaut) = PDF + document interactif ; `nutrition` = document nutrition seul. */
-  kind: z.enum(['bilan', 'nutrition']).optional()
+  /**
+   * `bilan` (défaut) = PDF + document interactif ; `nutrition` = document
+   * nutrition seul ; `questionnaire` = formulaire d'habitudes de vie à remplir.
+   */
+  kind: z.enum(['bilan', 'nutrition', 'questionnaire']).optional(),
+  /** Requis pour `kind: 'questionnaire'` — le HTML construit par le renderer. */
+  html: z.string().min(1).max(2_000_000).optional()
 })
 
 export function registerReportsHandlers(): void {
@@ -72,6 +94,12 @@ export function registerReportsHandlers(): void {
   ipcMain.handle('reports:generate-nutrition-html', async (_e, clientId: unknown) => {
     const id = ClientIdSchema.parse(clientId)
     return generateNutritionDocumentHtml(id)
+  })
+
+  // Formulaire d'habitudes de vie (FANTASTIC), construit par le renderer.
+  ipcMain.handle('reports:write-fantastic-form', async (_e, payload: unknown) => {
+    const { clientId, html } = FantasticFormSchema.parse(payload)
+    return writeFantasticFormHtml(clientId, html)
   })
 
   // Journal alimentaire vierge imprimable.
@@ -237,7 +265,7 @@ export function registerReportsHandlers(): void {
 
   // ── Envoi du rapport par courriel (génère + attache + nettoie) ──────────────
   ipcMain.handle('reports:send-email', async (_e, payload: unknown) => {
-    const { clientId, subject, body, kind } = SendReportSchema.parse(payload)
+    const { clientId, subject, body, kind, html } = SendReportSchema.parse(payload)
     const client = getDb().select().from(clients).where(eq(clients.id, clientId)).get()
     if (!client) throw new Error('Client introuvable.')
 
@@ -250,7 +278,15 @@ export function registerReportsHandlers(): void {
     const paths: string[] = []
     let attachments: { filename: string; path: string }[] = []
     try {
-      if (kind === 'nutrition') {
+      if (kind === 'questionnaire') {
+        // Formulaire vierge à remplir : une seule pièce jointe, autonome. Pas de
+        // PDF en doublon — c'est le fichier HTML qui est interactif, un PDF
+        // statique à côté ne ferait qu'inviter le client à imprimer par erreur.
+        if (!html) throw new Error('Formulaire manquant.')
+        const formPath = await writeFantasticFormHtml(clientId, html)
+        paths.push(formPath)
+        attachments = [{ filename: `Questionnaire-habitudes-de-vie-${stem}.html`, path: formPath }]
+      } else if (kind === 'nutrition') {
         const nutriPath = await generateNutritionDocumentHtml(clientId)
         const foodlogPath = await generateFoodJournalHtml(clientId)
         paths.push(nutriPath, foodlogPath)
