@@ -1,5 +1,5 @@
 /**
- * Tests du risque santé IMC (aide-mémoire ÉAS, SPAP-SCPE).
+ * Tests du risque santé IMC (tableau 4.4 du Guide du conseiller, 3e éd.).
  *
  * Lancer : `node --test src/lib/norms/health-risk.test.ts`
  */
@@ -11,7 +11,10 @@ import {
   bmiRisk,
   healthRisk,
   healthRiskExplanation,
-  HEALTH_RISK_ORDER
+  HEALTH_RISK_ORDER,
+  HEALTH_RISK_SOURCE,
+  muscularCaveat,
+  muscularCaveatApplies
 } from './health-risk.ts'
 
 test('les six bandes de la feuille, à leurs bornes exactes', () => {
@@ -158,4 +161,66 @@ test('la phrase d’explication couvre les quatre situations, sans trou', () => 
   const phrases = cas.map(healthRiskExplanation)
   for (const p of phrases) assert.ok(p.length > 0 && p.endsWith('.'))
   assert.equal(new Set(phrases).size, 4, 'les quatre situations doivent se distinguer')
+})
+
+/* ── Nuance « entraînement musculaire » (note de bas du tableau 4.4) ─────── */
+
+test('la nuance s’applique au profil visé : surpoids, tour de taille sous la limite', () => {
+  // Le cas concret : homme musclé, IMC 27, tour de taille 88 cm (< 100).
+  // L'app l'affichait « risque accru » sans réserve, alors que le guide dit
+  // précisément l'inverse pour lui.
+  const r = healthRisk({ imc: 27, waist: 88, sex: 'M' })!
+  assert.equal(r.risk, 'ACCRU')
+  assert.equal(muscularCaveatApplies(r), true)
+  assert.match(muscularCaveat(r)!, /entraînement musculaire/)
+})
+
+test('la nuance ne s’applique pas si le tour de taille dépasse la limite', () => {
+  // 100 cm chez l'homme : le risque est relevé, la remarque du guide ne vaut
+  // plus — elle porte explicitement sur un tour de taille INFÉRIEUR aux limites.
+  const r = healthRisk({ imc: 27, waist: 100, sex: 'M' })!
+  assert.equal(r.waistRaised, true)
+  assert.equal(muscularCaveatApplies(r), false)
+  assert.equal(muscularCaveat(r), null)
+})
+
+test('la nuance ne s’applique pas si le tour de taille n’est pas mesuré', () => {
+  // Sans mesure, on ne peut pas affirmer qu'il est sous la limite. Afficher la
+  // nuance reviendrait à rassurer sur la foi d'une donnée absente.
+  const r = healthRisk({ imc: 27, waist: null, sex: 'M' })!
+  assert.equal(r.waistKnown, false)
+  assert.equal(muscularCaveatApplies(r), false)
+})
+
+test('la nuance est limitée à la plage de surpoids, comme l’écrit le guide', () => {
+  // L'étendre à l'obésité serait notre interprétation, pas celle du guide.
+  for (const imc of [24.9, 30, 35, 41]) {
+    const r = healthRisk({ imc, waist: 80, sex: 'M' })!
+    assert.equal(muscularCaveatApplies(r), false, `IMC ${imc} ne devrait pas déclencher la nuance`)
+  }
+  // Les bornes exactes de la plage, elles, la déclenchent.
+  for (const imc of [25, 29.9]) {
+    assert.equal(muscularCaveatApplies(healthRisk({ imc, waist: 80, sex: 'M' })!), true, `IMC ${imc}`)
+  }
+})
+
+test('la nuance vaut aussi pour les femmes, à leur propre seuil', () => {
+  assert.equal(muscularCaveatApplies(healthRisk({ imc: 27, waist: 85, sex: 'F' })!), true)
+  assert.equal(muscularCaveatApplies(healthRisk({ imc: 27, waist: 90, sex: 'F' })!), false)
+})
+
+test('la nuance est formulée comme une question, jamais comme une conclusion', () => {
+  // L'app ne sait pas si le client s'entraîne — c'est Marie qui sait. Le texte
+  // doit donc rester conditionnel.
+  const texte = muscularCaveat(healthRisk({ imc: 27, waist: 88, sex: 'M' })!)!
+  assert.match(texte, /^Si le client/)
+  assert.equal(/n’est pas à risque|aucun risque/.test(texte), false)
+})
+
+test('la source cite le tableau 4.4 du guide, plus l’aide-mémoire', () => {
+  assert.match(HEALTH_RISK_SOURCE, /Guide du conseiller/)
+  assert.match(HEALTH_RISK_SOURCE, /4\.4/)
+  assert.equal(HEALTH_RISK_SOURCE.includes('SPAP'), false)
+  // La restriction d'âge figure bien en note du tableau — elle reste.
+  assert.match(HEALTH_RISK_SOURCE, /20 à 65 ans/)
 })

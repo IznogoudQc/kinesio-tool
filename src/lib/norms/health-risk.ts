@@ -171,5 +171,53 @@ export const HEALTH_RISK_HEX: Record<HealthRisk, string> = {
   EXTREMEMENT_ELEVE: '#991b1b'
 }
 
-/** Source à citer sous l'affichage — le libellé exact de la feuille de Marie. */
-export const HEALTH_RISK_SOURCE = 'Aide-mémoire ÉAS (SPAP-SCPE) — adultes de 20 à 65 ans'
+/**
+ * Source à citer sous l'affichage.
+ *
+ * **Tableau 4.4** du Guide du conseiller, 3ᵉ éd. Ces valeurs avaient d'abord été
+ * attribuées à l'aide-mémoire ÉAS (SPAP-SCPE), qui reproduit ce tableau : les
+ * six lignes encodées étaient donc justes, mais l'app renvoyait Marie vers un
+ * document qu'elle n'a pas sous la main. Même correction que pour la table
+ * aérobie — voir ADR 0036.
+ *
+ * La restriction d'âge, elle, figure bien en note de bas du tableau du guide.
+ */
+export const HEALTH_RISK_SOURCE =
+  'CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd., tableau 4.4 — adultes de 20 à 65 ans'
+
+/**
+ * La nuance « entraînement musculaire » du tableau 4.4 s'applique-t-elle ?
+ *
+ * Note de bas de tableau, mot pour mot :
+ *
+ * > Les clients qui font de l'entraînement musculaire et qui ont un IMC dans la
+ * > catégorie de surpoids, mais dont le tour de taille est inférieur aux
+ * > limites, sont moins susceptibles de présenter un risque accru pour la santé.
+ *
+ * Cela vise un profil très concret chez Marie : quelqu'un de musclé, à IMC 27 et
+ * tour de taille 88 cm, que l'app affichait « risque accru » sans réserve alors
+ * que le guide dit précisément l'inverse pour lui. L'IMC ne distingue pas le
+ * muscle de la graisse ; le tour de taille, si.
+ *
+ * Deux conditions **mesurables** sont vérifiées ici — IMC dans la plage de
+ * surpoids (25 à 29,9) et tour de taille réellement mesuré sous le seuil. La
+ * troisième — le client fait-il de l'entraînement musculaire ? — l'application
+ * ne la connaît pas. La nuance est donc présentée à Marie comme une question,
+ * jamais comme une conclusion : c'est elle qui sait.
+ *
+ * Volontairement limité à la plage de surpoids, comme l'écrit le guide. Étendre
+ * la remarque aux plages d'obésité serait notre interprétation, pas la sienne.
+ */
+export function muscularCaveatApplies(r: HealthRiskResult): boolean {
+  return r.band === '25,0–29,9' && r.waistKnown && !r.waistRaised
+}
+
+/** Le texte de la nuance, si elle s'applique. `null` sinon. */
+export function muscularCaveat(r: HealthRiskResult): string | null {
+  if (!muscularCaveatApplies(r)) return null
+  return (
+    'Si le client fait de l’entraînement musculaire : avec un IMC dans la plage de surpoids ' +
+    'mais un tour de taille sous la limite, il est moins susceptible de présenter un risque ' +
+    'accru pour la santé — l’IMC ne distingue pas le muscle de la graisse.'
+  )
+}

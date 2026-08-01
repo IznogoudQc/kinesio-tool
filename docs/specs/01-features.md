@@ -2,6 +2,43 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.93 — Risque santé : la nuance du guide pour les clients musclés)
+
+Nicholas envoie le **tableau 4.4** du guide — « Risque pour la santé associé à l'IMC et à l'IMC combiné au
+tour de taille » — en demandant si l'info était déjà connue. Réponse : oui, les **6 lignes étaient encodées
+et exactes** (seuils IMC, tours de taille homme et femme, risques simples et combinés). Vérifié ligne par
+ligne avant de répondre.
+
+Mais la photo apporte deux choses que l'app n'avait pas.
+
+**1. La note de bas de tableau, qui manquait — et c'est elle qui compte.**
+
+> Les clients qui font de l'entraînement musculaire et qui ont un IMC dans la catégorie de surpoids, mais
+> dont le tour de taille est inférieur aux limites, sont moins susceptibles de présenter un risque accru.
+
+Profil très concret chez Marie : un homme musclé, IMC 27, tour de taille 88 cm. L'app affichait « risque
+accru » sans réserve — et le client lit ce PDF. Le guide dit précisément l'inverse pour lui : l'IMC ne
+distingue pas le muscle de la graisse, le tour de taille si.
+
+La nuance s'affiche désormais sous le risque, au dashboard, dans le PDF et dans le document HTML. Deux
+conditions **mesurables** la déclenchent : IMC entre 25 et 29,9, et tour de taille réellement mesuré sous la
+limite. La troisième — le client s'entraîne-t-il ? — l'app ne la connaît pas, donc le texte reste
+**conditionnel** (« Si le client fait de l'entraînement musculaire… ») : c'est une réserve soumise au
+jugement de Marie, jamais une conclusion. Un test vérifie cette formulation.
+
+Volontairement limitée à la plage de surpoids, comme l'écrit le guide — l'étendre à l'obésité serait notre
+interprétation, pas la sienne. Et jamais affichée si le tour de taille n'a pas été mesuré : ce serait
+rassurer sur la foi d'une donnée absente.
+
+**2. La bonne source** — tableau 4.4 du guide, et non l'aide-mémoire ÉAS (SPAP-SCPE) qui le reproduit. Même
+correction que pour le VO2max en v0.9.92 (voir [[../decisions/0036-source-table-aerobie-corrigee|ADR 0036]]).
+La mention « adultes de 20 à 65 ans » est en revanche **conservée** : elle figure bien en note du tableau,
+contrairement au VO2max où elle avait été reprise à tort.
+
+531 tests (524 avant).
+
+Version : 0.9.92 → 0.9.93.
+
 ## ✅ Fait (v0.9.92 — Table VO2max : la bonne source, et la preuve qu'elle est exacte)
 
 Nicholas envoie le **tableau 4.10** du *Guide du conseiller*, 3ᵉ éd. — « VO2max estimé : évaluation des

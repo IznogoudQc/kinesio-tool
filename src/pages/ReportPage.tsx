@@ -40,6 +40,7 @@ import { categoryCells, commonNormSource, normSourceForTest } from '../lib/norms
 import {
   healthRisk,
   healthRiskExplanation,
+  muscularCaveat,
   HEALTH_RISK_HEX,
   HEALTH_RISK_LABELS,
   HEALTH_RISK_SOURCE
@@ -1465,6 +1466,24 @@ function AnthropoLine({ latest, weightUnit, sex }: { latest: Bilan; weightUnit: 
           <p style={{ fontSize: '8pt', color: AXIS, marginTop: '1mm' }}>
             {healthRiskExplanation(risk)} {HEALTH_RISK_SOURCE}.
           </p>
+          {/* Nuance du tableau 4.4 : un client musclé à IMC de surpoids mais
+              tour de taille sous la limite. Le client lit ce PDF — sans cette
+              réserve, il repart avec « risque accru » alors que le guide dit
+              l'inverse pour son profil. */}
+          {muscularCaveat(risk) && (
+            <p
+              style={{
+                fontSize: '8pt',
+                color: '#92400e',
+                marginTop: '1.5mm',
+                paddingLeft: '2mm',
+                borderLeft: '0.6mm solid #fcd34d',
+                lineHeight: 1.4
+              }}
+            >
+              {muscularCaveat(risk)}
+            </p>
+          )}
         </div>
       )}
     </div>

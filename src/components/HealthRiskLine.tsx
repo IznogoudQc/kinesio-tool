@@ -1,14 +1,15 @@
 import {
   healthRisk,
   healthRiskExplanation,
+  muscularCaveat,
   HEALTH_RISK_HEX,
   HEALTH_RISK_LABELS,
   HEALTH_RISK_SOURCE
 } from '../lib/norms/health-risk'
 
 /**
- * Risque pour la santé associé à l'IMC **et au tour de taille** (aide-mémoire
- * ÉAS, SPAP-SCPE). Partagée : Dashboard + document HTML.
+ * Risque pour la santé associé à l'IMC **et au tour de taille** (tableau 4.4 du
+ * Guide du conseiller, 3ᵉ éd.). Partagée : Dashboard + document HTML.
  *
  * Ce n'est pas une cote de condition physique et ça n'entre dans aucun score :
  * l'IMC et le tour de taille alimentent déjà la composition corporelle et
@@ -32,6 +33,7 @@ export function HealthRiskLine({
 }): React.JSX.Element | null {
   const r = healthRisk({ imc, waist, sex })
   if (!r) return null
+  const nuance = muscularCaveat(r)
 
   return (
     <div className={className}>
@@ -44,6 +46,12 @@ export function HealthRiskLine({
       <p className="text-marine/45 text-xs mt-1">
         {healthRiskExplanation(r)} {HEALTH_RISK_SOURCE}.
       </p>
+      {/* Nuance du guide pour un client musclé à IMC de surpoids mais tour de
+          taille sous la limite. Détachée de la ligne d'explication : c'est une
+          réserve sur la lecture du risque, pas un complément de calcul. */}
+      {nuance && (
+        <p className="text-amber-800/90 text-xs mt-1.5 pl-2 border-l-2 border-amber-300 leading-snug">{nuance}</p>
+      )}
     </div>
   )
 }
