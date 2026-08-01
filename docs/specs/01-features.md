@@ -24,14 +24,14 @@ après l'effort, la diastolique redescend légèrement. Valeurs de **démonstrat
 Un test vérifie que chaque scénario raconte bien son histoire, et qu'aucun relevé n'est physiologiquement
 absurde (FC de récupération toujours au-dessus de la FC de repos, jamais au-delà de 200).
 
-**Prévention au passage** : ,  et  sont déclarés « plus bas = mieux ».
+**Prévention au passage** : `pa_recup_sys`, `pa_recup_dia` et `fc_recup` sont déclarés « plus bas = mieux ».
 Une clé absente de cette table retombe sur « plus haut = mieux » — et un sens inversé ne se remarque qu'à la
 couleur, un progrès affiché en rouge. C'est exactement ce qui était arrivé au tour de hanche en v0.9.76.
 
 566 tests (561 avant).
 
 Version : 0.9.99 → 0.9.100 — la 1.0 est gardée pour un jalon choisi. Sans risque pour la mise à jour
-automatique :  compare avec semver, qui range bien 0.9.100 après 0.9.99.
+automatique : `electron-updater` compare avec semver, qui range bien 0.9.100 après 0.9.99.
 
 ## ✅ Fait (v0.9.99 — Repos et après l'effort, côte à côte dans le document client)
 
