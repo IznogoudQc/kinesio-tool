@@ -20,6 +20,7 @@ import {
   emptyFantastic,
   fantasticScore,
   fantasticLevel,
+  selectableChoices,
   itemKey
 } from './fantastic.ts'
 
@@ -70,6 +71,55 @@ test('les énoncés inversés se lisent bien du pire au meilleur', () => {
   const optimiste = FANTASTIC_ITEMS.find(i => i.key === 'optimiste')!
   assert.equal(optimiste.choices[0], 'Presque jamais')
   assert.equal(optimiste.choices[4], 'Presque toujours')
+})
+
+test('seules les colonnes portant un libellé sont des réponses', () => {
+  // Défaut signalé en v0.9.89 : les trois cases vides du milieu de « drogues »
+  // et « conduite » étaient rendues cliquables, proposant au client trois
+  // réponses qui n'existent pas sur la feuille papier.
+  for (const item of FANTASTIC_ITEMS) {
+    for (const choix of selectableChoices(item)) {
+      assert.notEqual(choix.label.trim(), '', `${item.key} offre une réponse sans libellé`)
+    }
+  }
+})
+
+test('les deux énoncés binaires n’offrent que Parfois et Jamais', () => {
+  for (const key of ['drogues', 'conduite']) {
+    const item = FANTASTIC_ITEMS.find(i => i.key === key)!
+    const choix = selectableChoices(item)
+    assert.deepEqual(
+      choix.map(c => c.label),
+      ['Parfois', 'Jamais']
+    )
+    // Les VALEURS restent 0 et 4 : la position porte le score, donc « Jamais »
+    // vaut bien 4 et l'énoncé pèse autant que les autres dans le total.
+    assert.deepEqual(
+      choix.map(c => c.value),
+      [0, 4]
+    )
+  }
+})
+
+test('les autres énoncés gardent bien leurs 5 réponses', () => {
+  const binaires = new Set(['drogues', 'conduite'])
+  for (const item of FANTASTIC_ITEMS) {
+    if (binaires.has(item.key)) continue
+    assert.equal(selectableChoices(item).length, 5, `${item.key} n’a pas 5 réponses`)
+  }
+})
+
+test('un questionnaire binaire au maximum vaut toujours 4 points', () => {
+  // Vérifie que restreindre l'affichage n'a pas changé la cotation : 25 énoncés
+  // à leur valeur maximale doivent toujours donner 100.
+  const answers = emptyFantastic()
+  for (const s of FANTASTIC_SECTIONS) {
+    for (const item of s.items) {
+      const choix = selectableChoices(item)
+      answers[itemKey(s, item)] = choix[choix.length - 1].value
+    }
+  }
+  assert.equal(fantasticScore(answers).sur100, 100)
 })
 
 test('les deux énoncés à colonnes vides gardent leurs extrêmes', () => {

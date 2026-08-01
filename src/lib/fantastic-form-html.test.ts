@@ -18,7 +18,13 @@
 
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { FANTASTIC_ITEMS, FANTASTIC_SECTIONS, FANTASTIC_KEYS, emptyFantastic } from './fantastic.ts'
+import {
+  FANTASTIC_ITEMS,
+  FANTASTIC_SECTIONS,
+  FANTASTIC_KEYS,
+  emptyFantastic,
+  selectableChoices
+} from './fantastic.ts'
 import { encodeFantasticCode, decodeFantasticCode } from './fantastic-code.ts'
 import { renderFantasticForm } from './fantastic-form-html.ts'
 
@@ -87,11 +93,31 @@ test('les 9 sections sont présentes', () => {
   }
 })
 
-test('chaque énoncé a ses 5 boutons radio, sous son propre nom', () => {
-  for (const key of FANTASTIC_KEYS) {
-    const occurrences = html.split(`name="${key}"`).length - 1
-    assert.equal(occurrences, 5, `${key} a ${occurrences} choix au lieu de 5`)
+test('chaque énoncé offre exactement les réponses de la feuille papier', () => {
+  // 5 pour la plupart, mais 2 pour les deux énoncés dont la feuille ne propose
+  // que « Parfois » et « Jamais ». C'est le défaut signalé en v0.9.89 : les
+  // trois cases vides du milieu étaient rendues cliquables, donc le client se
+  // voyait offrir trois réponses qui n'existent pas.
+  for (const section of FANTASTIC_SECTIONS) {
+    for (const item of section.items) {
+      const key = `${section.key}.${item.key}`
+      const occurrences = html.split(`name="${key}"`).length - 1
+      assert.equal(occurrences, selectableChoices(item).length, `${key} : mauvais nombre de choix`)
+    }
   }
+})
+
+test('les deux énoncés binaires n’offrent QUE Parfois et Jamais', () => {
+  for (const key of ['tabac.drogues', 'alcool.conduite']) {
+    const occurrences = html.split(`name="${key}"`).length - 1
+    assert.equal(occurrences, 2, `${key} devrait n’avoir que 2 réponses`)
+  }
+})
+
+test('aucune case de réponse vide ne subsiste dans la page', () => {
+  // Une case sans libellé n'est pas une réponse : elle ne doit plus exister.
+  assert.equal(html.includes('class="vide"'), false)
+  assert.equal(/<span class="txt">\s*<\/span>/.test(html), false)
 })
 
 test('le nom du client est pré-rempli et échappé', () => {

@@ -20,7 +20,7 @@
  * son interprétation restent du côté de la kinésiologue.
  */
 
-import { FANTASTIC_SECTIONS, FANTASTIC_KEYS, itemKey } from './fantastic.ts'
+import { FANTASTIC_SECTIONS, FANTASTIC_KEYS, itemKey, selectableChoices } from './fantastic.ts'
 import { CODE_PREFIX } from './fantastic-code.ts'
 
 /** Échappe le texte destiné au corps du document. */
@@ -88,23 +88,24 @@ export function renderFantasticForm(options: FantasticFormOptions = {}): string 
     const rows = section.items
       .map(item => {
         const key = itemKey(section, item)
-        const choices = item.choices
-          .map((choice, ci) => {
-            // Les deux énoncés à colonnes vides (drogues, conduite) ont des
-            // cases nues sur le papier. À l'écran une case sans libellé n'est
-            // pas cliquable de façon évidente : on affiche un point médian.
-            const label = choice.trim() === '' ? '<span class="vide" aria-hidden="true">·</span>' : esc(choice)
-            const aria = choice.trim() === '' ? ` aria-label="Réponse ${ci + 1} sur 5"` : ''
-            return `<label class="choix">
-              <input type="radio" name="${esc(key)}" value="${ci}"${aria}>
+        // Seules les colonnes portant un libellé sont des réponses. Deux
+        // énoncés (drogues, conduite après avoir bu) n'en ont que deux sur la
+        // feuille papier : les cases vides du milieu alignent les colonnes, ce
+        // ne sont pas des choix. Les rendre cliquables proposait au client trois
+        // réponses qui n'existent pas.
+        const choix = selectableChoices(item)
+        const choices = choix
+          .map(
+            ({ value, label }) => `<label class="choix">
+              <input type="radio" name="${esc(key)}" value="${value}">
               <span class="pastille"></span>
-              <span class="txt">${label}</span>
+              <span class="txt">${esc(label)}</span>
             </label>`
-          })
+          )
           .join('')
         return `<div class="enonce" data-key="${esc(key)}">
           <p class="question">${esc(item.label)}</p>
-          <div class="choix-rangee">${choices}</div>
+          <div class="choix-rangee" style="grid-template-columns:repeat(${choix.length},1fr)">${choices}</div>
         </div>`
       })
       .join('')
@@ -166,7 +167,6 @@ export function renderFantasticForm(options: FantasticFormOptions = {}): string 
   .choix input:focus-visible ~ .pastille{outline:2px solid var(--accent);outline-offset:2px}
   .txt{font-size:.76rem;line-height:1.3;color:var(--doux)}
   .choix:has(input:checked) .txt{color:var(--encre);font-weight:600}
-  .vide{font-size:1.1rem;color:#c3ccd3}
   .barre{
     position:fixed;left:0;right:0;bottom:0;background:var(--carte);
     border-top:1px solid var(--ligne);box-shadow:0 -2px 12px rgba(0,0,0,.06);padding:.75rem 1rem;z-index:10;
@@ -201,8 +201,6 @@ export function renderFantasticForm(options: FantasticFormOptions = {}): string 
     .choix-rangee{grid-template-columns:1fr;gap:.3rem}
     .choix{flex-direction:row;justify-content:flex-start;text-align:left;padding:.6rem .75rem}
     .txt{font-size:.88rem}
-    .vide{display:none}
-    .choix:has(.vide)::after{content:"Réponse " attr(data-rang);font-size:.88rem;color:var(--doux)}
   }
   @media print{
     body{background:#fff;padding-bottom:0}
@@ -302,12 +300,6 @@ ${ENCODER_JS}
       answers[input.name] = Number(input.value);
       rafraichir();
     });
-  });
-
-  // Marquer les cases sans libellé sur mobile (« Réponse 2 »).
-  document.querySelectorAll('.choix').forEach(function(c){
-    var v = c.querySelector('input');
-    if (c.querySelector('.vide') && v) c.setAttribute('data-rang', String(Number(v.value) + 1));
   });
 
   function nomClient(){ return (document.getElementById('nom').value || '').trim(); }

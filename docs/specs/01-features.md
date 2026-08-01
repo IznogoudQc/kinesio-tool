@@ -2,6 +2,28 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.90 — Correctif : trois réponses inexistantes proposées au client)
+
+Signalé par Nicholas sur deux énoncés — « Je consomme des drogues sans ordonnance » et « Je conduis après
+avoir bu » : l'app affichait cinq cases dont trois vides, marquées d'un point.
+
+Ce n'était pas qu'un défaut d'affichage. Sur la feuille de Marie-Eve, ces deux énoncés n'ont que **deux**
+réponses : *Parfois* et *Jamais*. Les cases du milieu ne servent qu'à aligner les colonnes avec les autres
+énoncés — ce ne sont pas des choix. En les rendant cliquables, on proposait au client trois réponses qui
+n'existent pas, et un client qui en aurait coché une aurait faussé son propre score.
+
+La règle est maintenant portée par le modèle (`selectableChoices`) plutôt que par chaque formulaire : **une
+colonne sans libellé n'est pas une réponse**. Les deux formulaires — celui de Marie et celui envoyé au
+client — s'y conforment automatiquement, et la grille s'ajuste au nombre réel de choix.
+
+La **cotation ne change pas** : les cinq emplacements restent dans les données, car c'est la position qui
+porte la valeur. *Jamais* vaut toujours 4, ces énoncés pèsent autant que les autres, et le total reste
+sur 100 — vérifié par un test dédié.
+
+487 tests (481 avant).
+
+Version : 0.9.89 → 0.9.90.
+
 ## ✅ Fait (v0.9.89 — Questionnaire d'habitudes de vie, remplissable par le client)
 
 Demande de Marie : « pouvoir envoyer un PDF interactif par courriel ». Le questionnaire fourni est le

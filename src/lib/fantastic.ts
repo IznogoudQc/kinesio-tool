@@ -211,6 +211,26 @@ export function itemKey(section: FantasticSection, item: FantasticItem): string 
   return `${section.key}.${item.key}`
 }
 
+/**
+ * Les réponses réellement offertes pour un énoncé.
+ *
+ * Deux énoncés — « Je consomme des drogues sans ordonnance » et « Je conduis
+ * après avoir bu » — n'ont que **deux** réponses sur la feuille de Marie-Eve :
+ * *Parfois* et *Jamais*. Les trois cases du milieu y sont vides ; elles servent
+ * uniquement à aligner les colonnes avec les autres énoncés, ce ne sont pas des
+ * choix. Les afficher comme cliquables proposait au client trois réponses qui
+ * n'existent pas.
+ *
+ * On garde malgré tout les cinq emplacements dans `choices` : la position porte
+ * la valeur (0 à gauche, 4 à droite), donc *Jamais* vaut bien 4 et l'énoncé
+ * compte pour autant que les autres dans le total sur 100.
+ */
+export function selectableChoices(item: FantasticItem): { value: number; label: string }[] {
+  return item.choices
+    .map((label, value) => ({ value, label }))
+    .filter(choix => choix.label.trim() !== '')
+}
+
 /** Toutes les clés, dans l'ordre de la feuille. */
 export const FANTASTIC_KEYS: string[] = FANTASTIC_SECTIONS.flatMap(s => s.items.map(i => itemKey(s, i)))
 

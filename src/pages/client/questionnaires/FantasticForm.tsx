@@ -6,6 +6,7 @@ import {
   fantasticLevel,
   fantasticScore,
   itemKey,
+  selectableChoices,
   type FantasticData
 } from '../../../lib/fantastic'
 
@@ -131,26 +132,31 @@ export function FantasticForm({ value, onChange, onCancel, onSave, saving, onImp
               {section.items.map(item => {
                 const key = itemKey(section, item)
                 const choisi = data.answers[key]
+                // Seules les colonnes portant un libellé sont des réponses —
+                // deux énoncés n'en ont que deux (Parfois / Jamais).
+                const choix = selectableChoices(item)
                 return (
                   <div key={key} className="border border-cream-dark rounded-md p-2.5">
                     <p className="text-marine/85 text-sm mb-1.5">{item.label}</p>
-                    <div className="grid grid-cols-5 gap-1">
-                      {item.choices.map((choice, ci) => {
-                        const actif = choisi === ci
+                    <div
+                      className="grid gap-1"
+                      style={{ gridTemplateColumns: `repeat(${choix.length}, minmax(0, 1fr))` }}
+                    >
+                      {choix.map(({ value, label }) => {
+                        const actif = choisi === value
                         return (
                           <button
-                            key={ci}
+                            key={value}
                             type="button"
-                            onClick={() => setAnswer(key, ci)}
+                            onClick={() => setAnswer(key, value)}
                             aria-pressed={actif}
-                            title={choice || `Réponse ${ci + 1}`}
                             className={`px-1.5 py-1.5 rounded text-[11px] leading-tight border transition-colors ${
                               actif
                                 ? 'bg-marine text-cream border-marine font-semibold'
                                 : 'bg-white text-marine/60 border-cream-dark hover:border-gold/60'
                             }`}
                           >
-                            {choice || '·'}
+                            {label}
                           </button>
                         )
                       })}
