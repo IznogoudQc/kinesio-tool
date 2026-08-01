@@ -819,8 +819,8 @@ export function DashboardTab() {
             <div className="h-full bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
               <p className="text-marine/50 text-xs uppercase tracking-wide font-medium mb-3">Pression artérielle</p>
               <div className="space-y-4">
-                {paSys !== null && <BloodPressureBar value={paSys} kind="systolic" />}
-                {paDia !== null && <BloodPressureBar value={paDia} kind="diastolic" />}
+                {paSys !== null && <BloodPressureBar value={paSys} kind="systolic" recoveryValue={paRecupSys} />}
+                {paDia !== null && <BloodPressureBar value={paDia} kind="diastolic" recoveryValue={paRecupDia} />}
               </div>
               <RestVsRecovery
                 paSys={paSys}

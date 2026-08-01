@@ -1721,8 +1721,8 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
               de l’hypertension — c’est pourquoi on la revérifie régulièrement.
             </p>
             <div className="mt-6 space-y-6">
-              {paSys !== null && <BloodPressureBar value={paSys} kind="systolic" />}
-              {paDia !== null && <BloodPressureBar value={paDia} kind="diastolic" />}
+              {paSys !== null && <BloodPressureBar value={paSys} kind="systolic" recoveryValue={paRecupSys} />}
+              {paDia !== null && <BloodPressureBar value={paDia} kind="diastolic" recoveryValue={paRecupDia} />}
             </div>
             <p className="ed-prose mt-5 text-sm text-marine/55">
               {paNormale

@@ -1633,7 +1633,16 @@ function CompositionExtras({ latest, computed, sex }: { latest: Bilan; computed:
 
 // Cardio — extras (tension nommée + zones cardiaques + récupération).
 /** Barre segmentée des zones de PA (Optimale → Hypertension 2) — version PDF. */
-function PdfBloodPressureBar({ value, kind }: { value: number | null; kind: BpKind }) {
+function PdfBloodPressureBar({
+  value,
+  kind,
+  recoveryValue = null
+}: {
+  value: number | null
+  kind: BpKind
+  /** Relevé après l'effort — second repère sur le même axe, NON coté. */
+  recoveryValue?: number | null
+}) {
   const bar = bloodPressureBar(value, kind)
   if (!bar || bar.markerRatio === null || value === null) return null
   const { zones, scaleMin, scaleMax, current, markerRatio } = bar
@@ -1642,6 +1651,13 @@ function PdfBloodPressureBar({ value, kind }: { value: number | null; kind: BpKi
   const markerPct = markerRatio * 100
   const labelLeft = Math.max(6, Math.min(94, markerPct))
   const bounds = zones.slice(1).map(z => z.min)
+  // Second repère sur le MÊME axe. Les zones de cette échelle sont des normes
+  // de PA au repos : une valeur post-effort posée sur sa propre barre serait
+  // classée « Pré-hypertension » alors qu'elle est normale.
+  const recPct =
+    typeof recoveryValue === 'number' && Number.isFinite(recoveryValue)
+      ? Math.max(0, Math.min(100, ((recoveryValue - scaleMin) / span) * 100))
+      : null
   return (
     <div className="break-inside-avoid" style={{ marginBottom: '5mm' }}>
       <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.06em', color: INK_SOFT, marginBottom: '1.5mm' }}>
@@ -1662,8 +1678,18 @@ function PdfBloodPressureBar({ value, kind }: { value: number | null; kind: BpKi
         <div style={{ display: 'flex', height: '3mm', borderRadius: '1.5mm', overflow: 'hidden' }}>
           {zones.map(z => <div key={z.label} style={{ width: `${widthOf(z)}%`, background: CAT_BG[z.category] }} />)}
         </div>
+        {recPct !== null && (
+          <div style={{ position: 'absolute', top: '50%', left: `${recPct}%`, width: '2.2mm', height: '2.2mm', transform: 'translate(-50%, -50%)', borderRadius: '50%', background: 'rgba(22,35,46,0.45)', border: '0.4mm solid #fff' }} />
+        )}
         <div style={{ position: 'absolute', top: 0, height: '3mm', left: `${markerPct}%`, width: '0.7mm', transform: 'translateX(-50%)', background: MARINE, boxShadow: '0 0 0 0.4mm #fff' }} />
       </div>
+      {recPct !== null && (
+        <div style={{ position: 'relative', height: '3.5mm', marginTop: '0.8mm' }}>
+          <span style={{ position: 'absolute', left: `${Math.max(10, Math.min(90, recPct))}%`, transform: 'translateX(-50%)', fontSize: '7pt', color: INK_SOFT }}>
+            {fmt(recoveryValue, 0)} après l’effort
+          </span>
+        </div>
+      )}
       <div style={{ position: 'relative', height: '4mm', marginTop: '1mm' }}>
         {bounds.map(b => (
           <span key={b} style={{ position: 'absolute', left: `${((b - scaleMin) / span) * 100}%`, transform: 'translateX(-50%)', fontSize: '7pt', color: AXIS }}>{b}</span>

@@ -85,9 +85,14 @@ export function RestVsRecovery({
           )}
         </tbody>
       </table>
+      {/* Précision indispensable : le repère « après l'effort » se pose sur des
+          zones qui classent la PA AU REPOS. Sans cette phrase, un client dont la
+          systolique monte normalement à 136 verrait son point dans l'orange et
+          se croirait hypertendu. */}
       <p className="text-marine/45 text-xs mt-3 leading-snug">
-        Le retour vers les valeurs de repos après l’effort est un bon indicateur de santé cardiovasculaire :
-        plus il est rapide, mieux le cœur récupère.
+        Les zones colorées classent la pression <strong className="font-medium">au repos</strong>. Après un
+        effort, il est normal qu’elle soit plus élevée : ce qui compte alors, c’est le retour vers les
+        valeurs de repos — plus il est rapide, mieux le cœur récupère.
       </p>
     </div>
   )

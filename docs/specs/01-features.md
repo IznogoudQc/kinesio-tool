@@ -2,6 +2,29 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.102 — PA après l'effort : un second repère, pas une seconde barre)
+
+Nicholas voulait « le même graphique » pour la PA de récupération. Signalé avant de coder : **les zones de
+ces barres sont des normes de PA au repos**. Une systolique de 136 juste après un effort est normale, mais
+posée sur sa propre barre elle tomberait dans « Pré-hypertension » — le client lirait un problème inexistant.
+
+Retenu (choix de Nicholas) : **un second repère sur la même barre**. Le trait plein reste la valeur de repos,
+la seule que la catégorie affichée qualifie ; un point creux et discret marque l'après-effort, avec son
+étiquette sur sa propre ligne.
+
+Une phrase explicite l'accompagne : « Les zones colorées classent la pression **au repos**. Après un effort,
+il est normal qu'elle soit plus élevée. » Sans elle, un point posé dans l'orange reste ambigu, même bien
+dessiné.
+
+Les trois surfaces suivent — dashboard, document client et PDF, qui a sa propre implémentation.
+
+Deux défauts trouvés au rendu, pas à la lecture du code : l'étiquette « après l'effort » débordait sur la
+barre (ligne de 16 px pour un texte plus haut), et un premier script de patch avait modifié `PdfBodyFatZones`
+au lieu de `PdfBloodPressureBar` — deux fonctions du même fichier portent des styles de marqueur
+identiques. Repris en ancrant le patch dans la bonne fonction.
+
+Version : 0.9.101 → 0.9.102.
+
 ## ✅ Fait (v0.9.101 — Le récapitulatif repos/effort manquait au dashboard)
 
 Nicholas a re-semé le Dummy et n'a toujours rien vu. Les données étaient pourtant bien en base (FC de
