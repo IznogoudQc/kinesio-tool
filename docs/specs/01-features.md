@@ -2,6 +2,28 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.101 — Le récapitulatif repos/effort manquait au dashboard)
+
+Nicholas a re-semé le Dummy et n'a toujours rien vu. Les données étaient pourtant bien en base (FC de
+récupération 90, PA 136/75 sur le dernier bilan) et le gabarit contenait bien le bloc.
+
+**J'avais modifié le mauvais écran.** Le bloc avait été ajouté au document client
+(`EditorialReport`) ; Nicholas regardait le **dashboard**. Les deux ont une section « Aptitude aérobie »,
+mais des titres différents — « La mesure qui prédit le mieux votre santé » d'un côté, « Votre cœur et votre
+souffle » de l'autre. J'ai supposé au lieu de vérifier, alors que la capture le disait.
+
+Le récapitulatif devient un **composant partagé** (`RestVsRecovery`), utilisé par les deux surfaces. Le bloc
+recopié dans le document client est remplacé par ce composant. L'erreur ne peut plus se reproduire : il n'y a
+plus deux endroits à tenir à jour.
+
+Il n'apparaît que si au moins une valeur de récupération existe — sinon la colonne « au repos » ferait
+doublon avec les barres juste au-dessus. Vérifié sur les deux cas.
+
+**Leçon** : une capture d'écran indique l'écran. Le titre visible sur celle de Nicholas ne correspondait à
+aucun de ceux du fichier que je modifiais — un `grep` de trois secondes l'aurait montré avant de coder.
+
+Version : 0.9.100 → 0.9.101.
+
 ## ✅ Fait (v0.9.100 — Récupération dans les jeux Dummy)
 
 Nicholas ne voyait pas le nouveau bloc « repos / après l'effort » : vérification faite en base, **aucun de

@@ -13,6 +13,7 @@ import { formatBilanDate } from '../bilanFields'
 import { computeAge, DEFAULT_NORMS, getNormPercentiles, type NormsType } from '../../../lib/norms'
 import { buildBilanProfile, computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
 import { BloodPressureBar } from '../../../components/BloodPressureBar'
+import { RestVsRecovery } from '../../../components/RestVsRecovery'
 import { dualWeight } from '../../../lib/objectif-format'
 import { buildObjectif } from '../../../lib/objectif'
 import { gatherBilanMetrics } from '../../../lib/ai-metrics'
@@ -321,6 +322,11 @@ export function DashboardTab() {
   // Pression artérielle du bilan actif (barres façon ancien rapport).
   const paSys = typeof activeData.pa_systolique === 'number' && !Number.isNaN(activeData.pa_systolique) ? activeData.pa_systolique : null
   const paDia = typeof activeData.pa_diastolique === 'number' && !Number.isNaN(activeData.pa_diastolique) ? activeData.pa_diastolique : null
+  const nOrNull = (v: unknown): number | null => (typeof v === 'number' && !Number.isNaN(v) ? v : null)
+  const fcRepos = nOrNull(activeData.fc_repos)
+  const paRecupSys = nOrNull(activeData.pa_recup_sys)
+  const paRecupDia = nOrNull(activeData.pa_recup_dia)
+  const fcRecup = nOrNull(activeData.fc_recup)
   const objectif = buildObjectif(client, activeData, computed, age, (activeBilan ?? latest)!.date)
   const aiMetrics = gatherBilanMetrics(activeData, age, client.sex, norms)
   const healthFlags = detectHealthFlags(activeData, client.sex)
@@ -816,6 +822,15 @@ export function DashboardTab() {
                 {paSys !== null && <BloodPressureBar value={paSys} kind="systolic" />}
                 {paDia !== null && <BloodPressureBar value={paDia} kind="diastolic" />}
               </div>
+              <RestVsRecovery
+                paSys={paSys}
+                paDia={paDia}
+                fcRepos={fcRepos}
+                paRecupSys={paRecupSys}
+                paRecupDia={paRecupDia}
+                fcRecup={fcRecup}
+                className="mt-5 pt-4 border-t border-cream-dark/40"
+              />
             </div>
           )}
         </div>
