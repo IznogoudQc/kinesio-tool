@@ -34,12 +34,21 @@ const CPAFLA_GUIDE: NormSource = {
   short: 'CPAFLA',
   full: 'CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd.'
 }
-/** Capacité aérobie — l'aide-mémoire est un document distinct du guide. Le
- *  citer comme « Guide du conseiller » serait une source qui ment, du même
- *  genre que le « ACSM » écrit en dur qu'on vient de retirer. */
+/**
+ * Capacité aérobie — **tableau 4.10** du guide, « VO2max estimé : évaluation des
+ * avantages pour la santé ».
+ *
+ * On garde une entrée distincte de `CPAFLA_GUIDE` pour citer le bon numéro de
+ * tableau : les tables musculo viennent des figures 7-18 / 7-19, celle-ci du
+ * chapitre 4. Marie doit pouvoir retrouver la page dans son guide.
+ *
+ * Cette source a d'abord été attribuée à l'aide-mémoire SPAP-SCPE (outil n° 26),
+ * qui reproduit ce même tableau — les valeurs encodées étaient donc justes, mais
+ * la feuille des barèmes citait un document que Marie n'a pas sous la main.
+ */
 const CPAFLA_AEROBIE: NormSource = {
   short: 'CPAFLA',
-  full: 'CPAFLA — Aide-mémoire SPAP-SCPE, outil n° 26'
+  full: 'CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd., tableau 4.10'
 }
 const ACSM_SOURCE: NormSource = {
   short: 'ACSM',

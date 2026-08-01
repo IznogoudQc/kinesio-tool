@@ -2,6 +2,42 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.92 — Table VO2max : la bonne source, et la preuve qu'elle est exacte)
+
+Nicholas envoie le **tableau 4.10** du *Guide du conseiller*, 3ᵉ éd. — « VO2max estimé : évaluation des
+avantages pour la santé » — en demandant de mettre l'app à jour partout.
+
+Vérification avant de toucher à quoi que ce soit : **les 48 seuils encodés étaient déjà exacts**, au dixième
+près, sur les 12 bandes. Ce n'est pas un hasard — l'aide-mémoire SPAP-SCPE (outil n° 26) qui avait servi de
+source en v0.9.67 reproduit ce tableau du guide.
+
+Ce qui était faux, c'est **l'attribution**. La feuille des barèmes, le dashboard, le PDF et les Paramètres
+annonçaient « aide-mémoire SPAP-SCPE, outil n° 26 » — un document que Marie n'a pas sous la main — au lieu du
+guide qui est sur son bureau, au tableau 4.10. Sur un document qu'elle imprime et sur lequel elle s'appuie,
+une référence introuvable est un vrai défaut.
+
+Correction en un seul endroit (`bareme.ts`), et les quatre surfaces suivent : la source est **déduite** de la
+table réellement utilisée depuis v0.9.64, elle ne peut pas diverger d'un écran à l'autre.
+
+Deux imprécisions corrigées au passage :
+
+- La note « valeurs pour adultes de 20 à 65 ans » venait du libellé de l'aide-mémoire. Le tableau couvre
+  **15 à 69 ans**. Hors de cette plage, aucune table n'est retournée et la cotation retombe sur l'ACSM plutôt
+  que d'extrapoler — comportement désormais couvert par un test.
+- La distinction des deux tables du guide est conservée : **figures 7-18 / 7-19** pour le musculo,
+  **tableau 4.10** pour l'aérobie. Marie doit retrouver la bonne page.
+
+Un test transcrit maintenant **le tableau en entier** et le compare bande par bande. Une seule valeur qui
+dériverait ne planterait rien : elle ferait basculer un client d'une catégorie à l'autre, de façon
+parfaitement plausible. D'où l'exhaustivité plutôt qu'un échantillon.
+
+⚠️ L'**ADR 0031** porte encore l'ancienne attribution dans son titre et son texte. Les ADR étant immuables,
+elle n'a pas été modifiée — à trancher avec Nicholas (addendum ou ADR de correction).
+
+524 tests (520 avant).
+
+Version : 0.9.91 → 0.9.92.
+
 ## ✅ Fait (v0.9.91 — Second questionnaire : l'ÉAS, dans le même envoi)
 
 L'**ÉAS** — « Évaluation de la participation à des activités physiques favorables à la santé », Figure 4-6 du

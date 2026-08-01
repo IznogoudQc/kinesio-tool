@@ -3,7 +3,7 @@
  *
  *  STATUT : **tables musculosquelettiques encodées** depuis les Figures 7-18
  *  (hommes) et 7-19 (femmes) du guide fourni par Marie-Eve, et **capacité
- *  aérobie encodée** depuis l'aide-mémoire SPAP-SCPE (outil n° 26). Encore
+ *  aérobie encodée** depuis le tableau 4.10 du même guide. Encore
  *  `null` (→ repli sur ACSM dans `getCategorization`) : IMC et tour de taille
  *  (seuils Santé Canada, indépendants de la norme fitness). Le % de gras
  *  n'utilise plus la norme du tout — il suit la grille de Marie (ADR 0024).
@@ -112,14 +112,18 @@ const BACK_ENDURANCE: Ranges = [
   band(50, 59, 'F', 15, 47, 75, 110), band(60, 69, 'F', 6, 19, 40, 91)
 ]
 
-// Capacité aérobie (VO2max, ml·kg⁻¹·min⁻¹) — Aide-mémoire « Évaluation des
-// avantages pour la santé », outil n° 26 SPAP-SCPE, fourni par Marie-Eve. C'est
-// la table qu'elle utilise ; elle remplace le repli sur l'ACSM, qui donnait des
-// catégories différentes pour la même valeur.
+// Capacité aérobie (VO2max, ml·kg⁻¹·min⁻¹) — **Tableau 4.10** du Guide du
+// conseiller, 3e éd. : « VO2max estimé — évaluation des avantages pour la
+// santé ». C'est la table que Marie utilise ; elle remplace le repli sur l'ACSM,
+// qui donnait des catégories différentes pour la même valeur.
 //
-// Les valeurs concernent les adultes de 20 à 65 ans et sont basées sur la
-// population nord-américaine (85 % de Blancs) — mention portée par la feuille
-// elle-même, conservée ici car elle limite la portée de l'interprétation.
+// Ces valeurs avaient d'abord été saisies depuis l'aide-mémoire SPAP-SCPE
+// (outil n° 26), qui reproduit ce même tableau : les 48 seuils étaient donc
+// déjà exacts, seule l'attribution était fautive. Vérifié bande par bande
+// contre le tableau du guide.
+//
+// Le tableau couvre 15 à 69 ans. En dehors, `getCpaflaRange` ne retourne rien
+// et la cotation retombe sur l'ACSM plutôt que d'extrapoler.
 //
 // La feuille nomme la catégorie basse « Médiocre » ; l'app l'affiche
 // « À améliorer » partout (CATEGORY_LABELS), formulation retenue avec Marie

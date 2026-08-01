@@ -21,14 +21,24 @@ test('les six tests musculo sont cotés en CPAFLA (le PDF annonçait ACSM)', () 
   assert.equal(commonNormSource(musculo)?.short, 'CPAFLA')
 })
 
-test('le VO2max est CPAFLA depuis l’encodage de l’outil n° 26 (SPAP-SCPE)', () => {
+test('le VO2max cite le tableau 4.10 du Guide du conseiller', () => {
   // Il retombait sur l'ACSM tant que la table de Marie n'était pas encodée ;
   // le libellé des rapports suit automatiquement, puisqu'il est déduit.
   assert.equal(normSourceForTest('vo2max').short, 'CPAFLA')
-  // …et cite l'aide-mémoire, pas le Guide du conseiller : ce sont deux
-  // publications distinctes, et la table aérobie vient de l'aide-mémoire.
-  assert.match(normSourceForTest('vo2max').full, /outil n° 26/)
+  // La source a été corrigée en v0.9.92 : elle annonçait l'aide-mémoire
+  // SPAP-SCPE (outil n° 26), qui reproduit ce tableau. Les valeurs étaient
+  // justes, mais la feuille des barèmes renvoyait Marie vers un document
+  // qu'elle n'a pas, au lieu du guide qui est sur son bureau.
+  assert.match(normSourceForTest('vo2max').full, /Guide du conseiller/)
+  assert.match(normSourceForTest('vo2max').full, /4\.10/)
+  assert.equal(normSourceForTest('vo2max').full.includes('outil n° 26'), false)
+})
+
+test('les tables musculo citent le guide, sans numéro de tableau aérobie', () => {
+  // Les deux sources restent distinctes : figures 7-18 / 7-19 pour le musculo,
+  // tableau 4.10 pour l'aérobie. Marie doit retrouver la bonne page.
   assert.match(normSourceForTest('pushups').full, /Guide du conseiller/)
+  assert.equal(normSourceForTest('pushups').full.includes('4.10'), false)
 })
 
 test('un groupe mixte ne reçoit pas de source unique', () => {

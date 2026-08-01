@@ -220,7 +220,7 @@ test('CPAFLA — tables musculosquelettiques encodées (guide CPHV 3e éd., Fig.
 test('CPAFLA — % gras / IMC non encodés → getCpaflaRange null (repli géré ailleurs)', () => {
   // Le repli sur ACSM (IMC, tour de taille) vit dans index.getCategorization
   // et bilan-computed.categorizeRaw — testé end-to-end dans bilan-computed.test.ts.
-  // Le VO2max, lui, a désormais sa table CPAFLA (outil n° 26 SPAP-SCPE).
+  // Le VO2max, lui, a sa table CPAFLA (tableau 4.10 du guide).
   assert.equal(getCpaflaRange('bodyFat', 35, 'F'), null)
   assert.equal(getCpaflaRange('bmi', 35, 'M'), null)
 })
@@ -228,7 +228,7 @@ test('CPAFLA — % gras / IMC non encodés → getCpaflaRange null (repli géré
 test('CPAFLA — VO2max encodé : la table de Marie, plus le repli ACSM', () => {
   const r = getCpaflaRange('vo2max', 45, 'M')
   assert.ok(r, 'table VO2max CPAFLA attendue pour H 40-49')
-  // Bornes basses lues sur l'outil n° 26 : Acceptable 31,9 / Bien 35,5 /
+  // Bornes basses lues sur le tableau 4.10 : Acceptable 31,9 / Bien 35,5 /
   // Très bien 42,7 / Excellent 47,0.
   assert.deepEqual(
     [r.percentiles.p10, r.percentiles.p25, r.percentiles.p50, r.percentiles.p75],
@@ -431,4 +431,54 @@ test('Push-ups H 30-39 : barème ACSM', () => {
   assert.equal(getCategorization('pushups', 25, 35, 'M'), 'TRES_BIEN')   // ≥24 et <30
   assert.equal(getCategorization('pushups', 31, 35, 'M'), 'EXCELLENT')   // ≥30
   assert.equal(getCategorization('pushups', 5, 35, 'M'), 'A_AMELIORER')  // <12
+})
+
+test('CPAFLA — les 48 seuils du tableau 4.10, bande par bande', () => {
+  // Transcription complète du tableau que Marie utilise, relue contre la photo
+  // du guide. Une seule valeur qui dériverait ne planterait rien : elle ferait
+  // simplement basculer un client d'une catégorie à l'autre, de façon
+  // parfaitement plausible. D'où la vérification exhaustive plutôt qu'un
+  // échantillon.
+  //
+  // Ordre : [Acceptable, Bien, Très bien, Excellent] — les bornes BASSES.
+  const tableau: Record<string, [number, number, number, number]> = {
+    'M/15': [43.6, 48.8, 52.4, 57.4],
+    'M/20': [41.6, 47.2, 50.6, 55.6],
+    'M/30': [33.7, 40.1, 45.4, 48.8],
+    'M/40': [31.9, 35.5, 42.7, 47.0],
+    'M/50': [26.0, 30.1, 36.5, 41.8],
+    'M/60': [23.5, 28.7, 32.8, 38.4],
+    'F/15': [36.8, 39.5, 43.7, 49.0],
+    'F/20': [35.0, 37.8, 42.0, 47.2],
+    'F/30': [33.0, 36.0, 40.1, 45.4],
+    'F/40': [27.1, 31.9, 35.1, 40.0],
+    'F/50': [24.6, 31.0, 34.0, 36.6],
+    'F/60': [23.5, 29.6, 32.8, 35.8]
+  }
+  for (const [cle, attendu] of Object.entries(tableau)) {
+    const [sexe, debut] = cle.split('/')
+    // On interroge au milieu de la tranche, pas sur sa borne.
+    const r = getCpaflaRange('vo2max', Number(debut) + 2, sexe as 'F' | 'M')
+    assert.ok(r, `table attendue pour ${cle}`)
+    assert.deepEqual(
+      [r.percentiles.p10, r.percentiles.p25, r.percentiles.p50, r.percentiles.p75],
+      attendu,
+      `seuils divergents pour ${cle}`
+    )
+  }
+})
+
+test('CPAFLA — les bornes de tranche d’âge sont inclusives des deux côtés', () => {
+  // 15-19, 20-29, … : un client de 19 ans et un de 20 ans ne doivent pas
+  // tomber dans le même groupe, ni dans aucun.
+  assert.deepEqual(getCpaflaRange('vo2max', 19, 'M')?.percentiles.p75, 57.4)
+  assert.deepEqual(getCpaflaRange('vo2max', 20, 'M')?.percentiles.p75, 55.6)
+  assert.deepEqual(getCpaflaRange('vo2max', 69, 'F')?.percentiles.p75, 35.8)
+})
+
+test('CPAFLA — hors 15-69 ans, aucune table plutôt qu’une extrapolation', () => {
+  // Le repli sur l'ACSM est alors géré par getCategorization : mieux vaut une
+  // autre norme explicite qu'un chiffre inventé aux extrémités.
+  assert.equal(getCpaflaRange('vo2max', 14, 'M'), null)
+  assert.equal(getCpaflaRange('vo2max', 70, 'F'), null)
 })
