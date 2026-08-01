@@ -57,6 +57,9 @@ const UpdateClientSchema = z.object({
   reportHiddenSections: z.union([z.string().max(1000), z.null()]).optional(),
   nutritionActivityLevel: NutritionActivity,
   nutritionRateKgPerWeek: RateKgPerWeek,
+  // Bornes larges : Marie annonce 1 à 1,6 g/kg, on laisse de la marge sans
+  // accepter n'importe quoi.
+  nutritionProteinPerKg: z.union([z.number().min(0.3).max(4), z.null()]).optional(),
   nutritionProteinPerLbLean: ProteinPerLbLean,
   nutritionFatMaxG: FatMaxG,
   nutritionTargetKcal: TargetKcal,

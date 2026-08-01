@@ -50,6 +50,7 @@ export interface ObjectifClient {
   nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
   nutritionRateKgPerWeek: number | null
   nutritionProteinPerLbLean: number | null
+  nutritionProteinPerKg: number | null
   nutritionFatMaxG: number | null
   nutritionTargetKcal: number | null
   /** Macros en saisie manuelle (Marie tape les grammes P/L/G ; calories déduites). */
@@ -89,7 +90,7 @@ export function buildObjectif(
           activity: client.nutritionActivityLevel,
           leanKg: goal.leanKg,
           dailyDeficitKcal: dailyDeficitForRate(rate),
-          proteinPerLbLean: client.nutritionProteinPerLbLean,
+          proteinPerKg: client.nutritionProteinPerKg,
           fatMaxG: client.nutritionFatMaxG,
           targetKcalOverride: client.nutritionTargetKcal
         })

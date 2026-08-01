@@ -18,7 +18,6 @@ export type ActivityLevel = 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_
 
 /** Facteur kg → lb (identique à src/lib/units.ts, inliné pour garder ce module
  *  autonome — pas d'import de valeur, exécutable tel quel par `node --test`). */
-const KG_TO_LB = 2.2046226218
 
 /** Multiplicateurs de dépense énergétique (BMR → TDEE) — valeurs Harris/Mifflin usuelles. */
 export const ACTIVITY_FACTORS: Record<ActivityLevel, number> = {
@@ -90,6 +89,15 @@ export function weeksToGoal(
  *  - lipides : plafond de 60 g ;
  *  - glucides : le reste des calories cibles. */
 export const DEFAULT_PROTEIN_PER_LB_LEAN = 1.0
+/**
+ * Base actuelle : g de protéines par kg de **poids corporel**.
+ *
+ * Méthode de Marie-Eve : 1 à 1,4 g/kg, jusqu'à 1,6 chez les plus actifs. On
+ * prend 1,4 par défaut — le haut de la fourchette courante, pas l'extrême.
+ */
+export const DEFAULT_PROTEIN_PER_KG = 1.4
+/** Fourchette annoncée à Marie dans l'interface. */
+export const PROTEIN_PER_KG_RANGE = { min: 1.0, usual: 1.4, max: 1.6 }
 export const DEFAULT_FAT_MAX_G = 60
 
 /** Fibres alimentaires visées : 14 g par 1000 kcal — référence Santé Canada / DRI
@@ -193,10 +201,12 @@ export function macrosPerMeal(macros: MacroEstimate, meals: number): MacroEstima
 
 /**
  * Estimation calorique + macros pour une perte de gras. Formule (paramétrable) :
- *  - protéines = `proteinPerLbLean` g × masse maigre (en livres) ;
+ *  - protéines = `proteinPerKg` g × **poids corporel** (kg) ;
  *  - lipides = plafond `fatMaxG` g ;
  *  - glucides = le reste des calories cibles.
- * Nécessite `leanKg` (masse maigre) pour les protéines.
+ * `leanKg` reste requis : c'est lui qui atteste qu'un % de gras est connu, et
+ * la masse maigre sert encore ailleurs. Mais il n'entre plus dans les
+ * protéines — voir ADR : base changée en v0.9.106 à la demande de Marie.
  * ⚠️ Indicatif — accompagner d'un avertissement (champ de pratique).
  */
 export function estimateMacros(params: {
@@ -209,15 +219,15 @@ export function estimateMacros(params: {
   leanKg: number | null | undefined
   /** Déficit calorique quotidien visé (kcal). Si absent, on applique −20 % du TDEE. */
   dailyDeficitKcal?: number | null
-  /** g de protéines par livre de masse maigre (défaut 1). */
-  proteinPerLbLean?: number | null
+  /** g de protéines par kg de poids corporel (défaut 1,4). */
+  proteinPerKg?: number | null
   /** Plafond de lipides en g (défaut 60). */
   fatMaxG?: number | null
   /** Calories cibles fixées manuellement (kcal). Si absent, calcul automatique
    *  (TDEE − déficit). Permet à Marie de fixer les calories elle-même. */
   targetKcalOverride?: number | null
 }): MacroEstimate | null {
-  const { weightKg, heightCm, age, sex, activity, leanKg, dailyDeficitKcal, proteinPerLbLean, fatMaxG, targetKcalOverride } = params
+  const { weightKg, heightCm, age, sex, activity, leanKg, dailyDeficitKcal, proteinPerKg, fatMaxG, targetKcalOverride } = params
   const bmr = mifflinBmr({ weightKg, heightCm, age, sex })
   if (bmr === null || !activity || !(activity in ACTIVITY_FACTORS)) return null
   if (!Number.isFinite(leanKg ?? NaN) || (leanKg as number) <= 0) return null
@@ -234,14 +244,15 @@ export function estimateMacros(params: {
       ? Math.round(targetKcalOverride as number)
       : Math.max(bmr, deficitTarget)
 
-  const proteinPerLb =
-    Number.isFinite(proteinPerLbLean ?? NaN) && (proteinPerLbLean as number) > 0
-      ? (proteinPerLbLean as number)
-      : DEFAULT_PROTEIN_PER_LB_LEAN
+  const parKg =
+    Number.isFinite(proteinPerKg ?? NaN) && (proteinPerKg as number) > 0
+      ? (proteinPerKg as number)
+      : DEFAULT_PROTEIN_PER_KG
   const fatCap =
     Number.isFinite(fatMaxG ?? NaN) && (fatMaxG as number) > 0 ? (fatMaxG as number) : DEFAULT_FAT_MAX_G
 
-  const proteinG = Math.round((leanKg as number) * KG_TO_LB * proteinPerLb)
+  // Poids CORPOREL, pas masse maigre : c'est tout le changement de base.
+  const proteinG = Math.round((weightKg as number) * parKg)
   const fatG = Math.round(fatCap)
   const carbsG = Math.max(0, Math.round((targetKcal - proteinG * 4 - fatG * 9) / 4))
 

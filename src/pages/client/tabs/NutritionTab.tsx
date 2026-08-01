@@ -12,7 +12,8 @@ import {
   ACTIVITY_ORDER,
   RATE_PRESETS,
   DEFAULT_RATE_KG_PER_WEEK,
-  DEFAULT_PROTEIN_PER_LB_LEAN,
+  DEFAULT_PROTEIN_PER_KG,
+  PROTEIN_PER_KG_RANGE,
   DEFAULT_FAT_MAX_G,
   DEFAULT_MEALS_PER_DAY,
   bodyFatGoal,
@@ -51,6 +52,14 @@ function parseInitialPrograms(raw: string | null | undefined): FastingProgram[] 
     return []
   }
 }
+
+/**
+ * Nombre de journées du menu — une semaine complète (demande de Marie).
+ *
+ * Passé de 2 à 7 : `MenuPlan.jours` acceptait déjà N entrées et le rendu des
+ * documents filtre les journées vides, donc seule la saisie était bornée.
+ */
+const MENU_NB_JOURS = 7
 
 const fieldClass =
   'w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors'
@@ -227,8 +236,8 @@ export function NutritionTab() {
   )
   const [activityLevel, setActivityLevel] = useState<ActivityLevel | ''>(client.nutritionActivityLevel ?? '')
   const [rateKgPerWeek, setRateKgPerWeek] = useState<number>(client.nutritionRateKgPerWeek ?? DEFAULT_RATE_KG_PER_WEEK)
-  const [proteinPerLb, setProteinPerLb] = useState<string>(
-    String(client.nutritionProteinPerLbLean ?? DEFAULT_PROTEIN_PER_LB_LEAN)
+  const [proteinPerKgInput, setProteinPerKgInput] = useState<string>(
+    String(client.nutritionProteinPerKg ?? DEFAULT_PROTEIN_PER_KG)
   )
   const [fatMaxG, setFatMaxG] = useState<string>(String(client.nutritionFatMaxG ?? DEFAULT_FAT_MAX_G))
   // Mode des macros : `false` = calculées par la formule (auto) ; `true` = Marie tape
@@ -262,12 +271,15 @@ export function NutritionTab() {
   const [alimentsAimes, setAlimentsAimes] = useState(client.alimentsAimes ?? '')
   const [alimentsPasAimes, setAlimentsPasAimes] = useState(client.alimentsPasAimes ?? '')
   const [nutritionMot, setNutritionMot] = useState(client.nutritionMot ?? '')
-  // Menu : jusqu'à 2 journées, chacune un champ texte (repas + total).
+  // Menu : une semaine complète, chaque journée un champ texte (repas + total).
+  // Passé de 2 à 7 journées à la demande de Marie. `MenuPlan.jours` acceptait
+  // déjà N entrées et le rendu des documents filtre les vides : seule la
+  // saisie était bornée.
   const [menuJours, setMenuJours] = useState<string[]>(() => {
     const m = parseMenuPlan(client.nutritionMenu)
-    if (m) return [m.jours[0] ?? '', m.jours[1] ?? '']
+    if (m) return Array.from({ length: MENU_NB_JOURS }, (_, i) => m.jours[i] ?? '')
     // Rétro-compat : ancien texte libre → placé dans la journée 1 (régénérable).
-    return [client.nutritionMenu ?? '', '']
+    return Array.from({ length: MENU_NB_JOURS }, (_, i) => (i === 0 ? client.nutritionMenu ?? '' : ''))
   })
   const setMenuJour = (i: number, v: string) => setMenuJours(js => js.map((j, k) => (k === i ? v : j)))
 
@@ -348,11 +360,11 @@ export function NutritionTab() {
       activity: activityLevel,
       leanKg: goal.leanKg,
       dailyDeficitKcal: dailyDeficitForRate(rateKgPerWeek),
-      proteinPerLbLean: proteinPerLb.trim() !== '' ? Number(proteinPerLb) : null,
+      proteinPerKg: proteinPerKgInput.trim() !== '' ? Number(proteinPerKgInput) : null,
       fatMaxG: fatMaxG.trim() !== '' ? Number(fatMaxG) : null,
       targetKcalOverride: null
     })
-  }, [nutritionEnabled, macroManual, manualProteinG, manualFatG, manualCarbG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerLb, fatMaxG])
+  }, [nutritionEnabled, macroManual, manualProteinG, manualFatG, manualCarbG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerKgInput, fatMaxG])
 
   // Hydratation recommandée ≈ 35 ml/kg (milieu de la fourchette 30–40), arrondie à 100 ml.
   const hydraWeightKg = latestData && typeof latestData.poids_kg === 'number' ? latestData.poids_kg : null
@@ -375,7 +387,7 @@ export function NutritionTab() {
     }
     const targetWeightKg =
       nutritionEnabled && targetWeightInput !== null ? weightInputToKg(targetWeightInput, wUnit) : null
-    const proteinVal = proteinPerLb.trim() !== '' ? Number(proteinPerLb) : null
+    const proteinVal = proteinPerKgInput.trim() !== '' ? Number(proteinPerKgInput) : null
     const fatVal = fatMaxG.trim() !== '' ? Number(fatMaxG) : null
     if (nutritionEnabled && proteinVal !== null && (!Number.isFinite(proteinVal) || proteinVal < 0.3 || proteinVal > 2.5)) {
       setError('Les protéines (g/lb de masse maigre) doivent être comprises entre 0,3 et 2,5.')
@@ -421,7 +433,7 @@ export function NutritionTab() {
         nutritionTargetWeightKg: targetWeightKg,
         nutritionActivityLevel: nutritionEnabled && activityLevel !== '' ? activityLevel : null,
         nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null,
-        nutritionProteinPerLbLean: nutritionEnabled ? proteinVal : null,
+        nutritionProteinPerKg: nutritionEnabled ? proteinVal : null,
         nutritionFatMaxG: nutritionEnabled ? fatVal : null,
         nutritionMacroManual: macroOn,
         // Calories déduites des grammes en mode manuel ; `null` en auto.
@@ -538,7 +550,7 @@ export function NutritionTab() {
       // Ligne vide entre chaque repas → séparation visuelle lisible dans le champ.
       // (Le document filtre les lignes vides : PDF inchangé.)
       const days = plan.journees.map(j => j.lignes.join('\n\n'))
-      setMenuJours([days[0] ?? '', days[1] ?? ''])
+      setMenuJours(Array.from({ length: MENU_NB_JOURS }, (_, i) => days[i] ?? ''))
     } catch (err) {
       setAiError(aiErrorMessage(err))
     } finally {
@@ -557,7 +569,7 @@ export function NutritionTab() {
       nutritionTargetBodyFat: targetBodyFat.trim() !== '' ? Number(targetBodyFat) : null,
       nutritionActivityLevel: activityLevel || null,
       nutritionRateKgPerWeek: rateKgPerWeek,
-      nutritionProteinPerLbLean: proteinPerLb.trim() !== '' ? Number(proteinPerLb) : null,
+      nutritionProteinPerKg: proteinPerKgInput.trim() !== '' ? Number(proteinPerKgInput) : null,
       nutritionFatMaxG: fatMaxG.trim() !== '' ? Number(fatMaxG) : null,
       nutritionMacroManual: macroManual,
       nutritionManualProteinG: manualProteinG.trim() !== '' ? Number(manualProteinG) : null,
@@ -587,7 +599,10 @@ export function NutritionTab() {
     if ('nutritionTargetBodyFat' in d) setTargetBodyFat(num(d.nutritionTargetBodyFat) != null ? String(d.nutritionTargetBodyFat) : '')
     if ('nutritionActivityLevel' in d) setActivityLevel((d.nutritionActivityLevel as ActivityLevel) ?? '')
     if (num(d.nutritionRateKgPerWeek) != null) setRateKgPerWeek(Number(d.nutritionRateKgPerWeek))
-    if ('nutritionProteinPerLbLean' in d) setProteinPerLb(num(d.nutritionProteinPerLbLean) != null ? String(d.nutritionProteinPerLbLean) : String(DEFAULT_PROTEIN_PER_LB_LEAN))
+    if ('nutritionProteinPerKg' in d)
+      setProteinPerKgInput(
+        num(d.nutritionProteinPerKg) != null ? String(d.nutritionProteinPerKg) : String(DEFAULT_PROTEIN_PER_KG)
+      )
     if ('nutritionFatMaxG' in d) setFatMaxG(num(d.nutritionFatMaxG) != null ? String(d.nutritionFatMaxG) : String(DEFAULT_FAT_MAX_G))
     if ('nutritionMacroManual' in d) setMacroManual(!!d.nutritionMacroManual)
     if ('nutritionManualProteinG' in d) setManualProteinG(num(d.nutritionManualProteinG) != null ? String(d.nutritionManualProteinG) : '')
@@ -905,8 +920,19 @@ export function NutritionTab() {
                   </div>
                   <div className="flex items-center gap-2 text-marine text-sm">
                     <span className="w-20">Protéines</span>
-                    <input type="number" min={0.3} max={2.5} step={0.1} value={proteinPerLb} onChange={e => setProteinPerLb(e.target.value)} className={macroInput} />
-                    <span className="text-marine/60">g par lb de masse maigre</span>
+                    <input
+                      type="number"
+                      min={0.5}
+                      max={2.5}
+                      step={0.1}
+                      value={proteinPerKgInput}
+                      onChange={e => setProteinPerKgInput(e.target.value)}
+                      className={macroInput}
+                    />
+                    <span className="text-marine/60">
+                      g par kg de poids corporel
+                      <span className="text-marine/40"> · usuel {PROTEIN_PER_KG_RANGE.min} à {PROTEIN_PER_KG_RANGE.usual}, jusqu’à {PROTEIN_PER_KG_RANGE.max}</span>
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 text-marine text-sm">
                     <span className="w-20">Lipides</span>
@@ -1169,14 +1195,14 @@ export function NutritionTab() {
             </span>
           )}
         </div>
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {menuJours.map((jour, i) => (
             <div key={i}>
               <label className="block text-marine/70 text-sm font-medium mb-1">Journée {i + 1}</label>
               <AutoTextarea
                 value={jour}
                 onChange={e => setMenuJour(i, e.target.value)}
-                minRows={8}
+                minRows={6}
                 placeholder={`Journée ${i + 1} — un repas par ligne. Ex. Déjeuner : ...&#10;Dîner : ...&#10;Souper : ...&#10;Collations : ...&#10;Total approximatif : ...`}
                 className={fieldClass}
               />

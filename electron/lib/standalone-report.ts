@@ -145,6 +145,7 @@ async function buildStandaloneHtml(
       nutritionActivityLevel: client.nutritionActivityLevel,
       nutritionRateKgPerWeek: client.nutritionRateKgPerWeek,
       nutritionProteinPerLbLean: client.nutritionProteinPerLbLean,
+      nutritionProteinPerKg: client.nutritionProteinPerKg,
       nutritionFatMaxG: client.nutritionFatMaxG,
       nutritionTargetKcal: client.nutritionTargetKcal,
       nutritionMacroManual: client.nutritionMacroManual,

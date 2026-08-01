@@ -622,7 +622,7 @@ function ObjectifBlock({
           activity: client.nutritionActivityLevel,
           leanKg: goal.leanKg,
           dailyDeficitKcal: dailyDeficitForRate(rate),
-          proteinPerLbLean: client.nutritionProteinPerLbLean,
+          proteinPerKg: client.nutritionProteinPerKg,
           fatMaxG: client.nutritionFatMaxG,
           targetKcalOverride: client.nutritionTargetKcal
         })

@@ -20,12 +20,13 @@ import {
   bodyFatGoal,
   mifflinBmr,
   estimateMacros,
+  DEFAULT_PROTEIN_PER_KG,
+  PROTEIN_PER_KG_RANGE,
   fiberTargetG,
   dailyDeficitForRate,
   weeklyLossFromDeficit,
   weeksToGoal
 } from './nutrition.ts'
-import { kgToLb } from './units.ts'
 
 const close = (a: number, b: number, eps = 0.15) => Math.abs(a - b) <= eps
 
@@ -71,17 +72,18 @@ test('mifflinBmr — sexe/données manquantes → null', () => {
   assert.equal(mifflinBmr({ weightKg: null, heightCm: 176, age: 48, sex: 'M' }), null)
 })
 
-test('estimateMacros — Nicholas : protéines = masse maigre (lb) × 1, lipides 60', () => {
-  // masse maigre 69.66 kg → 153.6 lb × 1 g/lb → 154 g protéines ; lipides plafond 60 ;
-  // TDEE 2888, défaut −20 % → 2310 kcal ; glucides = (2310 − 616 − 540)/4 = 289.
+test('estimateMacros — protéines = POIDS CORPOREL × 1,4 (base v0.9.106)', () => {
+  // Base changée à la demande de Marie : g par kg de poids corporel, plus par
+  // livre de masse maigre. 99,8 kg × 1,4 = 140 g ; lipides plafond 60 ;
+  // TDEE 2888, défaut −20 % → 2310 kcal ; glucides = (2310 − 560 − 540)/4 = 303.
   const m = estimateMacros({ weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: 'modere', leanKg: 69.66 })
   assert.ok(m !== null)
   assert.equal(m!.bmr, 1863)
   assert.equal(m!.tdee, 2888)
   assert.equal(m!.targetKcal, 2310)
-  assert.equal(m!.proteinG, 154)
+  assert.equal(m!.proteinG, 140)
   assert.equal(m!.fatG, 60)
-  assert.equal(m!.carbsG, 289)
+  assert.equal(m!.carbsG, 303)
   // Fibres = 14 g / 1000 kcal → round(2310/1000·14) = 32.
   assert.equal(m!.fiberG, 32)
 })
@@ -93,7 +95,7 @@ test('fiberTargetG — 14 g par 1000 kcal (référence Santé Canada / DRI)', ()
   assert.equal(fiberTargetG(2700), 38) // ≈ cible homme adulte
 })
 
-test('estimateMacros — formule personnalisée (1.2 g/lb, gras max 50)', () => {
+test('estimateMacros — formule personnalisée (1,6 g/kg, gras max 50)', () => {
   const m = estimateMacros({
     weightKg: 99.8,
     heightCm: 176,
@@ -101,11 +103,11 @@ test('estimateMacros — formule personnalisée (1.2 g/lb, gras max 50)', () => 
     sex: 'M',
     activity: 'modere',
     leanKg: 69.66,
-    proteinPerLbLean: 1.2,
+    proteinPerKg: 1.6,
     fatMaxG: 50
   })
   assert.ok(m !== null)
-  assert.equal(m!.proteinG, Math.round(kgToLb(69.66) * 1.2)) // 184
+  assert.equal(m!.proteinG, Math.round(99.8 * 1.6)) // 160
   assert.equal(m!.fatG, 50)
 })
 
@@ -166,11 +168,11 @@ test('estimateMacros — déficit selon le rythme (0.5 kg/sem = −550)', () => 
     dailyDeficitKcal: 550
   })
   assert.ok(m !== null)
-  // TDEE 2888 − 550 = 2338 ; glucides = (2338 − 616 − 540)/4 = 296.
+  // TDEE 2888 − 550 = 2338 ; glucides = (2338 − 560 − 540)/4 = 310.
   assert.equal(m!.targetKcal, 2338)
-  assert.equal(m!.proteinG, 154)
+  assert.equal(m!.proteinG, 140)
   assert.equal(m!.fatG, 60)
-  assert.equal(m!.carbsG, 296)
+  assert.equal(m!.carbsG, 310)
 })
 
 test('estimateMacros — calories manuelles (override) priment sur le calcul auto', () => {
@@ -186,9 +188,9 @@ test('estimateMacros — calories manuelles (override) priment sur le calcul aut
   })
   assert.ok(m !== null)
   assert.equal(m!.targetKcal, 2000) // ignore le déficit auto
-  assert.equal(m!.proteinG, 154) // protéines inchangées (masse maigre)
+  assert.equal(m!.proteinG, 140) // protéines inchangées : elles suivent le POIDS
   assert.equal(m!.fatG, 60)
-  assert.equal(m!.carbsG, Math.max(0, Math.round((2000 - 154 * 4 - 60 * 9) / 4))) // 211
+  assert.equal(m!.carbsG, Math.max(0, Math.round((2000 - 140 * 4 - 60 * 9) / 4))) // 225
 })
 
 test('estimateMacros — déficit rapide clampé au BMR', () => {
@@ -203,4 +205,20 @@ test('estimateMacros — déficit rapide clampé au BMR', () => {
     dailyDeficitKcal: 5000
   })
   assert.ok(m !== null && m!.targetKcal === m!.bmr)
+})
+
+test('la masse maigre n’entre PLUS dans les protéines', () => {
+  // Le garde-fou du changement de base : deux clients de même poids mais de
+  // composition très différente doivent recevoir la même cible protéique.
+  const base = { weightKg: 91.8, heightCm: 176, age: 49, sex: 'M' as const, activity: 'modere' as const }
+  const muscle = estimateMacros({ ...base, leanKg: 75, proteinPerKg: 1.4 })
+  const moinsMuscle = estimateMacros({ ...base, leanKg: 55, proteinPerKg: 1.4 })
+  assert.equal(muscle!.proteinG, moinsMuscle!.proteinG)
+  assert.equal(muscle!.proteinG, Math.round(91.8 * 1.4)) // 129
+})
+
+test('la fourchette annoncée à Marie encadre bien le défaut', () => {
+  assert.ok(PROTEIN_PER_KG_RANGE.min <= DEFAULT_PROTEIN_PER_KG)
+  assert.ok(DEFAULT_PROTEIN_PER_KG <= PROTEIN_PER_KG_RANGE.max)
+  assert.equal(DEFAULT_PROTEIN_PER_KG, PROTEIN_PER_KG_RANGE.usual)
 })

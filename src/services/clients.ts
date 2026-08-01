@@ -32,6 +32,7 @@ export const clientsService = {
       nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
       nutritionRateKgPerWeek?: number | null
       nutritionProteinPerLbLean?: number | null
+      nutritionProteinPerKg?: number | null
       nutritionFatMaxG?: number | null
       nutritionTargetKcal?: number | null
       nutritionMacroManual?: boolean

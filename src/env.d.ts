@@ -35,8 +35,11 @@ interface Client {
   nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
   /** Rythme de perte visé (kg/semaine) — échéance estimée + déficit des macros. `null` = défaut. */
   nutritionRateKgPerWeek: number | null
-  /** Formule des macros (modifiable) : g de protéines par lb de masse maigre. `null` = 1. */
+  /** ANCIENNE base : g de protéines par lb de masse maigre. Conservée pour ne
+   *  pas perdre les réglages d'avant la v0.9.106 — n'entre plus dans le calcul. */
   nutritionProteinPerLbLean: number | null
+  /** Base actuelle : g de protéines par kg de POIDS CORPOREL. `null` = 1,4. */
+  nutritionProteinPerKg: number | null
   /** Formule des macros : plafond de lipides en g. `null` = 60. */
   nutritionFatMaxG: number | null
   /** Calories cibles fixées manuellement (kcal). `null` = calcul automatique. */
@@ -433,6 +436,7 @@ interface Window {
           nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
           nutritionRateKgPerWeek?: number | null
           nutritionProteinPerLbLean?: number | null
+          nutritionProteinPerKg?: number | null
           nutritionFatMaxG?: number | null
           nutritionTargetKcal?: number | null
           nutritionMacroManual?: boolean

@@ -2,6 +2,47 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.106 — Protéines au poids corporel + menu de 7 jours)
+
+Les deux dernières demandes de Marie.
+
+### Protéines : 1 à 1,4 g/kg de poids corporel (jusqu'à 1,6)
+
+L'app calculait les protéines en **g par livre de masse maigre** ; Marie travaille en **g par kg de poids
+corporel**. Ce n'est pas un changement d'unité mais de **base** — la masse maigre n'entre plus du tout dans
+le calcul.
+
+**Mesuré avant de changer quoi que ce soit**, en lisant la base :
+
+| client | avant | après, à 1,4 g/kg |
+|---|---|---|
+| Sabrina | 126 g | **139 g** |
+| Nicholas | 179 g | **129 g** |
+
+Les cibles bougent réellement — attendu, puisque Marie change de méthode, mais il fallait le dire avant.
+
+**Nouvelle colonne** `nutrition_protein_per_kg` plutôt que de réinterpréter l'ancienne : le 1,15 stocké
+pour Nicholas voulait dire 179 g, et aurait silencieusement valu 106 g sur la nouvelle base. L'ancienne
+colonne est conservée mais n'entre plus dans aucun calcul.
+
+Défaut à **1,4** — le haut de la fourchette courante annoncée par Marie, pas l'extrême. L'interface rappelle
+« usuel 1 à 1,4, jusqu'à 1,6 ».
+
+Quatre tests existants ont échoué à la bascule : ils affirmaient l'ancienne base. Réécrits, plus un garde-fou
+nouveau — deux clients de même poids mais de composition très différente doivent recevoir la même cible.
+
+### Menu : 7 journées au lieu de 2
+
+Le modèle de données (`MenuPlan.jours`) acceptait **déjà** N journées, et le rendu des documents filtre les
+vides. Seule la saisie était bornée à 2. Sept champs désormais, sur trois colonnes en grand écran, avec des
+zones un peu moins hautes — une semaine complète ne se remplit pas d'un trait.
+
+L'import IA remplit autant de journées qu'il en produit ; le disclaimer non prescriptif reste inchangé.
+
+580 tests (578 avant).
+
+Version : 0.9.105 → 0.9.106.
+
 ## ✅ Fait (v0.9.105 — L'œil toujours au même endroit)
 
 Nicholas : « c'est jamais au même endroit ». Exact, et c'était ma faute — j'avais inséré l'œil juste après le

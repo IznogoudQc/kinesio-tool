@@ -57,7 +57,21 @@ export const clients = sqliteTable('clients', {
   nutritionRateKgPerWeek: real('nutrition_rate_kg_per_week'),
   // Formule des macros, modifiable par Marie. `null` = valeurs par défaut
   // (protéines 1 g/lb de masse maigre, lipides plafond 60 g, glucides = reste).
+  /**
+   * ANCIENNE base — grammes de protéines par LIVRE de masse maigre.
+   *
+   * Conservée pour ne pas perdre les réglages d'avant la v0.9.106, mais plus
+   * utilisée par le calcul. Ne pas la réinterpréter : un 1,15 stocké voulait
+   * dire 179 g pour Nicholas, et vaudrait 106 g sur la nouvelle base.
+   */
   nutritionProteinPerLbLean: real('nutrition_protein_per_lb_lean'),
+  /**
+   * Base ACTUELLE — grammes de protéines par kg de **poids corporel**.
+   *
+   * Méthode de Marie-Eve : 1 à 1,4 g/kg, jusqu'à 1,6 chez les plus actifs.
+   * `null` = valeur par défaut (1,4).
+   */
+  nutritionProteinPerKg: real('nutrition_protein_per_kg'),
   nutritionFatMaxG: real('nutrition_fat_max_g'),
   // Calories cibles fixées manuellement (kcal). `null` = calcul automatique.
   nutritionTargetKcal: real('nutrition_target_kcal'),

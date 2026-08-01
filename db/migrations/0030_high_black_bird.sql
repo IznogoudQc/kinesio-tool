@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `nutrition_protein_per_kg` real;
