@@ -176,15 +176,48 @@ test('CPAFLA — composition corporelle : exemple du guide (femme) → Acceptabl
     },
     p
   )
-  // (B=1 × 1,5 + C=2) / 2,5 = 1,4 → arrondi 1 → Acceptable.
+  // Même en fournissant les CINQ plis, la somme n'est plus utilisée : Marie ne
+  // mesure pas le mollet, donc la note suit « IMC + tour de taille » (colonne B
+  // = 1). Voir `USE_CALF_SKINFOLD`.
+  //
+  // Ce test fournissait auparavant les 5 plis pour vérifier la formule
+  // (1×1,5 + 2)/2,5 = 1,4 → 1. Les deux voies donnent 1 ici, donc il continuait
+  // de passer après la bascule — pour une raison qui n'était plus la bonne. La
+  // fidélité de la formule au guide reste vérifiée dans
+  // `cpafla-composition.test.ts`, où le module est appelé directement.
   assert.equal(r.composition.score, 1)
   assert.equal(r.composition.category, 'ACCEPTABLE')
 })
 
-test('CPAFLA — composition : sans mollet → repli auto IMC + tour de taille (colonne B)', () => {
+test('CPAFLA — les 5 plis ne changent PAS la note, même fournis', () => {
+  // Le vrai garde-fou de la décision : un cas où les deux voies divergent.
+  // Femme IMC 25,8 · CT 91 (> 87 → colonne B = 1) avec des plis très minces
+  // (somme 40 mm → colonne C = 4). L'ancienne formule aurait donné
+  // (1×1,5 + 4)/2,5 = 2,2 → 2. La règle actuelle doit donner 1.
+  const p: BilanProfile = { age: 50, sex: 'F', norms: 'cpafla' }
+  const avecPlis = computeBilan(
+    {
+      taille_cm: 168,
+      poids_kg: 72.7,
+      tour_taille_cm: 91,
+      pli_triceps: 8,
+      pli_biceps: 6,
+      pli_sous_scap: 8,
+      pli_iliaque: 10,
+      pli_mollet: 8
+    },
+    p
+  )
+  const sansPlis = computeBilan({ taille_cm: 168, poids_kg: 72.7, tour_taille_cm: 91 }, p)
+  assert.equal(avecPlis.composition.score, 1, 'les plis ne doivent plus entrer dans la note')
+  assert.equal(sansPlis.composition.score, 1)
+  assert.equal(avecPlis.composition.score, sansPlis.composition.score)
+})
+
+test('CPAFLA — composition sans plis : IMC + tour de taille (colonne B)', () => {
   const p: BilanProfile = { age: 50, sex: 'F', norms: 'cpafla' }
   const r = computeBilan({ taille_cm: 168, poids_kg: 72.7, tour_taille_cm: 91 }, p)
-  // Pas de S5PC → IMC (25-29,9) + CT 91 (>87) → colonne B = 1.
+  // IMC (25-29,9) + CT 91 (>87) → colonne B = 1.
   assert.equal(r.composition.score, 1)
 })
 

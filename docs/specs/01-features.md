@@ -2,6 +2,37 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.96 — Le pli du mollet sort des calculs)
+
+Marie ne mesure jamais le pli du mollet. Sans lui, la somme des **cinq** plis n'existe pas, et la note de
+composition reposait déjà sur l'IMC et le tour de taille — mais l'app l'annonçait comme un manque :
+« Somme des 5 plis non mesurée (**mollet manquant**) ». Sur chaque bilan, pour toujours, un signalement pour
+une mesure qu'elle ne prendra pas.
+
+Or ce n'est pas une note dégradée : le guide prévoit **explicitement** la combinaison « IMC + tour de
+taille → colonne B » (p. 7-17/18), au même titre que la formule complète. Le texte est donc devenu neutre :
+*« Note établie sur l'IMC et le tour de taille (combinaison prévue par le guide) »*.
+
+**Vérifié avant de changer quoi que ce soit** : sur les 12 bilans en base, un seul portait les cinq plis
+(2011-08-17) — et il donne **2 / 4 par les deux voies**. Aucun score historique ne bouge.
+
+Trois surfaces calculaient la somme des plis chacune de leur côté (moteur, dashboard, PDF). Un seul point de
+décision désormais : `s5pcForScoring()` et le drapeau `USE_CALF_SKINFOLD`. Si Marie s'y met un jour, il n'y a
+qu'à le basculer.
+
+Le champ **Mollet** disparaît de la saisie. Les données restent au modèle — le bilan de 2011 garde sa valeur,
+et `setField` préserve ce qui n'est plus affiché. Les quatre autres plis continuent d'alimenter le **% de
+gras** (Durnin & Womersley), qui n'a jamais utilisé le mollet.
+
+**Un test passait pour la mauvaise raison** : il fournissait les cinq plis en attendant la formule complète,
+et les deux voies donnaient 1 par coïncidence — il restait donc vert après la bascule. Remplacé par un cas où
+les deux voies **divergent** (plis très minces → l'ancienne formule aurait donné 2, la règle actuelle donne
+1), et vérifié en rebasculant le drapeau : le test échoue bien.
+
+552 tests (551 avant).
+
+Version : 0.9.95 → 0.9.96.
+
 ## ✅ Fait (v0.9.95 — Risque santé : le langage visuel de la pression artérielle)
 
 Nicholas montre la carte Pression artérielle et demande la même chose : rectangle blanc, bouton **Barème**,

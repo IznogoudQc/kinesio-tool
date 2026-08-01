@@ -204,3 +204,80 @@ export function cpaflaCompositionBareme(sex: 'F' | 'M'): CpaflaBaremeRow[] {
     s5pc: b.s5pc.map(s => ({ range: s.label, pts: s.pts }))
   }))
 }
+
+/**
+ * Le pli du **mollet** entre-t-il dans la cotation ?
+ *
+ * `false` — décision de Marie-Eve : elle ne mesure pas ce pli. Sans lui, la
+ * somme des CINQ plis n'existe pas, et la note repose sur l'IMC et le tour de
+ * taille (colonne B).
+ *
+ * ── Ce n'est pas une note dégradée ──────────────────────────────────────────
+ * Le guide prévoit **explicitement** cette combinaison (p. 7-17/18) : « IMC + CT
+ * → B ». C'est une des cinq voies prévues, au même titre que la formule
+ * complète. L'app présentait auparavant ce cas comme un manque (« mollet
+ * manquant »), ce qui donnait l'impression d'une mesure oubliée à chaque bilan.
+ *
+ * ── Pourquoi un drapeau plutôt qu'un `null` codé en dur ─────────────────────
+ * Trois surfaces calculaient la S5PC chacune de leur côté (bilan-computed,
+ * dashboard, PDF). Un seul endroit décide désormais. Si Marie se met un jour à
+ * mesurer le mollet, il n'y a qu'à basculer ce drapeau — et les quatre autres
+ * plis continuent d'alimenter le % de gras (Durnin & Womersley), qui n'a jamais
+ * utilisé le mollet.
+ *
+ * Vérifié avant la bascule : sur les 12 bilans en base, un seul portait les cinq
+ * plis (2011-08-17) et il donne **2 / 4 par les deux voies**. Aucun score
+ * historique ne change.
+ */
+export const USE_CALF_SKINFOLD = false
+
+/**
+ * Somme des cinq plis retenue pour la cotation, ou `null` si elle ne s'applique
+ * pas. Point d'entrée unique — ne recalculez pas cette somme ailleurs.
+ */
+export function s5pcForScoring(plis: {
+  triceps?: number
+  biceps?: number
+  sousScap?: number
+  iliaque?: number
+  mollet?: number
+}): number | null {
+  if (!USE_CALF_SKINFOLD) return null
+  const v = [plis.triceps, plis.biceps, plis.sousScap, plis.iliaque, plis.mollet]
+  return v.every(x => typeof x === 'number' && Number.isFinite(x))
+    ? (v as number[]).reduce((a, b) => a + b, 0)
+    : null
+}
+
+/**
+ * Phrase expliquant comment la note a été obtenue.
+ *
+ * **Une seule** implémentation pour le dashboard et le PDF. Les deux l'écrivaient
+ * chacun de leur côté, avec le même texte recopié — c'est exactement ainsi qu'on
+ * se retrouve avec deux formulations qui divergent (cf. les barèmes, v0.9.64 à
+ * 0.9.66, et le risque santé plus récemment).
+ *
+ * `nf` formate un nombre décimal ; injecté pour que ce module reste pur.
+ */
+export function cpaflaCompositionExplanation(
+  detail: CpaflaCompositionDetail,
+  nf: (n: number, d: number) => string
+): string | null {
+  if (detail.score === null || detail.combo === null) return null
+  switch (detail.combo) {
+    case 'imc+ct+s5pc':
+      return `Calcul CPAFLA : (tour de taille ${detail.b} × 1,5 + plis ${detail.c}) ÷ 2,5 = ${nf(detail.raw as number, 2)} → arrondi à ${detail.score}.`
+    case 'imc+ct':
+      // Formulation neutre : c'est l'une des cinq combinaisons prévues par le
+      // guide (p. 7-17/18), pas une mesure oubliée. L'ancien texte parlait de
+      // « mollet manquant », ce qui signalait un manque à chaque bilan alors que
+      // ce pli n'est volontairement pas mesuré (voir `USE_CALF_SKINFOLD`).
+      return `Note établie sur l’IMC et le tour de taille (combinaison prévue par le guide) : ${detail.b} sur 4.`
+    case 'imc+s5pc':
+      return `Tour de taille non mesuré → la note repose sur l’IMC et la somme des 5 plis : ${detail.c} sur 4.`
+    case 'ct':
+      return `IMC non disponible → la note repose sur le tour de taille (référence IMC 27) : ${detail.b} sur 4.`
+    default:
+      return `Seul l’IMC est disponible → note ${detail.a} sur 4.`
+  }
+}

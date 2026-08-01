@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { TableProperties } from 'lucide-react'
 import { CATEGORY_COLORS, CATEGORY_LABELS, type Category } from '../../../lib/norms'
-import { cpaflaCompositionBareme, type CpaflaCompositionDetail } from '../../../lib/norms/cpafla-composition'
+import {
+  cpaflaCompositionBareme,
+  cpaflaCompositionExplanation,
+  type CpaflaCompositionDetail
+} from '../../../lib/norms/cpafla-composition'
 
 interface Props {
   /** Score composite (0-4) + catégorie (computed.composition). */
@@ -45,23 +49,7 @@ export function CompositionCpaflaCard({ score, category, detail, imc, ct, s5pc, 
   if (detail.b !== null) rows.push({ label: 'Tour de taille', value: `${nf(ct, 0)} cm`, pts: `${detail.b} pt${detail.b > 1 ? 's' : ''}` })
   if (detail.c !== null) rows.push({ label: 'Somme des 5 plis', value: `${nf(s5pc)} mm`, pts: `${detail.c} pt${detail.c > 1 ? 's' : ''}` })
 
-  let calcul: string
-  switch (detail.combo) {
-    case 'imc+ct+s5pc':
-      calcul = `Calcul CPAFLA : (tour de taille ${detail.b} × 1,5 + plis ${detail.c}) ÷ 2,5 = ${nf(detail.raw, 2)} → arrondi à ${score}.`
-      break
-    case 'imc+ct':
-      calcul = `Somme des 5 plis non mesurée (mollet manquant) → la note repose sur l’IMC et le tour de taille : ${detail.b} sur 4.`
-      break
-    case 'imc+s5pc':
-      calcul = `Tour de taille non mesuré → la note repose sur l’IMC et la somme des 5 plis : ${detail.c} sur 4.`
-      break
-    case 'ct':
-      calcul = `IMC non disponible → la note repose sur le tour de taille (référence IMC 27) : ${detail.b} sur 4.`
-      break
-    default:
-      calcul = `Seul l’IMC est disponible → note ${detail.a} sur 4.`
-  }
+  const calcul = cpaflaCompositionExplanation(detail, nf) ?? ''
 
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">

@@ -24,7 +24,7 @@ import { ProgressionChart } from '../dashboard/ProgressionChart'
 import { MusculoRadar } from '../dashboard/MusculoRadar'
 import { CompositionCpaflaCard } from '../dashboard/CompositionCpaflaCard'
 import { CompositeCpaflaCard } from '../dashboard/CompositeCpaflaCard'
-import { cpaflaCompositionDetail } from '../../../lib/norms/cpafla-composition'
+import { cpaflaCompositionDetail, s5pcForScoring } from '../../../lib/norms/cpafla-composition'
 import { TrainingZones } from '../dashboard/TrainingZones'
 import { BilanSelectorPills } from '../dashboard/BilanSelectorPills'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../../../lib/synthesisBilan'
@@ -732,14 +732,13 @@ export function DashboardTab() {
           (client.sex === 'M' || client.sex === 'F') &&
           (() => {
             const isN = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
-            const plis = [
-              activeData.pli_triceps,
-              activeData.pli_biceps,
-              activeData.pli_sous_scap,
-              activeData.pli_iliaque,
-              activeData.pli_mollet
-            ]
-            const s5pc = plis.every(isN) ? (plis as number[]).reduce((a, b) => a + b, 0) : null
+            const s5pc = s5pcForScoring({
+              triceps: activeData.pli_triceps,
+              biceps: activeData.pli_biceps,
+              sousScap: activeData.pli_sous_scap,
+              iliaque: activeData.pli_iliaque,
+              mollet: activeData.pli_mollet
+            })
             const ct = isN(activeData.tour_taille_cm) ? activeData.tour_taille_cm : null
             const detail = cpaflaCompositionDetail({ imc: computed.imc, ct, s5pc, sex: client.sex })
             return (

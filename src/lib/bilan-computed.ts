@@ -27,7 +27,7 @@ import {
   type CpaflaKeyedContribution,
   type CpaflaCombineDetail
 } from './norms/cpafla-combined.ts'
-import { cpaflaComposition, cpaflaWaistPoints } from './norms/cpafla-composition.ts'
+import { cpaflaComposition, cpaflaWaistPoints, s5pcForScoring } from './norms/cpafla-composition.ts'
 import { systolicRatingLegacy } from './norms/clinical.ts'
 import { BILAN_TO_TEST_KEY } from './norms/bilan-keys.ts'
 import { computeAge } from './norms/index.ts'
@@ -367,16 +367,20 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
     return { score: s, category: scoreToCategory(s) }
   }
 
-  // Composition corporelle. Sous **CPAFLA** : méthode du guide (IMC + tour de
-  // taille + somme des 5 plis → tables Fig. 7-4/7-5 + formule, cf. ADR 0027).
-  // La S5PC exige les 5 plis (mollet inclus) ; sans mollet → repli auto sur
-  // IMC + CT. Sous **ACSM** : moyenne historique (IMC + % gras-grille + taille).
+  // Composition corporelle. Sous **CPAFLA** : méthode du guide (tables
+  // Fig. 7-4/7-5, cf. ADR 0027). La somme des 5 plis n'est pas utilisée —
+  // Marie ne mesure pas le pli du mollet — donc la note suit la combinaison
+  // « IMC + tour de taille » que le guide prévoit (voir `s5pcForScoring`).
+  // Sous **ACSM** : moyenne historique (IMC + % gras-grille + taille).
   const composition = ((): CompositeScore => {
     if (profile.norms === 'cpafla' && (profile.sex === 'M' || profile.sex === 'F')) {
-      const plis = [raw.pli_triceps, raw.pli_biceps, raw.pli_sous_scap, raw.pli_iliaque, raw.pli_mollet]
-      const s5pc = plis.every(p => typeof p === 'number' && Number.isFinite(p))
-        ? (plis as number[]).reduce((a, b) => a + b, 0)
-        : null
+      const s5pc = s5pcForScoring({
+        triceps: raw.pli_triceps,
+        biceps: raw.pli_biceps,
+        sousScap: raw.pli_sous_scap,
+        iliaque: raw.pli_iliaque,
+        mollet: raw.pli_mollet
+      })
       const s = cpaflaComposition({ imc: enriched.imc, ct: enriched.tour_taille_cm, s5pc, sex: profile.sex })
       return { score: s, category: scoreToCategory(s) }
     }

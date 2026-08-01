@@ -27,7 +27,11 @@ import {
   type TestKey
 } from '../lib/norms'
 import { BILAN_TO_TEST_KEY, isLowerBetter } from '../lib/norms/bilan-keys'
-import { cpaflaCompositionDetail } from '../lib/norms/cpafla-composition'
+import {
+  cpaflaCompositionDetail,
+  cpaflaCompositionExplanation,
+  s5pcForScoring
+} from '../lib/norms/cpafla-composition'
 import {
   componentLabelInline,
   globalScoreSummary,
@@ -1547,10 +1551,13 @@ function AnthropoLine({ latest, weightUnit, sex }: { latest: Bilan; weightUnit: 
 function CompositionCpaflaPdf({ latest, computed, sex }: { latest: Bilan; computed: BilanComputed; sex: 'F' | 'M' | null }) {
   if (sex !== 'F' && sex !== 'M') return null
   const d = latest.data
-  const plis5 = [d.pli_triceps, d.pli_biceps, d.pli_sous_scap, d.pli_iliaque, d.pli_mollet]
-  const s5pc = plis5.every(v => typeof v === 'number' && Number.isFinite(v))
-    ? (plis5 as number[]).reduce((a, b) => a + b, 0)
-    : null
+  const s5pc = s5pcForScoring({
+    triceps: d.pli_triceps,
+    biceps: d.pli_biceps,
+    sousScap: d.pli_sous_scap,
+    iliaque: d.pli_iliaque,
+    mollet: d.pli_mollet
+  })
   const ct = num(d.tour_taille_cm)
   const detail = cpaflaCompositionDetail({ imc: computed.imc, ct, s5pc, sex })
   if (detail.score === null || detail.combo === null) return null
@@ -1562,16 +1569,7 @@ function CompositionCpaflaPdf({ latest, computed, sex }: { latest: Bilan; comput
   if (detail.b !== null) rows.push({ label: 'Tour de taille', value: ct === null ? '—' : `${fmt(ct)} cm`, pts: `${detail.b} pt${detail.b > 1 ? 's' : ''}` })
   if (detail.c !== null) rows.push({ label: 'Somme des 5 plis', value: s5pc === null ? '—' : `${fmt(s5pc)} mm`, pts: `${detail.c} pt${detail.c > 1 ? 's' : ''}` })
 
-  const calcul =
-    detail.combo === 'imc+ct+s5pc'
-      ? `Calcul CPAFLA : (tour de taille ${detail.b} × 1,5 + plis ${detail.c}) ÷ 2,5 = ${fmt(detail.raw as number, 2)} → arrondi à ${detail.score}.`
-      : detail.combo === 'imc+ct'
-        ? `Somme des 5 plis non mesurée (mollet manquant) → la note repose sur l’IMC et le tour de taille : ${detail.b} sur 4.`
-        : detail.combo === 'imc+s5pc'
-          ? `Tour de taille non mesuré → la note repose sur l’IMC et la somme des 5 plis : ${detail.c} sur 4.`
-          : detail.combo === 'ct'
-            ? `IMC non disponible → la note repose sur le tour de taille (référence IMC 27) : ${detail.b} sur 4.`
-            : `Seul l’IMC est disponible → note ${detail.a} sur 4.`
+  const calcul = cpaflaCompositionExplanation(detail, fmt) ?? ''
 
   return (
     <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '3mm', padding: '5mm 6mm', marginBottom: '6mm' }}>

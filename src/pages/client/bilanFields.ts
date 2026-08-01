@@ -70,12 +70,10 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
       { key: 'pli_biceps', label: 'Biceps', unit: 'mm' },
       { key: 'pli_sous_scap', label: 'Sous-scapulaire', unit: 'mm' },
       { key: 'pli_iliaque', label: 'Crête iliaque', unit: 'mm' },
-      {
-        key: 'pli_mollet',
-        label: 'Mollet',
-        unit: 'mm',
-        hint: '5ᵉ pli — utilisé par la somme des 5 plis (composition CPAFLA). Facultatif.'
-      },
+      // Le pli du MOLLET a été retiré de la saisie : Marie ne le mesure pas, et
+      // il n'entre plus dans aucun calcul (voir `USE_CALF_SKINFOLD`). Le champ
+      // reste dans le modèle de données — un bilan importé de 2011 en porte un,
+      // et `setField` préserve les valeurs qui ne sont plus affichées.
       {
         key: 'pourcentage_gras',
         label: 'Pourcentage de gras',
