@@ -19,22 +19,14 @@ import {
   type ReportSectionKey
 } from './report-sections.ts'
 
-test('les huit sections convenues, sans doublon', () => {
-  assert.equal(REPORT_SECTIONS.length, 8)
-  assert.equal(new Set(REPORT_SECTIONS.map(s => s.key)).size, 8)
-  assert.deepEqual(
-    REPORT_SECTIONS.map(s => s.key),
-    [
-      'composition',
-      'cardio',
-      'pressionArterielle',
-      'zonesEntrainement',
-      'forceMobilite',
-      'nutrition',
-      'planAction',
-      'motKine'
-    ]
-  )
+test('une section par carte du dashboard, sans doublon', () => {
+  // Découpe revue avec Nicholas : un œil par carte blanche, et non huit grands
+  // thèmes. Son exemple — masquer « Risque pour la santé » seul — ne marchait
+  // pas avec la découpe grossière.
+  assert.equal(new Set(REPORT_SECTIONS.map(s => s.key)).size, REPORT_SECTIONS.length)
+  for (const attendue of ['risqueSante', 'pourcentageGras', 'composition', 'cardio', 'pressionArterielle']) {
+    assert.ok(REPORT_SECTIONS.some(s => s.key === attendue), attendue + ' manquante')
+  }
 })
 
 test('chaque section a un libellé et une explication', () => {
@@ -107,6 +99,6 @@ test('masquer les huit reste possible — et se relit', () => {
   // Cas extrême mais légitime : un rapport réduit à la vue d'ensemble.
   const toutes = REPORT_SECTIONS.map(s => s.key)
   const relu = parseHiddenSections(serializeHiddenSections(toutes))
-  assert.equal(relu.size, 8)
-  assert.equal(hiddenSummary(relu), '8 sections masquées')
+  assert.equal(relu.size, REPORT_SECTIONS.length)
+  assert.equal(hiddenSummary(relu), REPORT_SECTIONS.length + ' sections masquées')
 })

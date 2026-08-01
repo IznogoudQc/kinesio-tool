@@ -18,7 +18,14 @@
 
 export type ReportSectionKey =
   | 'composition'
+  | 'compositionTrend'
+  | 'risqueSante'
+  | 'pourcentageGras'
+  | 'mesures'
+  | 'objectif'
+  | 'progression'
   | 'cardio'
+  | 'cardioTrend'
   | 'pressionArterielle'
   | 'zonesEntrainement'
   | 'forceMobilite'
@@ -42,9 +49,44 @@ export const REPORT_SECTIONS: ReportSectionDef[] = [
     hint: 'Poids, IMC, tour de taille, % de gras et risque pour la santé.'
   },
   {
+    key: 'compositionTrend',
+    label: 'Évolution de la composition',
+    hint: 'La courbe du score de composition dans le temps.'
+  },
+  {
+    key: 'risqueSante',
+    label: 'Risque pour la santé',
+    hint: 'IMC et tour de taille lus ensemble (tableau 4.4 du guide).'
+  },
+  {
+    key: 'pourcentageGras',
+    label: 'Pourcentage de gras',
+    hint: 'Le % de gras, sa grille et sa courbe.'
+  },
+  {
+    key: 'mesures',
+    label: 'Mesures détaillées',
+    hint: 'Le relevé chiffré de toutes les mesures du bilan.'
+  },
+  {
+    key: 'objectif',
+    label: 'Objectif du client',
+    hint: 'L’objectif chiffré et l’échéance estimée.'
+  },
+  {
+    key: 'progression',
+    label: 'Progression',
+    hint: 'Les courbes d’évolution mesure par mesure.'
+  },
+  {
     key: 'cardio',
     label: 'Aptitude aérobie',
-    hint: 'VO2max, son évolution et son interprétation.'
+    hint: 'VO2max et son interprétation.'
+  },
+  {
+    key: 'cardioTrend',
+    label: 'Évolution du VO2max',
+    hint: 'La courbe du VO2max dans le temps.'
   },
   {
     key: 'pressionArterielle',

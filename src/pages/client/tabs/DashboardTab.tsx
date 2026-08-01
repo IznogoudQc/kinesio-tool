@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Download, Eye, FileText, FileUp, FolderOpen, Globe, Info, Mail, PartyPopper, Sparkles } from 'lucide-react'
+import { Download, EyeOff, FileText, FileUp, FolderOpen, Globe, Info, Mail, PartyPopper, Sparkles } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { ClientAvatar } from '../../../components/ClientAvatar'
 import { bilansService } from '../../../services/bilans'
@@ -14,8 +14,13 @@ import { computeAge, DEFAULT_NORMS, getNormPercentiles, type NormsType } from '.
 import { buildBilanProfile, computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
 import { BloodPressureBar } from '../../../components/BloodPressureBar'
 import { RestVsRecovery } from '../../../components/RestVsRecovery'
-import { ReportSectionsPanel } from '../dashboard/ReportSectionsPanel'
-import { hiddenSummary, parseHiddenSections } from '../../../lib/report-sections'
+import { ReportEye, ReportHiddenBadge, ReportVisibilityProvider } from '../../../components/ReportEye'
+import {
+  hiddenSummary,
+  parseHiddenSections,
+  serializeHiddenSections,
+  type ReportSectionKey
+} from '../../../lib/report-sections'
 import { dualWeight } from '../../../lib/objectif-format'
 import { buildObjectif } from '../../../lib/objectif'
 import { gatherBilanMetrics } from '../../../lib/ai-metrics'
@@ -81,10 +86,26 @@ export function DashboardTab() {
   const [generating, setGenerating] = useState(false)
   const [generatingHtml, setGeneratingHtml] = useState(false)
   const [exportingAll, setExportingAll] = useState(false)
-  const [showSections, setShowSections] = useState(false)
-  // Résumé des sections retirées, rappelé sur le bouton : Marie doit voir qu'elle
-  // s'apprête à envoyer un rapport allégé, même si elle l'a réglé il y a un mois.
-  const sectionsMasquees = hiddenSummary(parseHiddenSections(client.reportHiddenSections))
+  const masquees = parseHiddenSections(client.reportHiddenSections)
+  // Résumé rappelé près des boutons d'envoi : Marie doit voir qu'elle s'apprête à
+  // envoyer un rapport allégé, même si elle l'a réglé il y a un mois.
+  const sectionsMasquees = hiddenSummary(masquees)
+  const basculerSection = useCallback(
+    async (key: ReportSectionKey) => {
+      const next = new Set(masquees)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      try {
+        const maj = await clientsService.update(client.id, {
+          reportHiddenSections: serializeHiddenSections(next)
+        })
+        onClientUpdated?.(maj)
+      } catch {
+        setError("Le réglage d'affichage n'a pas pu être enregistré.")
+      }
+    },
+    [masquees, client.id, onClientUpdated]
+  )
   const [toast, setToast] = useState<string | null>(null)
 
   const setSelectedBilanId = useCallback(
@@ -469,19 +490,15 @@ export function DashboardTab() {
             <Globe size={15} />
             {generatingHtml ? 'Génération…' : 'Générer HTML'}
           </button>
-          <button
-            type="button"
-            onClick={() => setShowSections(true)}
-            title="Choisir les sections incluses dans le PDF et le document interactif"
-            className={`inline-flex items-center gap-2 px-4 py-2 font-medium border rounded-md text-sm transition-colors ${
-              sectionsMasquees
-                ? 'text-amber-800 border-amber-300 bg-amber-50 hover:bg-amber-100'
-                : 'text-marine/80 hover:text-marine border-cream-dark hover:border-gold/60'
-            }`}
-          >
-            <Eye size={15} />
-            {sectionsMasquees ?? 'Contenu du rapport'}
-          </button>
+          {sectionsMasquees && (
+            <span
+              title="Réglé carte par carte, avec l’œil dans leur coin"
+              className="inline-flex items-center gap-2 px-3 py-2 text-amber-800 bg-amber-50 border border-amber-300 rounded-md text-sm font-medium"
+            >
+              <EyeOff size={15} />
+              {sectionsMasquees}
+            </span>
+          )}
           <button
             type="button"
             onClick={() => setShowModal(true)}
@@ -606,6 +623,11 @@ export function DashboardTab() {
   )
 
   return (
+    // Le fournisseur rend les yeux disponibles à TOUTES les cartes, y compris
+    // celles partagées avec le document client — qui, sans lui, n'en affichent
+    // aucun. En mode impression on ne le monte pas : un œil n'a rien à faire
+    // sur un rapport.
+    <ReportVisibilityProvider value={printMode ? null : { hidden: masquees, toggle: basculerSection }}>
     <div className="dash-editorial bg-cream min-h-full">
     <div className="p-6 lg:p-8 max-w-7xl space-y-8">
       {Header}
@@ -970,19 +992,6 @@ export function DashboardTab() {
         </section>
       )}
 
-      {showSections && (
-        <ReportSectionsPanel
-          clientName={client.name}
-          hiddenRaw={client.reportHiddenSections}
-          onSave={async value => {
-            const maj = await clientsService.update(client.id, { reportHiddenSections: value })
-            // Remonte au layout, comme la FC max : le bouton et son résumé se
-            // remettent à jour sans rechargement de l'onglet.
-            onClientUpdated?.(maj)
-          }}
-          onClose={() => setShowSections(false)}
-        />
-      )}
       {showModal && (
         <SendBilanModal
           client={client}
@@ -996,6 +1005,7 @@ export function DashboardTab() {
       {toast && <Toast message={toast} />}
     </div>
     </div>
+    </ReportVisibilityProvider>
   )
 }
 
