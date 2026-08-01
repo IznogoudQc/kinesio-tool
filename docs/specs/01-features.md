@@ -2,6 +2,37 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.104 — L'œil dans le coin de chaque carte)
+
+Nicholas n'aimait pas la fenêtre de la v0.9.103 : il veut décider **en regardant la carte**. Son exemple —
+masquer « Risque pour la santé » seul — montrait aussi que la découpe en huit grands thèmes était trop
+grossière.
+
+La fenêtre disparaît. Chaque carte blanche du dashboard porte un **œil dans son coin** : ouvert, elle part
+au client ; barré, elle est retirée du PDF **et** du document interactif. Le clic enregistre aussitôt — il
+n'y a plus rien à valider. Quinze sections, une par carte.
+
+Les cartes qui ne partent **jamais** au client n'ont pas d'œil : *Signaux à surveiller*, *Analyse IA*,
+*Historique des bilans*, sélecteurs. Elles sont déjà exclues des documents (ADR 0019) ; un œil dessus
+donnerait l'illusion d'un réglage sans effet.
+
+**Une protection par construction** : `ReportEye` ne rend **rien** sans son fournisseur, monté uniquement
+sur le dashboard (et pas en mode impression). Les cartes partagées avec le document client — Risque santé,
+Zones d'entraînement — ne peuvent donc pas y afficher un bouton de réglage, même en cas d'erreur future.
+C'est plus sûr qu'un drapeau qu'on oublierait de passer. Vérifié au rendu : sans fournisseur, aucun œil.
+
+**Un défaut attrapé par le rendu, pas par le compilateur** : le bandeau « Ne figure pas dans le rapport »
+était importé partout mais posé nulle part — le test de rendu l'a montré (`bandeau: false` sur les trois
+cas). Plutôt que de l'insérer dans douze cartes, le libellé accompagne désormais l'œil barré lui-même : un
+seul point d'insertion, déjà en place, donc impossible de l'oublier quelque part.
+
+Un rappel ambre « N sections masquées » reste près des boutons d'envoi : Marie doit voir qu'elle s'apprête à
+envoyer un rapport allégé, même réglé un mois plus tôt.
+
+578 tests, 22 avertissements de lint (la base d'origine).
+
+Version : 0.9.103 → 0.9.104.
+
 ## ✅ Fait (v0.9.103 — Marie choisit ce qui part au client)
 
 Demande de Nicholas, sur le modèle d'un logiciel qu'il utilise : un petit œil pour montrer ou masquer des

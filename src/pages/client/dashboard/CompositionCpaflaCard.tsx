@@ -7,6 +7,7 @@ import {
   cpaflaCompositionExplanation,
   type CpaflaCompositionDetail
 } from '../../../lib/norms/cpafla-composition'
+import { ReportEye } from '../../../components/ReportEye'
 
 interface Props {
   /** Score composite (0-4) + catégorie (computed.composition). */
@@ -56,6 +57,7 @@ export function CompositionCpaflaCard({ score, category, detail, imc, ct, s5pc, 
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
       <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
         <p className="dash-eyebrow text-gold-dark">Composition corporelle</p>
+        <ReportEye section="composition" />
         <div className="flex items-center gap-3">
           <span className="flex items-baseline gap-2">
             <span className="text-marine font-bold text-2xl tabular-nums leading-none">{nf(score, 1)}</span>

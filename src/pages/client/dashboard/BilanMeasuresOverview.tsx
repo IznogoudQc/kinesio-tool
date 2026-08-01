@@ -3,6 +3,7 @@ import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Too
 import { ChevronDown, ChevronRight, Ruler, TrendingUp } from 'lucide-react'
 import { formatBilanDate, formatBilanMonth } from '../bilanFields'
 import { kgToWeightInput, weightUnitLabel } from '../../../lib/units'
+import { ReportEye } from '../../../components/ReportEye'
 
 /** Section « Mesures corporelles » du Bilan complet — **alimentée uniquement par
  *  les bilans** (chaque bilan = une prise), pas par l'onglet Mesures. Reprend le
@@ -171,6 +172,7 @@ export function BilanMeasuresOverview({
       <div className="flex items-center gap-2 mb-1">
         <Ruler size={16} className="text-gold-dark" />
         <h3 className="dash-eyebrow text-gold-dark">Mesures corporelles</h3>
+        <ReportEye section="mesures" />
       </div>
       <p className="text-marine/45 text-xs mb-4">
         Prises lors des bilans · bilan du {formatBilanDate(latest.date)}

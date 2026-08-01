@@ -14,7 +14,7 @@ import { computeAge, DEFAULT_NORMS, getNormPercentiles, type NormsType } from '.
 import { buildBilanProfile, computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
 import { BloodPressureBar } from '../../../components/BloodPressureBar'
 import { RestVsRecovery } from '../../../components/RestVsRecovery'
-import { ReportEye, ReportHiddenBadge, ReportVisibilityProvider } from '../../../components/ReportEye'
+import { ReportEye, ReportVisibilityProvider } from '../../../components/ReportEye'
 import {
   hiddenSummary,
   parseHiddenSections,
@@ -802,7 +802,10 @@ export function DashboardTab() {
           })()}
         {compositionSeries.length >= 2 && (
           <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
-            <p className="dash-eyebrow text-gold-dark mb-2">Évolution de la composition corporelle</p>
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <p className="dash-eyebrow text-gold-dark">Évolution de la composition corporelle</p>
+              <ReportEye section="compositionTrend" />
+            </div>
             <ScoreTrend
               series={compositionSeries}
               ariaLabel="Progression du score de composition corporelle (0 à 4) dans le temps, avec les zones de catégories en fond."
@@ -814,6 +817,7 @@ export function DashboardTab() {
             <div className="flex items-baseline justify-between gap-3 flex-wrap">
               <div>
                 <p className="dash-eyebrow text-gold-dark">Pourcentage de gras</p>
+                <ReportEye section="pourcentageGras" />
                 <p className="dash-display text-marine text-5xl font-bold leading-none mt-1.5">
                   {formatNumber(activeData.pourcentage_gras)}
                   <span className="text-lg font-medium text-marine/45 ml-1.5">%</span>
@@ -858,7 +862,10 @@ export function DashboardTab() {
           {Vo2Card}
           {(paSys !== null || paDia !== null) && (
             <div className="h-full bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
-              <p className="text-marine/50 text-xs uppercase tracking-wide font-medium mb-3">Pression artérielle</p>
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <p className="text-marine/50 text-xs uppercase tracking-wide font-medium">Pression artérielle</p>
+                <ReportEye section="pressionArterielle" />
+              </div>
               <div className="space-y-4">
                 {paSys !== null && <BloodPressureBar value={paSys} kind="systolic" recoveryValue={paRecupSys} />}
                 {paDia !== null && <BloodPressureBar value={paDia} kind="diastolic" recoveryValue={paRecupDia} />}
@@ -877,7 +884,10 @@ export function DashboardTab() {
         </div>
         {vo2maxSeries.length >= 2 && (
           <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
-            <p className="dash-eyebrow text-gold-dark mb-1">Évolution du VO2max</p>
+            <div className="flex items-start justify-between gap-2 mb-1">
+              <p className="dash-eyebrow text-gold-dark">Évolution du VO2max</p>
+              <ReportEye section="cardioTrend" />
+            </div>
             <Vo2maxTrend series={vo2maxSeries} percentiles={vo2maxPercentiles} />
           </div>
         )}
@@ -1027,7 +1037,10 @@ function ObjectifCard({ objectif, unit }: { objectif: ObjectifSummary; unit: 'kg
   const { goal, target, targetWeightKg, macros, weeks, goalDate, atGoal } = objectif
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
-      <p className="text-gold-dark text-xs uppercase tracking-wide font-semibold mb-1">Objectif</p>
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <p className="text-gold-dark text-xs uppercase tracking-wide font-semibold">Objectif</p>
+        <ReportEye section="objectif" />
+      </div>
       {atGoal ? (
         <p className="text-marine font-semibold text-base mt-1">
           Objectif de composition atteint — on maintient&nbsp;! 🎉

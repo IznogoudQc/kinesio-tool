@@ -17,6 +17,7 @@ import { CategoryBadge } from '../../../components/CategoryBadge'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
 import { MetricSelectable } from '../../../components/MetricSelectable'
 import type { CompositeScore } from '../../../lib/bilan-computed'
+import { ReportEye } from '../../../components/ReportEye'
 
 interface MusculoRadarProps {
   current: BilanData
@@ -137,6 +138,7 @@ export function MusculoRadar({
           <h3 className="text-marine font-semibold text-sm uppercase tracking-wide">
             Profil musculosquelettique
           </h3>
+          <ReportEye section="forceMobilite" />
         </div>
         <div className="flex items-center gap-2">
           {canShowBareme && view === 'bars' && (

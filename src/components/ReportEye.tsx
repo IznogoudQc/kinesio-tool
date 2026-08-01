@@ -58,31 +58,18 @@ export function ReportEye({ section }: { section: ReportSectionKey }) {
           ? 'Retiré du rapport — cliquez pour l’inclure à nouveau'
           : 'Inclus dans le rapport (PDF et document interactif) — cliquez pour le retirer'
       }
-      className={`shrink-0 rounded-md p-1.5 transition-colors ${
+      className={`shrink-0 inline-flex items-center gap-1.5 rounded-md p-1.5 transition-colors ${
         masquee
-          ? 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+          ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 pr-2'
           : 'text-marine/30 hover:bg-cream-dark/50 hover:text-marine/70'
       }`}
     >
       {masquee ? <EyeOff size={15} /> : <Eye size={15} />}
+      {/* Le libellé accompagne l'œil barré plutôt que de vivre dans un bandeau
+          séparé : un seul point d'insertion par carte, donc aucun risque
+          d'oublier le bandeau là où l'œil est posé — c'est exactement ce qui
+          venait d'arriver. */}
+      {masquee && <span className="text-[11px] font-medium whitespace-nowrap">Retiré du rapport</span>}
     </button>
-  )
-}
-
-/**
- * Bandeau discret posé sur une carte retirée du rapport.
- *
- * Sans lui, une carte masquée reste identique à l'écran et Marie n'a aucun moyen
- * de s'en souvenir en survolant son dashboard — elle ne le verrait qu'en
- * ouvrant le PDF, ou pire, le client le verrait avant elle.
- */
-export function ReportHiddenBadge({ section }: { section: ReportSectionKey }) {
-  const ctx = useContext(Ctx)
-  if (!ctx || !ctx.hidden.has(section)) return null
-  return (
-    <p className="text-amber-700/80 text-[11px] mt-2 flex items-center gap-1.5">
-      <EyeOff size={12} className="shrink-0" />
-      Ne figure pas dans le rapport remis au client
-    </p>
   )
 }

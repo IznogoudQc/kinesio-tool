@@ -15,6 +15,7 @@ import { isLowerBetter } from '../../../lib/norms/bilan-keys'
 import { getPopulationAverage, type TestKey } from '../../../lib/norms'
 import { computeBilan, type BilanProfile } from '../../../lib/bilan-computed'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
+import { ReportEye } from '../../../components/ReportEye'
 
 /** `'overall'` est recalculé ; les autres clés sont lues telles quelles dans BilanData. */
 type MetricKey = 'overall' | keyof BilanData
@@ -185,6 +186,7 @@ export function ProgressionChart({
         <div className="flex items-center gap-2">
           <TrendingUp size={16} className="text-gold-dark" />
           <h3 className="text-marine font-semibold text-sm uppercase tracking-wide">Progression dans le temps</h3>
+        <ReportEye section="progression" />
         </div>
         <label className="flex items-center gap-1.5 text-xs text-marine/55">
           <span>Mesure</span>

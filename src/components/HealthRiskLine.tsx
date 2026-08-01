@@ -15,6 +15,7 @@ import {
   type HealthRiskResult,
   type RiskBar
 } from '../lib/norms/health-risk'
+import { ReportEye } from './ReportEye'
 
 /**
  * Risque pour la santé associé à l'IMC **et au tour de taille** (tableau 4.4 du
@@ -61,6 +62,7 @@ export function HealthRiskLine({
     <div className={`bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm ${className}`}>
       <div className="flex items-baseline justify-between gap-3 flex-wrap mb-4">
         <p className="text-marine/40 text-xs font-semibold uppercase tracking-wider">Risque pour la santé</p>
+        <ReportEye section="risqueSante" />
         <div className="flex items-center gap-3">
           <span className="font-bold text-lg leading-none" style={{ color: HEALTH_RISK_HEX[r.risk] }}>
             {HEALTH_RISK_LABELS[r.risk]}

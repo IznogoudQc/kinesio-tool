@@ -335,7 +335,7 @@ export function ReportPage() {
         ]}
       />
       <OverviewSection client={client} synth={latestComputed} {...shared} />
-      {montre('composition') && <CompositionSection {...shared} computed={latestComputed} />}
+      {montre('composition') && <CompositionSection {...shared} computed={latestComputed} hidden={masquees} />}
       {montre('cardio') && <CardioSection {...shared} computed={latestComputed} hidden={masquees} />}
       {montre('forceMobilite') && <ForceSection {...shared} />}
       {montre('forceMobilite') && SHOW_BACK_HEALTH && <DosSection {...shared} />}
@@ -1611,7 +1611,7 @@ function CompositionCpaflaPdf({ latest, computed, sex }: { latest: Bilan; comput
   )
 }
 
-function CompositionExtras({ latest, computed, sex }: { latest: Bilan; computed: BilanComputed; sex: 'F' | 'M' | null }) {
+function CompositionExtras({ latest, computed, sex, hidden }: { latest: Bilan; computed: BilanComputed; sex: 'F' | 'M' | null; hidden: Set<ReportSectionKey> }) {
   const d = latest.data as Record<string, unknown>
   const plis = [
     { label: 'Triceps', key: 'pli_triceps' },
@@ -1623,11 +1623,18 @@ function CompositionExtras({ latest, computed, sex }: { latest: Bilan; computed:
 
   return (
     <div style={{ marginBottom: '8mm' }}>
-      <PdfBodyFatZones
-        pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)}
-        sex={sex}
-      />
-      <PdfTargetWeights pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)} weightKg={num(d.poids_kg)} sex={sex} />
+      {/* Le % de gras et ses poids-cibles vont ensemble : masquer l'un sans
+          l'autre laisserait des cibles sans la mesure qui les justifie. */}
+      {isSectionVisible('pourcentageGras', hidden) && (
+        <>
+          <PdfBodyFatZones pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)} sex={sex} />
+          <PdfTargetWeights
+            pct={computed.pourcentageGrasDurnin ?? num(d.pourcentage_gras)}
+            weightKg={num(d.poids_kg)}
+            sex={sex}
+          />
+        </>
+      )}
       {plisPresents.length > 0 && (
         <div className="break-inside-avoid">
           <p style={{ fontSize: '8.5pt', textTransform: 'uppercase', letterSpacing: '0.08em', color: INK_SOFT, marginBottom: '2.5mm', breakAfter: 'avoid' }}>Plis cutanés (mm)</p>
@@ -1818,7 +1825,7 @@ function RecoveryTable({ latest }: { latest: Bilan }) {
   )
 }
 
-function CompositionSection({ computed, ...props }: DomainProps & { computed: BilanComputed }) {
+function CompositionSection({ computed, hidden, ...props }: DomainProps & { computed: BilanComputed; hidden: Set<ReportSectionKey> }) {
   return (
     <DomainSection
       {...props}
@@ -1840,7 +1847,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
         <>
           <AnthropoLine latest={props.latest} weightUnit={props.weightUnit} sex={props.profile.sex} />
           <CompositionCpaflaPdf latest={props.latest} computed={computed} sex={props.profile.sex} />
-          <CompositionExtras latest={props.latest} computed={computed} sex={props.profile.sex} />
+          <CompositionExtras latest={props.latest} computed={computed} sex={props.profile.sex} hidden={hidden} />
         </>
       }
     />
