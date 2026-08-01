@@ -2,6 +2,28 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.99 — Repos et après l'effort, côte à côte dans le document client)
+
+Demande de Nicholas : afficher PA repos, PA récup, FC repos et FC récup dans la carte « Pression
+artérielle » du document remis au client. Elle ne montrait que les deux barres de la PA au repos.
+
+Présenté en **deux colonnes** — « Au repos » / « Après l'effort » — plutôt qu'en liste de quatre valeurs :
+c'est l'écart entre les deux qui parle, pas les chiffres isolés.
+
+| | Au repos | Après l'effort |
+|---|---|---|
+| Pression artérielle | 112 / 74 mmHg | 130 / 78 mmHg |
+| Fréquence cardiaque | 58 bpm | 96 bpm |
+
+« Récup » devient « après l'effort » : ce document est lu par le client, pas par une kinésiologue. Une
+phrase explique pourquoi c'est utile — un retour rapide vers les valeurs de repos est un bon signe
+cardiovasculaire.
+
+Le bloc ne s'affiche que si au moins une valeur de récupération existe, et chaque ligne indépendamment :
+un bilan sans FC de récupération montre la ligne de PA seule plutôt qu'une case vide.
+
+Version : 0.9.98 → 0.9.99.
+
 ## ✅ Fait (v0.9.98 — FC de récupération, et la PA de récup qui n'apparaissait nulle part)
 
 Demande de Marie : « ajout FC de récupération après PA ». La section « Signes vitaux » avait bien la PA de

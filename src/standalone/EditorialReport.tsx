@@ -1491,6 +1491,12 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
   // Pression artérielle — barres de zones cliniques (OMS/JNC).
   const paSys = typeof activeData.pa_systolique === 'number' && !Number.isNaN(activeData.pa_systolique) ? activeData.pa_systolique : null
   const paDia = typeof activeData.pa_diastolique === 'number' && !Number.isNaN(activeData.pa_diastolique) ? activeData.pa_diastolique : null
+  // Relevés APRÈS l'effort (feuille papier de Marie). Saisis depuis la v0.3.3
+  // pour la PA, la v0.9.98 pour la FC — ils n'apparaissaient pas encore dans ce
+  // document remis au client.
+  const paRecupSys = typeof activeData.pa_recup_sys === 'number' && !Number.isNaN(activeData.pa_recup_sys) ? activeData.pa_recup_sys : null
+  const paRecupDia = typeof activeData.pa_recup_dia === 'number' && !Number.isNaN(activeData.pa_recup_dia) ? activeData.pa_recup_dia : null
+  const fcRecup = typeof activeData.fc_recup === 'number' && !Number.isNaN(activeData.fc_recup) ? activeData.fc_recup : null
   const paCatSys = paSys !== null ? classifyBloodPressure(paSys, 'systolic')?.category ?? null : null
   const paCatDia = paDia !== null ? classifyBloodPressure(paDia, 'diastolic')?.category ?? null : null
   // « Dans la norme » = les deux valeurs présentes sont Optimale ou Normale.
@@ -1722,6 +1728,62 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
                 ? 'Votre pression artérielle au repos est dans la norme. Un contrôle une fois par an suffit.'
                 : 'Une ou plusieurs valeurs sortent de la zone optimale — à reprendre au calme, puis à valider avec votre médecin au besoin.'}
             </p>
+
+            {/* Récapitulatif repos / après l'effort.
+                Présenté en deux colonnes plutôt qu'en liste : c'est l'écart
+                entre les deux qui parle, pas les valeurs isolées. « Récup »
+                devient « après l'effort » — ce document est lu par le client. */}
+            {(fcRecup !== null || paRecupSys !== null || paRecupDia !== null) && (
+              <div className="mt-8 border-t border-cream-dark/50 pt-5">
+                <table className="w-full text-base">
+                  <thead>
+                    <tr className="text-marine/40">
+                      <th className="text-left font-normal text-sm pb-2"></th>
+                      <th className="text-right font-medium text-sm pb-2">Au repos</th>
+                      <th className="text-right font-medium text-sm pb-2">Après l’effort</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-marine">
+                    {(paSys !== null || paDia !== null || paRecupSys !== null || paRecupDia !== null) && (
+                      <tr className="border-t border-cream-dark/40">
+                        <td className="py-2.5 text-marine/60">Pression artérielle</td>
+                        <td className="py-2.5 text-right font-semibold tabular-nums">
+                          {paSys !== null || paDia !== null
+                            ? `${paSys ?? '—'} / ${paDia ?? '—'}`
+                            : '—'}
+                          <span className="text-marine/40 font-normal text-sm"> mmHg</span>
+                        </td>
+                        <td className="py-2.5 text-right font-semibold tabular-nums">
+                          {paRecupSys !== null || paRecupDia !== null
+                            ? `${paRecupSys ?? '—'} / ${paRecupDia ?? '—'}`
+                            : '—'}
+                          {(paRecupSys !== null || paRecupDia !== null) && (
+                            <span className="text-marine/40 font-normal text-sm"> mmHg</span>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                    {(fcRepos !== null || fcRecup !== null) && (
+                      <tr className="border-t border-cream-dark/40">
+                        <td className="py-2.5 text-marine/60">Fréquence cardiaque</td>
+                        <td className="py-2.5 text-right font-semibold tabular-nums">
+                          {fcRepos ?? '—'}
+                          {fcRepos !== null && <span className="text-marine/40 font-normal text-sm"> bpm</span>}
+                        </td>
+                        <td className="py-2.5 text-right font-semibold tabular-nums">
+                          {fcRecup ?? '—'}
+                          {fcRecup !== null && <span className="text-marine/40 font-normal text-sm"> bpm</span>}
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+                <p className="ed-prose mt-4 text-sm text-marine/55">
+                  Le retour vers les valeurs de repos après l’effort est un bon indicateur de santé
+                  cardiovasculaire : plus il est rapide, mieux votre cœur récupère.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
