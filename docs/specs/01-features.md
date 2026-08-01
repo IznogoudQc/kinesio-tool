@@ -2,6 +2,37 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.100 — Récupération dans les jeux Dummy)
+
+Nicholas ne voyait pas le nouveau bloc « repos / après l'effort » : vérification faite en base, **aucun de
+ses bilans n'a de valeur de récupération**. Le bloc se cachait donc correctement — il n'avait rien à
+montrer. Il fallait des données pour le voir.
+
+Les trois scénarios Dummy portent désormais ces relevés. **Dérivés** du reste du bilan plutôt qu'écrits à la
+main : dix-huit nombres de plus se désynchroniseraient du scénario au premier ajustement, et le lien porte
+l'histoire que ces jeux servent à raconter.
+
+| scénario | FC de récupération |
+|---|---|
+| Progression | 134 → 90 bpm (le cœur redescend de plus en plus vite) |
+| Régression | 84 → 131 bpm |
+| Neutre | oscille autour de 102, sans que le dernier soit le meilleur |
+
+Modèle : l'écart avec la FC de repos rétrécit quand la capacité aérobie monte ; la systolique reste élevée
+après l'effort, la diastolique redescend légèrement. Valeurs de **démonstration**, cohérentes entre elles.
+
+Un test vérifie que chaque scénario raconte bien son histoire, et qu'aucun relevé n'est physiologiquement
+absurde (FC de récupération toujours au-dessus de la FC de repos, jamais au-delà de 200).
+
+**Prévention au passage** : ,  et  sont déclarés « plus bas = mieux ».
+Une clé absente de cette table retombe sur « plus haut = mieux » — et un sens inversé ne se remarque qu'à la
+couleur, un progrès affiché en rouge. C'est exactement ce qui était arrivé au tour de hanche en v0.9.76.
+
+566 tests (561 avant).
+
+Version : 0.9.99 → 0.9.100 — la 1.0 est gardée pour un jalon choisi. Sans risque pour la mise à jour
+automatique :  compare avec semver, qui range bien 0.9.100 après 0.9.99.
+
 ## ✅ Fait (v0.9.99 — Repos et après l'effort, côte à côte dans le document client)
 
 Demande de Nicholas : afficher PA repos, PA récup, FC repos et FC récup dans la carte « Pression

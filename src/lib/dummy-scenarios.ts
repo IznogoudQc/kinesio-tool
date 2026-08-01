@@ -204,3 +204,32 @@ export function plisForMonth(month: number, sc: DummyScenario) {
     iliaque: Math.max(5, round1(45 - lostLb * 0.25))
   }
 }
+
+/**
+ * Relevés **après l'effort** d'un bilan de démonstration.
+ *
+ * Dérivés du reste du bilan plutôt qu'écrits à la main : dix-huit nombres de
+ * plus se désynchroniseraient du scénario au premier ajustement. Et le lien
+ * porte l'histoire — quelqu'un qui progresse récupère mieux, ce qui est
+ * précisément ce que ces jeux de données servent à montrer.
+ *
+ * Modèle : plus la capacité aérobie est élevée, plus la fréquence cardiaque
+ * redescend vite. L'écart avec le repos passe d'environ 42 bpm (VO2max 18) à
+ * environ 24 (VO2max 37). La systolique reste élevée après l'effort ; la
+ * diastolique redescend légèrement sous sa valeur de repos.
+ *
+ * ⚠️ Valeurs de **démonstration**, cohérentes entre elles — pas des références
+ * cliniques.
+ */
+export function recuperationFor(b: BilanSpec): {
+  fcRecup: number
+  paRecupSys: number
+  paRecupDia: number
+} {
+  const ecart = Math.max(15, Math.round(60 - b.vo2max * 0.98))
+  return {
+    fcRecup: b.fcRepos + ecart,
+    paRecupSys: b.paSys + 14,
+    paRecupDia: Math.max(50, b.paDia - 3)
+  }
+}

@@ -17,10 +17,12 @@ import {
   DUMMY_HEIGHT_CM,
   plisForMonth,
   SCENARIOS,
+  recuperationFor,
   weightLbForMonth,
   type DummyScenario
 } from './dummy-scenarios.ts'
 import { computeBilan, type BilanProfile } from './bilan-computed.ts'
+import { isLowerBetter } from './norms/bilan-keys.ts'
 import { detectWins } from './dashboard-wins.ts'
 import { calculateAge, calculateBodyFat } from './body-fat-calculator.ts'
 
@@ -159,4 +161,52 @@ test('aucune valeur aberrante : plis et circonférences restent plausibles', () 
       }
     }
   }
+})
+
+/* ── Relevés après l'effort ──────────────────────────────────────────────── */
+
+test('la récupération suit le scénario : elle s’améliore en progression', () => {
+  // C'est tout l'intérêt de dériver ces valeurs plutôt que de les écrire : la
+  // FC de récupération doit raconter la même histoire que le reste du bilan.
+  const b = SCENARIOS.progression.bilans
+  const premier = recuperationFor(b[0]).fcRecup
+  const dernier = recuperationFor(b[b.length - 1]).fcRecup
+  assert.ok(dernier < premier, `la FC de récup devrait baisser (${premier} → ${dernier})`)
+})
+
+test('…et se dégrade en régression', () => {
+  const b = SCENARIOS.regression.bilans
+  const premier = recuperationFor(b[0]).fcRecup
+  const dernier = recuperationFor(b[b.length - 1]).fcRecup
+  assert.ok(dernier > premier, `la FC de récup devrait monter (${premier} → ${dernier})`)
+})
+
+test('en neutre, le dernier relevé n’est jamais le meilleur', () => {
+  // Même contrainte que pour les autres mesures du scénario neutre : un
+  // dernier point record déclencherait une fausse « victoire ».
+  const valeurs = SCENARIOS.neutre.bilans.map(b => recuperationFor(b).fcRecup)
+  assert.ok(valeurs[valeurs.length - 1] > Math.min(...valeurs), 'le dernier ne doit pas être le minimum')
+})
+
+test('la récupération reste physiologiquement plausible', () => {
+  for (const nom of ['progression', 'regression', 'neutre'] as const) {
+    for (const b of SCENARIOS[nom].bilans) {
+      const r = recuperationFor(b)
+      // Après l'effort, la FC est PLUS HAUTE qu'au repos — jamais l'inverse.
+      assert.ok(r.fcRecup > b.fcRepos, `${nom} ${b.date} : FC récup ≤ FC repos`)
+      assert.ok(r.fcRecup <= 200, `${nom} ${b.date} : FC récup ${r.fcRecup} invraisemblable`)
+      // La systolique monte, la diastolique redescend un peu.
+      assert.ok(r.paRecupSys > b.paSys, `${nom} ${b.date} : systolique de récup trop basse`)
+      assert.ok(r.paRecupDia < b.paDia, `${nom} ${b.date} : diastolique de récup trop haute`)
+      assert.ok(r.paRecupSys <= 220 && r.paRecupDia >= 50, `${nom} ${b.date} : PA de récup hors bornes`)
+    }
+  }
+})
+
+test('une baisse de FC de récupération compte comme un progrès', () => {
+  // Le sens doit être déclaré : sans ça, une clé inconnue est traitée comme
+  // « plus haut = mieux » et un progrès s'afficherait en rouge.
+  assert.equal(isLowerBetter('fc_recup'), true)
+  assert.equal(isLowerBetter('pa_recup_sys'), true)
+  assert.equal(isLowerBetter('pa_recup_dia'), true)
 })

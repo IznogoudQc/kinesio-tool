@@ -61,6 +61,14 @@ export const BILAN_LOWER_IS_BETTER: Partial<Record<keyof BilanData, boolean>> = 
   pa_systolique: true,
   pa_diastolique: true,
   fc_repos: true,
+  // Relevés APRÈS l'effort : redescendre vite est le but. Pas encore comparés
+  // d'un bilan à l'autre, mais déclarés dès maintenant — une clé absente de
+  // cette table retombe sur « plus haut = mieux », et un sens inversé ne se
+  // remarque qu'à la couleur : un progrès affiché en rouge. C'est précisément
+  // ce qui était arrivé au tour de hanche (v0.9.76).
+  pa_recup_sys: true,
+  pa_recup_dia: true,
+  fc_recup: true,
   vo2max: false,
   pushups: false,
   situps: false,

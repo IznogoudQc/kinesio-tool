@@ -11,6 +11,7 @@ import {
   DUMMY_BIRTHDATE,
   DUMMY_HEIGHT_CM,
   plisForMonth,
+  recuperationFor,
   SCENARIOS,
   type DummyScenario
 } from '../../lib/dummy-scenarios'
@@ -146,6 +147,7 @@ export function DummyJeanSeedButton() {
         const b = conf.bilans[i]
         setProgress(`Bilan ${i + 1}/6 (${b.date})…`)
         const circ = circForMonth(b.monthOffset, sc)
+        const recup = recuperationFor(b)
         const plis = plisForMonth(b.monthOffset, sc)
         // % gras Durnin-Womersley pour ce moment précis (cohérent avec les plis).
         const age = calculateAge(DUMMY_BIRTHDATE)
@@ -183,6 +185,10 @@ export function DummyJeanSeedButton() {
           fc_max_predite: round0(208 - 0.7 * age),
           pa_systolique: b.paSys,
           pa_diastolique: b.paDia,
+          // Relevés après l'effort — dérivés du scénario (voir recuperationFor).
+          pa_recup_sys: recup.paRecupSys,
+          pa_recup_dia: recup.paRecupDia,
+          fc_recup: recup.fcRecup,
           // Musculo
           pushups: b.pushups,
           situps: b.situps,
