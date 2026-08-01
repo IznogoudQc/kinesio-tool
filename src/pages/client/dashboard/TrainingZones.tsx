@@ -180,7 +180,9 @@ export function TrainingZones({ fcMax, fcZones, fcMaxSource, onSaveFcMax }: Trai
       <div className="flex items-center gap-2 mb-1">
         <Heart size={16} className="text-gold-dark" />
         <h3 className="text-marine font-semibold text-sm uppercase tracking-wide">Zones d'entraînement</h3>
-        <ReportEye section="zonesEntrainement" />
+        <span className="ml-auto">
+          <ReportEye section="zonesEntrainement" />
+        </span>
       </div>
       {/* L'étiquette suit la SOURCE réelle. Annoncer « prédite » sur une valeur
           saisie par Marie serait le même défaut que les barèmes qui affichaient

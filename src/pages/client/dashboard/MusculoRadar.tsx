@@ -138,7 +138,6 @@ export function MusculoRadar({
           <h3 className="text-marine font-semibold text-sm uppercase tracking-wide">
             Profil musculosquelettique
           </h3>
-          <ReportEye section="forceMobilite" />
         </div>
         <div className="flex items-center gap-2">
           {canShowBareme && view === 'bars' && (
@@ -166,6 +165,10 @@ export function MusculoRadar({
             {view === 'bars' ? <RadarIcon size={13} /> : <BarChart3 size={13} />}
             {view === 'bars' ? 'Vue radar' : 'Vue barres'}
           </button>
+          {/* Toujours le DERNIER élément du groupe de droite — même position sur
+              toutes les cartes. Hors du bloc conditionnel du barème, sinon l'œil
+              disparaîtrait avec lui. */}
+          <ReportEye section="forceMobilite" />
         </div>
       </div>
 

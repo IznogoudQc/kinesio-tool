@@ -2,6 +2,21 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.105 — L'œil toujours au même endroit)
+
+Nicholas : « c'est jamais au même endroit ». Exact, et c'était ma faute — j'avais inséré l'œil juste après le
+titre de chaque carte. Dans celles dont l'en-tête a deux groupes (titre à gauche, contrôles à droite), il se
+retrouvait donc **au milieu** ; dans les autres, collé au titre, à gauche.
+
+Règle unique désormais : **l'œil est le dernier élément du groupe de droite**, donc toujours dans le coin
+haut-droit, à droite du bouton « Barème » quand il y en a un. Les cartes sans groupe de droite utilisent
+`ml-auto` pour l'y pousser.
+
+Un défaut attrapé au passage : dans le profil musculosquelettique, l'œil s'était glissé **à l'intérieur** de
+la condition qui affiche le bouton « Barème ». Il aurait disparu en vue radar, où ce bouton ne s'affiche pas.
+
+Version : 0.9.104 → 0.9.105.
+
 ## ✅ Fait (v0.9.104 — L'œil dans le coin de chaque carte)
 
 Nicholas n'aimait pas la fenêtre de la v0.9.103 : il veut décider **en regardant la carte**. Son exemple —

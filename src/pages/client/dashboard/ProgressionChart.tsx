@@ -186,7 +186,6 @@ export function ProgressionChart({
         <div className="flex items-center gap-2">
           <TrendingUp size={16} className="text-gold-dark" />
           <h3 className="text-marine font-semibold text-sm uppercase tracking-wide">Progression dans le temps</h3>
-        <ReportEye section="progression" />
         </div>
         <label className="flex items-center gap-1.5 text-xs text-marine/55">
           <span>Mesure</span>
@@ -209,6 +208,9 @@ export function ProgressionChart({
             ))}
           </select>
         </label>
+        {/* Dernier élément du groupe de droite — même position que sur les
+            autres cartes. */}
+        <ReportEye section="progression" />
       </div>
 
       {compareBilan && (

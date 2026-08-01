@@ -172,7 +172,9 @@ export function BilanMeasuresOverview({
       <div className="flex items-center gap-2 mb-1">
         <Ruler size={16} className="text-gold-dark" />
         <h3 className="dash-eyebrow text-gold-dark">Mesures corporelles</h3>
-        <ReportEye section="mesures" />
+        <span className="ml-auto">
+          <ReportEye section="mesures" />
+        </span>
       </div>
       <p className="text-marine/45 text-xs mb-4">
         Prises lors des bilans · bilan du {formatBilanDate(latest.date)}
