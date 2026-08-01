@@ -40,6 +40,15 @@ export const clients = sqliteTable('clients', {
    * remis, quel que soit le bilan consulté.
    */
   fcMaxManuel: real('fc_max_manuel'),
+  /**
+   * Sections du rapport MASQUÉES pour ce client — tableau JSON de clés (voir
+   * `src/lib/report-sections.ts`). `null` = tout est montré.
+   *
+   * On stocke les masquées et non les visibles : une section ajoutée plus tard
+   * apparaît ainsi par défaut chez les clients existants, au lieu de rester
+   * invisible parce qu'elle ne figurait pas dans une liste écrite avant elle.
+   */
+  reportHiddenSections: text('report_hidden_sections'),
   nutritionActivityLevel: text('nutrition_activity_level', {
     enum: ['sedentaire', 'leger', 'modere', 'actif', 'tres_actif']
   }),

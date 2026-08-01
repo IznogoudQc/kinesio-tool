@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `report_hidden_sections` text;

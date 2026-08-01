@@ -164,6 +164,7 @@ async function buildStandaloneHtml(
       alimentsPrivilegier: client.alimentsPrivilegier,
       alimentsEviter: client.alimentsEviter,
       nutritionMot: client.nutritionMot,
+      reportHiddenSections: client.reportHiddenSections,
       nutritionMenu: client.nutritionMenu
     },
     avatarDataUrl: await avatarDataUrl(client.avatarFilename),

@@ -2,6 +2,41 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.103 — Marie choisit ce qui part au client)
+
+Demande de Nicholas, sur le modèle d'un logiciel qu'il utilise : un petit œil pour montrer ou masquer des
+sections du rapport. Choix retenus avec lui : réglage **par client**, et **un seul** réglage pour le PDF et
+le document HTML.
+
+Bouton **« Contenu du rapport »** dans la barre d'actions du dashboard, juste avant « Envoyer ». Il ouvre la
+liste des sections avec un œil chacune ; l'œil barré raye le libellé, et le bouton passe en ambre avec le
+compte (« 2 sections masquées »). Ce rappel permanent est délibéré : Marie doit voir qu'elle s'apprête à
+envoyer un rapport allégé, même si elle l'a réglé un mois plus tôt.
+
+**On stocke ce qui est masqué, pas ce qui est visible.** Une section ajoutée plus tard apparaîtra donc par
+défaut chez tous les clients existants, au lieu de rester invisible parce qu'elle ne figurait pas dans une
+liste écrite avant sa création. Un dossier sans réglage = tout est montré.
+
+Un réglage illisible — JSON cassé, clé inconnue, valeur d'un autre type — ne masque **rien** plutôt que de
+masquer au hasard. Marie enverrait sinon un document amputé sans le savoir, et le client ne saurait pas ce
+qui manque. Cinq tests couvrent ce cas.
+
+Nouvelle colonne `clients.report_hidden_sections` (migration 0029). Le champ est déclaré dans le schéma zod
+de l'IPC — sans quoi `.strip()` l'aurait supprimé en silence, comme la signature du Q-AAP en v0.9.85.
+
+⚠️ **Une section demandée n'existait plus.** Le « plan d'action » avec priorités numérotées a été retiré du
+rapport en v0.9.82, en même temps que « Forces et axes de progrès ». Son œil n'aurait rien masqué. Il porte
+donc sur ce qui occupe réellement la clôture — les **cinq principes de bien-être** — et s'appelle
+« Principes de clôture ». Un œil qui ne fait rien serait pire que pas d'œil.
+
+Le masquage vit dans le composant `Section` (prop `hidden`) plutôt qu'aux points d'appel : envelopper chaque
+section dans une condition aurait demandé d'apparier des parenthèses tout au long d'un fichier de 1800
+lignes, pour un gain nul.
+
+578 tests (566 avant).
+
+Version : 0.9.102 → 0.9.103.
+
 ## ✅ Fait (v0.9.102 — PA après l'effort : un second repère, pas une seconde barre)
 
 Nicholas voulait « le même graphique » pour la PA de récupération. Signalé avant de coder : **les zones de

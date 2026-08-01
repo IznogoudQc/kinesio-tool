@@ -27,6 +27,9 @@ interface Client {
   nutritionTargetWeightKg: number | null
   /** FC max saisie manuellement (bpm) ; `null` = prediction de Tanaka. */
   fcMaxManuel: number | null
+  /** Sections du rapport masquées pour ce client — tableau JSON de clés.
+   *  `null` = tout est montré. Voir `src/lib/report-sections.ts`. */
+  reportHiddenSections: string | null
   /** Niveau d'activité pour l'estimation calorique. `null` si non défini.
    *  Union alignée sur `ActivityLevel` de src/lib/nutrition.ts. */
   nutritionActivityLevel: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
@@ -426,6 +429,7 @@ interface Window {
           nutritionTargetBodyFat?: number | null
           nutritionTargetWeightKg?: number | null
           fcMaxManuel?: number | null
+          reportHiddenSections?: string | null
           nutritionActivityLevel?: 'sedentaire' | 'leger' | 'modere' | 'actif' | 'tres_actif' | null
           nutritionRateKgPerWeek?: number | null
           nutritionProteinPerLbLean?: number | null

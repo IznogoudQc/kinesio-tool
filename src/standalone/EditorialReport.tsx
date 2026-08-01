@@ -44,6 +44,7 @@ import { HealthRiskLine } from '../components/HealthRiskLine'
 import { bodyFatTargetWeights } from '../lib/body-fat-risk'
 import { BloodPressureBar } from '../components/BloodPressureBar'
 import { RestVsRecovery } from '../components/RestVsRecovery'
+import { isSectionVisible, parseHiddenSections } from '../lib/report-sections'
 import { classifyBloodPressure } from '../lib/norms/clinical'
 import { kgToLb, cmToFeetInches } from '../lib/units'
 import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
@@ -94,6 +95,8 @@ export interface StandaloneData {
     alimentsPrivilegier: string | null
     alimentsEviter: string | null
     nutritionMot: string | null
+    /** Sections masquées par Marie pour ce client (JSON). */
+    reportHiddenSections?: string | null
     nutritionMenu: string | null
   }
   /** Photo du client en data URI, ou `null` — le fichier reste autonome. */
@@ -235,6 +238,7 @@ function Section({
   id,
   scores,
   backTop = false,
+  hidden = false,
   children
 }: {
   eyebrow: string
@@ -245,8 +249,17 @@ function Section({
   scores?: { label?: string; score: CompositeScore }[]
   /** Ajoute un lien « Retour à la vue d'ensemble » en bas de la section. */
   backTop?: boolean
+  /**
+   * Section retirée par Marie pour ce client (voir `report-sections.ts`).
+   *
+   * Le masquage vit ici plutôt qu'aux points d'appel : envelopper chaque
+   * `<Section>` dans une condition demanderait d'apparier des parenthèses tout
+   * au long d'un fichier de 1800 lignes, pour un gain nul. Une prop suffit.
+   */
+  hidden?: boolean
   children: ReactNode
 }) {
+  if (hidden) return null
   return (
     <section id={id} className={`ed-anchor ${tone === 'white' ? 'bg-white' : 'bg-cream'}`}>
       <div className="mx-auto max-w-5xl px-6 py-16 sm:px-8 sm:py-24">
@@ -787,7 +800,9 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
   const eviter = (client.alimentsEviter ?? '').trim()
   const supp = (client.supplementsNotes ?? '').trim()
   const suppPlan = parseSuppPlan(client.supplementsNotes)
-  const mot = (client.nutritionMot ?? '').trim()
+  // Le mot peut être retiré du rapport sans que le texte soit effacé du dossier.
+  const motMasque = !isSectionVisible('motKine', parseHiddenSections(client.reportHiddenSections))
+  const mot = motMasque ? '' : (client.nutritionMot ?? '').trim()
   const menu = (client.nutritionMenu ?? '').trim()
   const menuPlan = parseMenuPlan(client.nutritionMenu)
 
@@ -1225,6 +1240,10 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
   // Objectif chiffré & macros — mêmes calculs que le bilan (synthèse des bilans).
   const profile = buildBilanProfile(client)
   const age = profile.age
+  // Même réglage que dans le corps du rapport — la section nutrition vit dans
+  // ce composant-ci, qui a son propre accès au client.
+  const cache = (k: Parameters<typeof isSectionVisible>[0]) =>
+    !isSectionVisible(k, parseHiddenSections(client.reportHiddenSections))
   const synth = data.bilans.length > 0 ? buildSynthesisBilan(data.bilans) : null
   const objectifData = synth?.data ?? {}
   const objectifComputed = computeBilan(objectifData, profile)
@@ -1306,7 +1325,7 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
       )}
 
       {hasBricks ? (
-        <Section eyebrow="Votre plan" title={planTitle} tone="white" id="nutrition-plan">
+        <Section eyebrow="Votre plan" title={planTitle} tone="white" id="nutrition-plan" hidden={cache('nutrition')}>
           <NutritionBody client={client} generatedAt={data.generatedAt} />
         </Section>
       ) : (
@@ -1491,6 +1510,9 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
     fcRepos !== null && client.sex ? getCategorization('restingHeartRate', fcRepos, age ?? 40, client.sex) : null
   // Pression artérielle — barres de zones cliniques (OMS/JNC).
   const paSys = typeof activeData.pa_systolique === 'number' && !Number.isNaN(activeData.pa_systolique) ? activeData.pa_systolique : null
+  // Sections retirées par Marie pour ce client (réglage du dashboard).
+  const masquees = parseHiddenSections(client.reportHiddenSections)
+  const cache = (k: Parameters<typeof isSectionVisible>[0]) => !isSectionVisible(k, masquees)
   const paDia = typeof activeData.pa_diastolique === 'number' && !Number.isNaN(activeData.pa_diastolique) ? activeData.pa_diastolique : null
   // Relevés APRÈS l'effort (feuille papier de Marie). Saisis depuis la v0.3.3
   // pour la PA, la v0.9.98 pour la FC — ils n'apparaissaient pas encore dans ce
@@ -1657,6 +1679,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       <Section
         id="composition"
+        hidden={cache('composition')}
         backTop
         scores={[{ score: computed.composition }]}
         eyebrow="Composition corporelle"
@@ -1683,6 +1706,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
       <Section
         id="cardio"
+        hidden={cache('cardio')}
         backTop
         scores={[{ score: computed.aerobic }]}
         eyebrow="Aptitude aérobie"
@@ -1711,7 +1735,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
           </div>
         )}
 
-        {(paSys !== null || paDia !== null) && (
+        {!cache('pressionArterielle') && (paSys !== null || paDia !== null) && (
           <div className="mt-12">
             <p className="ed-eyebrow text-marine/40">Pression artérielle</p>
             <p className="ed-prose mt-3 text-base text-marine/65">
@@ -1742,14 +1766,17 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
           </div>
         )}
 
-        <div className="mt-12">
-          {/* Pas de `onSaveFcMax` : document remis au client, lecture seule. */}
-          <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} fcMaxSource={computed.fcMaxSource} />
-        </div>
+        {!cache('zonesEntrainement') && (
+          <div className="mt-12">
+            {/* Pas de `onSaveFcMax` : document remis au client, lecture seule. */}
+            <TrainingZones fcMax={computed.fcMaxPredite} fcZones={computed.fcZones} fcMaxSource={computed.fcMaxSource} />
+          </div>
+        )}
       </Section>
 
       <Section
         id="force-mobilite"
+        hidden={cache('forceMobilite')}
         backTop
         scores={[
           ...(SHOW_BACK_HEALTH ? [{ label: 'Indice de santé du dos', score: computed.backHealth }] : []),

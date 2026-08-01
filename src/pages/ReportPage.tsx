@@ -61,6 +61,7 @@ import { kgToLb, cmToFeetInches } from '../lib/units'
 import { dualWeight, estimatedGoalDate } from '../lib/objectif-format'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, recoveryRows, aerobicProtocolLabel } from '../lib/report-helpers'
+import { isSectionVisible, parseHiddenSections, type ReportSectionKey } from '../lib/report-sections'
 import logo from '../assets/logo-conseil.png'
 import '../print.css'
 
@@ -310,6 +311,10 @@ export function ReportPage() {
     )
   }
 
+  // Sections retirées par Marie pour ce client (réglage du dashboard). Le même
+  // réglage pilote le document HTML : ce que Marie masque disparaît des deux.
+  const masquees = parseHiddenSections(client.reportHiddenSections)
+  const montre = (k: ReportSectionKey) => isSectionVisible(k, masquees)
   const shared = { latest, bilans: scopedBilans, chrono, syntheses, profile, weightUnit: client.unitWeight }
 
   return (
@@ -330,13 +335,22 @@ export function ReportPage() {
         ]}
       />
       <OverviewSection client={client} synth={latestComputed} {...shared} />
-      <CompositionSection {...shared} computed={latestComputed} />
-      <CardioSection {...shared} computed={latestComputed} />
-      <ForceSection {...shared} />
-      {SHOW_BACK_HEALTH && <DosSection {...shared} />}
+      {montre('composition') && <CompositionSection {...shared} computed={latestComputed} />}
+      {montre('cardio') && <CardioSection {...shared} computed={latestComputed} hidden={masquees} />}
+      {montre('forceMobilite') && <ForceSection {...shared} />}
+      {montre('forceMobilite') && SHOW_BACK_HEALTH && <DosSection {...shared} />}
       <GlobalScoreSection computed={latestComputed} profile={profile} />
       <ObjectifSection client={client} latest={latest} chrono={chrono} profile={profile} />
-      <ForcesEtPlanSection latest={latest} coachName={coachName} signature={signature} customPrincipe={{ title: client.principePersoTitre, line: client.principePersoTexte }} />
+      {(montre('planAction') || montre('motKine')) && (
+        <ForcesEtPlanSection
+          latest={latest}
+          coachName={coachName}
+          signature={signature}
+          customPrincipe={{ title: client.principePersoTitre, line: client.principePersoTexte }}
+          showPlan={montre('planAction')}
+          showMot={montre('motKine')}
+        />
+      )}
     </article>
   )
 }
@@ -1699,7 +1713,7 @@ function PdfBloodPressureBar({
   )
 }
 
-function CardioExtras({ latest, computed }: { latest: Bilan; computed: BilanComputed }) {
+function CardioExtras({ latest, computed, hidden }: { latest: Bilan; computed: BilanComputed; hidden: Set<ReportSectionKey> }) {
   const d = latest.data as Record<string, unknown>
   const sys = num(d.pa_systolique)
   const dia = num(d.pa_diastolique)
@@ -1719,7 +1733,7 @@ function CardioExtras({ latest, computed }: { latest: Bilan; computed: BilanComp
 
   return (
     <>
-      {(sys !== null || dia !== null) && (
+      {isSectionVisible('pressionArterielle', hidden) && (sys !== null || dia !== null) && (
         <div style={{ marginBottom: '8mm' }}>
           <BlockTitle>Pression artérielle au repos</BlockTitle>
           <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '4mm' }}>
@@ -1732,7 +1746,7 @@ function CardioExtras({ latest, computed }: { latest: Bilan; computed: BilanComp
         </div>
       )}
 
-      {zoneRows.length > 0 && (
+      {isSectionVisible('zonesEntrainement', hidden) && zoneRows.length > 0 && (
         <div className="break-inside-avoid" style={{ marginBottom: '8mm' }}>
           <BlockTitle>Zones d'entraînement cardiaque</BlockTitle>
           <p style={{ fontSize: '9.5pt', color: INK_SOFT, marginBottom: '3mm' }}>
@@ -1833,7 +1847,7 @@ function CompositionSection({ computed, ...props }: DomainProps & { computed: Bi
   )
 }
 
-function CardioSection({ computed, ...props }: DomainProps & { computed: BilanComputed }) {
+function CardioSection({ computed, hidden, ...props }: DomainProps & { computed: BilanComputed; hidden: Set<ReportSectionKey> }) {
   return (
     <DomainSection
       {...props}
@@ -1848,7 +1862,7 @@ function CardioSection({ computed, ...props }: DomainProps & { computed: BilanCo
         { kind: 'line', key: 'vo2max', title: 'VO2max (ml/kg/min)', color: GOLD },
         { kind: 'line', key: 'fc_repos', title: 'Fréquence cardiaque au repos (bpm)', color: MARINE }
       ]}
-      bottomExtra={<CardioExtras latest={props.latest} computed={computed} />}
+      bottomExtra={<CardioExtras latest={props.latest} computed={computed} hidden={hidden} />}
     />
   )
 }
@@ -2193,7 +2207,7 @@ function MiniSpark({ values }: { values: number[] }) {
 }
 
 // ── Section 8 — Clôture (mot du kinésiologue + principes) ────────────────────
-function ForcesEtPlanSection({ latest, coachName, signature, customPrincipe }: { latest: Bilan; coachName: string; signature: string; customPrincipe: { title: string | null; line: string | null } }) {
+function ForcesEtPlanSection({ latest, coachName, signature, customPrincipe, showPlan, showMot }: { latest: Bilan; coachName: string; signature: string; customPrincipe: { title: string | null; line: string | null }; showPlan: boolean; showMot: boolean }) {
   const notes = typeof latest.data.notes === 'string' ? latest.data.notes.trim() : ''
   const signOff = signature.trim() || `${coachName || 'Marie-Eve Bélanger'}\nKinésiologue`
 
@@ -2203,13 +2217,16 @@ function ForcesEtPlanSection({ latest, coachName, signature, customPrincipe }: {
   // kinésiologue, les principes et le pied de page.
   return (
     <ReportSection title="En terminant" sectionNumber="Section 8">
-      <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
-        <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>Le mot de votre kinésiologue</p>
-        {notes !== '' && <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '5mm' }}>{notes}</p>}
-        <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: notes !== '' ? 'italic' : 'normal' }}>{signOff}</p>
-      </div>
+      {showMot && (
+        <div className="break-inside-avoid" style={{ background: CREAM, borderRadius: '4mm', padding: '8mm 10mm' }}>
+          <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '3mm' }}>Le mot de votre kinésiologue</p>
+          {notes !== '' && <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.55, whiteSpace: 'pre-line', marginBottom: '5mm' }}>{notes}</p>}
+          <p style={{ fontSize: '10.5pt', color: MARINE, lineHeight: 1.4, whiteSpace: 'pre-line', fontStyle: notes !== '' ? 'italic' : 'normal' }}>{signOff}</p>
+        </div>
+      )}
 
       {/* Cinq piliers de bien-être — clôture, identique au document interactif. */}
+      {showPlan && (
       <div className="break-inside-avoid" style={{ marginTop: '10mm', paddingTop: '6mm', borderTop: `1px solid ${GRID}` }}>
         <p style={{ fontSize: '9pt', textTransform: 'uppercase', letterSpacing: '0.12em', color: GOLD, marginBottom: '1.5mm' }}>L'équilibre au quotidien</p>
         <p className="report-display" style={{ fontSize: '14pt', fontWeight: 600, color: MARINE, marginBottom: '4mm' }}>{principesCountWord(customPrincipe)} principes essentiels</p>
@@ -2223,6 +2240,7 @@ function ForcesEtPlanSection({ latest, coachName, signature, customPrincipe }: {
           ))}
         </div>
       </div>
+      )}
 
       <p style={{ marginTop: 'auto', paddingTop: '10mm', fontSize: '8pt', color: AXIS, textAlign: 'center' }}>
         Kinésio Conseil — {reportDateLabel()}
