@@ -31,8 +31,8 @@ Un test transcrit maintenant **le tableau en entier** et le compare bande par ba
 dériverait ne planterait rien : elle ferait basculer un client d'une catégorie à l'autre, de façon
 parfaitement plausible. D'où l'exhaustivité plutôt qu'un échantillon.
 
-⚠️ L'**ADR 0031** porte encore l'ancienne attribution dans son titre et son texte. Les ADR étant immuables,
-elle n'a pas été modifiée — à trancher avec Nicholas (addendum ou ADR de correction).
+L'**ADR 0031** portait l'ancienne attribution. Les ADR étant immuables, elle n'est pas modifiée : une
+**[[../decisions/0036-source-table-aerobie-corrigee|ADR 0036]]** la corrige et fait foi sur ce point.
 
 524 tests (520 avant).
 

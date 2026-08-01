@@ -45,6 +45,7 @@ const CPAFLA_GUIDE: NormSource = {
  * Cette source a d'abord été attribuée à l'aide-mémoire SPAP-SCPE (outil n° 26),
  * qui reproduit ce même tableau — les valeurs encodées étaient donc justes, mais
  * la feuille des barèmes citait un document que Marie n'a pas sous la main.
+ * Voir ADR 0036 (qui corrige l'attribution de l'ADR 0031).
  */
 const CPAFLA_AEROBIE: NormSource = {
   short: 'CPAFLA',

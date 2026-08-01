@@ -120,7 +120,7 @@ const BACK_ENDURANCE: Ranges = [
 // Ces valeurs avaient d'abord été saisies depuis l'aide-mémoire SPAP-SCPE
 // (outil n° 26), qui reproduit ce même tableau : les 48 seuils étaient donc
 // déjà exacts, seule l'attribution était fautive. Vérifié bande par bande
-// contre le tableau du guide.
+// contre le tableau du guide — voir ADR 0036, qui corrige l'ADR 0031.
 //
 // Le tableau couvre 15 à 69 ans. En dehors, `getCpaflaRange` ne retourne rien
 // et la cotation retombe sur l'ACSM plutôt que d'extrapoler.
