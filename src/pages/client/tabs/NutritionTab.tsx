@@ -249,6 +249,9 @@ export function NutritionTab() {
   const [manualFatG, setManualFatG] = useState<string>(
     client.nutritionManualFatG != null ? String(client.nutritionManualFatG) : ''
   )
+  const [manualFiberG, setManualFiberG] = useState<string>(
+    client.nutritionManualFiberG != null ? String(client.nutritionManualFiberG) : ''
+  )
   const [manualCarbG, setManualCarbG] = useState<string>(
     client.nutritionManualCarbG != null ? String(client.nutritionManualCarbG) : ''
   )
@@ -340,7 +343,8 @@ export function NutritionTab() {
       return manualMacros({
         nutritionManualProteinG: manualProteinG.trim() !== '' ? Number(manualProteinG) : null,
         nutritionManualFatG: manualFatG.trim() !== '' ? Number(manualFatG) : null,
-        nutritionManualCarbG: manualCarbG.trim() !== '' ? Number(manualCarbG) : null
+        nutritionManualCarbG: manualCarbG.trim() !== '' ? Number(manualCarbG) : null,
+        nutritionManualFiberG: manualFiberG.trim() !== '' ? Number(manualFiberG) : null
       })
     }
     const data = latestData
@@ -364,11 +368,13 @@ export function NutritionTab() {
       fatMaxG: fatMaxG.trim() !== '' ? Number(fatMaxG) : null,
       targetKcalOverride: null
     })
-  }, [nutritionEnabled, macroManual, manualProteinG, manualFatG, manualCarbG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerKgInput, fatMaxG])
+  }, [nutritionEnabled, macroManual, manualProteinG, manualFatG, manualCarbG, manualFiberG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerKgInput, fatMaxG])
 
   // Hydratation recommandée ≈ 35 ml/kg (milieu de la fourchette 30–40), arrondie à 100 ml.
-  const hydraWeightKg = latestData && typeof latestData.poids_kg === 'number' ? latestData.poids_kg : null
-  const hydraSuggestion = hydraWeightKg != null ? Math.round((hydraWeightKg * 35) / 100) * 100 : null
+  /** Poids du dernier bilan : ce que le facteur protéique multiplie, et la base
+   *  de la suggestion d'hydratation. */
+  const poidsActuelKg = latestData && typeof latestData.poids_kg === 'number' ? latestData.poids_kg : null
+  const hydraSuggestion = poidsActuelKg != null ? Math.round((poidsActuelKg * 35) / 100) * 100 : null
 
   /** Valide + enregistre. Retourne `true` si la sauvegarde a réussi. */
   async function persist(): Promise<boolean> {
@@ -403,6 +409,8 @@ export function NutritionTab() {
     const protGVal = macroOn && manualProteinG.trim() !== '' ? Number(manualProteinG) : null
     const fatGVal = macroOn && manualFatG.trim() !== '' ? Number(manualFatG) : null
     const carbGVal = macroOn && manualCarbG.trim() !== '' ? Number(manualCarbG) : null
+    // Fibres : facultatives même en manuel — vides, elles retombent sur 14 g / 1000 kcal.
+    const fiberGVal = macroOn && manualFiberG.trim() !== '' ? Number(manualFiberG) : null
     if (protGVal !== null && (!Number.isFinite(protGVal) || protGVal < 0 || protGVal > 500)) {
       setError('Les protéines (g) doivent être comprises entre 0 et 500.')
       return false
@@ -413,6 +421,10 @@ export function NutritionTab() {
     }
     if (carbGVal !== null && (!Number.isFinite(carbGVal) || carbGVal < 0 || carbGVal > 800)) {
       setError('Les glucides (g) doivent être compris entre 0 et 800.')
+      return false
+    }
+    if (fiberGVal !== null && (!Number.isFinite(fiberGVal) || fiberGVal < 0 || fiberGVal > 200)) {
+      setError('Les fibres (g) doivent être comprises entre 0 et 200.')
       return false
     }
     if (macroOn && (protGVal === null || fatGVal === null || carbGVal === null)) {
@@ -441,6 +453,7 @@ export function NutritionTab() {
         nutritionManualProteinG: protGVal,
         nutritionManualFatG: fatGVal,
         nutritionManualCarbG: carbGVal,
+        nutritionManualFiberG: fiberGVal,
         nutritionRepasParJour: nutritionEnabled ? repasParJour : null,
         // Ancien modèle de jeûne (type unique + fenêtre) remplacé par le planning.
         jeuneType: null,
@@ -531,7 +544,7 @@ export function NutritionTab() {
     }
   }
 
-  /** IA : idées de menu (jusqu'à 2 journées) selon les macros + aliments. */
+  /** IA : idées de menu (une semaine) selon les macros + aliments. */
   async function generateMenuIdeas() {
     setAiError(null)
     setAiBusy('menu')
@@ -575,6 +588,7 @@ export function NutritionTab() {
       nutritionManualProteinG: manualProteinG.trim() !== '' ? Number(manualProteinG) : null,
       nutritionManualFatG: manualFatG.trim() !== '' ? Number(manualFatG) : null,
       nutritionManualCarbG: manualCarbG.trim() !== '' ? Number(manualCarbG) : null,
+      nutritionManualFiberG: manualFiberG.trim() !== '' ? Number(manualFiberG) : null,
       nutritionRepasParJour: repasParJour,
       jeunePlanning: programs,
       hydratationMlParJour: hydratationMl.trim() !== '' ? Number(hydratationMl) : null,
@@ -608,6 +622,7 @@ export function NutritionTab() {
     if ('nutritionManualProteinG' in d) setManualProteinG(num(d.nutritionManualProteinG) != null ? String(d.nutritionManualProteinG) : '')
     if ('nutritionManualFatG' in d) setManualFatG(num(d.nutritionManualFatG) != null ? String(d.nutritionManualFatG) : '')
     if ('nutritionManualCarbG' in d) setManualCarbG(num(d.nutritionManualCarbG) != null ? String(d.nutritionManualCarbG) : '')
+    if ('nutritionManualFiberG' in d) setManualFiberG(num(d.nutritionManualFiberG) != null ? String(d.nutritionManualFiberG) : '')
     if (num(d.nutritionRepasParJour) != null) setRepasParJour(Number(d.nutritionRepasParJour))
     if (Array.isArray(d.jeunePlanning)) setPrograms(d.jeunePlanning as FastingProgram[])
     if ('hydratationMlParJour' in d) setHydratationMl(num(d.hydratationMlParJour) != null ? String(d.hydratationMlParJour) : '')
@@ -905,6 +920,24 @@ export function NutritionTab() {
                     <input type="number" min={0} max={800} step={5} value={manualCarbG} onChange={e => setManualCarbG(e.target.value)} placeholder="200" className={macroInput} />
                     <span className="text-marine/60">g</span>
                   </div>
+                  {/* Les fibres ne dépendent pas des trois autres macros : laissé
+                      vide, le champ retombe sur la règle des 14 g / 1000 kcal. */}
+                  <div className="flex items-center gap-2 text-marine text-sm">
+                    <span className="w-20">Fibres</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={200}
+                      step={1}
+                      value={manualFiberG}
+                      onChange={e => setManualFiberG(e.target.value)}
+                      placeholder={liveMacros ? String(liveMacros.fiberG) : "30"}
+                      className={macroInput}
+                    />
+                    <span className="text-marine/60">
+                      g<span className="text-marine/40"> · vide = calcul auto (14 g / 1000 kcal)</span>
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2 text-marine text-sm">
                     <span className="w-20">Calories</span>
                     <span className="text-marine/60">
@@ -931,6 +964,23 @@ export function NutritionTab() {
                     />
                     <span className="text-marine/60">
                       g par kg de poids corporel
+                      {/* Le poids multiplié et le total, affichés : sans eux le
+                          résultat en grammes tombe du ciel et rien ne permet de
+                          le vérifier. Poids = dernier bilan. */}
+                      {poidsActuelKg !== null && (
+                        <span className="text-marine/70">
+                          {' × '}
+                          <strong className="font-semibold">
+                            {poidsActuelKg.toLocaleString('fr-CA', { maximumFractionDigits: 1 })} kg
+                          </strong>
+                          {liveMacros && (
+                            <>
+                              {' = '}
+                              <strong className="font-semibold">{liveMacros.proteinG} g</strong>
+                            </>
+                          )}
+                        </span>
+                      )}
                       <span className="text-marine/40"> · usuel {PROTEIN_PER_KG_RANGE.min} à {PROTEIN_PER_KG_RANGE.usual}, jusqu’à {PROTEIN_PER_KG_RANGE.max}</span>
                     </span>
                   </div>
@@ -1065,7 +1115,7 @@ export function NutritionTab() {
             type="button"
             onClick={() => hydraSuggestion != null && setHydratationMl(String(hydraSuggestion))}
             disabled={hydraSuggestion == null}
-            title={hydraSuggestion == null ? 'Ajoutez un poids dans un bilan pour activer le calcul.' : `≈ 35 ml × ${hydraWeightKg} kg`}
+            title={hydraSuggestion == null ? 'Ajoutez un poids dans un bilan pour activer le calcul.' : `≈ 35 ml × ${poidsActuelKg} kg`}
             className="px-2.5 py-1 rounded-full border border-gold/40 text-sm text-marine/70 transition-colors hover:border-gold hover:bg-gold/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:border-gold/40 disabled:hover:bg-transparent"
           >
             🧮 Calculer d'après le poids

@@ -82,6 +82,12 @@ export const clients = sqliteTable('clients', {
   nutritionManualProteinG: real('nutrition_manual_protein_g'),
   nutritionManualFatG: real('nutrition_manual_fat_g'),
   nutritionManualCarbG: real('nutrition_manual_carb_g'),
+  /**
+   * Fibres imposées en mode manuel (g). `null` = calcul automatique
+   * (14 g / 1000 kcal). Les trois autres macros déterminent les calories ;
+   * les fibres n'en dépendent pas, d'où un champ à part.
+   */
+  nutritionManualFiberG: real('nutrition_manual_fiber_g'),
   // Nombre de repas / jour pour répartir les macros. `null` = défaut (3).
   nutritionRepasParJour: integer('nutrition_repas_par_jour'),
   // Principe personnalisé optionnel (6e pilier) montré en clôture du rapport

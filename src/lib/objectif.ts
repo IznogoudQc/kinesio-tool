@@ -23,6 +23,8 @@ export function manualMacros(client: {
   nutritionManualProteinG?: number | null
   nutritionManualFatG?: number | null
   nutritionManualCarbG?: number | null
+  /** Fibres imposées (g). `null`/absent → calcul auto (14 g / 1000 kcal). */
+  nutritionManualFiberG?: number | null
 }): MacroEstimate | null {
   const proteinG = client.nutritionManualProteinG
   const fatG = client.nutritionManualFatG
@@ -36,7 +38,12 @@ export function manualMacros(client: {
     proteinG: Math.round(proteinG as number),
     fatG: Math.round(fatG as number),
     carbsG: Math.round(carbsG as number),
-    fiberG: fiberTargetG(targetKcal)
+    // Fibres : la valeur de Marie prime, sinon la règle des 14 g / 1000 kcal.
+    // Elles ne dépendent pas des trois autres macros, d’où un champ à part.
+    fiberG:
+      typeof client.nutritionManualFiberG === 'number' && Number.isFinite(client.nutritionManualFiberG)
+        ? Math.round(client.nutritionManualFiberG)
+        : fiberTargetG(targetKcal)
   }
 }
 

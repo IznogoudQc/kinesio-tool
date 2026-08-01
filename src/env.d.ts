@@ -49,6 +49,8 @@ interface Client {
   nutritionManualProteinG: number | null
   nutritionManualFatG: number | null
   nutritionManualCarbG: number | null
+  /** Fibres imposées en mode manuel (g). `null` = 14 g / 1000 kcal. */
+  nutritionManualFiberG: number | null
   /** Nombre de repas / jour pour répartir les macros. `null` = défaut (3). */
   nutritionRepasParJour: number | null
   /** Principe personnalisé (6e pilier) affiché en clôture du rapport si rempli. `null`/vide = non affiché. */
@@ -443,6 +445,7 @@ interface Window {
           nutritionManualProteinG?: number | null
           nutritionManualFatG?: number | null
           nutritionManualCarbG?: number | null
+          nutritionManualFiberG?: number | null
           nutritionRepasParJour?: number | null
           principePersoTitre?: string | null
           principePersoTexte?: string | null

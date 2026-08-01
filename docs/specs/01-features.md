@@ -2,6 +2,35 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.107 — Poids affiché, fibres modifiables, menu IA sur 7 jours)
+
+Trois finitions de la v0.9.106.
+
+### Le poids qui sert au calcul des protéines est affiché
+
+La ligne Protéines montre maintenant l'opération complète :
+`1,4 g par kg de poids corporel × 91,8 kg = 129 g`. Le poids vient du dernier
+bilan. Sans lui, le total en grammes ne pouvait pas être vérifié d'un coup d'œil.
+
+### Fibres modifiables en mode manuel
+
+Un quatrième champ (Protéines / Lipides / Glucides / **Fibres**) permet à Marie
+d'imposer une cible de fibres. Laissé vide, il retombe sur la règle automatique
+des 14 g / 1000 kcal — d'où un champ facultatif, contrairement aux trois autres
+qui déterminent les calories. Nouvelle colonne `nutrition_manual_fiber_g`
+(migration `0031`), reprise dans le modèle de protocole exportable et dans le
+document client.
+
+### Le menu IA produit bien 7 journées
+
+La v0.9.106 avait ouvert 7 champs de saisie, mais l'IA n'en remplissait que 2 :
+la consigne demandait « 1 à 2 journées » et le schéma de validation plafonnait
+à 3 (un dépassement aurait fait échouer toute la réponse, pas tronqué). Consigne
+et plafond alignés sur 7, et budget de tokens porté à 4000 pour le menu — une
+réponse coupée en plein JSON remontait en erreur.
+
+Version : 0.9.106 → 0.9.107.
+
 ## ✅ Fait (v0.9.106 — Protéines au poids corporel + menu de 7 jours)
 
 Les deux dernières demandes de Marie.

@@ -66,6 +66,7 @@ const UpdateClientSchema = z.object({
   nutritionMacroManual: z.boolean().optional(),
   nutritionManualProteinG: z.union([z.number().min(0).max(500), z.null()]).optional(),
   nutritionManualFatG: z.union([z.number().min(0).max(400), z.null()]).optional(),
+  nutritionManualFiberG: z.union([z.number().min(0).max(200), z.null()]).optional(),
   nutritionManualCarbG: z.union([z.number().min(0).max(800), z.null()]).optional(),
   nutritionRepasParJour: z.union([z.number().int().min(1).max(8), z.null()]).optional(),
   principePersoTitre: z.union([z.string().max(60).trim(), z.null()]).optional(),

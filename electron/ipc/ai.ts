@@ -95,9 +95,13 @@ const SuppPlanSchema = z.object({
   interactions: z.array(z.string()).default([])
 })
 
-/** Idées de menu structurées : jusqu'à quelques journées, chacune une liste de lignes. */
+/**
+ * Idées de menu structurées : une semaine, chaque journée une liste de lignes.
+ * Le plafond doit rester ≥ au nombre de journées du formulaire — un `.max()`
+ * trop bas ferait échouer tout le parse au lieu de tronquer.
+ */
 const MenuPlanSchema = z.object({
-  journees: z.array(z.object({ lignes: z.array(z.string()) })).max(3).default([])
+  journees: z.array(z.object({ lignes: z.array(z.string()) })).max(7).default([])
 })
 
 const SUPPLEMENTS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
@@ -123,7 +127,7 @@ Règles :
 
 const MENU_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
-Propose 1 à 2 EXEMPLES de journées (IDÉES DE MENU génériques, NON prescriptives) qui respectent approximativement les cibles de calories et de macros fournies, en tenant compte des aliments à privilégier / à éviter / aimés / non aimés.
+Propose EXACTEMENT 7 EXEMPLES de journées (IDÉES DE MENU génériques, NON prescriptives) qui respectent approximativement les cibles de calories et de macros fournies, en tenant compte des aliments à privilégier / à éviter / aimés / non aimés.
 
 Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suivant exactement ce schéma :
 
@@ -139,7 +143,8 @@ Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suiv
 }
 
 Règles :
-- 1 à 2 journées. Chaque « lignes » = des lignes « Repas : aliments », SANS puce et SANS Markdown (pas de #, *, tableaux, émojis).
+- EXACTEMENT 7 journées dans « journees » — une semaine complète, aucune journée omise. Chaque « lignes » = des lignes « Repas : aliments », SANS puce et SANS Markdown (pas de #, *, tableaux, émojis).
+- Reste CONCIS : 4 lignes par journée (Déjeuner, Dîner, Souper, Collations), une seule phrase chacune. Sept journées doivent tenir dans la réponse.
 - Ne mets PAS d'en-tête « Journée N » dans les lignes : la numérotation est ajoutée par l'application.
 - N'ajoute AUCUN total de calories ou de macros : ces calculs relèvent d'une nutritionniste et ne doivent pas figurer.
 - PRIORISE les aliments RICHES EN FIBRES (légumes, fruits avec pelure, légumineuses, grains entiers, noix/graines) pour t'approcher de la cible de fibres indiquée. N'écris AUCUN total de fibres en grammes.
@@ -378,7 +383,9 @@ export function registerAIHandlers(): void {
     try {
       const response = await callAnthropic(apiKey, {
         model: MODEL_GENERATE,
-        max_tokens: 1600,
+        // Sept journées de menu ne tiennent pas dans le budget des suppléments :
+        // une réponse coupée casse le JSON et remonte en « BAD_RESPONSE ».
+        max_tokens: payload.type === 'supplements' ? 1600 : 4000,
         system: payload.type === 'supplements' ? SUPPLEMENTS_SYSTEM : MENU_SYSTEM,
         messages: [{ role: 'user', content: buildNutritionMessage(payload) }]
       })

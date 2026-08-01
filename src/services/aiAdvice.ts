@@ -90,7 +90,7 @@ export const aiAdviceService = {
     return res.plan as AiSuppPlan
   },
 
-  /** IA : idées de menu structurées (jusqu'à 2 journées) selon macros + aliments. */
+  /** IA : idées de menu structurées (une semaine) selon macros + aliments. */
   async generateMenuPlan(payload: {
     kcal?: number | null
     proteinG?: number | null

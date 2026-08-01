@@ -39,6 +39,7 @@ export const clientsService = {
       nutritionManualProteinG?: number | null
       nutritionManualFatG?: number | null
       nutritionManualCarbG?: number | null
+      nutritionManualFiberG?: number | null
       nutritionRepasParJour?: number | null
       principePersoTitre?: string | null
       principePersoTexte?: string | null
