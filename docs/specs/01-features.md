@@ -2,6 +2,27 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.108 — Lipides : grammes ou % des calories)
+
+Marie a transmis le repère du Guide du conseiller CPAFLA : les gras alimentaires
+devraient peser **30 à 40 % de l'apport calorique total**, selon les glucides
+consommés, les protéines restant constantes.
+
+L'app fixait les lipides par un plafond en grammes, qui ne tient cette fourchette
+qu'entre 1350 et 1800 kcal — au-delà, le défaut de 60 g passe sous les 30 % sans
+rien signaler. Deux bases sont maintenant disponibles, au choix par client :
+
+- **max g** — plafond fixe, comportement historique et défaut. L'interface
+  affiche désormais la part obtenue (« = 32 % des calories ») et avertit en ambre
+  hors fourchette, avec les grammes équivalents.
+- **% des kcal** — Marie choisit un pourcentage (défaut 35 %) et les grammes
+  suivent les calories de chaque client.
+
+Aucun chiffre client ne change tant que le mode n'est pas basculé, et la bascule
+part de la valeur déjà affichée. Voir [[0037-lipides-grammes-ou-pourcentage]].
+
+Version : 0.9.107 → 0.9.108.
+
 ## ✅ Fait (v0.9.107 — Poids affiché, fibres modifiables, menu IA sur 7 jours)
 
 Trois finitions de la v0.9.106.

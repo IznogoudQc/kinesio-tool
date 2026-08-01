@@ -25,7 +25,12 @@ import {
   fiberTargetG,
   dailyDeficitForRate,
   weeklyLossFromDeficit,
-  weeksToGoal
+  weeksToGoal,
+  DEFAULT_FAT_MAX_G,
+  FAT_PCT_OF_KCAL_RANGE,
+  fatPctOfKcal,
+  fatGramsRangeForKcal,
+  DEFAULT_FAT_PCT
 } from './nutrition.ts'
 
 const close = (a: number, b: number, eps = 0.15) => Math.abs(a - b) <= eps
@@ -221,4 +226,65 @@ test('la fourchette annoncée à Marie encadre bien le défaut', () => {
   assert.ok(PROTEIN_PER_KG_RANGE.min <= DEFAULT_PROTEIN_PER_KG)
   assert.ok(DEFAULT_PROTEIN_PER_KG <= PROTEIN_PER_KG_RANGE.max)
   assert.equal(DEFAULT_PROTEIN_PER_KG, PROTEIN_PER_KG_RANGE.usual)
+})
+
+test('fatPctOfKcal : part des calories venant des lipides', () => {
+  // 60 g × 9 = 540 kcal sur 1662 → 32,5 %
+  assert.equal(Math.round((fatPctOfKcal(60, 1662) as number) * 10) / 10, 32.5)
+  assert.equal(fatPctOfKcal(60, 0), null)
+  assert.equal(fatPctOfKcal(null, 1800), null)
+})
+
+test('fatPctOfKcal : le défaut de 60 g sort de la fourchette au-delà de 1800 kcal', () => {
+  // C'est le piège du plafond fixe : la part chute quand les calories montent.
+  assert.ok((fatPctOfKcal(DEFAULT_FAT_MAX_G, 1800) as number) >= FAT_PCT_OF_KCAL_RANGE.min)
+  assert.ok((fatPctOfKcal(DEFAULT_FAT_MAX_G, 2200) as number) < FAT_PCT_OF_KCAL_RANGE.min)
+})
+
+test('fatGramsRangeForKcal : bornes en grammes de la fourchette 30-40 %', () => {
+  const r = fatGramsRangeForKcal(2000)
+  assert.ok(r)
+  assert.equal(r.min, 67) // 2000 × 0,30 / 9
+  assert.equal(r.max, 89) // 2000 × 0,40 / 9
+  assert.equal(fatGramsRangeForKcal(0), null)
+})
+
+test('estimateMacros : mode % — les lipides suivent les calories', () => {
+  const base = {
+    weightKg: 99.8, heightCm: 176, age: 48, sex: 'M' as const,
+    activity: 'modere' as const, leanKg: 69.66, dailyDeficitKcal: 550
+  }
+  const enG = estimateMacros({ ...base, fatMaxG: 60, fatMode: 'g' as const })
+  const enPct = estimateMacros({ ...base, fatMaxG: 60, fatMode: 'pct' as const, fatPct: 35 })
+  assert.ok(enG && enPct)
+  // Mêmes calories, mêmes protéines : seuls les lipides (et donc les glucides) bougent.
+  assert.equal(enG.targetKcal, enPct.targetKcal)
+  assert.equal(enG.proteinG, enPct.proteinG)
+  assert.equal(enG.fatG, 60)
+  assert.equal(enPct.fatG, Math.round((enPct.targetKcal * 35) / 100 / 9))
+  // Et la part obtenue retombe bien sur 35 % (à l'arrondi près).
+  assert.ok(Math.abs((fatPctOfKcal(enPct.fatG, enPct.targetKcal) as number) - 35) < 0.5)
+})
+
+test('estimateMacros : sans fatMode, comportement historique inchangé', () => {
+  const base = {
+    weightKg: 99.8, heightCm: 176, age: 48, sex: 'M' as const,
+    activity: 'modere' as const, leanKg: 69.66, dailyDeficitKcal: 550, fatMaxG: 80
+  }
+  // Aucun client existant ne doit voir ses chiffres changer : absent, null et 'g'
+  // doivent donner exactement le même résultat.
+  const sansMode = estimateMacros(base)
+  assert.equal(sansMode?.fatG, 80)
+  assert.equal(estimateMacros({ ...base, fatMode: null })?.fatG, 80)
+  assert.equal(estimateMacros({ ...base, fatMode: 'g' as const })?.fatG, 80)
+})
+
+test('estimateMacros : mode % sans valeur → milieu de la fourchette (35 %)', () => {
+  const m = estimateMacros({
+    weightKg: 99.8, heightCm: 176, age: 48, sex: 'M', activity: 'modere',
+    leanKg: 69.66, dailyDeficitKcal: 550, fatMode: 'pct', fatPct: null
+  })
+  assert.ok(m)
+  assert.equal(m.fatG, Math.round((m.targetKcal * DEFAULT_FAT_PCT) / 100 / 9))
+  assert.ok(DEFAULT_FAT_PCT >= FAT_PCT_OF_KCAL_RANGE.min && DEFAULT_FAT_PCT <= FAT_PCT_OF_KCAL_RANGE.max)
 })

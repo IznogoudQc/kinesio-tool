@@ -16,9 +16,14 @@ import {
   PROTEIN_PER_KG_RANGE,
   DEFAULT_FAT_MAX_G,
   DEFAULT_MEALS_PER_DAY,
+  FAT_PCT_OF_KCAL_RANGE,
+  DEFAULT_FAT_PCT,
+  type FatMode,
   bodyFatGoal,
   dailyDeficitForRate,
   estimateMacros,
+  fatGramsRangeForKcal,
+  fatPctOfKcal,
   macrosPerMeal,
   type ActivityLevel,
   type MacroEstimate
@@ -240,6 +245,11 @@ export function NutritionTab() {
     String(client.nutritionProteinPerKg ?? DEFAULT_PROTEIN_PER_KG)
   )
   const [fatMaxG, setFatMaxG] = useState<string>(String(client.nutritionFatMaxG ?? DEFAULT_FAT_MAX_G))
+  // Base des lipides : plafond en g (historique, défaut) ou % des calories.
+  const [fatMode, setFatMode] = useState<FatMode>(client.nutritionFatMode === 'pct' ? 'pct' : 'g')
+  const [fatPctInput, setFatPctInput] = useState<string>(
+    client.nutritionFatPct != null ? String(client.nutritionFatPct) : String(DEFAULT_FAT_PCT)
+  )
   // Mode des macros : `false` = calculées par la formule (auto) ; `true` = Marie tape
   // les grammes (protéines/lipides/glucides) et les calories se déduisent.
   const [macroManual, setMacroManual] = useState(client.nutritionMacroManual ?? false)
@@ -366,14 +376,22 @@ export function NutritionTab() {
       dailyDeficitKcal: dailyDeficitForRate(rateKgPerWeek),
       proteinPerKg: proteinPerKgInput.trim() !== '' ? Number(proteinPerKgInput) : null,
       fatMaxG: fatMaxG.trim() !== '' ? Number(fatMaxG) : null,
+      fatMode,
+      fatPct: fatPctInput.trim() !== '' ? Number(fatPctInput) : null,
       targetKcalOverride: null
     })
-  }, [nutritionEnabled, macroManual, manualProteinG, manualFatG, manualCarbG, manualFiberG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerKgInput, fatMaxG])
+  }, [nutritionEnabled, macroManual, manualProteinG, manualFatG, manualCarbG, manualFiberG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerKgInput, fatMaxG, fatMode, fatPctInput])
 
   // Hydratation recommandée ≈ 35 ml/kg (milieu de la fourchette 30–40), arrondie à 100 ml.
   /** Poids du dernier bilan : ce que le facteur protéique multiplie, et la base
    *  de la suggestion d'hydratation. */
   const poidsActuelKg = latestData && typeof latestData.poids_kg === 'number' ? latestData.poids_kg : null
+
+  // Part des calories venant des lipides, contrôlée contre le repère 30-40 %.
+  const fatPct = liveMacros ? fatPctOfKcal(liveMacros.fatG, liveMacros.targetKcal) : null
+  const fatGRange = liveMacros ? fatGramsRangeForKcal(liveMacros.targetKcal) : null
+  const fatPctHorsFourchette =
+    fatPct !== null && (fatPct < FAT_PCT_OF_KCAL_RANGE.min || fatPct > FAT_PCT_OF_KCAL_RANGE.max)
   const hydraSuggestion = poidsActuelKg != null ? Math.round((poidsActuelKg * 35) / 100) * 100 : null
 
   /** Valide + enregistre. Retourne `true` si la sauvegarde a réussi. */
@@ -447,6 +465,8 @@ export function NutritionTab() {
         nutritionRateKgPerWeek: nutritionEnabled ? rateKgPerWeek : null,
         nutritionProteinPerKg: nutritionEnabled ? proteinVal : null,
         nutritionFatMaxG: nutritionEnabled ? fatVal : null,
+        nutritionFatMode: nutritionEnabled ? fatMode : null,
+        nutritionFatPct: nutritionEnabled && fatPctInput.trim() !== '' ? Number(fatPctInput) : null,
         nutritionMacroManual: macroOn,
         // Calories déduites des grammes en mode manuel ; `null` en auto.
         nutritionTargetKcal: macroOn && liveMacros ? liveMacros.targetKcal : null,
@@ -584,6 +604,8 @@ export function NutritionTab() {
       nutritionRateKgPerWeek: rateKgPerWeek,
       nutritionProteinPerKg: proteinPerKgInput.trim() !== '' ? Number(proteinPerKgInput) : null,
       nutritionFatMaxG: fatMaxG.trim() !== '' ? Number(fatMaxG) : null,
+      nutritionFatMode: fatMode,
+      nutritionFatPct: fatPctInput.trim() !== '' ? Number(fatPctInput) : null,
       nutritionMacroManual: macroManual,
       nutritionManualProteinG: manualProteinG.trim() !== '' ? Number(manualProteinG) : null,
       nutritionManualFatG: manualFatG.trim() !== '' ? Number(manualFatG) : null,
@@ -618,6 +640,8 @@ export function NutritionTab() {
         num(d.nutritionProteinPerKg) != null ? String(d.nutritionProteinPerKg) : String(DEFAULT_PROTEIN_PER_KG)
       )
     if ('nutritionFatMaxG' in d) setFatMaxG(num(d.nutritionFatMaxG) != null ? String(d.nutritionFatMaxG) : String(DEFAULT_FAT_MAX_G))
+    if ('nutritionFatMode' in d) setFatMode(d.nutritionFatMode === 'pct' ? 'pct' : 'g')
+    if ('nutritionFatPct' in d) setFatPctInput(num(d.nutritionFatPct) != null ? String(d.nutritionFatPct) : String(DEFAULT_FAT_PCT))
     if ('nutritionMacroManual' in d) setMacroManual(!!d.nutritionMacroManual)
     if ('nutritionManualProteinG' in d) setManualProteinG(num(d.nutritionManualProteinG) != null ? String(d.nutritionManualProteinG) : '')
     if ('nutritionManualFatG' in d) setManualFatG(num(d.nutritionManualFatG) != null ? String(d.nutritionManualFatG) : '')
@@ -984,11 +1008,76 @@ export function NutritionTab() {
                       <span className="text-marine/40"> · usuel {PROTEIN_PER_KG_RANGE.min} à {PROTEIN_PER_KG_RANGE.usual}, jusqu’à {PROTEIN_PER_KG_RANGE.max}</span>
                     </span>
                   </div>
+                  {/* Lipides : deux bases au choix. Le plafond en grammes est
+                      l'historique ; le % des calories suit le repère 30-40 % du
+                      Guide du conseiller et s'adapte seul quand les calories
+                      bougent — un plafond fixe, lui, sort de la fourchette. */}
                   <div className="flex items-center gap-2 text-marine text-sm">
                     <span className="w-20">Lipides</span>
-                    <span className="text-marine/60">max</span>
-                    <input type="number" min={20} max={200} step={5} value={fatMaxG} onChange={e => setFatMaxG(e.target.value)} className={macroInput} />
-                    <span className="text-marine/60">g</span>
+                    <div className="flex rounded-md border border-cream-dark overflow-hidden text-xs">
+                      {([
+                        { v: 'g', label: 'max g' },
+                        { v: 'pct', label: '% des kcal' }
+                      ] as const).map(o => (
+                        <button
+                          key={o.v}
+                          type="button"
+                          onClick={() => {
+                            // Bascule sans rupture : on part de la valeur équivalente
+                            // à ce qui est déjà affiché, pas d'un défaut arbitraire.
+                            if (o.v === 'pct' && fatMode === 'g' && fatPct !== null) {
+                              setFatPctInput(String(Math.round(fatPct)))
+                            } else if (o.v === 'g' && fatMode === 'pct' && liveMacros) {
+                              setFatMaxG(String(liveMacros.fatG))
+                            }
+                            setFatMode(o.v)
+                          }}
+                          className={`px-2 py-1 transition-colors ${fatMode === o.v ? 'bg-gold text-marine font-semibold' : 'bg-white text-marine/60 hover:text-marine'}`}
+                        >
+                          {o.label}
+                        </button>
+                      ))}
+                    </div>
+                    {fatMode === 'pct' ? (
+                      <>
+                        <input
+                          type="number"
+                          min={FAT_PCT_OF_KCAL_RANGE.min}
+                          max={FAT_PCT_OF_KCAL_RANGE.max}
+                          step={1}
+                          value={fatPctInput}
+                          onChange={e => setFatPctInput(e.target.value)}
+                          placeholder={String(DEFAULT_FAT_PCT)}
+                          className={macroInput}
+                        />
+                        <span className="text-marine/60">
+                          % des calories
+                          {liveMacros && (
+                            <>
+                              {' = '}
+                              <strong className="font-semibold text-marine">{liveMacros.fatG} g</strong>
+                            </>
+                          )}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <input type="number" min={20} max={200} step={5} value={fatMaxG} onChange={e => setFatMaxG(e.target.value)} className={macroInput} />
+                        <span className="text-marine/60">g</span>
+                        {fatPct !== null && (
+                          <span className={fatPctHorsFourchette ? 'text-amber-700 font-medium' : 'text-marine/60'}>
+                            = {Math.round(fatPct)} % des calories
+                            {fatPctHorsFourchette && fatGRange && (
+                              <span className="font-normal">
+                                {' '}— hors du {FAT_PCT_OF_KCAL_RANGE.min}-{FAT_PCT_OF_KCAL_RANGE.max} % visé
+                                {' ('}
+                                {fatGRange.min} à {fatGRange.max} g ici{')'}
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 text-marine text-sm">
                     <span className="w-20">Glucides</span>

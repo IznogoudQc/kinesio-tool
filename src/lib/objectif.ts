@@ -59,6 +59,9 @@ export interface ObjectifClient {
   nutritionProteinPerLbLean: number | null
   nutritionProteinPerKg: number | null
   nutritionFatMaxG: number | null
+  /** Base des lipides : `'pct'` = % des calories, tout le reste = plafond en g. */
+  nutritionFatMode: string | null
+  nutritionFatPct: number | null
   nutritionTargetKcal: number | null
   /** Macros en saisie manuelle (Marie tape les grammes P/L/G ; calories déduites). */
   nutritionMacroManual?: boolean | null
@@ -99,6 +102,8 @@ export function buildObjectif(
           dailyDeficitKcal: dailyDeficitForRate(rate),
           proteinPerKg: client.nutritionProteinPerKg,
           fatMaxG: client.nutritionFatMaxG,
+          fatMode: client.nutritionFatMode === 'pct' ? 'pct' : 'g',
+          fatPct: client.nutritionFatPct,
           targetKcalOverride: client.nutritionTargetKcal
         })
       : null

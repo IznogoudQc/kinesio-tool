@@ -61,6 +61,8 @@ const UpdateClientSchema = z.object({
   // accepter n'importe quoi.
   nutritionProteinPerKg: z.union([z.number().min(0.3).max(4), z.null()]).optional(),
   nutritionProteinPerLbLean: ProteinPerLbLean,
+  nutritionFatMode: z.union([z.enum(['g', 'pct']), z.null()]).optional(),
+  nutritionFatPct: z.union([z.number().min(10).max(60), z.null()]).optional(),
   nutritionFatMaxG: FatMaxG,
   nutritionTargetKcal: TargetKcal,
   nutritionMacroManual: z.boolean().optional(),

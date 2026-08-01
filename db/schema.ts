@@ -73,6 +73,14 @@ export const clients = sqliteTable('clients', {
    */
   nutritionProteinPerKg: real('nutrition_protein_per_kg'),
   nutritionFatMaxG: real('nutrition_fat_max_g'),
+  /**
+   * Base de calcul des lipides : `'g'` (plafond fixe, historique et défaut) ou
+   * `'pct'` (part des calories, repère 30-40 % du Guide du conseiller CPAFLA).
+   * `null` = `'g'` — aucun client existant ne change de chiffres.
+   */
+  nutritionFatMode: text('nutrition_fat_mode'),
+  /** % des calories en lipides quand `nutritionFatMode = 'pct'`. `null` = 35 %. */
+  nutritionFatPct: real('nutrition_fat_pct'),
   // Calories cibles fixées manuellement (kcal). `null` = calcul automatique.
   nutritionTargetKcal: real('nutrition_target_kcal'),
   // Macros en saisie manuelle : Marie tape directement les grammes (glucides déduits).

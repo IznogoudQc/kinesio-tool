@@ -624,6 +624,8 @@ function ObjectifBlock({
           dailyDeficitKcal: dailyDeficitForRate(rate),
           proteinPerKg: client.nutritionProteinPerKg,
           fatMaxG: client.nutritionFatMaxG,
+          fatMode: client.nutritionFatMode === 'pct' ? 'pct' : 'g',
+          fatPct: client.nutritionFatPct,
           targetKcalOverride: client.nutritionTargetKcal
         })
       : null

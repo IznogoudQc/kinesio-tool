@@ -100,6 +100,43 @@ export const DEFAULT_PROTEIN_PER_KG = 1.4
 export const PROTEIN_PER_KG_RANGE = { min: 1.0, usual: 1.4, max: 1.6 }
 export const DEFAULT_FAT_MAX_G = 60
 
+/**
+ * Fourchette de lipides visée, en % de l'apport calorique total.
+ *
+ * Source : CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd. « La quantité totale de
+ * gras d'origine alimentaire devrait correspondre à 30 à 40 % de l'apport
+ * calorique total, selon la quantité de glucides consommée (la quantité de
+ * protéines doit demeurer relativement constante). »
+ *
+ * D'où les deux bases de calcul possibles (`FatMode`) : un plafond fixe en
+ * grammes ne tient la fourchette que sur une plage étroite de calories — 60 g
+ * couvrent 30-40 % entre 1350 et 1800 kcal seulement, et passent sous les 30 %
+ * au-delà. Le mode `'pct'` s'y adosse directement.
+ */
+export const FAT_PCT_OF_KCAL_RANGE = { min: 30, max: 40 }
+
+/** Base de calcul des lipides. `'g'` = plafond fixe (historique, défaut). */
+export type FatMode = 'g' | 'pct'
+/** Milieu de la fourchette — défaut quand Marie bascule en % sans préciser. */
+export const DEFAULT_FAT_PCT = 35
+
+/** Part des calories venant des lipides (%). `null` si l'un des deux manque. */
+export function fatPctOfKcal(fatG: number | null | undefined, targetKcal: number | null | undefined): number | null {
+  if (!Number.isFinite(fatG ?? NaN) || !Number.isFinite(targetKcal ?? NaN)) return null
+  if ((targetKcal as number) <= 0) return null
+  return ((fatG as number) * 9 * 100) / (targetKcal as number)
+}
+
+/** Bornes en grammes correspondant à la fourchette, pour des calories données. */
+export function fatGramsRangeForKcal(targetKcal: number | null | undefined): { min: number; max: number } | null {
+  if (!Number.isFinite(targetKcal ?? NaN) || (targetKcal as number) <= 0) return null
+  const kcal = targetKcal as number
+  return {
+    min: Math.round((kcal * FAT_PCT_OF_KCAL_RANGE.min) / 100 / 9),
+    max: Math.round((kcal * FAT_PCT_OF_KCAL_RANGE.max) / 100 / 9)
+  }
+}
+
 /** Fibres alimentaires visées : 14 g par 1000 kcal — référence Santé Canada / DRI
  *  (Institute of Medicine, 2005). Équivaut à ≈ 25 g/j (femme) et ≈ 38 g/j (homme).
  *  Comme la cible s'adosse aux calories, elle s'adapte à chaque client. */
@@ -221,13 +258,17 @@ export function estimateMacros(params: {
   dailyDeficitKcal?: number | null
   /** g de protéines par kg de poids corporel (défaut 1,4). */
   proteinPerKg?: number | null
-  /** Plafond de lipides en g (défaut 60). */
+  /** Plafond de lipides en g (défaut 60). Ignoré si `fatMode = 'pct'`. */
   fatMaxG?: number | null
+  /** Base de calcul des lipides : plafond en g (défaut) ou % des calories. */
+  fatMode?: FatMode | null
+  /** % des calories en lipides quand `fatMode = 'pct'` (défaut 35). */
+  fatPct?: number | null
   /** Calories cibles fixées manuellement (kcal). Si absent, calcul automatique
    *  (TDEE − déficit). Permet à Marie de fixer les calories elle-même. */
   targetKcalOverride?: number | null
 }): MacroEstimate | null {
-  const { weightKg, heightCm, age, sex, activity, leanKg, dailyDeficitKcal, proteinPerKg, fatMaxG, targetKcalOverride } = params
+  const { weightKg, heightCm, age, sex, activity, leanKg, dailyDeficitKcal, proteinPerKg, fatMaxG, fatMode, fatPct, targetKcalOverride } = params
   const bmr = mifflinBmr({ weightKg, heightCm, age, sex })
   if (bmr === null || !activity || !(activity in ACTIVITY_FACTORS)) return null
   if (!Number.isFinite(leanKg ?? NaN) || (leanKg as number) <= 0) return null
@@ -253,7 +294,10 @@ export function estimateMacros(params: {
 
   // Poids CORPOREL, pas masse maigre : c'est tout le changement de base.
   const proteinG = Math.round((weightKg as number) * parKg)
-  const fatG = Math.round(fatCap)
+  // Lipides : plafond fixe en grammes (défaut), ou part des calories cibles.
+  // En mode %, les grammes suivent les calories — c'est tout l'intérêt.
+  const pct = Number.isFinite(fatPct ?? NaN) && (fatPct as number) > 0 ? (fatPct as number) : DEFAULT_FAT_PCT
+  const fatG = fatMode === 'pct' ? Math.round((targetKcal * pct) / 100 / 9) : Math.round(fatCap)
   const carbsG = Math.max(0, Math.round((targetKcal - proteinG * 4 - fatG * 9) / 4))
 
   return { bmr, tdee, targetKcal, proteinG, carbsG, fatG, fiberG: fiberTargetG(targetKcal) }

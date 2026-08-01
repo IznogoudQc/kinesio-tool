@@ -225,6 +225,13 @@
       "when": 1785604205332,
       "tag": "0031_luxuriant_prism",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1785606708990,
+      "tag": "0032_grey_red_hulk",
+      "breakpoints": true
     }
   ]
 }

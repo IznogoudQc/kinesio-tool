@@ -42,6 +42,10 @@ interface Client {
   nutritionProteinPerKg: number | null
   /** Formule des macros : plafond de lipides en g. `null` = 60. */
   nutritionFatMaxG: number | null
+  /** Base de calcul des lipides : 'g' (plafond, défaut) ou 'pct' (% des calories). */
+  nutritionFatMode: string | null
+  /** % des calories en lipides quand le mode est 'pct'. `null` = 35 %. */
+  nutritionFatPct: number | null
   /** Calories cibles fixées manuellement (kcal). `null` = calcul automatique. */
   nutritionTargetKcal: number | null
   /** Macros saisies à la main (grammes) plutôt que calculées par la formule. */
@@ -440,6 +444,8 @@ interface Window {
           nutritionProteinPerLbLean?: number | null
           nutritionProteinPerKg?: number | null
           nutritionFatMaxG?: number | null
+          nutritionFatMode?: string | null
+          nutritionFatPct?: number | null
           nutritionTargetKcal?: number | null
           nutritionMacroManual?: boolean
           nutritionManualProteinG?: number | null

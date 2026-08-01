@@ -34,6 +34,8 @@ export const clientsService = {
       nutritionProteinPerLbLean?: number | null
       nutritionProteinPerKg?: number | null
       nutritionFatMaxG?: number | null
+      nutritionFatMode?: string | null
+      nutritionFatPct?: number | null
       nutritionTargetKcal?: number | null
       nutritionMacroManual?: boolean
       nutritionManualProteinG?: number | null
