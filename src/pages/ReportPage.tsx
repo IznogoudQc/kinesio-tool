@@ -1591,7 +1591,7 @@ function CompositionCpaflaPdf({ latest, computed, sex }: { latest: Bilan; comput
       ))}
       <p style={{ fontSize: '9.5pt', color: MARINE, marginTop: '3mm', lineHeight: 1.5 }}>{calcul}</p>
       <p style={{ fontSize: '8.5pt', color: INK_SOFT, marginTop: '1.5mm' }}>
-        Méthode du Physitest canadien (CPAFLA) : IMC, tour de taille et somme des cinq plis cutanés.
+        Méthode du Physitest canadien (CPAFLA) : IMC et tour de taille.
       </p>
     </div>
   )

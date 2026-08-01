@@ -2,6 +2,28 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.97 — La somme des plis disparaît aussi de l'affichage)
+
+Nicholas, après la v0.9.96 : « je suis un peu mêlé, est-ce qu'on utilise ou pas la somme des 5 plis ? »
+
+Question légitime, et le défaut venait de la v0.9.96 : le **calcul** avait bien cessé d'utiliser les plis,
+mais **l'affichage** continuait de les montrer à trois endroits — la ligne « Somme 5 plis » dans chaque bande
+du barème, et la note de méthode « IMC, tour de taille **et somme des cinq plis cutanés** ». De quoi croire
+que cette colonne comptait encore.
+
+Les trois mentions suivent désormais le même drapeau `USE_CALF_SKINFOLD` que le calcul : rien à l'écran ne
+peut plus contredire ce que fait le moteur. Une phrase discrète explique l'absence — le guide *prévoit* bien
+cette colonne, elle n'est simplement pas reprise ici — plutôt que de faire disparaître la chose en silence.
+
+Le PDF est corrigé au passage : il portait la même note de méthode.
+
+Leçon : retirer une donnée d'un **calcul** sans la retirer de son **affichage** ne fait que déplacer la
+confusion. Le drapeau devait piloter les deux dès le départ.
+
+552 tests (inchangé — la modification est de présentation).
+
+Version : 0.9.96 → 0.9.97.
+
 ## ✅ Fait (v0.9.96 — Le pli du mollet sort des calculs)
 
 Marie ne mesure jamais le pli du mollet. Sans lui, la somme des **cinq** plis n'existe pas, et la note de

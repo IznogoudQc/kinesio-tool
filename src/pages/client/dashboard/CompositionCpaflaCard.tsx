@@ -3,6 +3,7 @@ import { TableProperties } from 'lucide-react'
 import { CATEGORY_COLORS, CATEGORY_LABELS, type Category } from '../../../lib/norms'
 import {
   cpaflaCompositionBareme,
+  USE_CALF_SKINFOLD,
   cpaflaCompositionExplanation,
   type CpaflaCompositionDetail
 } from '../../../lib/norms/cpafla-composition'
@@ -91,7 +92,7 @@ export function CompositionCpaflaCard({ score, category, detail, imc, ct, s5pc, 
       {showBareme && <BaremeTable sex={sex} detail={detail} />}
 
       <p className="text-marine/40 text-xs mt-2">
-        Méthode du Physitest canadien (CPAFLA) : IMC, tour de taille et somme des cinq plis cutanés.
+        Méthode du Physitest canadien (CPAFLA) : IMC et tour de taille.
       </p>
     </div>
   )
@@ -107,6 +108,16 @@ function BaremeTable({ sex, detail }: { sex: 'F' | 'M'; detail: CpaflaCompositio
         Barème CPAFLA — {sex === 'F' ? 'femmes' : 'hommes'}
         <span className="text-marine/40 font-normal"> · la ligne et les cases surlignées sont celles du client</span>
       </p>
+      {/* Le guide donne aussi une colonne « somme des 5 plis ». Elle n'est pas
+          affichée : elle n'entre dans aucun calcul ici (le pli du mollet n'est
+          pas mesuré), et la montrer laissait croire qu'elle comptait — c'est
+          exactement la confusion signalée par Nicholas sur sa capture. */}
+      {!USE_CALF_SKINFOLD && (
+        <p className="text-marine/40 text-xs mb-2">
+          Le guide prévoit aussi une colonne « somme des 5 plis ». Elle n’est pas reprise ici : le pli du
+          mollet n’étant pas mesuré, elle n’entre dans aucun calcul.
+        </p>
+      )}
       <div className="space-y-2">
         {rows.map((r, i) => {
           const activeBand = i === detail.imcIndex
@@ -122,7 +133,9 @@ function BaremeTable({ sex, detail }: { sex: 'F' | 'M'; detail: CpaflaCompositio
                 <span className="text-marine/45">· IMC seul : {r.a} pts</span>
               </div>
               <BaremeLine title="Tour de taille" cells={r.ct} activeIndex={activeBand ? detail.ctIndex : null} />
-              <BaremeLine title="Somme 5 plis" cells={r.s5pc} activeIndex={activeBand ? detail.s5pcIndex : null} />
+              {USE_CALF_SKINFOLD && (
+                <BaremeLine title="Somme 5 plis" cells={r.s5pc} activeIndex={activeBand ? detail.s5pcIndex : null} />
+              )}
             </div>
           )
         })}
