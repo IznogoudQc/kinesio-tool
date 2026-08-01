@@ -1,4 +1,4 @@
-import { CheckCircle2, Loader2, Save, Send, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Loader2, Save, Send, X } from 'lucide-react'
 import {
   FANTASTIC_SECTIONS,
   FANTASTIC_KEYS,
@@ -9,6 +9,7 @@ import {
   selectableChoices,
   type FantasticData
 } from '../../../lib/fantastic'
+import { EAS_MAX, EAS_QUESTIONS, easScore, emptyEas } from '../../../lib/eas'
 
 /**
  * Formulaire FANTASTIC côté kinésiologue.
@@ -20,6 +21,10 @@ import {
  *
  * Sert à deux usages : saisir les réponses d'un client qui a répondu sur papier,
  * et relire celles qu'il a renvoyées par code.
+ *
+ * Deux questionnaires en un : le FANTASTIC (25 énoncés, /100) et l'ÉAS (3
+ * questions, /11). Ce dernier est coté **selon le sexe du client** — sans sexe
+ * au dossier, on le dit plutôt que d'afficher un score faux une fois sur deux.
  */
 
 export interface FantasticDraft {
@@ -37,6 +42,8 @@ interface Props {
   saving: boolean
   /** Ouvre la modale d'import d'un code renvoyé par le client. */
   onImport?: () => void
+  /** Sexe du client — la cotation de l'ÉAS en dépend entièrement. */
+  sex?: 'F' | 'M' | null
 }
 
 /** Teinte du bandeau de score — verte au-dessus de « Bien », ambre en dessous. */
@@ -47,10 +54,20 @@ function tonScore(sur100: number | null): string {
   return 'bg-amber-50 text-amber-800 border-amber-200'
 }
 
-export function FantasticForm({ value, onChange, onCancel, onSave, saving, onImport }: Props) {
+export function FantasticForm({ value, onChange, onCancel, onSave, saving, onImport, sex }: Props) {
   const { data } = value
   const score = fantasticScore(data.answers)
   const niveau = fantasticLevel(score.sur100)
+  const eas = data.eas ?? emptyEas()
+  const scoreEas = easScore(eas, sex)
+
+  function setEas(key: keyof typeof eas, v: number) {
+    onChange({
+      ...value,
+      // Recliquer sur la réponse déjà choisie l'annule, comme pour le FANTASTIC.
+      data: { ...data, eas: { ...eas, [key]: eas[key] === v ? null : v } }
+    })
+  }
 
   function setAnswer(key: string, v: number) {
     onChange({
@@ -167,6 +184,63 @@ export function FantasticForm({ value, onChange, onCancel, onSave, saving, onImp
             </div>
           </div>
         ))}
+
+        {/* ── Partie 2 : ÉAS (Figure 4-6) ─────────────────────────────── */}
+        <div className="pt-1">
+          <div className="flex items-center gap-2 flex-wrap mb-2">
+            <h4 className="text-marine font-semibold text-sm">Participation à l’activité physique</h4>
+            {scoreEas.sexeManquant ? (
+              // La grille du guide a une colonne Homme et une colonne Femme :
+              // sans sexe au dossier, coter reviendrait à tirer à pile ou face.
+              <span className="inline-flex items-center gap-1 text-amber-800 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
+                <AlertTriangle size={12} /> Sexe manquant à la fiche — score non calculable
+              </span>
+            ) : scoreEas.points !== null ? (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+                  scoreEas.points >= 6
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : scoreEas.points >= 4
+                      ? 'bg-sky-50 text-sky-800 border-sky-200'
+                      : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}
+              >
+                <span className="tabular-nums">{scoreEas.points}</span> / {EAS_MAX} — {scoreEas.category}
+                {!scoreEas.complete && ' (partiel)'}
+              </span>
+            ) : null}
+          </div>
+          <div className="space-y-2.5">
+            {EAS_QUESTIONS.map(q => (
+              <div key={q.key} className="border border-cream-dark rounded-md p-2.5">
+                <p className="text-marine/85 text-sm font-medium">
+                  <span className="text-gold-dark font-bold">#{q.numero}</span> {q.titre}
+                </p>
+                <p className="text-marine/55 text-xs mb-1.5 leading-snug">{q.question}</p>
+                <div className="flex flex-col gap-1">
+                  {q.choices.map((c, ci) => {
+                    const actif = eas[q.key] === ci
+                    return (
+                      <button
+                        key={ci}
+                        type="button"
+                        onClick={() => setEas(q.key, ci)}
+                        aria-pressed={actif}
+                        className={`text-left px-2.5 py-1.5 rounded text-xs border transition-colors ${
+                          actif
+                            ? 'bg-marine text-cream border-marine font-semibold'
+                            : 'bg-white text-marine/70 border-cream-dark hover:border-gold/60'
+                        }`}
+                      >
+                        {c.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div>
           <label className="block text-marine/70 text-sm font-medium mb-1">Notes</label>

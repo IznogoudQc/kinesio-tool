@@ -1,7 +1,7 @@
 /**
- * Tests du formulaire FANTASTIC autonome.
+ * Tests du formulaire d’habitudes de vie autonome.
  *
- * Lancer : `node --test src/lib/fantastic-form-html.test.ts`
+ * Lancer : `node --test src/lib/habitudes-form-html.test.ts`
  *
  * Ce fichier part chez de vraies personnes, sur de vrais appareils, sans que
  * personne ne puisse le déboguer une fois parti. Deux choses doivent être vraies
@@ -11,7 +11,7 @@
  *     ligne, ou dont la messagerie bloque les images externes, doit voir la même
  *     page que les autres.
  *  2. **Son encodeur inline est identique au nôtre.** Le script de la page
- *     duplique `encodeFantasticCode` (une page isolée ne peut rien importer).
+ *     duplique `encodeHabitudesCode` (une page isolée ne peut rien importer).
  *     S'ils divergent, le client remplit tout, renvoie son code, et
  *     l'application le refuse — travail perdu et confiance entamée.
  */
@@ -25,10 +25,11 @@ import {
   emptyFantastic,
   selectableChoices
 } from './fantastic.ts'
-import { encodeFantasticCode, decodeFantasticCode } from './fantastic-code.ts'
-import { renderFantasticForm } from './fantastic-form-html.ts'
+import { encodeHabitudesCode, decodeHabitudesCode } from './habitudes-code.ts'
+import { EAS_QUESTIONS, emptyEas } from './eas.ts'
+import { renderHabitudesForm } from './habitudes-form-html.ts'
 
-const html = renderFantasticForm({ clientName: 'Nicholas Jean', kineName: 'Marie-Eve' })
+const html = renderHabitudesForm({ clientName: 'Nicholas Jean', kineName: 'Marie-Eve' })
 
 /**
  * Récupère l'encodeur RÉELLEMENT inclus dans la page et le rend appelable.
@@ -36,39 +37,75 @@ const html = renderFantasticForm({ clientName: 'Nicholas Jean', kineName: 'Marie
  * On l'extrait du HTML produit plutôt que d'importer la constante : c'est ce qui
  * part chez le client qu'on veut tester, pas une copie voisine.
  */
-function encodeurDeLaPage(): (answers: Record<string, number | null>) => string {
+function encodeurDeLaPage(): (a: Record<string, number | null>, e: Record<string, number | null>) => string {
   const debut = html.indexOf('const CTRL=')
   const fin = html.indexOf('return PREFIX+body+checksum(PREFIX+body);', debut)
   assert.ok(debut > 0 && fin > debut, 'encodeur introuvable dans la page générée')
   const source = html.slice(debut, fin + 'return PREFIX+body+checksum(PREFIX+body);'.length) + '\n}'
-  const fabrique = new Function('KEYS', 'PREFIX', source + '\nreturn encode;')
-  return fabrique(FANTASTIC_KEYS, 'FT1') as (a: Record<string, number | null>) => string
+  const fabrique = new Function('KEYS', 'PREFIX', 'EAS_KEYS', source + '\nreturn encode;')
+  return fabrique(
+    FANTASTIC_KEYS,
+    'FT2',
+    EAS_QUESTIONS.map(q => q.key)
+  ) as (a: Record<string, number | null>, e: Record<string, number | null>) => string
 }
 
 test('l’encodeur de la page produit exactement les mêmes codes que le nôtre', () => {
   const encodePage = encodeurDeLaPage()
-  // 300 jeux de réponses variés, dont des questionnaires partiels.
+  // 300 jeux variés, dont des questionnaires partiels, et un ÉAS dont chaque
+  // question a son propre nombre de réponses (3, 3, puis 5).
   for (let i = 0; i < 300; i++) {
     const a = emptyFantastic()
     FANTASTIC_KEYS.forEach((k, j) => {
       const v = (i * 3 + j * 7 + Math.floor(i / 5)) % 6
       a[k] = v === 5 ? null : v // 5 → laissé sans réponse
     })
-    assert.equal(encodePage(a), encodeFantasticCode(a), `divergence au tour ${i}`)
+    const e = emptyEas()
+    EAS_QUESTIONS.forEach((q, j) => {
+      const v = (i + j * 2) % (q.choices.length + 1)
+      e[q.key] = v === q.choices.length ? null : v
+    })
+    assert.equal(encodePage(a, e), encodeHabitudesCode(a, e), `divergence au tour ${i}`)
   }
 })
 
 test('un code produit par la page est accepté par l’application', () => {
   // Le test qui compte vraiment : le trajet complet, du clic du client à
-  // l'import chez Marie.
+  // l'import chez Marie — les deux questionnaires compris.
   const encodePage = encodeurDeLaPage()
   const a = emptyFantastic()
   FANTASTIC_KEYS.forEach((k, j) => {
     a[k] = j % 5
   })
-  const res = decodeFantasticCode(encodePage(a))
+  const e = { frequence: 0, intensite: 1, perception: 3 }
+  const res = decodeHabitudesCode(encodePage(a, e))
   assert.ok(res.ok)
   assert.deepEqual(res.answers, a)
+  assert.deepEqual(res.eas, e)
+})
+
+test('les trois questions de l’ÉAS sont dans la page, avec leurs réponses', () => {
+  for (const q of EAS_QUESTIONS) {
+    const occurrences = html.split(`name="eas.${q.key}"`).length - 1
+    assert.equal(occurrences, q.choices.length, `${q.key} : mauvais nombre de réponses`)
+    for (const c of q.choices) {
+      assert.ok(html.includes(c.label), `réponse absente : ${c.label}`)
+    }
+  }
+})
+
+test('le formulaire annonce ses deux parties', () => {
+  assert.ok(html.includes('Partie 1'))
+  assert.ok(html.includes('Partie 2'))
+})
+
+test('la page ne demande jamais le sexe du client', () => {
+  // La cotation de l'ÉAS en dépend, mais c'est l'application qui cote, avec le
+  // dossier. Redemander au client une information déjà connue serait inutile,
+  // et ferait circuler une donnée de plus.
+  for (const mot of ['Sexe', 'sexe', 'Homme', 'Femme']) {
+    assert.equal(html.includes(mot), false, `« ${mot} » ne devrait pas apparaître`)
+  }
 })
 
 test('aucune ressource distante', () => {
@@ -121,14 +158,14 @@ test('aucune case de réponse vide ne subsiste dans la page', () => {
 })
 
 test('le nom du client est pré-rempli et échappé', () => {
-  assert.ok(renderFantasticForm({ clientName: 'Nicholas Jean' }).includes('value="Nicholas Jean"'))
-  const mechant = renderFantasticForm({ clientName: '<script>alert(1)</script>' })
+  assert.ok(renderHabitudesForm({ clientName: 'Nicholas Jean' }).includes('value="Nicholas Jean"'))
+  const mechant = renderHabitudesForm({ clientName: '<script>alert(1)</script>' })
   assert.equal(mechant.includes('<script>alert(1)</script>'), false)
   assert.ok(mechant.includes('&lt;script&gt;'))
 })
 
 test('une adresse de retour contenant une balise ne casse pas le script', () => {
-  const h = renderFantasticForm({ replyTo: '</script><script>alert(1)</script>' })
+  const h = renderHabitudesForm({ replyTo: '</script><script>alert(1)</script>' })
   // La séquence littérale refermerait la balise ; elle doit être échappée.
   assert.equal(h.includes('</script><script>alert(1)'), false)
 })
@@ -142,7 +179,7 @@ test('le score n’est jamais montré au client', () => {
 })
 
 test('le formulaire s’ouvre sans nom ni kinésiologue', () => {
-  const nu = renderFantasticForm()
+  const nu = renderHabitudesForm()
   assert.ok(nu.includes('<!doctype html>'))
   assert.ok(nu.includes('value=""'))
 })

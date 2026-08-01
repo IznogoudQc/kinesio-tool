@@ -1,5 +1,9 @@
 /**
- * Formulaire FANTASTIC **autonome**, à envoyer au client par courriel.
+ * Formulaire d'habitudes de vie **autonome**, à envoyer au client par courriel.
+ *
+ * Un seul fichier porte les DEUX questionnaires — le FANTASTIC (25 énoncés) et
+ * l'ÉAS (3 questions, Figure 4-6 du Guide du conseiller) — et le client renvoie
+ * un seul code. Marie envoie un courriel, elle importe une fois.
  *
  * Produit un fichier HTML unique : ni feuille de style externe, ni police
  * distante, ni requête réseau d'aucune sorte. Le client l'ouvre depuis sa pièce
@@ -14,14 +18,19 @@
  * Le client peut toujours imprimer cette page s'il préfère le papier.
  *
  * ── Pourquoi le client ne voit pas son score ────────────────────────────────
- * Le FANTASTIC se lit avec un professionnel. Un « 46 sur 100 — À améliorer »
+ * Ces questionnaires se lisent avec un professionnel. Un « 46 sur 100 — À améliorer »
  * reçu seul devant son écran décourage sans rien apprendre, ce que Marie veut
  * précisément éviter. Le client voit sa progression de remplissage ; le score et
  * son interprétation restent du côté de la kinésiologue.
+ *
+ * L'ÉAS ajoute une raison technique : sa cotation dépend du SEXE du client (voir
+ * `eas.ts`). La page ne le connaît pas et n'a pas à le connaître — elle ne
+ * transporte que les réponses, l'application cote avec le dossier.
  */
 
 import { FANTASTIC_SECTIONS, FANTASTIC_KEYS, itemKey, selectableChoices } from './fantastic.ts'
-import { CODE_PREFIX } from './fantastic-code.ts'
+import { CODE_PREFIX } from './habitudes-code.ts'
+import { EAS_QUESTIONS } from './eas.ts'
 
 /** Échappe le texte destiné au corps du document. */
 function esc(s: string): string {
@@ -43,7 +52,7 @@ function jsString(s: string): string {
   return JSON.stringify(s).replace(/</g, '\\u003c')
 }
 
-export interface FantasticFormOptions {
+export interface HabitudesFormOptions {
   /** Nom du client, pré-rempli en tête du formulaire. */
   clientName?: string
   /** Nom de la kinésiologue, affiché dans le pied de page. */
@@ -55,12 +64,12 @@ export interface FantasticFormOptions {
 /**
  * Le calcul du code de retour, en JavaScript, pour la page autonome.
  *
- * ⚠️ Ce code **duplique** `encodeFantasticCode` de `fantastic-code.ts` : la page
+ * ⚠️ Ce code **duplique** `encodeHabitudesCode` de `habitudes-code.ts` : la page
  * est un fichier isolé, elle ne peut rien importer. Une divergence entre les
  * deux produirait des codes que l'application refuserait — le client aurait tout
  * rempli pour rien.
  *
- * C'est pourquoi `fantastic-form-html.test.ts` extrait ce script de la page
+ * C'est pourquoi `habitudes-form-html.test.ts` extrait ce script de la page
  * générée, l'exécute, et vérifie qu'il produit exactement les mêmes codes que la
  * version TypeScript. Toute divergence casse les tests au lieu de casser un
  * client.
@@ -72,16 +81,20 @@ function checksum(body){
   for(let i=0;i<body.length;i++){a=(a+body.charCodeAt(i)*(i+1))%1024;b=(b+a)%1024;}
   return CTRL[a%32]+CTRL[b%32];
 }
-function encode(answers){
+function encode(answers,eas){
   let body='';
   for(const k of KEYS){
     const v=answers[k];
     body += (typeof v==='number'&&v>=0&&v<=4)?String(v):'-';
   }
+  for(const k of EAS_KEYS){
+    const v=eas[k];
+    body += (typeof v==='number'&&v>=0&&v<=4)?String(v):'-';
+  }
   return PREFIX+body+checksum(PREFIX+body);
 }`
 
-export function renderFantasticForm(options: FantasticFormOptions = {}): string {
+export function renderHabitudesForm(options: HabitudesFormOptions = {}): string {
   const { clientName = '', kineName = '', replyTo = '' } = options
 
   const sections = FANTASTIC_SECTIONS.map((section, si) => {
@@ -113,6 +126,27 @@ export function renderFantasticForm(options: FantasticFormOptions = {}): string 
       <h2><span class="num">${si + 1}</span>${esc(section.title)}</h2>
       ${rows}
     </section>`
+  }).join('')
+
+  // ── Partie B : ÉAS ────────────────────────────────────────────────────────
+  // Rendu volontairement différent — liste verticale plutôt qu'échelle à cinq
+  // colonnes. Ce sont deux instruments distincts, et les présenter à l'identique
+  // laisserait croire à une suite du premier questionnaire.
+  const easBloc = EAS_QUESTIONS.map(q => {
+    const choix = q.choices
+      .map(
+        (c, ci) => `<label class="ligne">
+          <input type="radio" name="eas.${q.key}" value="${ci}">
+          <span class="pastille"></span>
+          <span>${esc(c.label)}</span>
+        </label>`
+      )
+      .join('')
+    return `<div class="enonce" data-key="eas.${esc(q.key)}">
+      <p class="question"><span class="qnum">#${q.numero}</span> ${esc(q.titre)}</p>
+      <p class="qtexte">${esc(q.question)}</p>
+      <div class="liste">${choix}</div>
+    </div>`
   }).join('')
 
   return `<!doctype html>
@@ -167,6 +201,27 @@ export function renderFantasticForm(options: FantasticFormOptions = {}): string 
   .choix input:focus-visible ~ .pastille{outline:2px solid var(--accent);outline-offset:2px}
   .txt{font-size:.76rem;line-height:1.3;color:var(--doux)}
   .choix:has(input:checked) .txt{color:var(--encre);font-weight:600}
+  .partie{
+    display:flex;align-items:baseline;gap:.6rem;flex-wrap:wrap;
+    margin:2rem 0 .9rem;font-size:1.15rem;letter-spacing:.01em;
+  }
+  .partie span{
+    background:var(--accent);color:#fff;border-radius:999px;
+    padding:.15rem .7rem;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  }
+  .intro{margin:0 0 1rem;color:var(--doux);font-size:.92rem}
+  .qnum{color:var(--accent);font-weight:700;margin-right:.15rem}
+  .qtexte{margin:.15rem 0 .7rem;font-size:.9rem;color:var(--doux)}
+  .liste{display:flex;flex-direction:column;gap:.4rem}
+  .ligne{
+    display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;cursor:pointer;
+    border:1px solid var(--ligne);border-radius:8px;background:#fff;font-size:.92rem;
+    transition:border-color .12s,background .12s;
+  }
+  .ligne:hover{border-color:var(--accent)}
+  .ligne input{position:absolute;opacity:0;width:0;height:0}
+  .ligne:has(input:checked){border-color:var(--accent);background:var(--accent-clair);font-weight:600}
+  .ligne input:focus-visible ~ .pastille{outline:2px solid var(--accent);outline-offset:2px}
   .barre{
     position:fixed;left:0;right:0;bottom:0;background:var(--carte);
     border-top:1px solid var(--ligne);box-shadow:0 -2px 12px rgba(0,0,0,.06);padding:.75rem 1rem;z-index:10;
@@ -231,7 +286,14 @@ export function renderFantasticForm(options: FantasticFormOptions = {}): string 
     jusqu’à ce que vous nous renvoyiez vous-même votre code.</p>
   </div>
 
+  <h2 class="partie"><span>Partie 1</span> Vos habitudes de vie</h2>
   ${sections}
+
+  <h2 class="partie"><span>Partie 2</span> Votre participation à l’activité physique</h2>
+  <section class="bloc">
+    <p class="intro">Trois dernières questions, et c’est terminé.</p>
+    ${easBloc}
+  </section>
 
   <footer>
     ${kineName ? `<p>${esc(kineName)}, kinésiologue</p>` : ''}
@@ -267,11 +329,15 @@ export function renderFantasticForm(options: FantasticFormOptions = {}): string 
   "use strict";
   var KEYS = ${JSON.stringify(FANTASTIC_KEYS)};
   var PREFIX = ${jsString(CODE_PREFIX)};
+  var EAS_KEYS = ${JSON.stringify(EAS_QUESTIONS.map(q => q.key))};
   var REPLY = ${jsString(replyTo)};
 ${ENCODER_JS}
 
   var answers = {};
   KEYS.forEach(function(k){ answers[k] = null; });
+  var eas = {};
+  EAS_KEYS.forEach(function(k){ eas[k] = null; });
+  var TOTAL = KEYS.length + EAS_KEYS.length;
 
   var compteur = document.getElementById('compteur');
   var jauge = document.getElementById('jauge');
@@ -281,15 +347,16 @@ ${ENCODER_JS}
   function repondu(){
     var n = 0;
     KEYS.forEach(function(k){ if (answers[k] !== null) n++; });
+    EAS_KEYS.forEach(function(k){ if (eas[k] !== null) n++; });
     return n;
   }
 
   function rafraichir(){
     var n = repondu();
     compteur.textContent = n === 0
-      ? '0 réponse sur ' + KEYS.length
-      : n + ' réponse' + (n > 1 ? 's' : '') + ' sur ' + KEYS.length;
-    jauge.style.width = (n / KEYS.length * 100) + '%';
+      ? '0 réponse sur ' + TOTAL
+      : n + ' réponse' + (n > 1 ? 's' : '') + ' sur ' + TOTAL;
+    jauge.style.width = (n / TOTAL * 100) + '%';
     // On n'exige pas les 25 réponses : un questionnaire partiel vaut mieux
     // qu'un client bloqué sur un énoncé auquel il ne veut pas répondre.
     terminer.disabled = n === 0;
@@ -302,16 +369,23 @@ ${ENCODER_JS}
     });
   });
 
+  document.querySelectorAll('.ligne input').forEach(function(input){
+    input.addEventListener('change', function(){
+      eas[input.name.replace('eas.', '')] = Number(input.value);
+      rafraichir();
+    });
+  });
+
   function nomClient(){ return (document.getElementById('nom').value || '').trim(); }
   function dateChoisie(){ return document.getElementById('date').value || ''; }
 
   terminer.addEventListener('click', function(){
-    var code = encode(answers);
+    var code = encode(answers, eas);
     var n = repondu();
     document.getElementById('code-affiche').textContent = code.replace(/(.{5})/g, '$1 ').trim();
     document.getElementById('fin-texte').textContent =
-      (n < KEYS.length
-        ? 'Vous avez répondu à ' + n + ' énoncés sur ' + KEYS.length + '. '
+      (n < TOTAL
+        ? 'Vous avez répondu à ' + n + ' questions sur ' + TOTAL + '. '
         : '') +
       'Renvoyez ce code' + (REPLY ? ' à ' + REPLY : ' à votre kinésiologue') +
       ', par courriel ou par message. Vous pouvez le copier, ou enregistrer un fichier à joindre.';
@@ -322,7 +396,7 @@ ${ENCODER_JS}
 
   document.getElementById('copier').addEventListener('click', function(){
     var btn = this;
-    var code = encode(answers);
+    var code = encode(answers, eas);
     function fini(ok){
       btn.textContent = ok ? 'Code copié' : 'Copiez-le à la main';
       setTimeout(function(){ btn.textContent = 'Copier le code'; }, 2500);
@@ -349,7 +423,7 @@ ${ENCODER_JS}
     var contenu = {
       format: 'kinesio-fantastic',
       version: 1,
-      code: encode(answers),
+      code: encode(answers, eas),
       nom: nomClient(),
       date: dateChoisie()
     };

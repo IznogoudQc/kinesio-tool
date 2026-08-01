@@ -22,6 +22,8 @@
  * Module PUR : aucune dépendance Electron/DB, testable via `node --test`.
  */
 
+import { asEasAnswers, easIsBlank, emptyEas, type EasAnswers } from './eas.ts'
+
 export interface FantasticItem {
   /** Clé stable — sert de nom de champ, ne jamais la renuméroter. */
   key: string
@@ -304,6 +306,14 @@ export type FantasticSource = 'kine' | 'client'
 
 export interface FantasticData {
   answers: FantasticAnswers
+  /**
+   * Réponses de l'ÉAS (Figure 4-6) — le second questionnaire du même formulaire.
+   *
+   * Les deux vivent dans le **même enregistrement** parce qu'ils sont remplis
+   * d'un seul tenant, par la même personne, et que Marie les lit ensemble. Les
+   * séparer doublerait les entrées d'historique pour un seul acte.
+   */
+  eas?: EasAnswers
   notes?: string
   /**
    * `'client'` quand les réponses viennent d'un formulaire renvoyé par le
@@ -316,7 +326,7 @@ export interface FantasticData {
 }
 
 export function emptyFantasticData(): FantasticData {
-  return { answers: emptyFantastic() }
+  return { answers: emptyFantastic(), eas: emptyEas() }
 }
 
 /**
@@ -353,6 +363,7 @@ export function asFantasticData(raw: unknown): FantasticData {
 
   return {
     answers,
+    eas: asEasAnswers(src.eas),
     notes: typeof src.notes === 'string' ? src.notes : undefined,
     source: src.source === 'client' || src.source === 'kine' ? src.source : undefined,
     receivedAt: typeof src.receivedAt === 'string' ? src.receivedAt : undefined
@@ -361,5 +372,9 @@ export function asFantasticData(raw: unknown): FantasticData {
 
 /** Aucun énoncé répondu et aucune note — rien à enregistrer. */
 export function fantasticIsBlank(data: FantasticData): boolean {
-  return fantasticScore(data.answers).answered === 0 && !data.notes?.trim()
+  return (
+    fantasticScore(data.answers).answered === 0 &&
+    easIsBlank(data.eas ?? emptyEas()) &&
+    !data.notes?.trim()
+  )
 }

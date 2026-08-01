@@ -97,6 +97,17 @@ const FantasticDataSchema = z
     // Clés « section.item ». On borne à 0-4 : une valeur hors échelle fausserait
     // le score sans que rien ne le signale.
     answers: z.record(z.string().max(40), z.number().int().min(0).max(4).nullable()).optional(),
+    // ÉAS (Figure 4-6) — le second questionnaire du même formulaire. Index du
+    // choix retenu ; la plage exacte varie par question (3, 3 puis 5 réponses)
+    // et est vérifiée par `asEasAnswers`, ici on borne au plus large.
+    eas: z
+      .object({
+        frequence: z.number().int().min(0).max(4).nullable().optional(),
+        intensite: z.number().int().min(0).max(4).nullable().optional(),
+        perception: z.number().int().min(0).max(4).nullable().optional()
+      })
+      .strip()
+      .optional(),
     notes: z.string().max(5000).optional(),
     source: z.enum(['kine', 'client']).optional(),
     receivedAt: z.string().datetime().optional()

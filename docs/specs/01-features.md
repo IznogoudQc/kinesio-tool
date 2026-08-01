@@ -2,6 +2,39 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.91 — Second questionnaire : l'ÉAS, dans le même envoi)
+
+L'**ÉAS** — « Évaluation de la participation à des activités physiques favorables à la santé », Figure 4-6 du
+*Guide du conseiller*, 3ᵉ éd. — rejoint le FANTASTIC. Trois questions, un total sur 11, cinq catégories.
+Contrainte posée par Nicholas : **un seul fichier pour le client, un seul code de retour**.
+
+**La cotation dépend du sexe**, et c'est la particularité de cet outil : la grille du guide a une colonne
+Homme et une colonne Femme, avec des points différents pour la même réponse. « Moyenne » à la perception
+vaut 3 chez l'homme et 1 chez la femme ; « au moins trois fois » vaut 3 chez lui et 5 chez elle. Vérification
+avant d'encoder : les deux colonnes plafonnent au même total (3+3+5 et 5+3+3 = 11), ce qui concorde avec
+« Excellent : 9 – 11 » — un test conserve ce contrôle.
+
+Conséquence assumée : **sans sexe à la fiche, pas de score**. L'app le dit au lieu de coter au hasard une
+valeur qui serait fausse une fois sur deux. L'import fonctionne quand même — les réponses sont bonnes, c'est
+la fiche qui est incomplète ; le score apparaît dès que Marie ajoute le sexe.
+
+Cela conforte le choix de ne pas montrer le score au client : la page n'a pas à connaître son sexe, elle ne
+transporte que les réponses. Un test vérifie qu'elle ne le demande jamais.
+
+**Un seul code pour les deux questionnaires** : `FT2` + 25 chiffres + 3 chiffres + 2 de contrôle, soit 33
+caractères. Les anciens codes `FT1` (v0.9.89, FANTASTIC seul) restent lisibles — un client qui renverrait un
+formulaire reçu avant la mise à jour n'a rien fait de mal, le refuser lui ferait tout recommencer.
+
+Les deux jeux de réponses vivent dans le **même enregistrement** : remplis d'un seul tenant, par la même
+personne, et lus ensemble. Les séparer doublerait l'historique pour un seul acte.
+
+Deux modules renommés — `fantastic-code` → `habitudes-code`, `fantastic-form-html` → `habitudes-form-html` —
+puisqu'ils ne portent plus un seul questionnaire.
+
+520 tests (487 avant).
+
+Version : 0.9.90 → 0.9.91.
+
 ## ✅ Fait (v0.9.90 — Correctif : trois réponses inexistantes proposées au client)
 
 Signalé par Nicholas sur deux énoncés — « Je consomme des drogues sans ordonnance » et « Je conduis après

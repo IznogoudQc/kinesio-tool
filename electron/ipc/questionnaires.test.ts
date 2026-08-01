@@ -137,3 +137,30 @@ test('les quatre types sont reconnus, et eux seuls', () => {
   }
   assert.throws(() => parseDataForType('inexistant', {}), /inconnu/)
 })
+
+test('les réponses de l’ÉAS traversent la validation', () => {
+  // Même piège que la signature du Q-AAP : sans déclaration, `.strip()` les
+  // supprimerait en silence et le second questionnaire ne serait jamais
+  // enregistré — sans la moindre erreur.
+  const eas = { frequence: 0, intensite: 1, perception: 4 }
+  const out = parseDataForType('fantastic', { answers: {}, eas }) as Record<string, unknown>
+  assert.deepEqual(out.eas, eas)
+})
+
+test('un ÉAS partiel est accepté', () => {
+  const out = parseDataForType('fantastic', {
+    answers: {},
+    eas: { frequence: 2, intensite: null, perception: null }
+  }) as { eas: Record<string, unknown> }
+  assert.equal(out.eas.frequence, 2)
+  assert.equal(out.eas.intensite, null)
+})
+
+test('un index ÉAS aberrant est refusé', () => {
+  for (const mauvais of [5, -1, 1.5]) {
+    assert.throws(
+      () => parseDataForType('fantastic', { answers: {}, eas: { perception: mauvais } }),
+      `${mauvais} aurait dû être refusé`
+    )
+  }
+})

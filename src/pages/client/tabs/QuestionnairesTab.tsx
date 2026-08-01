@@ -46,7 +46,8 @@ import {
   type ZoneMark
 } from '../../../lib/sante'
 import { asFantasticData, emptyFantasticData, fantasticLevel, fantasticScore } from '../../../lib/fantastic'
-import { renderFantasticForm } from '../../../lib/fantastic-form-html'
+import { EAS_MAX, easScore, emptyEas } from '../../../lib/eas'
+import { renderHabitudesForm } from '../../../lib/habitudes-form-html'
 import { FantasticForm, type FantasticDraft } from '../questionnaires/FantasticForm'
 import { FantasticImportModal } from '../questionnaires/FantasticImportModal'
 import { suggestionsForRegion, type PainSuggestionLib } from '../../../lib/pain-suggestions'
@@ -132,7 +133,7 @@ export function QuestionnairesTab() {
         settingsService.getProfile().catch(() => null),
         settingsService.getSmtpConfig().catch(() => null)
       ])
-      const html = renderFantasticForm({
+      const html = renderHabitudesForm({
         clientName: client.name,
         kineName: profil?.name ?? '',
         // L'adresse de retour est celle du compte d'envoi : c'est là que le
@@ -374,6 +375,7 @@ export function QuestionnairesTab() {
           onSave={save}
           saving={saving}
           onImport={() => setImporting(true)}
+          sex={client.sex}
         />
       )}
 
@@ -381,13 +383,15 @@ export function QuestionnairesTab() {
       {importing && editing?.type === 'fantastic' && (
         <FantasticImportModal
           clientName={client.name}
+          sex={client.sex}
           onCancel={() => setImporting(false)}
-          onConfirm={answers => {
+          onConfirm={(answers, eas) => {
             setEditing({
               ...editing,
               data: {
                 ...editing.data,
                 answers,
+                eas,
                 // On trace la provenance : Marie doit pouvoir distinguer ce que
                 // le client a déclaré de ce qu'elle a saisi pour lui.
                 source: 'client',
@@ -426,7 +430,13 @@ export function QuestionnairesTab() {
                 ) : q.type === 'objectifs' ? (
                   <ObjectifsHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
                 ) : q.type === 'fantastic' ? (
-                  <FantasticHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
+                  <FantasticHistoryCard
+                    key={q.id}
+                    q={q}
+                    sex={client.sex}
+                    onEdit={() => startEdit(q)}
+                    onDelete={() => setDeleting(q)}
+                  />
                 ) : (
                   <SanteHistoryCard key={q.id} q={q} onEdit={() => startEdit(q)} onDelete={() => setDeleting(q)} />
                 )
@@ -541,16 +551,19 @@ function TypeChip({ type }: { type: QuestionnaireType }) {
 
 function FantasticHistoryCard({
   q,
+  sex,
   onEdit,
   onDelete
 }: {
   q: Questionnaire
+  sex: 'F' | 'M' | null
   onEdit: () => void
   onDelete: () => void
 }) {
   const data = asFantasticData(q.data)
   const score = fantasticScore(data.answers)
   const niveau = fantasticLevel(score.sur100)
+  const scoreEas = easScore(data.eas ?? emptyEas(), sex)
   const ton =
     score.sur100 === null
       ? 'bg-cream-dark/40 text-marine/60 border-cream-dark'
@@ -583,6 +596,25 @@ function FantasticHistoryCard({
                 {score.answered} énoncé{score.answered > 1 ? 's' : ''} sur 25
               </span>
             )}
+            {/* Second questionnaire — ÉAS, coté sur 11 selon le sexe. */}
+            {scoreEas.points !== null ? (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
+                  scoreEas.points >= 6
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : scoreEas.points >= 4
+                      ? 'bg-sky-50 text-sky-800 border-sky-200'
+                      : 'bg-amber-50 text-amber-800 border-amber-200'
+                }`}
+                title="Participation à l’activité physique"
+              >
+                Participation <span className="tabular-nums">{scoreEas.points}</span> / {EAS_MAX}
+              </span>
+            ) : scoreEas.sexeManquant ? (
+              <span className="inline-flex items-center gap-1 text-amber-700 text-xs">
+                <AlertTriangle size={12} /> Participation : sexe manquant à la fiche
+              </span>
+            ) : null}
             {data.source === 'client' && (
               <span className="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5 text-xs font-medium">
                 <CheckCircle2 size={12} /> Rempli par le client
