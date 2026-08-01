@@ -232,8 +232,14 @@ export interface HealthRiskCell {
   active: boolean
 }
 
-/** Graduation du barème — voir `HealthRiskCell.shortLabel`. */
-const SHORT_LABELS: Record<HealthRisk, string> = {
+/**
+ * Libellés courts pour les graduations d'échelle.
+ *
+ * Cinq zones se partagent la largeur d'une barre : « Extrêmement élevé » s'y
+ * coupe en « Extrêmem… », qui ne veut plus rien dire. Le libellé complet reste
+ * le verdict et l'infobulle.
+ */
+export const HEALTH_RISK_SHORT: Record<HealthRisk, string> = {
   MOINDRE: 'Moindre',
   ACCRU: 'Accru',
   ELEVE: 'Élevé',
@@ -252,7 +258,7 @@ export function healthRiskScale(r: HealthRiskResult): HealthRiskCell[] {
   return HEALTH_RISK_ORDER.map(risk => ({
     risk,
     label: HEALTH_RISK_LABELS[risk],
-    shortLabel: SHORT_LABELS[risk],
+    shortLabel: HEALTH_RISK_SHORT[risk],
     hex: HEALTH_RISK_HEX[risk],
     active: risk === r.risk
   }))
@@ -285,6 +291,129 @@ export function healthRiskFacts(input: HealthRiskInput, r: HealthRiskResult): He
     waist: r.waistKnown && typeof input.waist === 'number' ? `${nombre(input.waist)} cm` : null,
     waistThreshold: r.waistThreshold !== null ? `${r.waistThreshold} cm` : null
   }
+}
+
+/* ── Barres à axe numérique, façon pression artérielle ───────────────────── */
+
+export interface RiskZone {
+  min: number
+  max: number
+  risk: HealthRisk
+  hex: string
+}
+
+export interface RiskBar {
+  zones: RiskZone[]
+  scaleMin: number
+  scaleMax: number
+  /** Position du client sur l'axe, de 0 à 1. `null` si la valeur est absente. */
+  markerRatio: number | null
+  /** Bornes internes à chiffrer sous la barre. */
+  bounds: number[]
+}
+
+/**
+ * Bornes d'affichage de l'axe d'IMC.
+ *
+ * 15 et 45 encadrent largement les six bandes du tableau tout en gardant les
+ * seuils lisibles. Une valeur en dehors n'est pas rejetée : le repère est
+ * simplement plaqué contre le bord, comme pour la pression artérielle.
+ */
+const IMC_AXE = { min: 15, max: 45 }
+
+/**
+ * Barre de l'IMC seul, colorée par le risque de la colonne « Risque associé à
+ * l'IMC » du tableau 4.4.
+ *
+ * Attention : cette barre montre le risque de l'IMC **pris isolément**, ce que
+ * ce module refuse d'afficher comme verdict. Elle n'a de sens qu'à côté de la
+ * barre du tour de taille et sous le verdict combiné — c'est un axe de lecture,
+ * pas une conclusion.
+ */
+export function bmiRiskBar(imc: number | null | undefined): RiskBar {
+  const zones: RiskZone[] = []
+  let debut = IMC_AXE.min
+  for (const b of BMI_BANDS) {
+    const fin = Math.min(b.ltImc, IMC_AXE.max)
+    if (fin > debut) zones.push({ min: debut, max: fin, risk: b.risk, hex: HEALTH_RISK_HEX[b.risk] })
+    debut = fin
+    if (debut >= IMC_AXE.max) break
+  }
+  const span = IMC_AXE.max - IMC_AXE.min
+  const ratio =
+    typeof imc === 'number' && !Number.isNaN(imc)
+      ? Math.max(0, Math.min(1, (imc - IMC_AXE.min) / span))
+      : null
+  return {
+    zones,
+    scaleMin: IMC_AXE.min,
+    scaleMax: IMC_AXE.max,
+    markerRatio: ratio,
+    bounds: [18.5, 25, 30, 35, 40]
+  }
+}
+
+/**
+ * Barre du tour de taille pour la ligne d'IMC du client.
+ *
+ * Deux zones seulement, parce que le tableau ne donne qu'un seuil par ligne et
+ * par sexe. Le coloriage dit exactement ce que fait le tour de taille : sous le
+ * seuil, le risque reste celui de l'IMC ; au-dessus, il devient le risque
+ * combiné. C'est la lecture que ce tableau existe pour rendre évidente.
+ *
+ * `null` quand aucun seuil ne s'applique — IMC sous 18,5 (le tableau n'y évalue
+ * pas le tour de taille) ou sexe inconnu (les seuils diffèrent).
+ */
+export function waistRiskBar(waist: number | null | undefined, r: HealthRiskResult): RiskBar | null {
+  if (r.waistThreshold === null) return null
+  const band = BMI_BANDS.find(b => b.label === r.band)
+  if (!band || !band.combined) return null
+
+  // L'axe s'ajuste au seuil : il doit rester lisible pour un seuil de 80 comme
+  // pour un de 125, sans écraser le repère contre un bord.
+  const min = Math.min(60, r.waistThreshold - 30)
+  const max = Math.max(140, r.waistThreshold + 25)
+  const span = max - min
+
+  const ratio =
+    typeof waist === 'number' && !Number.isNaN(waist) ? Math.max(0, Math.min(1, (waist - min) / span)) : null
+
+  return {
+    zones: [
+      { min, max: r.waistThreshold, risk: band.risk, hex: HEALTH_RISK_HEX[band.risk] },
+      { min: r.waistThreshold, max, risk: band.combined, hex: HEALTH_RISK_HEX[band.combined] }
+    ],
+    scaleMin: min,
+    scaleMax: max,
+    markerRatio: ratio,
+    bounds: [r.waistThreshold]
+  }
+}
+
+/** Ligne du barème complet, pour la table dépliable. */
+export interface BaremeRow {
+  imcLabel: string
+  risk: HealthRisk
+  riskLabel: string
+  /** Seuil du sexe demandé, ou `null` si la ligne n'en prévoit pas. */
+  waist: number | null
+  combined: HealthRisk | null
+  combinedLabel: string | null
+  /** Ligne où se situe le client. */
+  active: boolean
+}
+
+/** Le tableau 4.4 en entier, pour le sexe donné, ligne du client marquée. */
+export function healthRiskBareme(sex: 'F' | 'M' | null, r: HealthRiskResult | null): BaremeRow[] {
+  return BMI_BANDS.map(b => ({
+    imcLabel: b.label,
+    risk: b.risk,
+    riskLabel: HEALTH_RISK_LABELS[b.risk],
+    waist: b.waist && (sex === 'M' || sex === 'F') ? b.waist[sex] : null,
+    combined: b.combined,
+    combinedLabel: b.combined ? HEALTH_RISK_LABELS[b.combined] : null,
+    active: r !== null && b.label === r.band
+  }))
 }
 
 /** Le texte de la nuance, si elle s'applique. `null` sinon. */

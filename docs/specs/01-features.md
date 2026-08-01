@@ -2,6 +2,38 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.95 — Risque santé : le langage visuel de la pression artérielle)
+
+Nicholas montre la carte Pression artérielle et demande la même chose : rectangle blanc, bouton **Barème**,
+et l'échelle continue avec curseur et seuils chiffrés.
+
+**Deux axes plutôt qu'une échelle abstraite.** Une barre par mesure, comme systolique / diastolique :
+l'**IMC** sur son axe (15 à 45) avec les six zones du tableau et les seuils 18,5 / 25 / 30 / 35 / 40, puis le
+**tour de taille** sur le sien. C'est ce qui montre *pourquoi* : l'IMC place le client dans une ligne du
+tableau, le tour de taille décide si le risque monte.
+
+La barre du tour de taille est coloriée **en deux temps** — le risque de l'IMC seul à gauche du seuil, le
+risque combiné à droite. C'est exactement la lecture que ce tableau existe pour rendre évidente, en deux
+couleurs plutôt qu'en une phrase.
+
+**Bouton Barème** → déplie le tableau 4.4 en entier (les six lignes, les seuils du bon sexe, les risques
+simples et combinés), avec la ligne du client surlignée. Même mécanique que les cartes Composition et
+Musculo.
+
+Trois cas sans barre de tour de taille sont traités explicitement plutôt que laissés vides : **sexe absent**
+de la fiche (les seuils diffèrent — en choisir un serait faux une fois sur deux), **IMC sous 18,5** (le
+tableau n'y évalue pas le tour de taille), **tour de taille non mesuré**.
+
+Le verdict reste **toujours** le risque combiné. Afficher la colonne IMC seule sous-estimerait le risque
+d'une personne d'IMC normal au tour de taille élevé — le cas même que ce tableau sert à attraper.
+
+⚠️ Le **PDF** conserve la présentation de la v0.9.94 (échelle à cinq paliers) : il n'a pas de bouton
+dépliable et son espace est contraint. Les valeurs sont identiques, seule la présentation diffère.
+
+551 tests (541 avant).
+
+Version : 0.9.94 → 0.9.95.
+
 ## ✅ Fait (v0.9.94 — Risque santé : un barème visible, et les chiffres qui le justifient)
 
 Demande de Nicholas après avoir vu le bloc en place : « ajouter un barème, le rendre plus visible et mieux

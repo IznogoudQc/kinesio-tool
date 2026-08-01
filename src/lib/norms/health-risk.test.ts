@@ -17,7 +17,10 @@ import {
   muscularCaveatApplies,
   healthRiskScale,
   healthRiskFacts,
-  HEALTH_RISK_HEX
+  HEALTH_RISK_HEX,
+  bmiRiskBar,
+  waistRiskBar,
+  healthRiskBareme
 } from './health-risk.ts'
 
 test('les six bandes de la feuille, à leurs bornes exactes', () => {
@@ -309,4 +312,101 @@ test('la graduation du barème tient sur cinq colonnes', () => {
 test('un tour de taille décimal garde sa décimale', () => {
   const input = { imc: 27, waist: 88.5, sex: 'M' as const }
   assert.equal(healthRiskFacts(input, healthRisk(input)!).waist, '88,5 cm')
+})
+
+/* ── Barres à axe numérique ──────────────────────────────────────────────── */
+
+test('la barre d’IMC couvre l’axe sans trou ni chevauchement', () => {
+  const bar = bmiRiskBar(27)
+  assert.equal(bar.zones[0].min, bar.scaleMin)
+  assert.equal(bar.zones[bar.zones.length - 1].max, bar.scaleMax)
+  for (let i = 1; i < bar.zones.length; i++) {
+    assert.equal(bar.zones[i].min, bar.zones[i - 1].max, `trou entre les zones ${i - 1} et ${i}`)
+  }
+})
+
+test('les zones de la barre d’IMC suivent la colonne « risque associé à l’IMC »', () => {
+  // Y compris le fait qu'un IMC bas soit « Accru » comme la zone 25–29,9 : le
+  // risque remonte des deux côtés, et la barre doit le montrer.
+  const bar = bmiRiskBar(27)
+  assert.deepEqual(
+    bar.zones.map(z => z.risk),
+    ['ACCRU', 'MOINDRE', 'ACCRU', 'ELEVE', 'TRES_ELEVE', 'EXTREMEMENT_ELEVE']
+  )
+  assert.deepEqual(bar.bounds, [18.5, 25, 30, 35, 40])
+})
+
+test('le repère d’IMC tombe au bon endroit, et reste dans l’axe', () => {
+  assert.equal(bmiRiskBar(15)!.markerRatio, 0)
+  assert.equal(bmiRiskBar(45)!.markerRatio, 1)
+  assert.equal(bmiRiskBar(30)!.markerRatio, 0.5) // (30-15)/30
+  // Hors axe : plaqué au bord plutôt que débordant.
+  assert.equal(bmiRiskBar(12)!.markerRatio, 0)
+  assert.equal(bmiRiskBar(60)!.markerRatio, 1)
+  assert.equal(bmiRiskBar(null).markerRatio, null)
+})
+
+test('la barre du tour de taille dit ce que fait le tour de taille', () => {
+  // Sous le seuil → le risque reste celui de l'IMC ; au-dessus → il devient le
+  // risque combiné. C'est toute la lecture du tableau, en deux couleurs.
+  const r = healthRisk({ imc: 27, waist: 88, sex: 'M' })!
+  const bar = waistRiskBar(88, r)!
+  assert.equal(bar.zones.length, 2)
+  assert.equal(bar.zones[0].risk, 'ACCRU') // IMC seul
+  assert.equal(bar.zones[1].risk, 'TRES_ELEVE') // combiné
+  assert.equal(bar.zones[0].max, 100)
+  assert.deepEqual(bar.bounds, [100])
+})
+
+test('la barre du tour de taille s’adapte au seuil, sans écraser le repère', () => {
+  // Seuil bas (femme, IMC normal : 80) comme seuil haut (125) doivent rester
+  // lisibles.
+  const bas = waistRiskBar(74, healthRisk({ imc: 22, waist: 74, sex: 'F' })!)!
+  assert.ok(bas.scaleMin <= 60 && bas.scaleMax >= 140)
+  assert.ok(bas.markerRatio! > 0 && bas.markerRatio! < 1)
+
+  const haut = waistRiskBar(130, healthRisk({ imc: 42, waist: 130, sex: 'M' })!)!
+  assert.ok(haut.scaleMax >= 150)
+  assert.ok(haut.markerRatio! > 0 && haut.markerRatio! < 1)
+})
+
+test('pas de barre de tour de taille quand le tableau n’en prévoit pas', () => {
+  // IMC sous 18,5 : la ligne du guide ne donne aucun seuil.
+  assert.equal(waistRiskBar(70, healthRisk({ imc: 17, waist: 70, sex: 'M' })!), null)
+  // Sexe inconnu : les seuils diffèrent, en choisir un serait faux une fois sur deux.
+  assert.equal(waistRiskBar(88, healthRisk({ imc: 27, waist: 88, sex: null })!), null)
+})
+
+/* ── Barème dépliable ────────────────────────────────────────────────────── */
+
+test('le barème rend les six lignes du tableau 4.4', () => {
+  const rows = healthRiskBareme('M', healthRisk({ imc: 27, waist: 88, sex: 'M' })!)
+  assert.equal(rows.length, 6)
+  assert.deepEqual(
+    rows.map(r => r.imcLabel),
+    ['moins de 18,5', '18,5–24,9', '25,0–29,9', '30,0–34,9', '35,0–39,9', '40 et plus']
+  )
+  assert.deepEqual(rows.map(r => r.waist), [null, 90, 100, 110, 125, 125])
+})
+
+test('le barème marque la ligne du client, une seule', () => {
+  const rows = healthRiskBareme('F', healthRisk({ imc: 32, waist: 90, sex: 'F' })!)
+  assert.equal(rows.filter(r => r.active).length, 1)
+  assert.equal(rows.find(r => r.active)!.imcLabel, '30,0–34,9')
+})
+
+test('le barème donne les seuils du BON sexe', () => {
+  assert.deepEqual(healthRiskBareme('F', null).map(r => r.waist), [null, 80, 90, 105, 115, 125])
+  assert.deepEqual(healthRiskBareme('M', null).map(r => r.waist), [null, 90, 100, 110, 125, 125])
+  // Sans sexe, aucun seuil inventé — mais la colonne IMC reste consultable.
+  assert.deepEqual(healthRiskBareme(null, null).map(r => r.waist), [null, null, null, null, null, null])
+  assert.equal(healthRiskBareme(null, null).filter(r => r.active).length, 0)
+})
+
+test('la première ligne du barème n’a pas de risque combiné', () => {
+  // Le tableau imprime « – » : sous 18,5 le tour de taille n'est pas évalué.
+  const rows = healthRiskBareme('M', null)
+  assert.equal(rows[0].combined, null)
+  assert.equal(rows[0].combinedLabel, null)
+  for (const r of rows.slice(1)) assert.ok(r.combinedLabel)
 })
