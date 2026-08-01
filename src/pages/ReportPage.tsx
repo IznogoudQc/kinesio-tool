@@ -40,6 +40,8 @@ import { categoryCells, commonNormSource, normSourceForTest } from '../lib/norms
 import {
   healthRisk,
   healthRiskExplanation,
+  healthRiskFacts,
+  healthRiskScale,
   muscularCaveat,
   HEALTH_RISK_HEX,
   HEALTH_RISK_LABELS,
@@ -1456,16 +1458,63 @@ function AnthropoLine({ latest, weightUnit, sex }: { latest: Bilan; weightUnit: 
         ))}
       </div>
       {risk && (
-        <div style={{ marginTop: '3mm' }}>
-          <span style={{ fontSize: '10pt', color: INK_SOFT }}>
-            Risque pour la santé{' '}
-            <strong style={{ color: HEALTH_RISK_HEX[risk.risk], fontWeight: 700 }}>
+        <div style={{ marginTop: '3mm', breakInside: 'avoid' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '3mm' }}>
+            <span style={{ fontSize: '8pt', color: AXIS, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+              Risque pour la santé
+            </span>
+            <strong style={{ fontSize: '12pt', color: HEALTH_RISK_HEX[risk.risk], fontWeight: 700 }}>
               {HEALTH_RISK_LABELS[risk.risk]}
             </strong>
-          </span>
-          <p style={{ fontSize: '8pt', color: AXIS, marginTop: '1mm' }}>
-            {healthRiskExplanation(risk)} {HEALTH_RISK_SOURCE}.
-          </p>
+          </div>
+
+          {/* Barème : les cinq paliers, celui du client mis en avant. « Accru »
+              ne dit rien tant qu'on ne voit pas ce qu'il y a de part et d'autre. */}
+          <div style={{ display: 'flex', gap: '1mm', marginTop: '1.5mm' }}>
+            {healthRiskScale(risk).map(c => (
+              <div key={c.risk} style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ height: '1.2mm', borderRadius: '1mm', backgroundColor: c.hex, opacity: c.active ? 1 : 0.22 }} />
+                <p
+                  style={{
+                    fontSize: '6.5pt',
+                    lineHeight: 1.2,
+                    textAlign: 'center',
+                    marginTop: '0.8mm',
+                    color: c.active ? c.hex : AXIS,
+                    fontWeight: c.active ? 700 : 400
+                  }}
+                >
+                  {c.shortLabel}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          {/* Les chiffres qui ont produit le verdict — sans eux, le palier est à
+              prendre ou à laisser, et c'est le client qui lit cette page. */}
+          {(() => {
+            const f = healthRiskFacts({ imc, waist: ct, sex }, risk)
+            return (
+              <p style={{ fontSize: '8pt', color: INK_SOFT, marginTop: '2mm' }}>
+                <strong style={{ fontWeight: 600 }}>IMC {f.imc}</strong>
+                <span style={{ color: AXIS }}> (plage {f.imcBand})</span>
+                {f.waist ? (
+                  <>
+                    <span style={{ color: AXIS }}> · </span>
+                    <strong style={{ fontWeight: 600 }}>Tour de taille {f.waist}</strong>
+                    {f.waistThreshold && <span style={{ color: AXIS }}> (seuil {f.waistThreshold})</span>}
+                  </>
+                ) : (
+                  f.waistThreshold && (
+                    <span style={{ color: AXIS }}> · tour de taille non mesuré (seuil {f.waistThreshold})</span>
+                  )
+                )}
+              </p>
+            )
+          })()}
+
+          <p style={{ fontSize: '8pt', color: AXIS, marginTop: '1mm' }}>{healthRiskExplanation(risk)}</p>
+
           {/* Nuance du tableau 4.4 : un client musclé à IMC de surpoids mais
               tour de taille sous la limite. Le client lit ce PDF — sans cette
               réserve, il repart avec « risque accru » alors que le guide dit
@@ -1475,7 +1524,7 @@ function AnthropoLine({ latest, weightUnit, sex }: { latest: Bilan; weightUnit: 
               style={{
                 fontSize: '8pt',
                 color: '#92400e',
-                marginTop: '1.5mm',
+                marginTop: '2mm',
                 paddingLeft: '2mm',
                 borderLeft: '0.6mm solid #fcd34d',
                 lineHeight: 1.4
@@ -1484,6 +1533,8 @@ function AnthropoLine({ latest, weightUnit, sex }: { latest: Bilan; weightUnit: 
               {muscularCaveat(risk)}
             </p>
           )}
+
+          <p style={{ fontSize: '7pt', color: AXIS, marginTop: '2mm' }}>{HEALTH_RISK_SOURCE}.</p>
         </div>
       )}
     </div>

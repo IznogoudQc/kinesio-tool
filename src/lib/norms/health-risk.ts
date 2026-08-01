@@ -1,9 +1,10 @@
 /**
  * Risque pour la santé associé à l'IMC et au tour de taille.
  *
- * Source : aide-mémoire « Évaluation des avantages pour la santé » (ÉAS),
- * SPAP-SCPE — la feuille que Marie-Eve utilise, section « Risque pour la santé
- * associé à l'IMC et à l'IMC combiné au tour de taille ».
+ * Source : **tableau 4.4** du Guide du conseiller en condition physique et
+ * habitudes de vie, 3e éd. — « Risque pour la santé associé à l'IMC et à l'IMC
+ * combiné au tour de taille ». L'aide-mémoire ÉAS (SPAP-SCPE) reproduit ce même
+ * tableau ; c'est lui qui avait servi de source au départ (voir ADR 0036).
  *
  * ── Ce que cette échelle N'EST PAS ──────────────────────────────────────────
  * Ce n'est pas l'échelle de condition physique (Excellent → Médiocre, cotée
@@ -21,7 +22,7 @@
  * santé, la valeur brute continue d'alimenter les scores en coulisse.
  */
 
-/** Échelle de risque de l'aide-mémoire, du meilleur au pire. */
+/** Échelle de risque du tableau 4.4, du meilleur au pire. */
 export type HealthRisk = 'MOINDRE' | 'ACCRU' | 'ELEVE' | 'TRES_ELEVE' | 'EXTREMEMENT_ELEVE'
 
 export const HEALTH_RISK_LABELS: Record<HealthRisk, string> = {
@@ -41,7 +42,7 @@ export const HEALTH_RISK_ORDER: HealthRisk[] = [
   'EXTREMEMENT_ELEVE'
 ]
 
-/** Bandes d'IMC de l'aide-mémoire, avec le libellé exact de la feuille. */
+/** Bandes d'IMC du tableau 4.4, avec le libellé exact imprimé. */
 export interface BmiBand {
   /** Borne supérieure exclusive ; `Infinity` pour la dernière bande. */
   ltImc: number
@@ -112,7 +113,7 @@ export interface HealthRiskInput {
 }
 
 /**
- * Risque santé combiné, tel que l'imprime l'aide-mémoire.
+ * Risque santé combiné, tel que l'imprime le tableau 4.4.
  *
  * Le tour de taille ne fait que **relever** le risque : sous le seuil (ou s'il
  * est inconnu), c'est le risque de l'IMC seul qui vaut. Un homme d'IMC normal
@@ -210,6 +211,80 @@ export const HEALTH_RISK_SOURCE =
  */
 export function muscularCaveatApplies(r: HealthRiskResult): boolean {
   return r.band === '25,0–29,9' && r.waistKnown && !r.waistRaised
+}
+
+/* ── Barème affichable ───────────────────────────────────────────────────── */
+
+export interface HealthRiskCell {
+  risk: HealthRisk
+  label: string
+  /**
+   * Libellé court pour la graduation du barème.
+   *
+   * Cinq colonnes se partagent la largeur : « Extrêmement élevé » s'y coupe en
+   * « Extrêmement… », ce qui ne veut plus rien dire. Le libellé complet reste
+   * affiché en verdict et dans l'infobulle.
+   */
+  shortLabel: string
+  /** Couleur du palier — la même partout (dashboard, PDF, HTML). */
+  hex: string
+  /** Palier où se situe le client. */
+  active: boolean
+}
+
+/** Graduation du barème — voir `HealthRiskCell.shortLabel`. */
+const SHORT_LABELS: Record<HealthRisk, string> = {
+  MOINDRE: 'Moindre',
+  ACCRU: 'Accru',
+  ELEVE: 'Élevé',
+  TRES_ELEVE: 'Très élevé',
+  EXTREMEMENT_ELEVE: 'Extrême'
+}
+
+/**
+ * Les cinq paliers de risque, avec celui du client marqué.
+ *
+ * Même intention que `categoryCells` pour les tests de condition physique :
+ * montrer l'échelle plutôt qu'un mot isolé. « Accru » ne dit rien tant qu'on ne
+ * voit pas qu'il y a un palier en dessous et trois au-dessus.
+ */
+export function healthRiskScale(r: HealthRiskResult): HealthRiskCell[] {
+  return HEALTH_RISK_ORDER.map(risk => ({
+    risk,
+    label: HEALTH_RISK_LABELS[risk],
+    shortLabel: SHORT_LABELS[risk],
+    hex: HEALTH_RISK_HEX[risk],
+    active: risk === r.risk
+  }))
+}
+
+export interface HealthRiskFacts {
+  /** « IMC 27,3 » — la valeur mesurée, arrondie au dixième. */
+  imc: string
+  /** « plage 25,0–29,9 » — la ligne du tableau qui s'applique. */
+  imcBand: string
+  /** « 88 cm » ou `null` si non mesuré. */
+  waist: string | null
+  /** « seuil 100 cm » ou `null` si la plage d'IMC n'en définit pas. */
+  waistThreshold: string | null
+}
+
+/**
+ * Les chiffres qui ont produit le risque, prêts à afficher.
+ *
+ * C'est ce qui rend le verdict vérifiable : sans eux, « Accru » est à prendre ou
+ * à laisser. Avec eux, Marie et son client voient l'IMC mesuré, la ligne du
+ * tableau où il tombe, le tour de taille et le seuil qu'il n'a pas franchi.
+ */
+export function healthRiskFacts(input: HealthRiskInput, r: HealthRiskResult): HealthRiskFacts {
+  // Pas de décimale inutile : « 88 cm » se lit mieux que « 88,0 cm ».
+  const nombre = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1).replace('.', ','))
+  return {
+    imc: typeof input.imc === 'number' ? nombre(input.imc) : '—',
+    imcBand: r.band,
+    waist: r.waistKnown && typeof input.waist === 'number' ? `${nombre(input.waist)} cm` : null,
+    waistThreshold: r.waistThreshold !== null ? `${r.waistThreshold} cm` : null
+  }
 }
 
 /** Le texte de la nuance, si elle s'applique. `null` sinon. */

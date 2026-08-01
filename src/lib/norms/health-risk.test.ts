@@ -14,7 +14,10 @@ import {
   HEALTH_RISK_ORDER,
   HEALTH_RISK_SOURCE,
   muscularCaveat,
-  muscularCaveatApplies
+  muscularCaveatApplies,
+  healthRiskScale,
+  healthRiskFacts,
+  HEALTH_RISK_HEX
 } from './health-risk.ts'
 
 test('les six bandes de la feuille, à leurs bornes exactes', () => {
@@ -223,4 +226,87 @@ test('la source cite le tableau 4.4 du guide, plus l’aide-mémoire', () => {
   assert.equal(HEALTH_RISK_SOURCE.includes('SPAP'), false)
   // La restriction d'âge figure bien en note du tableau — elle reste.
   assert.match(HEALTH_RISK_SOURCE, /20 à 65 ans/)
+})
+
+/* ── Barème affichable ───────────────────────────────────────────────────── */
+
+test('le barème montre les cinq paliers, un seul actif', () => {
+  const r = healthRisk({ imc: 27, waist: 88, sex: 'M' })!
+  const cells = healthRiskScale(r)
+  assert.equal(cells.length, 5)
+  assert.equal(cells.filter(c => c.active).length, 1)
+  assert.equal(cells.find(c => c.active)!.risk, 'ACCRU')
+})
+
+test('le barème est toujours dans l’ordre de gravité croissante', () => {
+  // L'échelle ne veut rien dire si l'ordre change d'un écran à l'autre.
+  const cells = healthRiskScale(healthRisk({ imc: 22, waist: 80, sex: 'M' })!)
+  assert.deepEqual(
+    cells.map(c => c.risk),
+    ['MOINDRE', 'ACCRU', 'ELEVE', 'TRES_ELEVE', 'EXTREMEMENT_ELEVE']
+  )
+  assert.deepEqual(cells.map(c => c.label), ['Moindre', 'Accru', 'Élevé', 'Très élevé', 'Extrêmement élevé'])
+})
+
+test('chaque palier porte sa couleur partagée', () => {
+  const cells = healthRiskScale(healthRisk({ imc: 22, waist: 80, sex: 'M' })!)
+  for (const c of cells) {
+    assert.equal(c.hex, HEALTH_RISK_HEX[c.risk])
+    assert.match(c.hex, /^#[0-9a-f]{6}$/i)
+  }
+})
+
+test('le palier actif suit bien le risque COMBINÉ, pas celui de l’IMC seul', () => {
+  // Homme IMC 27 (Accru) mais tour de taille 102 → Très élevé. C'est ce
+  // relèvement que le tableau existe pour attraper ; le barème doit le montrer.
+  const r = healthRisk({ imc: 27, waist: 102, sex: 'M' })!
+  assert.equal(healthRiskScale(r).find(c => c.active)!.risk, 'TRES_ELEVE')
+})
+
+test('les chiffres affichés sont ceux qui ont produit le verdict', () => {
+  const input = { imc: 27.34, waist: 88, sex: 'M' as const }
+  const f = healthRiskFacts(input, healthRisk(input)!)
+  assert.equal(f.imc, '27,3') // virgule décimale, arrondi au dixième
+  assert.equal(f.imcBand, '25,0–29,9')
+  assert.equal(f.waist, '88 cm') // pas de « 88,0 »
+  assert.equal(f.waistThreshold, '100 cm')
+})
+
+test('un tour de taille non mesuré n’est pas inventé', () => {
+  const input = { imc: 27, waist: null, sex: 'M' as const }
+  const f = healthRiskFacts(input, healthRisk(input)!)
+  assert.equal(f.waist, null)
+  // Le seuil, lui, reste affichable : il dit ce qu'il faudrait mesurer.
+  assert.equal(f.waistThreshold, '100 cm')
+})
+
+test('sans sexe, aucun seuil de tour de taille n’est annoncé', () => {
+  // Les seuils diffèrent entre hommes et femmes : en afficher un au hasard
+  // serait faux une fois sur deux.
+  const input = { imc: 27, waist: 88, sex: null }
+  const f = healthRiskFacts(input, healthRisk(input)!)
+  assert.equal(f.waistThreshold, null)
+})
+
+test('la plage d’IMC affichée est celle du tableau, pas une reformulation', () => {
+  for (const [imc, plage] of [[17, 'moins de 18,5'], [22, '18,5–24,9'], [27, '25,0–29,9'], [32, '30,0–34,9'], [37, '35,0–39,9'], [42, '40 et plus']] as const) {
+    const input = { imc, waist: null, sex: 'M' as const }
+    assert.equal(healthRiskFacts(input, healthRisk(input)!).imcBand, plage, `IMC ${imc}`)
+  }
+})
+
+test('la graduation du barème tient sur cinq colonnes', () => {
+  // « Extrêmement élevé » se coupait en « Extrêmement… », qui ne veut plus rien
+  // dire. Le libellé complet reste le verdict ; la graduation est abrégée.
+  const cells = healthRiskScale(healthRisk({ imc: 22, waist: 80, sex: 'M' })!)
+  assert.deepEqual(cells.map(c => c.shortLabel), ['Moindre', 'Accru', 'Élevé', 'Très élevé', 'Extrême'])
+  for (const c of cells) {
+    assert.ok(c.shortLabel.length <= 10, `« ${c.shortLabel} » est trop long pour la graduation`)
+    assert.ok(c.label.length > 0)
+  }
+})
+
+test('un tour de taille décimal garde sa décimale', () => {
+  const input = { imc: 27, waist: 88.5, sex: 'M' as const }
+  assert.equal(healthRiskFacts(input, healthRisk(input)!).waist, '88,5 cm')
 })

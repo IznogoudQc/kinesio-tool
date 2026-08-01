@@ -2,6 +2,35 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.94 — Risque santé : un barème visible, et les chiffres qui le justifient)
+
+Demande de Nicholas après avoir vu le bloc en place : « ajouter un barème, le rendre plus visible et mieux
+défini ». Le bloc n'affichait qu'un mot et une phrase en petits caractères — il se lisait comme une note de
+bas de page alors que c'est une information de santé.
+
+**Le barème.** Les cinq paliers (Moindre → Extrême) s'affichent en échelle, celui du client mis en avant, les
+autres estompés mais lisibles. « Accru » ne veut rien dire tant qu'on ne voit pas qu'il y a un palier en
+dessous et trois au-dessus. Même langage visuel que les indicateurs de percentile déjà présents dans l'app.
+
+**Les chiffres qui le justifient.** `IMC 27,3 (plage 25,0–29,9) · Tour de taille 88 cm (seuil 100 cm)` :
+le verdict devient vérifiable au lieu d'être à prendre ou à laisser — et c'est le client qui lit le PDF. Si
+le tour de taille n'a pas été mesuré, l'app le dit et rappelle le seuil qu'il faudrait atteindre, plutôt que
+de laisser croire qu'il est sous la limite.
+
+**Hiérarchie revue** : le verdict passe en gros et en couleur à droite du titre ; l'explication, la nuance
+« entraînement musculaire » et la source s'étagent en dessous par ordre d'importance.
+
+Deux ajustements venus du rendu réel : « Extrêmement élevé » se coupait en « Extrêmement… » sur cinq
+colonnes — la graduation utilise un libellé court (« Extrême »), le verdict garde le libellé complet ; et
+« 88,0 cm » perd sa décimale inutile (les décimales réelles, elles, restent : « 88,5 cm »).
+
+Les trois surfaces suivent — dashboard, PDF et document HTML — depuis les mêmes helpers purs
+(`healthRiskScale`, `healthRiskFacts`), testés indépendamment du rendu.
+
+541 tests (531 avant).
+
+Version : 0.9.93 → 0.9.94.
+
 ## ✅ Fait (v0.9.93 — Risque santé : la nuance du guide pour les clients musclés)
 
 Nicholas envoie le **tableau 4.4** du guide — « Risque pour la santé associé à l'IMC et à l'IMC combiné au
