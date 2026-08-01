@@ -2,6 +2,26 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.109 — Les repères du Guide alimentaire canadien)
+
+Le document nutrition se termine maintenant sur une carte « Les repères à garder
+en tête » : les huit recommandations du **Guide alimentaire canadien** (Santé
+Canada, 2019), reprises mot pour mot et gardées dans leurs deux volets d'origine
+— quatre sur les aliments, quatre sur la manière de manger. Les quatre dernières
+ne portent sur aucun aliment ; les fondre dans une liste de huit aurait effacé
+cette distinction.
+
+La carte est toujours présente : ce sont des messages de santé publique, ils ne
+dépendent d'aucune donnée du dossier. Elle reste dans le champ de pratique du
+kinésiologue — aucune quantité, aucune prescription individuelle, contrairement
+à un plan nutritionnel (acte réservé, OPDQ). La source est affichée dessous.
+
+Contenu isolé dans `src/lib/guide-alimentaire.ts`, avec un test qui verrouille
+les huit formulations mot pour mot : les retoucher reviendrait à réécrire un
+message de santé publique.
+
+Version : 0.9.108 → 0.9.109.
+
 ## ✅ Fait (v0.9.108 — Lipides : grammes ou % des calories)
 
 Marie a transmis le repère du Guide du conseiller CPAFLA : les gras alimentaires

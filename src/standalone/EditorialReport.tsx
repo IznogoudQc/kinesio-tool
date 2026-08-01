@@ -25,6 +25,7 @@ import { detectWins, noWinsMessage } from '../lib/dashboard-wins'
 import { buildObjectif, type Objectif } from '../lib/objectif'
 import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
 import { ACTIVITY_LABELS, DEFAULT_MEALS_PER_DAY, macrosPerMeal } from '../lib/nutrition'
+import { GUIDE_ALIMENTAIRE_VOLETS, GUIDE_ALIMENTAIRE_SOURCE } from '../lib/guide-alimentaire'
 import {
   parseSuppPlan,
   parseMenuPlan,
@@ -34,7 +35,7 @@ import {
   MENU_MENTION,
   type SuppMomentKey
 } from '../lib/nutrition-plan'
-import { Sunrise, Coffee, Dumbbell, UtensilsCrossed, Moon, Info, type LucideIcon } from 'lucide-react'
+import { Sunrise, Coffee, Dumbbell, UtensilsCrossed, Moon, Info, Salad, type LucideIcon } from 'lucide-react'
 import { useCountUp } from '../lib/useCountUp'
 import { formatBilanDate } from '../pages/client/bilanFields'
 import { DeltaIndicator } from '../components/DeltaIndicator'
@@ -859,6 +860,35 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
         </div>
       )}
 
+      {/* Repères généraux, après les consignes personnalisées : le client lit
+          d'abord ce qui le concerne, puis le cadre dans lequel ça s'inscrit.
+          Toujours présents — ce sont des messages de santé publique, ils ne
+          dépendent d'aucune donnée du dossier. */}
+      <div className="nut-guide mt-10 rounded-xl bg-cream p-8 sm:p-10">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold-dark">
+            <Salad size={20} />
+          </span>
+          <p className="ed-display text-2xl text-marine">Les repères à garder en tête</p>
+        </div>
+        <div className="mt-7 grid gap-8 sm:grid-cols-2">
+          {GUIDE_ALIMENTAIRE_VOLETS.map((volet) => (
+            <div key={volet.titre}>
+              <p className="ed-eyebrow text-gold-dark">{volet.titre}</p>
+              <ul className="mt-4 space-y-3">
+                {volet.conseils.map((conseil) => (
+                  <li key={conseil} className="flex gap-3 text-base leading-relaxed text-marine">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gold" />
+                    <span>{conseil}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <p className="mt-8 text-xs italic text-marine/50">{GUIDE_ALIMENTAIRE_SOURCE}</p>
+      </div>
+
       {supp && (
         <div className="nut-supp mt-6 rounded-xl border border-marine/10 p-6 sm:p-8">
           <p className="ed-eyebrow text-gold-dark">Suppléments</p>
@@ -1286,6 +1316,9 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
           /* La carte Suppléments reste d'un seul tenant : on évite qu'elle soit
              orpheline en bas de page et on la garde entière. */
           .nut-supp { break-inside: avoid; break-before: auto; }
+          /* Les huit repères se lisent ensemble : coupés en deux, les quatre
+             conseils orphelins perdent leur volet et donc leur sens. */
+          .nut-guide { break-inside: avoid; }
           /* La section « Idées de menu » démarre sur une nouvelle page (évite le
              titre orphelin en bas de page, séparé de la première journée). */
           .nut-menu { break-before: page; }
