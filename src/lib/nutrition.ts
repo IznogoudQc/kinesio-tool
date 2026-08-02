@@ -220,6 +220,39 @@ export interface MacroEstimate {
 /** Nombre de repas par défaut si non précisé. */
 export const DEFAULT_MEALS_PER_DAY = 3
 
+/** Énergie d'un gramme de macronutriment (kcal). Facteurs d'Atwater. */
+export const KCAL_PER_G = { protein: 4, fat: 9, carbs: 4 } as const
+
+/**
+ * Part de chaque macro dans les calories cibles (%).
+ *
+ * Rapportée à `targetKcal`, pas à la somme des trois : c'est la cible qui fait
+ * référence. En mode automatique les glucides sont un reste arrondi, donc le
+ * total peut tomber à 99 ou 101 % — un écart réel, qu'il vaut mieux montrer que
+ * masquer en normalisant.
+ *
+ * Les fibres n'y figurent pas : elles sont comptées dans les glucides et
+ * n'apportent pas d'énergie assimilable. Leur ajouter un % double-compterait.
+ */
+export function macroEnergyShares(
+  macros: Pick<MacroEstimate, 'targetKcal' | 'proteinG' | 'fatG' | 'carbsG'>
+): { protein: number; fat: number; carbs: number } | null {
+  const { targetKcal, proteinG, fatG, carbsG } = macros
+  if (!Number.isFinite(targetKcal) || targetKcal <= 0) return null
+  const part = (g: number, parG: number) => (g * parG * 100) / targetKcal
+  return {
+    protein: part(proteinG, KCAL_PER_G.protein),
+    fat: part(fatG, KCAL_PER_G.fat),
+    carbs: part(carbsG, KCAL_PER_G.carbs)
+  }
+}
+
+/** Densité en fibres (g par 1000 kcal) — à comparer à `FIBER_G_PER_1000_KCAL`. */
+export function fiberDensityPer1000Kcal(fiberG: number, targetKcal: number): number | null {
+  if (!Number.isFinite(targetKcal) || targetKcal <= 0) return null
+  return (fiberG * 1000) / targetKcal
+}
+
 /** Répartit (à parts égales) les macros du jour sur `meals` repas. Chaque valeur
  *  est arrondie ; c'est indicatif, pas une somme exacte au gramme près. */
 export function macrosPerMeal(macros: MacroEstimate, meals: number): MacroEstimate {

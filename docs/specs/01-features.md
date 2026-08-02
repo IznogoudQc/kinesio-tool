@@ -2,6 +2,26 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.112 — La part de chaque macro dans les calories)
+
+Les cartes Résultat affichent maintenant, sous les grammes, la part de chaque
+macro dans les calories cibles : `33 % des kcal` pour les protéines, etc.
+
+Trois précisions volontaires :
+
+- **Rapporté aux calories cibles**, pas à la somme des trois. En mode automatique
+  les glucides sont un reste arrondi, donc le total peut afficher 99 ou 101 % —
+  un écart réel, qu'on montre plutôt que de le lisser.
+- **Pas de % pour les fibres** : elles sont comptées dans les glucides et
+  n'apportent pas d'énergie assimilable ; un % les double-compterait. La carte
+  affiche à la place leur densité (`14 g / 1000 kcal`), directement comparable à
+  la règle de l'app.
+- **Les lipides passent en ambre hors du 30-40 %**, le même repère qu'au réglage.
+  C'est surtout utile en **mode manuel**, où aucun contrôle ne l'affichait — la
+  question restée ouverte à la v0.9.108 est donc réglée par là.
+
+Version : 0.9.111 → 0.9.112.
+
 ## ✅ Fait (v0.9.111 — Le questionnaire client illisible sur téléphone)
 
 Sur un téléphone, les cinq choix de chaque énoncé restaient écrasés côte à côte

@@ -30,7 +30,10 @@ import {
   FAT_PCT_OF_KCAL_RANGE,
   fatPctOfKcal,
   fatGramsRangeForKcal,
-  DEFAULT_FAT_PCT
+  DEFAULT_FAT_PCT,
+  FIBER_G_PER_1000_KCAL,
+  macroEnergyShares,
+  fiberDensityPer1000Kcal
 } from './nutrition.ts'
 
 const close = (a: number, b: number, eps = 0.15) => Math.abs(a - b) <= eps
@@ -287,4 +290,43 @@ test('estimateMacros : mode % sans valeur → milieu de la fourchette (35 %)', (
   assert.ok(m)
   assert.equal(m.fatG, Math.round((m.targetKcal * DEFAULT_FAT_PCT) / 100 / 9))
   assert.ok(DEFAULT_FAT_PCT >= FAT_PCT_OF_KCAL_RANGE.min && DEFAULT_FAT_PCT <= FAT_PCT_OF_KCAL_RANGE.max)
+})
+
+test('macroEnergyShares : cas réel 1968 kcal · 165 P / 80 L / 147 G', () => {
+  const p = macroEnergyShares({ targetKcal: 1968, proteinG: 165, fatG: 80, carbsG: 147 })
+  assert.ok(p)
+  // 165×4 = 660 → 33,5 % ; 80×9 = 720 → 36,6 % ; 147×4 = 588 → 29,9 %
+  assert.equal(Math.round(p.protein * 10) / 10, 33.5)
+  assert.equal(Math.round(p.fat * 10) / 10, 36.6)
+  assert.equal(Math.round(p.carbs * 10) / 10, 29.9)
+  // Ici les grammes couvrent exactement la cible : le total fait 100 %.
+  assert.ok(Math.abs(p.protein + p.fat + p.carbs - 100) < 0.1)
+})
+
+test('macroEnergyShares : le total peut s’écarter de 100 % (glucides arrondis)', () => {
+  // Mode automatique : les glucides sont un reste arrondi au gramme, donc la
+  // somme ne retombe pas pile sur la cible. On montre l’écart, on ne le lisse pas.
+  const m = estimateMacros({
+    weightKg: 99.8, heightCm: 176, age: 48, sex: 'M',
+    activity: 'modere', leanKg: 69.66, dailyDeficitKcal: 550
+  })
+  assert.ok(m)
+  const p = macroEnergyShares(m)
+  assert.ok(p)
+  const total = p.protein + p.fat + p.carbs
+  assert.ok(Math.abs(total - 100) < 1, `total ${total}`)
+})
+
+test('macroEnergyShares : calories nulles ou absurdes → null', () => {
+  assert.equal(macroEnergyShares({ targetKcal: 0, proteinG: 100, fatG: 50, carbsG: 100 }), null)
+  assert.equal(macroEnergyShares({ targetKcal: -100, proteinG: 100, fatG: 50, carbsG: 100 }), null)
+})
+
+test('fiberDensityPer1000Kcal : retombe sur la règle des 14 g / 1000 kcal', () => {
+  const kcal = 1968
+  const cible = fiberTargetG(kcal)
+  const densite = fiberDensityPer1000Kcal(cible, kcal)
+  assert.ok(densite !== null)
+  assert.equal(Math.round(densite), FIBER_G_PER_1000_KCAL)
+  assert.equal(fiberDensityPer1000Kcal(28, 0), null)
 })

@@ -24,6 +24,8 @@ import {
   estimateMacros,
   fatGramsRangeForKcal,
   fatPctOfKcal,
+  fiberDensityPer1000Kcal,
+  macroEnergyShares,
   macrosPerMeal,
   type ActivityLevel,
   type MacroEstimate
@@ -1091,17 +1093,50 @@ export function NutritionTab() {
                 <p className="text-[11px] uppercase tracking-wide text-gold-dark font-semibold mb-2">Résultat</p>
                 {liveMacros ? (
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
-                    {[
-                      { l: 'Calories', v: liveMacros.targetKcal, u: 'kcal' },
-                      { l: 'Protéines', v: liveMacros.proteinG, u: 'g' },
-                      { l: 'Lipides', v: liveMacros.fatG, u: 'g' },
-                      { l: 'Glucides', v: liveMacros.carbsG, u: 'g' },
-                      { l: 'Fibres', v: liveMacros.fiberG, u: 'g' }
-                    ].map(m => (
+                    {(() => {
+                      // Part de chaque macro dans les calories. Rien pour les
+                      // calories (c'est la base) ni de % pour les fibres — elles
+                      // sont déjà dans les glucides ; on montre leur densité,
+                      // qui se compare directement à la règle des 14 g / 1000 kcal.
+                      const parts = macroEnergyShares(liveMacros)
+                      const densite = fiberDensityPer1000Kcal(liveMacros.fiberG, liveMacros.targetKcal)
+                      const pc = (n: number | undefined) => (n === undefined ? null : `${Math.round(n)} % des kcal`)
+                      return [
+                        { l: 'Calories', v: liveMacros.targetKcal, u: 'kcal', sous: null, alerte: false },
+                        { l: 'Protéines', v: liveMacros.proteinG, u: 'g', sous: pc(parts?.protein), alerte: false },
+                        {
+                          l: 'Lipides',
+                          v: liveMacros.fatG,
+                          u: 'g',
+                          sous: pc(parts?.fat),
+                          // Même repère 30-40 % qu'au réglage : utile surtout en
+                          // mode manuel, où aucun contrôle ne l'affichait.
+                          alerte:
+                            parts != null &&
+                            (parts.fat < FAT_PCT_OF_KCAL_RANGE.min || parts.fat > FAT_PCT_OF_KCAL_RANGE.max)
+                        },
+                        { l: 'Glucides', v: liveMacros.carbsG, u: 'g', sous: pc(parts?.carbs), alerte: false },
+                        {
+                          l: 'Fibres',
+                          v: liveMacros.fiberG,
+                          u: 'g',
+                          sous: densite === null ? null : `${Math.round(densite)} g / 1000 kcal`,
+                          alerte: false
+                        }
+                      ]
+                    })().map(m => (
                       <div key={m.l} className="rounded-md bg-white border border-cream-dark py-2">
                         <p className="text-[10px] uppercase tracking-wide text-marine/40">{m.l}</p>
                         <p className="text-lg font-semibold tabular-nums text-marine leading-tight">{m.v.toLocaleString('fr-CA')}</p>
                         <p className="text-[10px] text-marine/40">{m.u}</p>
+                        {m.sous && (
+                          <p
+                            className={`text-[10px] tabular-nums mt-0.5 ${m.alerte ? 'text-amber-700 font-medium' : 'text-marine/55'}`}
+                            title={m.alerte ? `Hors du ${FAT_PCT_OF_KCAL_RANGE.min}-${FAT_PCT_OF_KCAL_RANGE.max} % visé` : undefined}
+                          >
+                            {m.sous}
+                          </p>
+                        )}
                       </div>
                     ))}
                   </div>
