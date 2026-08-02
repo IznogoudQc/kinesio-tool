@@ -118,7 +118,7 @@ export function renderHabitudesForm(options: HabitudesFormOptions = {}): string 
           .join('')
         return `<div class="enonce" data-key="${esc(key)}">
           <p class="question">${esc(item.label)}</p>
-          <div class="choix-rangee" style="grid-template-columns:repeat(${choix.length},1fr)">${choices}</div>
+          <div class="choix-rangee" style="--cols:${choix.length}">${choices}</div>
         </div>`
       })
       .join('')
@@ -187,7 +187,11 @@ export function renderHabitudesForm(options: HabitudesFormOptions = {}): string 
   .enonce{padding:.9rem 0;border-top:1px solid var(--ligne)}
   .bloc .enonce:first-of-type{border-top:0;padding-top:0}
   .question{margin:0 0 .6rem;font-size:.95rem}
-  .choix-rangee{display:grid;grid-template-columns:repeat(5,1fr);gap:.4rem}
+  /* Le nombre de colonnes vient de --cols, posé en ligne par item (deux énoncés
+     n'ont que 2 choix). Surtout PAS grid-template-columns en ligne : un style en
+     ligne bat la feuille de style, media query comprise, et la bascule mobile
+     plus bas ne pourrait jamais s'appliquer. */
+  .choix-rangee{display:grid;grid-template-columns:repeat(var(--cols,5),1fr);gap:.4rem}
   .choix{
     display:flex;flex-direction:column;align-items:center;gap:.35rem;text-align:center;
     padding:.5rem .3rem;border:1px solid var(--ligne);border-radius:8px;cursor:pointer;

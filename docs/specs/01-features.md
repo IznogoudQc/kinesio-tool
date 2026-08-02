@@ -2,6 +2,28 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.111 — Le questionnaire client illisible sur téléphone)
+
+Sur un téléphone, les cinq choix de chaque énoncé restaient écrasés côte à côte
+et débordaient de la carte, au lieu de passer l'un sous l'autre. La bascule
+mobile existait pourtant depuis l'origine.
+
+**Cause** : régression de la v0.9.90. En corrigeant « il y a seulement 2
+options », le nombre de colonnes est devenu variable selon l'énoncé — et il a
+été posé en `style="grid-template-columns:…"` sur chaque rangée. Un style en
+ligne bat toute feuille de style, media query comprise : la règle mobile ne
+pouvait jamais s'appliquer.
+
+**Correction** : le nombre de colonnes passe par une variable CSS
+(`style="--cols:5"`), consommée par `repeat(var(--cols,5),1fr)`. La règle
+mobile redevient une simple règle de feuille de style et reprend la main.
+Le bureau est inchangé, les deux énoncés à choix réduits gardent leurs 2
+colonnes.
+
+Deux tests verrouillent le tout, dont un qui échoue contre l'ancien code.
+
+Version : 0.9.110 → 0.9.111.
+
 ## ✅ Fait (v0.9.109 — Les repères du Guide alimentaire canadien)
 
 Le document nutrition se termine maintenant sur une carte « Les repères à garder

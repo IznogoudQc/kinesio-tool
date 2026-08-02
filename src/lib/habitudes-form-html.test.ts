@@ -196,3 +196,32 @@ test('le document est bien formé', () => {
   assert.equal(html.split('<body>').length - 1, 1)
   assert.equal(html.split('</body>').length - 1, 1)
 })
+
+test('le nombre de colonnes passe par --cols, jamais par un style en ligne', () => {
+  // Régression v0.9.90 → v0.9.111 : le nombre de colonnes, devenu variable pour
+  // les énoncés à 2 choix, était posé en `style="grid-template-columns:…"`.
+  // Un style en ligne bat la feuille de style, media query comprise : la bascule
+  // mobile ne s'appliquait jamais et les 5 choix restaient écrasés côte à côte
+  // sur un téléphone, débordant de la carte.
+  const html = renderHabitudesForm()
+  assert.equal(
+    html.includes('style="grid-template-columns'),
+    false,
+    'grid-template-columns en ligne : la media query mobile ne pourra pas gagner'
+  )
+  assert.ok(html.includes('style="--cols:5"'), 'les rangées à 5 choix doivent porter --cols:5')
+  assert.ok(html.includes('style="--cols:2"'), 'les rangées à 2 choix doivent porter --cols:2')
+  // La feuille de style doit consommer la variable, avec un repli.
+  assert.ok(html.includes('grid-template-columns:repeat(var(--cols,5),1fr)'))
+})
+
+test('la bascule mobile ramène les choix sur une seule colonne', () => {
+  const html = renderHabitudesForm()
+  const mq = html.slice(html.indexOf('@media (max-width:640px)'))
+  assert.ok(mq.includes('.choix-rangee{grid-template-columns:1fr'))
+  // Et elle doit venir APRÈS la règle de base, sinon elle perd la cascade.
+  assert.ok(
+    html.indexOf('@media (max-width:640px)') > html.indexOf('.choix-rangee{display:grid'),
+    'la règle mobile doit suivre la règle de base'
+  )
+})
