@@ -26,7 +26,6 @@ import {
   fatPctOfKcal,
   fiberDensityPer1000Kcal,
   macroEnergyShares,
-  totalCarbsG,
   NET_CARBS_EXPLANATION,
   macrosPerMeal,
   type ActivityLevel,
@@ -1120,13 +1119,10 @@ export function NutritionTab() {
                   le chiffre affiché n'est pas celui d'une étiquette nutritionnelle. */}
               <p className="mt-3 text-xs leading-relaxed text-marine/55 bg-white/60 border border-cream-dark rounded-md p-3">
                 {NET_CARBS_EXPLANATION}
-                {liveMacros && (
-                  <span className="block mt-1.5 text-marine/70 tabular-nums">
-                    Ici : {liveMacros.carbsG} g nets + {liveMacros.fiberG} g de fibres ={' '}
-                    <strong className="font-semibold">{totalCarbsG(liveMacros.carbsG, liveMacros.fiberG)} g</strong> de
-                    glucides totaux.
-                  </span>
-                )}
+                <span className="block mt-1.5 text-marine/70">
+                  La cible de fibres est une cible <strong className="font-semibold">à part</strong> : elle ne s’ajoute
+                  pas aux glucides nets pour reconstituer un total.
+                </span>
               </p>
 
               {/* Résultat en direct */}

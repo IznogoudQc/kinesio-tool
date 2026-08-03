@@ -254,26 +254,28 @@ export function macroEnergyShares(
  * recommandation de quantité — ce serait sortir du champ de pratique.
  */
 export const NET_CARBS_EXPLANATION =
-  'Glucides nets = glucides totaux moins les fibres. Les fibres traversent ' +
-  'l’intestin sans être absorbées comme les autres glucides : elles apportent ' +
-  'peu d’énergie et font peu monter la glycémie. Ce sont donc les glucides nets ' +
-  'qui reflètent le mieux l’effet réel d’un repas.'
+  'Le calcul se fait par aliment : glucides nets = les glucides de l’aliment ' +
+  'moins ses fibres. Les fibres traversent l’intestin sans être absorbées comme ' +
+  'les autres glucides : elles apportent peu d’énergie et font peu monter la ' +
+  'glycémie. Ce sont donc les glucides nets qui reflètent le mieux l’effet réel ' +
+  'de ce qu’on mange.'
 
 /**
- * Glucides totaux = nets + fibres.
+ * ⚠️ Pas de fonction « glucides totaux ».
  *
- * ⚠️ Convention de l'app depuis la v0.9.113 : le chiffre saisi et affiché est le
- * glucide **net**, et les fibres sont comptées à 0 kcal. Les calories restent
- * donc `P×4 + net×4 + L×9`, inchangées par rapport aux versions précédentes —
- * seul le sens du nombre a changé, pas sa valeur.
+ * On pourrait croire que `totaux = nets + fibres`, mais c'est faux ici : la
+ * cible de fibres est **dérivée des calories** (14 g / 1000 kcal), pas la somme
+ * des fibres réellement présentes dans les aliments qui fournissent les
+ * glucides nets. Additionner les deux mélangerait une cible et une observation,
+ * et donnerait un total qui ne correspond à aucun repas réel.
  *
- * Compter les fibres dans les glucides *et* les dériver des calories créerait
- * une définition circulaire (les fibres viennent de `targetKcal`, qui viendrait
- * des glucides totaux, qui viendraient des fibres).
+ * Les deux valeurs sont des cibles **indépendantes** : tant de glucides nets,
+ * tant de fibres. Le net se calcule aliment par aliment, sur son étiquette.
+ *
+ * Convention de l'app : le chiffre saisi et affiché est le glucide **net**, et
+ * les fibres comptent 0 kcal. Les calories restent `P×4 + net×4 + L×9`,
+ * identiques aux versions antérieures — seul le sens du nombre a changé.
  */
-export function totalCarbsG(netCarbsG: number, fiberG: number): number {
-  return Math.round(netCarbsG + fiberG)
-}
 
 /** Densité en fibres (g par 1000 kcal) — à comparer à `FIBER_G_PER_1000_KCAL`. */
 export function fiberDensityPer1000Kcal(fiberG: number, targetKcal: number): number | null {

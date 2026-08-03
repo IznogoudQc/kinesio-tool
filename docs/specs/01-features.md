@@ -2,6 +2,25 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.114 — Correction : les fibres ne s'ajoutent pas aux glucides nets)
+
+La v0.9.113 affichait « 147 g nets + 28 g de fibres = 175 g de glucides totaux ».
+C'est faux, et Nicholas l'a relevé.
+
+Les deux nombres ne sont pas de même nature. Le net se calcule **par aliment**
+(ses glucides moins ses fibres, sur son étiquette). La cible de fibres est
+dérivée des **calories** — ce n'est pas la somme des fibres réellement contenues
+dans les aliments de la journée. Les additionner mélange une cible et une
+observation, et donne un total qui ne correspond à aucun repas réel.
+
+`totalCarbsG()` est supprimée plutôt que corrigée : il n'existe pas de « glucides
+totaux » calculables à l'échelle d'une journée à partir de nos données. Un test
+échoue si un tel helper réapparaît. Voir [[0039-glucides-nets-correction]].
+
+Aucun calcul n'est touché — l'erreur était dans le texte affiché.
+
+Version : 0.9.113 → 0.9.114.
+
 ## ✅ Fait (v0.9.113 — Glucides nets + % dans les champs de saisie)
 
 ### Les % à côté des champs, pas seulement dans le résultat

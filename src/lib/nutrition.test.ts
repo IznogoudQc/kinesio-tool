@@ -34,9 +34,9 @@ import {
   FIBER_G_PER_1000_KCAL,
   macroEnergyShares,
   fiberDensityPer1000Kcal,
-  totalCarbsG,
   NET_CARBS_EXPLANATION
 } from './nutrition.ts'
+import * as nutritionModule from './nutrition.ts'
 
 const close = (a: number, b: number, eps = 0.15) => Math.abs(a - b) <= eps
 
@@ -333,10 +333,6 @@ test('fiberDensityPer1000Kcal : retombe sur la règle des 14 g / 1000 kcal', () 
   assert.equal(fiberDensityPer1000Kcal(28, 0), null)
 })
 
-test('totalCarbsG : les nets plus les fibres', () => {
-  assert.equal(totalCarbsG(147, 28), 175)
-  assert.equal(totalCarbsG(0, 0), 0)
-})
 
 test('glucides nets : les calories ne changent PAS avec le renommage', () => {
   // v0.9.113 change le SENS du nombre, pas sa valeur : les fibres sont comptées
@@ -351,13 +347,30 @@ test('glucides nets : les calories ne changent PAS avec le renommage', () => {
   assert.equal(m.proteinG, 140)
   assert.equal(m.fatG, 60)
   assert.equal(m.carbsG, 310)
-  // Et les glucides totaux se déduisent sans toucher à l'énergie.
-  assert.equal(totalCarbsG(m.carbsG, m.fiberG), 310 + m.fiberG)
 })
 
 test('NET_CARBS_EXPLANATION : définit, sans recommander de quantité', () => {
   assert.match(NET_CARBS_EXPLANATION, /fibres/)
-  assert.match(NET_CARBS_EXPLANATION, /glucides totaux/)
+  assert.match(NET_CARBS_EXPLANATION, /glucides nets/)
   // Champ de pratique : une définition, jamais une cible chiffrée.
   assert.equal(/\d+\s*(g|grammes|%)/.test(NET_CARBS_EXPLANATION), false)
+})
+
+test('la cible de fibres ne s’ajoute PAS aux glucides nets', () => {
+  // Correction v0.9.114 (Nicholas) : le net se calcule par ALIMENT — ses
+  // glucides moins ses fibres. La cible de fibres, elle, est dérivée des
+  // calories (14 g / 1000 kcal) : ce n'est pas la somme des fibres contenues
+  // dans les aliments qui fournissent les glucides nets. Les additionner
+  // mélangerait une cible et une observation.
+  //
+  // Ce test n'a rien à calculer — il constate qu'aucun helper « glucides
+  // totaux » n'existe, pour qu'on ne réintroduise pas l'addition.
+  const api = Object.keys(nutritionModule)
+  assert.equal(
+    api.some(n => /totalCarbs|glucidesTotaux/i.test(n)),
+    false,
+    'un helper « glucides totaux » a été réintroduit — voir ADR 0039'
+  )
+  // Et l'explication doit dire que le calcul se fait par aliment.
+  assert.match(NET_CARBS_EXPLANATION, /par aliment/)
 })

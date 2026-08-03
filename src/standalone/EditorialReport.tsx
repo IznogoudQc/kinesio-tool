@@ -1134,7 +1134,7 @@ function ObjectifBody({
                   nutritionnelle — qui, elle, donne les glucides totaux. */}
               <p className="mt-5 text-sm leading-relaxed text-marine/60">
                 {NET_CARBS_EXPLANATION} Sur une étiquette nutritionnelle, soustrayez les fibres des glucides totaux
-                pour retrouver ce chiffre.
+                pour obtenir les glucides nets de cet aliment. La cible de fibres, elle, se suit séparément.
               </p>
 
               {mealsPerDay && mealsPerDay > 1 && (
