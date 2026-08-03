@@ -2,6 +2,36 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.118 — Le PDF des barèmes : checklist de validation + mise à jour)
+
+### Une checklist en tête du document
+
+Chaque barème et chaque formule porte maintenant une pastille d'état —
+**Confirmé** ☑, **À confirmer** ☐, **Déduit — sans source** ☐ — et le document
+s'ouvre sur un tableau des seuls points ouverts, avec une **case vierge à cocher
+au crayon** pendant la revue avec Marie. Les points marqués « entre dans le
+score » y sont distingués de ceux qui ne touchent qu'un libellé.
+
+État unique dans `src/lib/norms/validation-status.ts`, lu par le document.
+Écrire l'état à deux endroits garantirait qu'ils divergent. Un test refuse une
+entrée non confirmée qui ne dirait pas ce qu'il faut demander.
+
+### Le document était périmé
+
+Deux sections décrivaient encore un état antérieur du logiciel :
+
+- **§ 8** annonçait « scores composites (1 à 5) » et un score global défini comme
+  la moyenne de quatre sous-scores. La vraie formule est `AverageRatings` sur
+  sept composantes cotées 0-4, dont cinq calculées.
+- **§ 9** donnait « Protéines = 1 g / lb de masse maigre » et « Lipides = plafond
+  60 g » — remplacés depuis par les g/kg de poids corporel et le choix
+  grammes ↔ % des calories. Les glucides nets et les fibres n'y figuraient pas.
+
+Ajout de deux sections : les questionnaires (FANTASTIC, ÉAS) et les repères du
+Guide alimentaire canadien, qui n'étaient documentés nulle part.
+
+Version : 0.9.117 → 0.9.118.
+
 ## ✅ Fait (v0.9.117 — La partie 2 (ÉAS) paraissait ne pas répondre)
 
 Cliquer une réponse de la partie ÉAS ne remplissait pas le point du bouton

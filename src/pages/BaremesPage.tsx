@@ -1,3 +1,9 @@
+import {
+  VALIDATION,
+  VALIDATION_STATUS_LABELS,
+  aValider,
+  compteParStatut
+} from '../lib/norms/validation-status'
 import { useEffect } from 'react'
 import { ACSM_TABLES } from '../lib/norms/acsm'
 import { CPAFLA_TABLES } from '../lib/norms/cpafla'
@@ -175,6 +181,71 @@ function FcReposTable() {
   )
 }
 
+/** Pastille d'état à poser à côté d'un barème ou d'une formule. */
+function Etat({ id }: { id: string }) {
+  const e = VALIDATION.find(v => v.id === id)
+  if (!e) return null
+  const cls = e.statut === 'confirme' ? 'ok' : e.statut === 'a_confirmer' ? 'warn' : 'bad'
+  return (
+    <span className={`etat ${cls}`}>
+      {e.statut === 'confirme' ? '☑' : '☐'} {VALIDATION_STATUS_LABELS[e.statut]}
+    </span>
+  )
+}
+
+/**
+ * Checklist de validation, en tête du document.
+ *
+ * Deux colonnes de cases : celle de gauche est l'état connu de l'application,
+ * celle de droite reste **vide** — c'est celle que Marie coche au crayon pendant
+ * la revue. Sans case vierge, le document se lit mais ne se remplit pas.
+ */
+function ChecklistValidation() {
+  const ouverts = aValider()
+  const n = compteParStatut()
+  return (
+    <div className="chk">
+      <div className="chk-h">
+        <h2>Ce qui reste à valider avec Marie</h2>
+        <span className="chk-n">
+          {n.confirme} confirmé{n.confirme > 1 ? 's' : ''} · {n.a_confirmer} à confirmer · {n.deduit} déduit
+          {n.deduit > 1 ? 's' : ''}
+        </span>
+      </div>
+      <p className="chk-lead">
+        Les points ci-dessous reposent sur une déduction ou une source jamais recontrôlée. Ceux marqués
+        <b> « entre dans le score »</b> peuvent fausser une note remise à un client ; les autres ne touchent qu'un
+        libellé. Cochez la colonne de droite au fur et à mesure.
+      </p>
+      <table className="chk-t">
+        <thead>
+          <tr>
+            <th>Vu&nbsp;?</th>
+            <th>Point</th>
+            <th>Ce qu'il faut</th>
+            <th>Portée</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ouverts.map(e => (
+            <tr key={e.id}>
+              <td className="box">☐</td>
+              <td>
+                <b>{e.label}</b>
+                <span className="chk-src">{e.source}</span>
+              </td>
+              <td>{e.manque}</td>
+              <td className={e.entreDansLeScore ? 'port bad' : 'port'}>
+                {e.entreDansLeScore ? 'Entre dans le score' : 'Affichage'}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
 export function BaremesPage() {
   useEffect(() => {
     // Signale au générateur PDF (report-generator) que le rendu est prêt.
@@ -187,7 +258,9 @@ export function BaremesPage() {
       <p className="eyebrow">Kinésio Outils · document de référence</p>
       <h1>Barèmes &amp; formules de référence</h1>
       <p className="lead">Tous les barèmes de catégorisation et formules de calcul utilisés par l'application, avec leur
-        source. Les tableaux sont générés à partir des mêmes données que le logiciel.</p>
+        source et leur état de validation. Les tableaux sont générés à partir des mêmes données que le logiciel.</p>
+
+      <ChecklistValidation />
 
       <h2>1 · Principe de catégorisation</h2>
       <p>Chaque test est comparé aux percentiles (P10, P25, P50, P75) de la population de même âge et sexe :
@@ -200,9 +273,11 @@ export function BaremesPage() {
         ACSM du % de gras restent utilisés en coulisse pour le score de composition corporelle.</p>
 
       <h2>2 · Cardio &amp; endurance</h2>
+      <p className="src">Tables ACSM <Etat id="vo2max-acsm" /> · Tests hors ACSM <Etat id="hors-acsm" /></p>
       {CARDIO.map(m => <Baro key={m.test} meta={m} />)}
 
       <h2>3 · Composition corporelle</h2>
+      <p className="src">Tables CPAFLA <Etat id="composition-cpafla" /> · Grille du % de gras <Etat id="pourcentage-gras-grille" /></p>
       {COMPO.map(m => <Baro key={m.test} meta={m} />)}
       <BodyFatRiskTable />
 
@@ -210,6 +285,7 @@ export function BaremesPage() {
       {FORCE.map(m => <Baro key={m.test} meta={m} />)}
 
       <h2>5 · Seuils cliniques</h2>
+      <p className="src">Systolique <Etat id="pa-systolique-cote" /> · Diastolique <Etat id="pa-diastolique-seuils" /></p>
       <div className="baro">
         <div className="baro-t"><h3>Pression artérielle</h3><span className="u">mmHg · OMS/JNC</span></div>
         <table>
@@ -224,6 +300,7 @@ export function BaremesPage() {
       <FcReposTable />
 
       <h2>6 · Risque cardio-métabolique (OMS)</h2>
+      <p className="src">Risque IMC + tour de taille (tableau 4.4) <Etat id="risque-sante-4-4" /> · Tour de taille jugé seul <Etat id="tour-taille-autonome" /></p>
       <div className="baro">
         <table>
           <thead><tr><th>Mesure</th><th className="c5">Faible</th><th className="c2">Élevé</th><th className="c1">Très élevé</th></tr></thead>
@@ -256,14 +333,36 @@ Zones = FC max × 60 % … 90 % (par pas de 5 %)</pre>
       <h3>Puissance des jambes</h3>
       <pre className="f">Puissance (W) = 60,7·saut(cm) + 45,3·poids(kg) − 2055   (Sayers 1999)</pre>
 
-      <h2>8 · Scores composites (1 à 5)</h2>
+      <h2>8 · Score « Santé et condition physique globale » (0 à 4)</h2>
+      <p>Formule de l'ancien logiciel, relevée dans sa fenêtre Propriétés — identique pour les hommes et les femmes.
+        Chaque composante est ramenée à sa <b>cote entière 0-4</b>, puis toutes comptent également. Une composante
+        non mesurée est <b>exclue</b>, pas comptée 0. <Etat id="score-global-formule" /></p>
+      <pre className="f">AverageRatings([Questionnaire combiné]×1, [Composition corporelle]×1,
+  [Pression artérielle systolique]×1, [METS max]×1, [Indice de santé du dos]×1,
+  [Aptitudes musculosquelettiques]×1, [166]×1)
+
+Sept composantes — cinq sont calculées :</pre>
       <table className="plain">
         <tbody>
-          <tr><td>Composition corporelle</td><td>IMC + % de gras + tour de taille</td></tr>
-          <tr><td>Cœur &amp; endurance</td><td>VO2max</td></tr>
-          <tr><td>Force musculaire</td><td>Pompes + redressements + saut vertical + puissance des jambes</td></tr>
-          <tr><td>Dos &amp; souplesse</td><td>Flexion du tronc + endurance du dos + redressements</td></tr>
-          <tr><td>Score global</td><td>Moyenne des 4 scores ci-dessus</td></tr>
+          <tr><td>Composition corporelle</td><td>Cote issue des tables CPAFLA (fig. 7-4 / 7-5) <Etat id="composition-cpafla" /></td></tr>
+          <tr><td>Aptitude aérobie (METS max)</td><td>VO2max ÷ 3,5, coté par le tableau 4.10 <Etat id="aerobie-cpafla" /></td></tr>
+          <tr><td>Pression artérielle systolique</td><td>Moins de 120 mmHg → 4, sinon 0 <Etat id="pa-systolique-cote" /></td></tr>
+          <tr><td>Indice de santé du dos</td><td>Tables CPAFLA <Etat id="dos-musculo" /></td></tr>
+          <tr><td>Aptitude musculosquelettique</td><td>Tables CPAFLA</td></tr>
+          <tr><td><i>Questionnaire combiné</i></td><td><i>Exclu — Marie ne le remplit pas à chaque fois</i> <Etat id="questionnaire-dans-score" /></td></tr>
+          <tr><td><i>Test [166]</i></td><td><i>Exclu — Marie ne l'utilise pas</i></td></tr>
+        </tbody>
+      </table>
+      <p className="src">Exemple de lecture : cotes 0 · 1 · 0 · 2 · 2 → somme 5 sur un maximum de 20 →
+        5 ÷ 20 × 4 = <b>1</b>.</p>
+
+      <h2>8 bis · Questionnaires</h2>
+      <table className="plain">
+        <tbody>
+          <tr><td>FANTASTIC</td><td>25 énoncés, cotes 0-4 de gauche à droite, total ramené sur 100 au prorata des
+            énoncés répondus <Etat id="fantastic" /></td></tr>
+          <tr><td>ÉAS</td><td>3 questions, cotation <b>dépendante du sexe</b>, maximum 11 dans les deux colonnes
+            <Etat id="eas" /></td></tr>
         </tbody>
       </table>
 
@@ -275,8 +374,24 @@ Homme : Base + 5      Femme : Base − 161
 TDEE = BMR × activité (Sédentaire 1,20 · Léger 1,375 · Modéré 1,55 · Actif 1,725 · Très actif 1,90)
 Calories cibles = TDEE − déficit (jamais sous le BMR), ou valeur manuelle
 Déficit/jour = rythme(kg/sem) × 7700 ÷ 7   (1 kg gras ≈ 7700 kcal)
-Protéines = 1 g / lb de masse maigre   ·   Lipides = plafond 60 g   ·   Glucides = le reste
 masse maigre = poids × (1 − %gras/100)   ·   poids-cible = maigre / (1 − %cible/100)</pre>
+      <table className="plain">
+        <tbody>
+          <tr><td>Protéines</td><td>1 à 1,4 g par kg de <b>poids corporel</b>, jusqu'à 1,6 chez les plus actifs
+            (défaut 1,4) <Etat id="proteines-par-kg" /></td></tr>
+          <tr><td>Lipides</td><td>Plafond en grammes, <b>ou</b> part des calories — 30 à 40 % visés
+            <Etat id="lipides-30-40" /></td></tr>
+          <tr><td>Glucides <b>nets</b></td><td>Le reste des calories cibles. Nets = glucides de l'aliment moins ses
+            fibres, calculé <b>par aliment</b> <Etat id="glucides-nets" /></td></tr>
+          <tr><td>Fibres</td><td>14 g par 1000 kcal — cible <b>indépendante</b>, elle ne s'ajoute pas aux glucides nets
+            <Etat id="fibres-14g" /></td></tr>
+        </tbody>
+      </table>
+      <p className="src">Les fibres sont comptées à 0 kcal : l'énergie vaut protéines×4 + glucides nets×4 + lipides×9.</p>
+
+      <h2>9 bis · Repères du Guide alimentaire canadien</h2>
+      <p>Huit recommandations affichées dans le document nutrition, en deux volets — quatre sur les aliments, quatre sur
+        la manière de manger. Texte officiel repris mot pour mot. <Etat id="guide-alimentaire" /></p>
 
       <h2>10 · Sources</h2>
       <ul className="src-list">
@@ -319,5 +434,25 @@ td:first-child,th:first-child{text-align:left;font-weight:600;color:#0a1c5e}
 table.plain td{text-align:left;border-bottom:1px solid #e5e0d2}
 table.plain td:first-child{color:#0a1c5e;width:38%}
 .src-list{color:#6b6555;font-size:11.5px;line-height:1.6;margin:6px 0}
+/* Pastilles d'état — posées à côté d'un barème ou d'une formule. */
+.etat{font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:20px;white-space:nowrap;margin-left:6px}
+.etat.ok{background:#e6f0dd;color:#2c7a2c}
+.etat.warn{background:#fbe7d6;color:#a5641f}
+.etat.bad{background:#fbe4e0;color:#a3352a}
+/* Checklist de validation — reste d'un seul tenant à l'impression, sinon la
+   colonne à cocher se retrouve séparée de ce qu'elle coche. */
+.chk{border:1.5px solid #b8834a;border-radius:8px;padding:10px 13px;margin:14px 0 4px;background:#fdfaf4;break-inside:avoid}
+.chk-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chk-h h2{margin:0;border:0;padding:0;font-size:15px}
+.chk-n{font-size:10px;color:#6b6555;font-weight:600}
+.chk-lead{font-size:11px;color:#6b6555;margin:4px 0 8px}
+.chk-t{font-size:11px}
+.chk-t th{background:#f6efe1}
+.chk-t td{text-align:left;vertical-align:top;padding:5px 7px}
+.chk-t td.box{text-align:center;font-size:15px;width:34px;color:#0a1c5e}
+.chk-t td:first-child{width:34px}
+.chk-src{display:block;color:#6b6555;font-weight:400;font-size:10px;margin-top:2px}
+.port{font-size:10px;color:#6b6555;width:78px}
+.port.bad{color:#a3352a;font-weight:700}
 .foot{margin-top:22px;font-size:10px;color:#6b6555;text-align:center}
 `
