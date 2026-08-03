@@ -748,7 +748,7 @@ function ObjectifBlock({
               <div style={{ display: 'flex', gap: '4mm', flexWrap: 'wrap' }}>
                 <MacroChip label="Calories" value={`${macros.targetKcal}`} unit="kcal" />
                 <MacroChip label="Protéines" value={`${macros.proteinG}`} unit="g" />
-                <MacroChip label="Glucides" value={`${macros.carbsG}`} unit="g" />
+                <MacroChip label="Glucides nets" value={`${macros.carbsG}`} unit="g" />
                 <MacroChip label="Lipides" value={`${macros.fatG}`} unit="g" />
               </div>
               <p style={{ fontSize: '8pt', color: INK_SOFT, fontStyle: 'italic', marginTop: '3mm', lineHeight: 1.45 }}>

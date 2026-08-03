@@ -24,7 +24,7 @@ import {
 import { detectWins, noWinsMessage } from '../lib/dashboard-wins'
 import { buildObjectif, type Objectif } from '../lib/objectif'
 import { dualRate, dualWeight, formatWeeks } from '../lib/objectif-format'
-import { ACTIVITY_LABELS, DEFAULT_MEALS_PER_DAY, macrosPerMeal } from '../lib/nutrition'
+import { ACTIVITY_LABELS, DEFAULT_MEALS_PER_DAY, NET_CARBS_EXPLANATION, macrosPerMeal } from '../lib/nutrition'
 import { GUIDE_ALIMENTAIRE_VOLETS, GUIDE_ALIMENTAIRE_SOURCE } from '../lib/guide-alimentaire'
 import {
   parseSuppPlan,
@@ -1118,7 +1118,7 @@ function ObjectifBody({
                   { label: 'Calories', value: Math.round(objectif.macros.targetKcal), unit: 'kcal / jour' },
                   { label: 'Protéines', value: Math.round(objectif.macros.proteinG), unit: 'g' },
                   { label: 'Lipides', value: Math.round(objectif.macros.fatG), unit: 'g' },
-                  { label: 'Glucides', value: Math.round(objectif.macros.carbsG), unit: 'g' },
+                  { label: 'Glucides nets', value: Math.round(objectif.macros.carbsG), unit: 'g' },
                   { label: 'Fibres', value: Math.round(objectif.macros.fiberG), unit: 'g' }
                 ].map(m => (
                   <div key={m.label}>
@@ -1128,6 +1128,14 @@ function ObjectifBody({
                   </div>
                 ))}
               </div>
+
+              {/* Le client lit « glucides nets » sans forcément savoir ce que
+                  c'est, et le chiffre ne correspond pas à celui d'une étiquette
+                  nutritionnelle — qui, elle, donne les glucides totaux. */}
+              <p className="mt-5 text-sm leading-relaxed text-marine/60">
+                {NET_CARBS_EXPLANATION} Sur une étiquette nutritionnelle, soustrayez les fibres des glucides totaux
+                pour retrouver ce chiffre.
+              </p>
 
               {mealsPerDay && mealsPerDay > 1 && (
                 <div className="mt-6 rounded-lg bg-cream/60 p-5">
@@ -1139,7 +1147,7 @@ function ObjectifBody({
                         { label: 'Calories', value: pm.targetKcal, unit: 'kcal' },
                         { label: 'Protéines', value: pm.proteinG, unit: 'g' },
                         { label: 'Lipides', value: pm.fatG, unit: 'g' },
-                        { label: 'Glucides', value: pm.carbsG, unit: 'g' },
+                        { label: 'Glucides nets', value: pm.carbsG, unit: 'g' },
                         { label: 'Fibres', value: pm.fiberG, unit: 'g' }
                       ]
                     })().map(m => (

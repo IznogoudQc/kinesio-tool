@@ -180,7 +180,7 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
   if (typeof p.kcal === 'number') macros.push(`${Math.round(p.kcal)} kcal`)
   if (typeof p.proteinG === 'number') macros.push(`${Math.round(p.proteinG)} g de protéines`)
   if (typeof p.fatG === 'number') macros.push(`${Math.round(p.fatG)} g de lipides`)
-  if (typeof p.carbsG === 'number') macros.push(`${Math.round(p.carbsG)} g de glucides`)
+  if (typeof p.carbsG === 'number') macros.push(`${Math.round(p.carbsG)} g de glucides nets (hors fibres)`)
   const clean = (s?: string) => (s ?? '').trim().replace(/\n/g, ', ') || 'non précisés'
   const fiberLine =
     typeof p.fiberG === 'number'

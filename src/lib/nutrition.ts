@@ -247,6 +247,34 @@ export function macroEnergyShares(
   }
 }
 
+/**
+ * Explication des glucides nets, montrée à Marie et au client.
+ *
+ * Texte court volontairement : c'est une définition, pas un conseil. Aucune
+ * recommandation de quantité — ce serait sortir du champ de pratique.
+ */
+export const NET_CARBS_EXPLANATION =
+  'Glucides nets = glucides totaux moins les fibres. Les fibres traversent ' +
+  'l’intestin sans être absorbées comme les autres glucides : elles apportent ' +
+  'peu d’énergie et font peu monter la glycémie. Ce sont donc les glucides nets ' +
+  'qui reflètent le mieux l’effet réel d’un repas.'
+
+/**
+ * Glucides totaux = nets + fibres.
+ *
+ * ⚠️ Convention de l'app depuis la v0.9.113 : le chiffre saisi et affiché est le
+ * glucide **net**, et les fibres sont comptées à 0 kcal. Les calories restent
+ * donc `P×4 + net×4 + L×9`, inchangées par rapport aux versions précédentes —
+ * seul le sens du nombre a changé, pas sa valeur.
+ *
+ * Compter les fibres dans les glucides *et* les dériver des calories créerait
+ * une définition circulaire (les fibres viennent de `targetKcal`, qui viendrait
+ * des glucides totaux, qui viendraient des fibres).
+ */
+export function totalCarbsG(netCarbsG: number, fiberG: number): number {
+  return Math.round(netCarbsG + fiberG)
+}
+
 /** Densité en fibres (g par 1000 kcal) — à comparer à `FIBER_G_PER_1000_KCAL`. */
 export function fiberDensityPer1000Kcal(fiberG: number, targetKcal: number): number | null {
   if (!Number.isFinite(targetKcal) || targetKcal <= 0) return null

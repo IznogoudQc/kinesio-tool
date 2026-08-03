@@ -33,7 +33,9 @@ import {
   DEFAULT_FAT_PCT,
   FIBER_G_PER_1000_KCAL,
   macroEnergyShares,
-  fiberDensityPer1000Kcal
+  fiberDensityPer1000Kcal,
+  totalCarbsG,
+  NET_CARBS_EXPLANATION
 } from './nutrition.ts'
 
 const close = (a: number, b: number, eps = 0.15) => Math.abs(a - b) <= eps
@@ -329,4 +331,33 @@ test('fiberDensityPer1000Kcal : retombe sur la règle des 14 g / 1000 kcal', () 
   assert.ok(densite !== null)
   assert.equal(Math.round(densite), FIBER_G_PER_1000_KCAL)
   assert.equal(fiberDensityPer1000Kcal(28, 0), null)
+})
+
+test('totalCarbsG : les nets plus les fibres', () => {
+  assert.equal(totalCarbsG(147, 28), 175)
+  assert.equal(totalCarbsG(0, 0), 0)
+})
+
+test('glucides nets : les calories ne changent PAS avec le renommage', () => {
+  // v0.9.113 change le SENS du nombre, pas sa valeur : les fibres sont comptées
+  // à 0 kcal, donc l'énergie reste P×4 + net×4 + L×9. Aucun protocole déjà
+  // remis à un client ne doit voir ses calories bouger.
+  const m = estimateMacros({
+    weightKg: 99.8, heightCm: 176, age: 48, sex: 'M',
+    activity: 'modere', leanKg: 69.66, dailyDeficitKcal: 550
+  })
+  assert.ok(m)
+  assert.equal(m.targetKcal, 2338) // valeur verrouillée avant le changement
+  assert.equal(m.proteinG, 140)
+  assert.equal(m.fatG, 60)
+  assert.equal(m.carbsG, 310)
+  // Et les glucides totaux se déduisent sans toucher à l'énergie.
+  assert.equal(totalCarbsG(m.carbsG, m.fiberG), 310 + m.fiberG)
+})
+
+test('NET_CARBS_EXPLANATION : définit, sans recommander de quantité', () => {
+  assert.match(NET_CARBS_EXPLANATION, /fibres/)
+  assert.match(NET_CARBS_EXPLANATION, /glucides totaux/)
+  // Champ de pratique : une définition, jamais une cible chiffrée.
+  assert.equal(/\d+\s*(g|grammes|%)/.test(NET_CARBS_EXPLANATION), false)
 })

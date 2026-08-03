@@ -2,6 +2,31 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.113 — Glucides nets + % dans les champs de saisie)
+
+### Les % à côté des champs, pas seulement dans le résultat
+
+Chaque champ de macro (protéines, lipides, glucides nets) affiche sa part des
+calories à côté du champ. Les lipides passent en ambre hors du 30-40 %.
+
+### Glucides nets
+
+Marie travaille en glucides **nets** (totaux moins les fibres). Le chiffre saisi
+et affiché est désormais explicitement le net, partout : onglet, document client,
+PDF, et prompt du menu IA.
+
+**Aucune valeur ne change** — seul le sens du nombre. Les fibres sont comptées à
+0 kcal, donc l'énergie reste `P×4 + net×4 + L×9`. Un client dont le protocole
+disait « 147 g de glucides » lit « 147 g de glucides nets », mêmes calories.
+Un test verrouille cette non-régression.
+
+Une définition accompagne le chiffre côté Marie et côté client — la notion n'est
+pas évidente et le nombre ne correspond pas à celui d'une étiquette
+nutritionnelle. Le texte ne contient aucune quantité recommandée : c'est une
+définition, pas un conseil. Voir [[0038-glucides-nets]].
+
+Version : 0.9.112 → 0.9.113.
+
 ## ✅ Fait (v0.9.112 — La part de chaque macro dans les calories)
 
 Les cartes Résultat affichent maintenant, sous les grammes, la part de chaque

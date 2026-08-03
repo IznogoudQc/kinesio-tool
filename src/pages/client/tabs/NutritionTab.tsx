@@ -26,6 +26,8 @@ import {
   fatPctOfKcal,
   fiberDensityPer1000Kcal,
   macroEnergyShares,
+  totalCarbsG,
+  NET_CARBS_EXPLANATION,
   macrosPerMeal,
   type ActivityLevel,
   type MacroEstimate
@@ -72,6 +74,19 @@ const fieldClass =
   'w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors'
 const macroInput =
   'w-24 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold'
+
+/** Part d'une macro dans les calories, à côté de son champ. Rien si incalculable. */
+function PartKcal({ pct, alerte = false }: { pct?: number; alerte?: boolean }) {
+  if (pct === undefined || !Number.isFinite(pct)) return null
+  return (
+    <span
+      className={`text-xs tabular-nums ${alerte ? 'text-amber-700 font-medium' : 'text-marine/50'}`}
+      title={alerte ? `Hors du ${FAT_PCT_OF_KCAL_RANGE.min}-${FAT_PCT_OF_KCAL_RANGE.max} % visé` : undefined}
+    >
+      {Math.round(pct)} % des kcal
+    </span>
+  )
+}
 
 function Section({
   icon: Icon,
@@ -388,6 +403,9 @@ export function NutritionTab() {
   /** Poids du dernier bilan : ce que le facteur protéique multiplie, et la base
    *  de la suggestion d'hydratation. */
   const poidsActuelKg = latestData && typeof latestData.poids_kg === 'number' ? latestData.poids_kg : null
+
+  // Part de chaque macro dans les calories, affichée à côté des champs saisis.
+  const manualParts = liveMacros ? macroEnergyShares(liveMacros) : null
 
   // Part des calories venant des lipides, contrôlée contre le repère 30-40 %.
   const fatPct = liveMacros ? fatPctOfKcal(liveMacros.fatG, liveMacros.targetKcal) : null
@@ -935,16 +953,26 @@ export function NutritionTab() {
                     <span className="w-20">Protéines</span>
                     <input type="number" min={0} max={500} step={5} value={manualProteinG} onChange={e => setManualProteinG(e.target.value)} placeholder="150" className={macroInput} />
                     <span className="text-marine/60">g</span>
+                    <PartKcal pct={manualParts?.protein} />
                   </div>
                   <div className="flex items-center gap-2 text-marine text-sm">
                     <span className="w-20">Lipides</span>
                     <input type="number" min={0} max={400} step={5} value={manualFatG} onChange={e => setManualFatG(e.target.value)} placeholder="60" className={macroInput} />
                     <span className="text-marine/60">g</span>
+                    {/* Même repère 30-40 % qu'en mode automatique. */}
+                    <PartKcal
+                      pct={manualParts?.fat}
+                      alerte={
+                        manualParts != null &&
+                        (manualParts.fat < FAT_PCT_OF_KCAL_RANGE.min || manualParts.fat > FAT_PCT_OF_KCAL_RANGE.max)
+                      }
+                    />
                   </div>
                   <div className="flex items-center gap-2 text-marine text-sm">
-                    <span className="w-20">Glucides</span>
+                    <span className="w-20">Glucides nets</span>
                     <input type="number" min={0} max={800} step={5} value={manualCarbG} onChange={e => setManualCarbG(e.target.value)} placeholder="200" className={macroInput} />
                     <span className="text-marine/60">g</span>
+                    <PartKcal pct={manualParts?.carbs} />
                   </div>
                   {/* Les fibres ne dépendent pas des trois autres macros : laissé
                       vide, le champ retombe sur la règle des 14 g / 1000 kcal. */}
@@ -1082,11 +1110,24 @@ export function NutritionTab() {
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-marine text-sm">
-                    <span className="w-20">Glucides</span>
+                    <span className="w-20">Glucides nets</span>
                     <span className="text-marine/60">le reste des calories cibles</span>
                   </div>
                 </div>
               )}
+
+              {/* Définition des glucides nets — la notion n'est pas évidente et
+                  le chiffre affiché n'est pas celui d'une étiquette nutritionnelle. */}
+              <p className="mt-3 text-xs leading-relaxed text-marine/55 bg-white/60 border border-cream-dark rounded-md p-3">
+                {NET_CARBS_EXPLANATION}
+                {liveMacros && (
+                  <span className="block mt-1.5 text-marine/70 tabular-nums">
+                    Ici : {liveMacros.carbsG} g nets + {liveMacros.fiberG} g de fibres ={' '}
+                    <strong className="font-semibold">{totalCarbsG(liveMacros.carbsG, liveMacros.fiberG)} g</strong> de
+                    glucides totaux.
+                  </span>
+                )}
+              </p>
 
               {/* Résultat en direct */}
               <div className="mt-4 border-t border-cream-dark pt-3">
@@ -1115,7 +1156,7 @@ export function NutritionTab() {
                             parts != null &&
                             (parts.fat < FAT_PCT_OF_KCAL_RANGE.min || parts.fat > FAT_PCT_OF_KCAL_RANGE.max)
                         },
-                        { l: 'Glucides', v: liveMacros.carbsG, u: 'g', sous: pc(parts?.carbs), alerte: false },
+                        { l: 'Glucides nets', v: liveMacros.carbsG, u: 'g', sous: pc(parts?.carbs), alerte: false },
                         {
                           l: 'Fibres',
                           v: liveMacros.fiberG,
@@ -1175,7 +1216,7 @@ export function NutritionTab() {
                         { l: 'Calories', v: pm.targetKcal, u: 'kcal' },
                         { l: 'Protéines', v: pm.proteinG, u: 'g' },
                         { l: 'Lipides', v: pm.fatG, u: 'g' },
-                        { l: 'Glucides', v: pm.carbsG, u: 'g' },
+                        { l: 'Glucides nets', v: pm.carbsG, u: 'g' },
                         { l: 'Fibres', v: pm.fiberG, u: 'g' }
                       ]
                     })().map(m => (
