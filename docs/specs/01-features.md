@@ -2,6 +2,24 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.117 — La partie 2 (ÉAS) paraissait ne pas répondre)
+
+Cliquer une réponse de la partie ÉAS ne remplissait pas le point du bouton
+radio. La réponse **était pourtant bien enregistrée** — le compteur avançait —
+mais le client regarde le point, pas le compteur, et croyait que son clic
+n'avait pas pris.
+
+**Cause.** Les deux parties ont des présentations différentes : la partie
+FANTASTIC utilise `.choix`, l'ÉAS utilise `.ligne` (liste verticale, choix
+distinct assumé). La règle `input:checked ~ .pastille` ne visait que `.choix`.
+La rangée se colorait bien, mais le point restait creux — d'où l'impression que
+seule une partie de l'affichage réagissait.
+
+Un test vérifie désormais que **chaque règle d'état** (`:checked` et
+`:focus-visible`) couvre les deux présentations.
+
+Version : 0.9.116 → 0.9.117.
+
 ## 🚨 Fait (v0.9.116 — Correctif urgent : le questionnaire de la v0.9.115 était mort)
 
 **La v0.9.115 a livré un questionnaire totalement inerte.** Date non remplie,

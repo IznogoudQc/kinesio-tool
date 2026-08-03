@@ -276,3 +276,22 @@ test('LE SCRIPT DE LA PAGE SE PARSE — sinon rien ne fonctionne', () => {
     )
   }
 })
+
+test('toute règle d’état couvre les DEUX présentations (.choix et .ligne)', () => {
+  // v0.9.117 : la partie ÉAS utilise .ligne, la partie FANTASTIC utilise .choix.
+  // La règle qui remplit le point du bouton radio ne visait que .choix — la
+  // réponse ÉAS était bien enregistrée, mais le point restait vide et le client
+  // croyait que son clic n'avait pas pris.
+  const html = renderHabitudesForm()
+  const css = html.slice(html.indexOf('<style>'), html.indexOf('</style>'))
+  for (const presentation of ['.choix', '.ligne']) {
+    assert.ok(
+      css.includes(`${presentation} input:checked ~ .pastille`),
+      `${presentation} : le point coché doit se remplir, sinon le clic paraît sans effet`
+    )
+    assert.ok(
+      css.includes(`${presentation} input:focus-visible ~ .pastille`),
+      `${presentation} : le focus clavier doit rester visible`
+    )
+  }
+})

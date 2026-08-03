@@ -200,7 +200,12 @@ export function renderHabitudesForm(options: HabitudesFormOptions = {}): string 
   .choix:hover{border-color:var(--accent)}
   .choix input{position:absolute;opacity:0;width:0;height:0}
   .pastille{width:1.05rem;height:1.05rem;border:2px solid #b9c4cc;border-radius:50%;flex:none;transition:all .12s}
-  .choix input:checked ~ .pastille{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px #fff}
+  /* Le point se remplit dans les DEUX présentations. La partie ÉAS utilise
+     .ligne et non .choix : oubliée ici, sa pastille restait vide alors que la
+     réponse était bien enregistrée — le client croyait que son clic ne prenait
+     pas. Toute règle d'état doit couvrir les deux sélecteurs. */
+  .choix input:checked ~ .pastille,
+  .ligne input:checked ~ .pastille{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px #fff}
   .choix:has(input:checked){border-color:var(--accent);background:var(--accent-clair)}
   .choix input:focus-visible ~ .pastille{outline:2px solid var(--accent);outline-offset:2px}
   .txt{font-size:.76rem;line-height:1.3;color:var(--doux)}
