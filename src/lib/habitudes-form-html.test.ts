@@ -256,3 +256,23 @@ test('le nom du courriel vient du champ, pas de la valeur pré-remplie', () => {
   // Un client qui corrige son nom doit voir la correction dans l'objet.
   assert.ok(html.includes('var nom = nomClient();'))
 })
+
+test('LE SCRIPT DE LA PAGE SE PARSE — sinon rien ne fonctionne', () => {
+  // v0.9.116 : la v0.9.115 est partie chez des clients avec un script qui ne se
+  // parsait pas. Un « \n » écrit dans une chaîne JS de ce template literal est
+  // interprété par TypeScript à la génération : il insère un vrai saut de ligne
+  // et coupe la chaîne en deux. Résultat, TOUT le script tombe — compteur figé,
+  // date non remplie, bouton Terminer mort — sans le moindre signe visible.
+  //
+  // Les tests d'alors ne vérifiaient que la présence de bouts de texte. Celui-ci
+  // parse le script entier, ce qu'aucun autre ne faisait.
+  const html = renderHabitudesForm({ clientName: 'Sabrina Dumais', replyTo: 'marie@exemple.ca' })
+  const blocs = [...html.matchAll(/<script>([\s\S]*?)<\/script>/g)]
+  assert.ok(blocs.length > 0, 'la page doit contenir au moins un script')
+  for (const [i, bloc] of blocs.entries()) {
+    assert.doesNotThrow(
+      () => new Function(bloc[1]),
+      `le bloc script ${i} ne se parse pas — la page serait totalement inerte`
+    )
+  }
+})

@@ -423,9 +423,15 @@ ${ENCODER_JS}
     // corrigé doit voir sa correction dans l'objet du courriel.
     var nom = nomClient();
     var objet = 'Questionnaire sur les habitudes de vie' + (nom ? ' — ' + nom : '');
+    // Les sauts de ligne sont DOUBLEMENT échappés. Ce fichier est un template
+    // literal TypeScript : une simple séquence d'échappement y serait résolue à
+    // la génération, insérant un vrai retour à la ligne au milieu de la chaîne
+    // JavaScript — ce qui casse le script ENTIER de la page, silencieusement.
+    // C'est arrivé en v0.9.115. Le test « LE SCRIPT DE LA PAGE SE PARSE » garde
+    // désormais ce fichier ; ne pas l'affaiblir.
     var corps =
-      'Bonjour,\n\nVoici le code de mon questionnaire :\n\n' + code +
-      '\n\nMerci de ne rien modifier dans cette ligne.\n';
+      'Bonjour,\\n\\nVoici le code de mon questionnaire :\\n\\n' + code +
+      '\\n\\nMerci de ne rien modifier dans cette ligne.\\n';
     // L'adresse n'est PAS passée à encodeURIComponent : le « @ » deviendrait
     // « %40 », que les gros clients acceptent mais que d'autres refusent. Liste
     // blanche à la place — elle écarte aussi tout « ? » ou « & » qui viendrait

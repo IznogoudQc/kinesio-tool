@@ -2,6 +2,34 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## 🚨 Fait (v0.9.116 — Correctif urgent : le questionnaire de la v0.9.115 était mort)
+
+**La v0.9.115 a livré un questionnaire totalement inerte.** Date non remplie,
+compteur figé à « 0 réponse sur 25 », bouton Terminer inactif — aucun message
+d'erreur visible.
+
+**Cause.** Le corps du courriel contenait `\n` pour les sauts de ligne. Or ce
+script vit dans un *template literal* TypeScript : la séquence a été résolue à la
+génération, insérant un vrai retour à la ligne au milieu d'une chaîne
+JavaScript. La chaîne s'est retrouvée coupée en deux, et **tout** le script de la
+page a cessé de se parser. Un seul caractère, et la page entière meurt en
+silence.
+
+Le « 0 réponse sur 25 » était le symptôme parlant : c'est le texte statique du
+HTML, que le script remplace normalement par 28.
+
+**Pourquoi ça a été livré.** Les tests de la v0.9.115 ne vérifiaient que la
+présence de bouts de texte dans le fichier. Aucun ne parsait le script.
+
+**Correctif.** Double échappement, et surtout un test qui **parse le script
+complet** de la page générée — il échoue contre le code de la v0.9.115. C'est
+lui la vraie correction ; le reste n'était qu'une faute de frappe.
+
+⚠️ Tout questionnaire envoyé avec la v0.9.115 est inutilisable et doit être
+renvoyé.
+
+Version : 0.9.115 → 0.9.116.
+
 ## ✅ Fait (v0.9.115 — « Préparer le courriel » à la fin du questionnaire)
 
 Un bouton ouvre le logiciel de courriel du client avec le destinataire, l'objet
