@@ -12,6 +12,7 @@ Vault de documentation du projet **Kinésio Outils**. Ouvrable comme vault Obsid
 ### Comprendre le projet
 - [[specs/00-vision]] — Pourquoi cet outil existe
 - [[specs/01-features]] — Ce qui est fait, ce qui reste
+- [[a-valider-avec-marie]] — **Les barèmes déduits, non vérifiés ou réversibles**, à confirmer avec elle et son ancien logiciel
 
 ### Comprendre la technique
 - [[architecture/overview]] — Stack et schéma système
