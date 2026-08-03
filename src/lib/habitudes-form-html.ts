@@ -255,6 +255,10 @@ export function renderHabitudesForm(options: HabitudesFormOptions = {}): string 
     padding:1rem;text-align:center;word-break:break-all;user-select:all;margin-bottom:1rem;
   }
   .actions{display:flex;gap:.6rem;flex-wrap:wrap}
+  /* Message de repli quand aucun logiciel de courriel ne s'ouvre — masqué
+     tant qu'on n'a rien à dire, pour ne pas inquiéter d'avance. */
+  .repli{margin:.9rem 0 0;font-size:.85rem;color:var(--doux);display:none}
+  .repli.visible{display:block}
   footer{text-align:center;color:var(--doux);font-size:.82rem;padding:2rem 1rem 0}
   @media (max-width:640px){
     .choix-rangee{grid-template-columns:1fr;gap:.3rem}
@@ -321,10 +325,12 @@ export function renderHabitudesForm(options: HabitudesFormOptions = {}): string 
     <p id="fin-texte"></p>
     <div class="code" id="code-affiche"></div>
     <div class="actions">
-      <button type="button" id="copier">Copier le code</button>
+      <button type="button" id="courriel">Préparer le courriel</button>
+      <button type="button" class="secondaire" id="copier">Copier le code</button>
       <button type="button" class="secondaire" id="telecharger">Enregistrer un fichier</button>
       <button type="button" class="secondaire" id="fermer">Retour au questionnaire</button>
     </div>
+    <p class="repli" id="repli"></p>
   </div>
 </dialog>
 
@@ -392,11 +398,49 @@ ${ENCODER_JS}
         ? 'Vous avez répondu à ' + n + ' questions sur ' + TOTAL + '. '
         : '') +
       'Renvoyez ce code' + (REPLY ? ' à ' + REPLY : ' à votre kinésiologue') +
-      ', par courriel ou par message. Vous pouvez le copier, ou enregistrer un fichier à joindre.';
+      '. Le plus simple : « Préparer le courriel », qui l’écrit pour vous. ' +
+      'Sinon, copiez le code ou enregistrez un fichier à joindre.';
+    // Repli remis à zéro à chaque ouverture : il ne parle que du dernier essai.
+    var repliInit = document.getElementById('repli');
+    repliInit.className = 'repli';
+    repliInit.textContent = '';
     dlg.showModal();
   });
 
   document.getElementById('fermer').addEventListener('click', function(){ dlg.close(); });
+
+  // Prépare le courriel : destinataire, objet et code déjà écrits. Le client
+  // n'a plus qu'à envoyer — plus rien à copier, donc plus rien à tronquer.
+  //
+  // Le lien mailto: dépend d'un logiciel de courriel configuré sur l'appareil. Un
+  // client qui n'utilise que du webmail dans son navigateur peut ne rien voir
+  // s'ouvrir, sans aucune erreur : d'où le message de repli affiché juste après,
+  // qui renvoie vers « Copier le code ». On n'a aucun moyen fiable de détecter
+  // l'échec, alors on informe systématiquement plutôt que de laisser bloqué.
+  document.getElementById('courriel').addEventListener('click', function(){
+    var code = encode(answers, eas);
+    // Le nom vient du champ, pas de la valeur pré-remplie : un client qui l'a
+    // corrigé doit voir sa correction dans l'objet du courriel.
+    var nom = nomClient();
+    var objet = 'Questionnaire sur les habitudes de vie' + (nom ? ' — ' + nom : '');
+    var corps =
+      'Bonjour,\n\nVoici le code de mon questionnaire :\n\n' + code +
+      '\n\nMerci de ne rien modifier dans cette ligne.\n';
+    // L'adresse n'est PAS passée à encodeURIComponent : le « @ » deviendrait
+    // « %40 », que les gros clients acceptent mais que d'autres refusent. Liste
+    // blanche à la place — elle écarte aussi tout « ? » ou « & » qui viendrait
+    // greffer un en-tête (bcc, cc) sur le lien.
+    var dest = REPLY.replace(/[^A-Za-z0-9@._+-]/g, '');
+    var lien = 'mailto:' + dest +
+      '?subject=' + encodeURIComponent(objet) +
+      '&body=' + encodeURIComponent(corps);
+    window.location.href = lien;
+    var repli = document.getElementById('repli');
+    repli.textContent =
+      'Si aucun message ne s’est ouvert, votre appareil n’a pas de logiciel de ' +
+      'courriel configuré. Utilisez « Copier le code », puis collez-le dans votre courriel.';
+    repli.className = 'repli visible';
+  });
 
   document.getElementById('copier').addEventListener('click', function(){
     var btn = this;

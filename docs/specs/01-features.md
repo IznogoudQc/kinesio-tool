@@ -2,6 +2,29 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.115 — « Préparer le courriel » à la fin du questionnaire)
+
+Un bouton ouvre le logiciel de courriel du client avec le destinataire, l'objet
+et le code déjà écrits. Il ne reste qu'à envoyer — donc plus rien à copier, et
+plus rien à tronquer par accident. C'est l'action principale ; copier et
+enregistrer un fichier passent en secondaire.
+
+Deux précautions :
+
+- **Le lien peut ne rien ouvrir** — `mailto:` suppose un logiciel de courriel
+  configuré, ce qu'un client qui n'utilise que du webmail n'a pas forcément. Rien
+  ne permet de détecter l'échec, alors un message apparaît après le clic et
+  renvoie vers « Copier le code ».
+- **L'adresse n'est pas passée à `encodeURIComponent`** — le `@` deviendrait
+  `%40`, accepté par les gros clients mais pas par tous. Une liste blanche la
+  nettoie, ce qui écarte aussi tout `?` ou `&` qui viendrait greffer un en-tête
+  `bcc`/`cc` sur le lien.
+
+L'objet reprend le nom **saisi dans le champ**, pas la valeur pré-remplie : un
+client qui corrige son nom voit sa correction.
+
+Version : 0.9.114 → 0.9.115.
+
 ## ✅ Fait (v0.9.114 — Correction : les fibres ne s'ajoutent pas aux glucides nets)
 
 La v0.9.113 affichait « 147 g nets + 28 g de fibres = 175 g de glucides totaux ».

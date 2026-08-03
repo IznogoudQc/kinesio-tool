@@ -225,3 +225,34 @@ test('la bascule mobile ramène les choix sur une seule colonne', () => {
     'la règle mobile doit suivre la règle de base'
   )
 })
+
+test('le bouton « Préparer le courriel » construit un mailto complet', () => {
+  const html = renderHabitudesForm({ clientName: 'Sabrina Dumais', replyTo: 'marie@exemple.ca' })
+  assert.ok(html.includes('id="courriel"'), 'le bouton doit exister')
+  // Destinataire, objet et corps : les trois, sinon le client doit encore taper.
+  assert.ok(html.includes("'mailto:' + dest"))
+  // L'adresse passe par une liste blanche, pas encodeURIComponent : le « @ »
+  // deviendrait « %40 », et un « ? » injecterait un en-tête (bcc/cc).
+  assert.ok(html.includes("REPLY.replace(/[^A-Za-z0-9@._+-]/g, '')"))
+  assert.ok(html.includes("'?subject=' + encodeURIComponent(objet)"))
+  assert.ok(html.includes("'&body=' + encodeURIComponent(corps)"))
+  // Tout doit être encodé : un « + » ou un « & » non échappé tronquerait le code
+  // dans le corps du courriel, et le client renverrait un code invalide.
+  assert.equal(html.includes('?subject=' + "' + objet"), false)
+})
+
+test('le repli mailto est prévu et masqué au départ', () => {
+  const html = renderHabitudesForm({ replyTo: 'marie@exemple.ca' })
+  // mailto: peut ne rien ouvrir (webmail seul, aucun client configuré) sans
+  // lever d'erreur. Le client doit savoir quoi faire dans ce cas.
+  assert.ok(html.includes('id="repli"'))
+  assert.ok(html.includes('.repli{'), 'la classe de repli doit être stylée')
+  assert.ok(/\.repli\{[^}]*display:none/.test(html), 'masqué tant qu’il n’y a rien à dire')
+  assert.ok(html.includes('Copier le code »'), 'le repli doit renvoyer vers la copie')
+})
+
+test('le nom du courriel vient du champ, pas de la valeur pré-remplie', () => {
+  const html = renderHabitudesForm({ clientName: 'Sabrina Dumais' })
+  // Un client qui corrige son nom doit voir la correction dans l'objet.
+  assert.ok(html.includes('var nom = nomClient();'))
+})
