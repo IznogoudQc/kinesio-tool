@@ -146,7 +146,10 @@ export function QuestionnairesTab() {
         `Bonjour ${client.name.split(' ')[0]},\n\n` +
           'Voici un court questionnaire à remplir avant notre rencontre. Ouvrez la pièce jointe ' +
           'dans votre navigateur, répondez aux énoncés, puis renvoyez-moi le code affiché à la fin.\n\n' +
-          'Cela prend une dizaine de minutes. Il n’y a pas de bonne ou de mauvaise réponse.\n\n' +
+          // Durée annoncée : 5 minutes (Marie, 2026-08-04). Annoncer plus long
+          // fait remettre à plus tard ; 28 questions à réponse unique se
+          // remplissent effectivement en cinq minutes.
+          'Cela prend environ 5 minutes. Il n’y a pas de bonne ou de mauvaise réponse.\n\n' +
           `Au plaisir,\n${profil?.name ?? ''}`,
         'questionnaire',
         html
