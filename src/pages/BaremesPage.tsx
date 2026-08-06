@@ -299,14 +299,16 @@ export function BaremesPage() {
       </div>
       <FcReposTable />
 
-      <h2>6 · Risque cardio-métabolique (OMS)</h2>
-      <p className="src">Risque IMC + tour de taille (tableau 4.4) <Etat id="risque-sante-4-4" /> · Tour de taille jugé seul <Etat id="tour-taille-autonome" /></p>
+      <h2>6 · Risque cardio-métabolique</h2>
+      <p className="src">Risque IMC + tour de taille (tableau 4.4) <Etat id="risque-sante-4-4" /> · Tour de taille jugé
+        seul <Etat id="tour-taille-autonome" /> — barème de l'ancien logiciel de Marie, cotes 4 / 3 / 1 (la cote 2
+        n'existe pas dans ce test). Le ratio taille/hanche reste sur les seuils OMS.</p>
       <div className="baro">
         <table>
           <thead><tr><th>Mesure</th><th className="c5">Faible</th><th className="c2">Élevé</th><th className="c1">Très élevé</th></tr></thead>
           <tbody>
-            <tr><td>Tour de taille — Homme</td><td className="c5">&lt;94 cm</td><td className="c2">94–102</td><td className="c1">≥102</td></tr>
-            <tr><td>Tour de taille — Femme</td><td className="c5">&lt;80 cm</td><td className="c2">80–88</td><td className="c1">≥88</td></tr>
+            <tr><td>Tour de taille — Homme</td><td className="c5">&lt;94 cm</td><td className="c2">94–101</td><td className="c1">≥102</td></tr>
+            <tr><td>Tour de taille — Femme</td><td className="c5">&lt;80 cm</td><td className="c2">80–89</td><td className="c1">≥90</td></tr>
             <tr><td>Ratio taille/hanche — Homme</td><td className="c5">&lt;0,90</td><td className="c2">0,90–1,00</td><td className="c1">≥1,00</td></tr>
             <tr><td>Ratio taille/hanche — Femme</td><td className="c5">&lt;0,80</td><td className="c2">0,80–0,85</td><td className="c1">≥0,85</td></tr>
           </tbody>

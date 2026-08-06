@@ -4,7 +4,7 @@ Liste vivante des points où l'app repose sur une **déduction**, une **source n
 vérifiée** ou une **décision réversible**. Chacun peut fausser un chiffre remis à
 un client — d'où l'intérêt de les fermer un par un.
 
-Mise à jour : 2026-08-03 · version publiée : v0.9.117
+Mise à jour : 2026-08-04 · version publiée : v0.9.120
 
 **Comment lire** : 🔴 fausse potentiellement un chiffre · 🟡 affichage ou libellé
 seulement · 🟢 décision prise, réversible si Marie change d'avis.
@@ -35,18 +35,23 @@ découpage à 5 niveaux ne laisse que des jeux confinés entre 114 et 122 mmHg �
 
 ---
 
-## 🔴 2. Figures 7-4 / 7-5 / 7-6 — composition corporelle
+## 🟡 2. Figures 7-4 / 7-5 / 7-6 — composition corporelle
 
 **Ce qu'on a mis** : les tables de `cpafla-composition.ts`, saisies d'après le
 Guide du conseiller.
 
-**Le risque** : c'est le **seul barème dont la transcription n'a jamais été
-recontrôlée contre la source**, et c'est aussi **le seul de ce genre à entrer
-dans le score global** (composante « Composition corporelle »). Une ligne mal
-recopiée déplace une cote, donc la note finale.
+**Largement vérifié depuis (2026-08-04).** Les **entrées** sont confirmées par
+capture : `CPAFLABodyComposition(tour de taille, IMC, somme des 5 plis)` — nos
+trois colonnes, et la formule est identique hommes/femmes. Le calcul
+**reproduit l'ancien logiciel sur les 6 bilans
+réels** disponibles (IMC 29,6 à 38 · tour de taille 93 à 117 cm · les deux sexes).
 
-**Ce qu'il faut** : des photos nettes des **figures 7-4 (hommes)**, **7-5
-(femmes)** et **7-6 (catégories)**, plus la **formule de la page 7-18**.
+**Ce qui reste** : les plages jamais traversées par ces bilans — IMC sous 18,5 et
+au-dessus de 35. Des photos des **figures 7-4 / 7-5 / 7-6** les fermeraient.
+
+**La colonne des 5 plis reste non testée**, faute de mesure : Marie ne prend pas
+le mollet. Testé le 2026-08-04 — avec ou sans plis, bruts ou mis à l'échelle,
+les 6 bilans donnent le même score. Les données ne peuvent pas départager.
 
 ---
 
@@ -108,18 +113,24 @@ faudra le réintégrer, et **les scores changeront**. La structure le prévoit d
 
 ---
 
-## 🟡 7. Tour de taille — barème autonome *(en attente)*
+## ✅ 7. Tour de taille jugé seul — RÉSOLU (2026-08-04)
 
-Marie veut colorer le tour de taille **par le tour de taille seul**, sans risque
-IMC ni risque combiné. Problème : le **tableau 4.4 ne contient aucun seuil
-indépendant de l'IMC** — ses seuils (90, 100, 110, 125 cm chez l'homme) ne valent
-que combinés à une bande d'IMC.
+Marie a fourni la fenêtre Propriétés du test « Circonférence de la taille »
+(#20), onglet Classification, tous les âges :
 
-**Ce qu'il faut** : quels seuils Marie utilise quand elle regarde le tour de
-taille seul. Le référentiel standard indépendant existe (Santé Canada :
-94 / 102 cm hommes, 80 / 88 cm femmes) mais **ce n'est pas le 4.4**.
+| | Hommes | Femmes |
+|---|---|---|
+| **4** Excellent | < 94 cm | < 80 cm |
+| **3** Risque potentiel | < 102 cm | < 90 cm |
+| **1** Risque considérable | reste | reste |
 
-Plan écrit, rien codé. Bloqué sur cette réponse.
+Deux pièges évités en encodant **tel quel** : les cotes **sautent le 2**, et le
+seuil féminin est **90** et non 88. Le référentiel Santé Canada que j'avais
+proposé aurait donc été faux pour les femmes.
+
+L'ancienne table Santé Canada est supprimée. Ce barème est distinct de la cote
+de tour de taille utilisée par l'indice du dos et le musculo, qui vient des
+tables de composition — les deux coexistent dans son logiciel.
 
 ---
 

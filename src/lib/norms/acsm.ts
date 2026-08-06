@@ -133,12 +133,6 @@ const BMI: Ranges = [
   { ageMin: 0, ageMax: 120, sex: 'F', lowerIsBetter: true, percentiles: pct(30, 27, 25, 22, 19) }
 ]
 
-// ── Tour de taille (cm) — Santé Canada / ACSM (lowerIsBetter) ────────────────
-const WAIST: Ranges = [
-  { ageMin: 0, ageMax: 120, sex: 'M', lowerIsBetter: true, percentiles: pct(102, 94, 88, 80, 72) },
-  { ageMin: 0, ageMax: 120, sex: 'F', lowerIsBetter: true, percentiles: pct(88, 80, 75, 70, 65) }
-]
-
 // ── Endurance des extenseurs du dos — test de Sorensen (secondes) ────────────
 // Hors ACSM ; valeurs de référence Biering-Sørensen 1984 / McGill normatives.
 const BACK_ENDURANCE: Ranges = [
@@ -191,7 +185,10 @@ const TABLES: Record<TestKey, Ranges | null> = {
   situps: SITUPS,
   trunkFlexion: TRUNK_FLEXION,
   bmi: BMI,
-  waistCircumference: WAIST,
+  // Tour de taille : barème de l'ancien logiciel de Marie (clinical.ts,
+  // waistRatingLegacy). L'ancienne table Santé Canada a été retirée le
+  // 2026-08-04 — elle donnait cinq niveaux là où le sien en a trois.
+  waistCircumference: null,
   backEndurance: BACK_ENDURANCE,
   verticalJump: VERTICAL_JUMP,
   legPower: LEG_POWER,

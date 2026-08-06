@@ -66,9 +66,10 @@ export const VALIDATION: ValidationEntree[] = [
     id: 'composition-cpafla',
     label: 'Composition corporelle — figures 7-4 / 7-5 / 7-6',
     statut: 'a_confirmer',
-    source: 'Guide du conseiller, 3ᵉ éd. — figures 7-4 (hommes), 7-5 (femmes), 7-6 (catégories), formule p. 7-18.',
+    source:
+      'Guide du conseiller, 3ᵉ éd. — figures 7-4 (hommes), 7-5 (femmes), 7-6 (catégories), formule p. 7-18. Les ENTRÉES sont confirmées par capture : CPAFLABodyComposition(tour de taille, IMC, somme des 5 plis). Et le calcul reproduit l’ancien logiciel sur les 6 bilans réels disponibles (IMC 29,6 à 38 · tour de taille 93 à 117 cm · les deux sexes).',
     manque:
-      'Des photos nettes des trois figures. C’est le seul barème de ce genre entrant dans le score dont la transcription n’a jamais été recontrôlée contre la source.',
+      'Des photos des figures pour couvrir les plages jamais traversées par nos bilans : IMC sous 18,5 et au-dessus de 35. La colonne des 5 plis reste non testée — Marie ne mesure pas le mollet, donc la somme n’existe presque jamais.',
     entreDansLeScore: true
   },
   {
@@ -117,12 +118,11 @@ export const VALIDATION: ValidationEntree[] = [
   },
   {
     id: 'tour-taille-autonome',
-    label: 'Tour de taille jugé seul — barème à choisir',
-    statut: 'deduit',
+    label: 'Tour de taille jugé seul',
+    statut: 'confirme',
     source:
-      'Aucun. Le tableau 4.4 ne donne aucun seuil de tour de taille indépendant de l’IMC : ses seuils (90, 100, 110, 125 cm chez l’homme) ne valent que combinés à une bande d’IMC.',
-    manque:
-      'Quels seuils Marie utilise quand elle regarde le tour de taille seul. Un référentiel standard existe (Santé Canada : 94 / 102 cm hommes, 80 / 88 cm femmes) mais ce n’est pas le 4.4.',
+      'Fenêtre Propriétés de l’ancien logiciel, test « Circonférence de la taille » (#20), onglet Classification, tous les âges. Hommes < 94 → 4, < 102 → 3, reste → 1. Femmes < 80 → 4, < 90 → 3, reste → 1. Les cotes sautent le 2, et le seuil féminin est 90 — pas 88 comme le référentiel Santé Canada.',
+    manque: null,
     entreDansLeScore: false
   },
   {

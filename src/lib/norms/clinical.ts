@@ -138,6 +138,78 @@ export function getClinicalRange(test: TestKey, sex: 'F' | 'M'): NormRange | nul
  *  la table de classification du test « Pression artérielle systolique ».
  *
  *  `null` si la mesure est absente → la composante est exclue du score global. */
+/**
+ * Barème du **tour de taille** de l'ancien logiciel — test « Circonférence de la
+ * taille » (#20, cm), onglet Classification, « Tous les âges ».
+ *
+ * Relevé sur capture de la fenêtre Propriétés (Nicholas, 2026-08-04) :
+ *
+ * | | Mâle | Femelle |
+ * |---|---|---|
+ * | 4 Excellent            | < 94  | < 80 |
+ * | 3 Risque potentiel     | < 102 | < 90 |
+ * | 1 Risque considérable  | reste | reste |
+ *
+ * Trois niveaux, et les cotes **sautent le 2** — c'est ainsi que la fenêtre
+ * l'imprime. Ne pas « normaliser » en 4/3/2 : ce serait inventer une cote que
+ * l'ancien logiciel n'attribue jamais.
+ *
+ * ⚠️ Ce barème est **distinct** de la cote de tour de taille utilisée par
+ * l'indice de santé du dos et l'aptitude musculosquelettique, qui vient des
+ * tables de composition (fig. 7-4/7-5) et dépend de la bande d'IMC — voir
+ * `cpaflaWaistPoints`. Les deux coexistent dans l'ancien logiciel ; les
+ * confondre casserait une parité vérifiée sur 6 bilans.
+ *
+ * La case « Des résultats plus bas indique une amélioration » est cochée.
+ */
+export interface WaistRatingLegacy {
+  /** Cote 0-4 telle qu'imprimée : 4, 3 ou 1. Jamais 2, jamais 0. */
+  cote: number
+  /** Libellé exact de la fenêtre Propriétés. */
+  label: string
+}
+
+/** Seuils par sexe : [borne « Excellent », borne « Risque potentiel »] en cm. */
+export const WAIST_LEGACY_BOUNDS: Record<'M' | 'F', [number, number]> = {
+  M: [94, 102],
+  F: [80, 90]
+}
+
+export function waistRatingLegacy(
+  value: number | null | undefined,
+  sex: 'F' | 'M' | null | undefined
+): WaistRatingLegacy | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  if (sex !== 'M' && sex !== 'F') return null
+  const [excellent, potentiel] = WAIST_LEGACY_BOUNDS[sex]
+  if (value < excellent) return { cote: 4, label: 'Excellent' }
+  if (value < potentiel) return { cote: 3, label: 'Risque potentiel' }
+  return { cote: 1, label: 'Risque considérable' }
+}
+
+/**
+ * Catégorie du tour de taille, dérivée de `waistRatingLegacy`.
+ *
+ * Le barème n'a que **trois** niveaux et saute la cote 2 — il ne peut donc pas
+ * passer par la mécanique des percentiles, qui en produit toujours cinq. D'où
+ * cette fonction dédiée, appelée avant toute table par les **deux** points
+ * d'entrée de la cotation (`getCategorization` et `categorizeRaw`). En oublier
+ * un ferait diverger le tableau de bord et le formulaire.
+ *
+ * Le mapping cote → catégorie est direct : notre échelle est celle de l'ancien
+ * logiciel (< 0,5 À améliorer … ≥ 3,5 Excellent), confirmée par capture.
+ */
+export function waistCategoryLegacy(
+  value: number | null | undefined,
+  sex: 'F' | 'M' | null | undefined
+): Category | null {
+  const r = waistRatingLegacy(value, sex)
+  if (!r) return null
+  if (r.cote === 4) return 'EXCELLENT'
+  if (r.cote === 3) return 'TRES_BIEN'
+  return 'ACCEPTABLE' // cote 1 — « Risque considérable »
+}
+
 export function systolicRatingLegacy(value: number | null | undefined): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
   return value < 120 ? 4 : 0

@@ -12,7 +12,7 @@
 
 import { getAcsmRange } from './acsm.ts'
 import { getCpaflaRange } from './cpafla.ts'
-import { getClinicalRange } from './clinical.ts'
+import { getClinicalRange, waistCategoryLegacy } from './clinical.ts'
 import type { Category, NormPercentiles, NormRange, NormsType, TestKey } from './types.ts'
 
 export type { Category, NormsType, TestKey, NormRange, NormPercentiles } from './types.ts'
@@ -41,6 +41,9 @@ export function getCategorization(
 ): Category | null {
   if (typeof value !== 'number' || Number.isNaN(value)) return null
   if (typeof age !== 'number' || age < 0) return null
+  // Le tour de taille a son propre barème (3 niveaux, cote 2 sautée) : il ne
+  // passe pas par les percentiles. Voir waistCategoryLegacy.
+  if (test === 'waistCircumference') return waistCategoryLegacy(value, sex)
   const range = getRange(test, age, sex, norms)
   if (!range) return null
   return categorize(value, range.percentiles, range.lowerIsBetter ?? false)

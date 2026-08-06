@@ -17,6 +17,7 @@ import { test } from 'node:test'
 import { getAcsmRange } from './acsm.ts'
 import { getCpaflaRange, cpaflaHasTables } from './cpafla.ts'
 import { classifyBloodPressure } from './clinical.ts'
+import { getCategorization } from './index.ts'
 import type { Category, NormPercentiles, NormsType, TestKey } from './types.ts'
 
 function computeAge(birthdate: string | null, refDate: Date = new Date()): number | null {
@@ -29,34 +30,16 @@ function computeAge(birthdate: string | null, refDate: Date = new Date()): numbe
   return age < 0 ? null : age
 }
 
-function getCategorization(
-  test: TestKey,
-  value: number,
-  age: number,
-  sex: 'F' | 'M',
-  norms: NormsType = 'acsm'
-): Category | null {
-  if (typeof value !== 'number' || Number.isNaN(value)) return null
-  const range = norms === 'cpafla' ? getCpaflaRange(test, age, sex) : getAcsmRange(test, age, sex)
-  if (!range) return null
-  const { percentiles: p, lowerIsBetter } = range
-  if (lowerIsBetter) {
-    if (value < p.p75) return 'EXCELLENT'
-    if (value < p.p50) return 'TRES_BIEN'
-    if (value < p.p25) return 'BIEN'
-    if (value < p.p10) return 'ACCEPTABLE'
-    return 'A_AMELIORER'
-  }
-  if (value >= p.p75) return 'EXCELLENT'
-  if (value >= p.p50) return 'TRES_BIEN'
-  if (value >= p.p25) return 'BIEN'
-  if (value >= p.p10) return 'ACCEPTABLE'
-  return 'A_AMELIORER'
-}
+// ⚠️ getCategorization vient du VRAI module, plus d'une copie locale.
+// Ce fichier en hébergeait une réimplémentation : les tests validaient donc la
+// copie, pas le code livré. Le barème du tour de taille (2026-08-04) l'a mis en
+// évidence — il passait dans index.ts sans que le test le voie.
+// interpolatePercentile, getPercentile et getDeltaVsAverage ci-dessous restent
+// dupliqués — à traiter séparément, même risque.
 
-// Copies de l'API publique (mêmes raisons que ci-dessus — Node `--test` ne peut
-// pas suivre la chaîne d'imports sans extensions). Si vous modifiez ces
-// fonctions, mettre à jour aussi `src/lib/norms/index.ts`.
+// Copies de l'API publique. La raison invoquée à l'origine (Node `--test` ne
+// suivrait pas la chaîne d'imports) s'est révélée fausse : l'import de
+// `./index.ts` fonctionne, comme le montre getCategorization juste au-dessus.
 
 function interpolatePercentile(value: number, p: NormPercentiles, lowerIsBetter: boolean): number {
   const anchors = [
@@ -167,12 +150,38 @@ test('IMC — agnostique âge/sexe, lowerIsBetter', () => {
   assert.equal(getCategorization('bmi', 32, 50, 'M'), 'A_AMELIORER')
 })
 
-test('Tour de taille — seuils Santé Canada', () => {
-  // H : ≤80 = EXCELLENT, ≤102 = ACCEPTABLE, >102 = A_AMELIORER
-  assert.equal(getCategorization('waistCircumference', 78, 40, 'M'), 'EXCELLENT')
-  assert.equal(getCategorization('waistCircumference', 105, 40, 'M'), 'A_AMELIORER')
-  // F : ≤80 = BIEN, ≤88 = ACCEPTABLE
-  assert.equal(getCategorization('waistCircumference', 85, 40, 'F'), 'ACCEPTABLE')
+test('Tour de taille — barème de l’ancien logiciel de Marie', () => {
+  // Remplace les seuils Santé Canada le 2026-08-04 (capture de la fenêtre
+  // Propriétés, test #20). Trois niveaux, la cote 2 est sautée :
+  //   H : < 94 → 4 Excellent · < 102 → 3 Risque potentiel · reste → 1 Risque considérable
+  //   F : < 80 → 4           · < 90  → 3                  · reste → 1
+  assert.equal(getCategorization('waistCircumference', 93, 40, 'M'), 'EXCELLENT')
+  assert.equal(getCategorization('waistCircumference', 94, 40, 'M'), 'TRES_BIEN')
+  assert.equal(getCategorization('waistCircumference', 105, 40, 'M'), 'ACCEPTABLE')
+  assert.equal(getCategorization('waistCircumference', 79, 40, 'F'), 'EXCELLENT')
+  // 85 cm chez une femme valait ACCEPTABLE sous Santé Canada ; le barème de
+  // Marie le classe un cran plus haut, sa borne étant à 90 et non 88.
+  assert.equal(getCategorization('waistCircumference', 85, 40, 'F'), 'TRES_BIEN')
+  assert.equal(getCategorization('waistCircumference', 90, 40, 'F'), 'ACCEPTABLE')
+})
+
+test('Tour de taille — l’âge n’intervient pas (« Tous les âges »)', () => {
+  for (const age of [20, 45, 70]) {
+    assert.equal(getCategorization('waistCircumference', 95, age, 'M'), 'TRES_BIEN')
+  }
+})
+
+test('Tour de taille — jamais de catégorie « Bien » ni « À améliorer »', () => {
+  // La cote 2 et la cote 0 n'existent pas dans ce barème : les produire
+  // signifierait qu'une table de percentiles est repassée devant.
+  const vues = new Set<string>()
+  for (const sex of ['M', 'F'] as const) {
+    for (let cm = 50; cm <= 200; cm += 0.5) {
+      const c = getCategorization('waistCircumference', cm, 40, sex)
+      if (c) vues.add(c)
+    }
+  }
+  assert.deepEqual([...vues].sort(), ['ACCEPTABLE', 'EXCELLENT', 'TRES_BIEN'])
 })
 
 test('Saut vertical (Heyward 2010) — H 30-39, 50 cm → TRES_BIEN', () => {
