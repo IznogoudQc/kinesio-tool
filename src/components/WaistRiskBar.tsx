@@ -1,5 +1,7 @@
 import {
   WHO_RISK_COLORS,
+  WAIST_RISK_LABELS,
+  WAIST_RISK_SOURCE,
   WHO_RISK_LABELS,
   calculateRiskBarPosition,
   getRatioRisk,
@@ -14,12 +16,30 @@ interface WaistRiskBarProps {
   type: 'waist' | 'ratio'
 }
 
-const TOOLTIP = 'OMS — Tour de taille et risque métabolique (WHO 2008)'
+/**
+ * Libellé, infobulle et source dépendent de la mesure : les deux n'ont plus le
+ * même référentiel depuis le 2026-08-04. Le tour de taille suit le barème de
+ * l'ancien logiciel de Marie, le ratio reste sur l'OMS.
+ */
+const HABILLAGE = {
+  waist: {
+    labels: WAIST_RISK_LABELS,
+    source: WAIST_RISK_SOURCE,
+    tooltip:
+      'Barème de l’ancien logiciel de Marie — test « Circonférence de la taille » : ' +
+      'hommes < 94 cm Excellent, < 102 Risque potentiel, au-delà Risque considérable ; femmes 80 et 90 cm'
+  },
+  ratio: {
+    labels: WHO_RISK_LABELS,
+    source: 'OMS',
+    tooltip: 'OMS — Tour de taille et risque métabolique (WHO 2008)'
+  }
+} as const
 
 /**
- * Barre de risque cardio-métabolique à 3 segments (Faible / Élevé / Très élevé)
- * pour le tour de taille ou le ratio T/H. Couleurs vert / jaune / rouge,
- * marqueur ▲ positionné selon la valeur.
+ * Barre de risque cardio-métabolique à 3 segments pour le tour de taille ou le
+ * ratio T/H. Couleurs vert / jaune / rouge, marqueur ▲ positionné selon la
+ * valeur. Les libellés diffèrent selon la mesure — voir `HABILLAGE`.
  */
 export function WaistRiskBar({ value, sex, type }: WaistRiskBarProps) {
   if (sex === null || typeof value !== 'number' || !Number.isFinite(value)) return null
@@ -28,11 +48,12 @@ export function WaistRiskBar({ value, sex, type }: WaistRiskBarProps) {
   if (!risk) return null
 
   const position = calculateRiskBarPosition(value, risk.thresholds)
-  const levelLabel = WHO_RISK_LABELS[risk.level]
+  const hab = HABILLAGE[type]
+  const levelLabel = hab.labels[risk.level]
   const levelColor = colorClassForLevel(risk.level)
 
   return (
-    <div className="mt-1.5" title={TOOLTIP}>
+    <div className="mt-1.5" title={hab.tooltip}>
       <div className="relative">
         <div className="flex h-2 rounded-full overflow-hidden">
           <div className="flex-1" style={{ backgroundColor: WHO_RISK_COLORS.low.bg }} />
@@ -47,7 +68,7 @@ export function WaistRiskBar({ value, sex, type }: WaistRiskBarProps) {
         </div>
       </div>
       <p className={`text-[10px] uppercase tracking-wide font-semibold mt-1 ${levelColor}`}>
-        {levelLabel} <span className="text-marine/40 font-normal normal-case">· OMS</span>
+        {levelLabel} <span className="text-marine/40 font-normal normal-case">· {hab.source}</span>
       </p>
     </div>
   )

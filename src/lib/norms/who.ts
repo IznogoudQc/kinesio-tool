@@ -1,15 +1,22 @@
-/** Seuils OMS pour le risque cardio-métabolique — tour de taille, ratio T/H.
+/** Risque cardio-métabolique sur 3 niveaux — tour de taille, ratio T/H.
  *
- *  Volontairement séparés des tables ACSM de catégorisation fitness (cf.
+ *  Volontairement séparé des tables ACSM de catégorisation fitness (cf.
  *  `acsm.ts`) : les normes ACSM mappent une performance sur 5 catégories
- *  (À améliorer → Excellent) ; les seuils OMS mappent un risque sur 3 niveaux
- *  (Faible / Élevé / Très élevé) selon le sexe.
+ *  (À améliorer → Excellent), là où ces seuils mappent un risque sur 3 niveaux
+ *  selon le sexe.
+ *
+ *  ⚠️ Depuis le 2026-08-04, le **tour de taille ne suit plus l'OMS** : il
+ *  applique le barème de l'ancien logiciel de Marie, dont les bornes sont
+ *  importées de `clinical.ts` plutôt que recopiées. Seul le **ratio
+ *  taille/hanche** reste sur les seuils OMS, avec ses propres libellés.
  *
  *  Sources :
  *   - WHO, Waist circumference and waist-hip ratio: report of a WHO expert
  *     consultation (2008).
  *   - Santé Canada, Risque pour la santé en fonction du tour de taille.
  */
+
+import { WAIST_LEGACY_BOUNDS } from './clinical.ts'
 
 export type WhoRiskLevel = 'low' | 'high' | 'very_high'
 
@@ -35,8 +42,38 @@ interface RiskThresholds {
   scaleMax: number
 }
 
-const WAIST_M: RiskThresholds = { low: 94, high: 102, scaleMax: 120 }
-const WAIST_F: RiskThresholds = { low: 80, high: 88, scaleMax: 110 }
+/**
+ * Tour de taille : les bornes viennent du **barème de l'ancien logiciel de
+ * Marie** (`WAIST_LEGACY_BOUNDS`), pas de l'OMS. Importées plutôt que recopiées
+ * — c'était déjà la quatrième table de tour de taille du projet, et la seule qui
+ * gardait 88 cm chez les femmes là où son logiciel dit 90.
+ *
+ * Les trois niveaux du barème (cotes 4 / 3 / 1) tombent exactement sur les trois
+ * segments de la barre : rien à adapter côté visuel.
+ */
+const WAIST_M: RiskThresholds = {
+  low: WAIST_LEGACY_BOUNDS.M[0],
+  high: WAIST_LEGACY_BOUNDS.M[1],
+  scaleMax: 120
+}
+const WAIST_F: RiskThresholds = {
+  low: WAIST_LEGACY_BOUNDS.F[0],
+  high: WAIST_LEGACY_BOUNDS.F[1],
+  scaleMax: 110
+}
+
+/** Libellés du tour de taille — ceux de l'ancien logiciel, pas ceux de l'OMS.
+ *  Le ratio taille/hanche, lui, reste sur les libellés OMS. */
+export const WAIST_RISK_LABELS: Record<WhoRiskLevel, string> = {
+  low: 'Excellent',
+  high: 'Risque potentiel',
+  very_high: 'Risque considérable'
+}
+
+/** Source à afficher sous la barre du tour de taille. */
+export const WAIST_RISK_SOURCE = 'barème de Marie'
+
+// Ratio taille/hanche : inchangé, seuils OMS.
 const RATIO_M: RiskThresholds = { low: 0.9, high: 1.0, scaleMax: 1.15 }
 const RATIO_F: RiskThresholds = { low: 0.8, high: 0.85, scaleMax: 1.0 }
 

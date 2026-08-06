@@ -41,7 +41,7 @@ import {
 import { MeasureDelta } from '../../../components/MeasureDelta'
 import { WaistRiskBar } from '../../../components/WaistRiskBar'
 import { MetricSelectable } from '../../../components/MetricSelectable'
-import { getWaistRisk, getRatioRisk, WHO_RISK_LABELS } from '../../../lib/norms/who'
+import { getWaistRisk, getRatioRisk, WAIST_RISK_LABELS, WHO_RISK_LABELS } from '../../../lib/norms/who'
 
 type PeriodFilter = 'all' | '30d' | '90d' | '6m' | '1y'
 
@@ -640,7 +640,7 @@ export function MesuresOverview() {
             activeTailleCm !== null && client.sex
               ? (() => {
                   const r = getWaistRisk(activeTailleCm, client.sex)
-                  return r ? `${WHO_RISK_LABELS[r.level]} (OMS)` : undefined
+                  return r ? WAIST_RISK_LABELS[r.level] : undefined
                 })()
               : undefined
           }
@@ -894,7 +894,9 @@ function RatioTHCard({ value, previousValue, previousDate, sex }: RatioTHCardPro
         key: 'mesures:ratioTH',
         label: 'Ratio taille/hanche',
         value: value ?? '—',
-        category: risk ? WHO_RISK_LABELS[risk.level] + ' (OMS)' : undefined
+        // Le ratio garde les libellés OMS — seul le tour de taille a changé de
+        // référentiel le 2026-08-04.
+        category: risk ? `${WHO_RISK_LABELS[risk.level]} (OMS)` : undefined
       }}
       available={value !== null}
     >
