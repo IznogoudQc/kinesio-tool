@@ -265,10 +265,6 @@ function PanneauGras() {
           </Table>
         </div>
       ))}
-      <Source>
-        Grille de référence de Marie, reprise de son ancien logiciel. Le score de composition corporelle, lui,
-        n’utilise pas le % de gras : il repose sur l’IMC, le tour de taille et la somme des plis.
-      </Source>
     </div>
   )
 }
