@@ -491,8 +491,73 @@ function NormsCard() {
           tables de composition CPAFLA.)
         </p>
       </div>
+      <EcmsCompositionToggle />
       <ExportBaremes />
     </Card>
+  )
+}
+
+/**
+ * Mode comparatif : composition corporelle calculée strictement d'après la
+ * spécification publique de Statistique Canada (ECMS).
+ *
+ * Sert à **mesurer l'écart** avec notre lecture du Guide du conseiller. Les deux
+ * implémentations sont volontairement séparées : deux calculs qui concordent
+ * valent une preuve, un seul ne vaut qu'une affirmation.
+ *
+ * Désactivé par défaut — c'est un outil de vérification, pas le mode normal.
+ */
+function EcmsCompositionToggle() {
+  const [actif, setActif] = useState(false)
+  const [charge, setCharge] = useState(false)
+
+  useEffect(() => {
+    settingsService
+      .getCompositionEcms()
+      .then(setActif)
+      .catch(() => {})
+      .finally(() => setCharge(true))
+  }, [])
+
+  async function basculer() {
+    const v = !actif
+    setActif(v)
+    try {
+      await settingsService.setCompositionEcms(v)
+    } catch {
+      setActif(!v) // l'écriture a échoué : ne pas mentir sur l'état réel
+    }
+  }
+
+  if (!charge) return null
+
+  return (
+    <div className="mt-3 p-3 rounded-md border border-cream-dark bg-cream/40">
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={actif}
+          onChange={basculer}
+          className="mt-1 h-4 w-4 accent-gold-dark shrink-0"
+        />
+        <span>
+          <span className="text-marine font-medium text-base">
+            Comparer avec Statistique Canada (composition corporelle)
+          </span>
+          <span className="block text-marine/55 text-sm mt-1">
+            Recalcule la composition d’après la spécification publique de l’Enquête canadienne sur les
+            mesures de la santé — variables <strong className="font-medium">HWMDWSTA</strong>,{' '}
+            <strong className="font-medium">SFMDS5A</strong> et <strong className="font-medium">SFMDBCA</strong>.
+            La carte affiche les deux valeurs et signale tout écart.
+          </span>
+          <span className="block text-marine/45 text-sm mt-1.5">
+            Trois différences à surveiller : l’ECMS <strong className="font-medium">écarte la somme des
+            5 plis dès un IMC supérieur à 30</strong>, ne publie <strong className="font-medium">aucune norme
+            hors 15-69 ans</strong>, et ne comble pas les cas que sa table ne couvre pas.
+          </span>
+        </span>
+      </label>
+    </div>
   )
 }
 

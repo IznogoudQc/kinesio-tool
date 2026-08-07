@@ -9,6 +9,7 @@ import {
   type CpaflaCompositionDetail
 } from '../../../lib/norms/cpafla-composition'
 import { ReportEye } from '../../../components/ReportEye'
+import { ecmsExplanation, type EcmsCompositionResult } from '../../../lib/norms/ecms-composition'
 
 interface Props {
   /** Score composite (0-4) + catégorie (computed.composition). */
@@ -21,6 +22,8 @@ interface Props {
   /** Somme des 5 plis (mm), ou null si le mollet manque. */
   s5pc: number | null
   sex: 'F' | 'M'
+  /** Résultat du mode comparatif ECMS, ou `null` si le mode est désactivé. */
+  ecms?: EcmsCompositionResult | null
 }
 
 const nf = (n: number | null, d = 1): string =>
@@ -39,7 +42,7 @@ interface Row {
 /** Explique au client la note de composition corporelle (méthode CPAFLA) : mesures,
  *  points (colonnes A/B/C), calcul. Bouton « Barème » → table Fig. 7-4/7-5 avec la
  *  ligne/case du client surlignée. Affiché uniquement sous norme CPAFLA. */
-export function CompositionCpaflaCard({ score, category, detail, imc, ct, s5pc, sex }: Props) {
+export function CompositionCpaflaCard({ score, category, detail, imc, ct, s5pc, sex, ecms }: Props) {
   const [showBareme, setShowBareme] = useState<boolean>(loadBareme)
   useEffect(() => {
     if (typeof window !== 'undefined') window.localStorage.setItem(BAREME_KEY, showBareme ? '1' : '0')
@@ -96,6 +99,8 @@ export function CompositionCpaflaCard({ score, category, detail, imc, ct, s5pc, 
       </div>
 
       <p className="text-marine/70 text-sm mt-3 leading-relaxed">{calcul}</p>
+
+      {ecms && <EcmsComparison ecms={ecms} notre={detail.valeur} />}
 
       {showBareme && <BaremeTable sex={sex} detail={detail} />}
 
@@ -174,6 +179,44 @@ function BaremeLine({
           {c.range} → {c.pts}
         </span>
       ))}
+    </div>
+  )
+}
+
+/**
+ * Comparaison avec le calcul strict de Statistique Canada (ECMS).
+ *
+ * Affichée seulement quand le mode est actif dans les Paramètres. Le but est de
+ * **voir l'écart**, donc l'accord se dit aussi clairement que le désaccord :
+ * un bloc qui ne parlerait qu'en cas de différence laisserait croire, le reste
+ * du temps, que la comparaison n'a pas eu lieu.
+ */
+function EcmsComparison({ ecms, notre }: { ecms: EcmsCompositionResult; notre: number | null }) {
+  const ecart = ecms.valeur !== null && notre !== null && ecms.valeur !== notre
+  const sansResultat = ecms.valeur === null
+  const ton = ecart ? 'border-amber-400 bg-amber-50' : 'border-cream-dark bg-cream/40'
+
+  return (
+    <div className={`mt-3 rounded-md border p-3 ${ton}`}>
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <span className="text-[11px] uppercase tracking-wide text-marine/45 font-semibold">
+          Statistique Canada (ECMS)
+        </span>
+        <span className="flex items-baseline gap-2">
+          <span className="text-marine font-bold text-lg tabular-nums leading-none">
+            {ecms.valeur === null ? '—' : nf(ecms.valeur, 1)}
+          </span>
+          <span className="text-marine/40 text-xs">/ 4</span>
+        </span>
+      </div>
+      <p className="text-marine/60 text-xs mt-1.5 leading-relaxed">{ecmsExplanation(ecms)}</p>
+      <p className={`text-xs mt-1.5 font-medium ${ecart ? 'text-amber-800' : 'text-marine/50'}`}>
+        {sansResultat
+          ? 'Aucun résultat de ce côté — la note affichée vient de notre lecture du guide.'
+          : ecart
+            ? `Écart : ${nf(notre, 1)} chez nous, ${nf(ecms.valeur, 1)} selon l’ECMS.`
+            : 'Même résultat que notre lecture du Guide du conseiller.'}
+      </p>
     </div>
   )
 }

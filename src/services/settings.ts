@@ -53,6 +53,15 @@ export const settingsService = {
     return window.api.settings.getDefaultNutritionEmailTemplate()
   },
 
+  /** Mode comparatif ECMS pour la composition corporelle (défaut : désactivé). */
+  async getCompositionEcms(): Promise<boolean> {
+    return window.api.settings.getCompositionEcms()
+  },
+
+  async setCompositionEcms(value: boolean): Promise<void> {
+    return window.api.settings.setCompositionEcms(value)
+  },
+
   /** `null` : Marie-Eve n'a jamais choisi → toutes les circonférences sont saisies. */
   async getMesureFields(): Promise<MesureFieldKey[] | null> {
     return window.api.settings.getMesureFields()

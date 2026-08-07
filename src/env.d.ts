@@ -527,6 +527,9 @@ interface Window {
       setNutritionEmailTemplate(data: EmailTemplate): Promise<void>
       getDefaultNutritionEmailTemplate(): Promise<EmailTemplate>
       /** `null` = réglage jamais enregistré → afficher toutes les circonférences. */
+      /** Mode comparatif ECMS (Statistique Canada) pour la composition corporelle. */
+      getCompositionEcms(): Promise<boolean>
+      setCompositionEcms(value: boolean): Promise<void>
       getMesureFields(): Promise<MesureFieldKey[] | null>
       setMesureFields(value: MesureFieldKey[]): Promise<void>
       /** Dossier configuré pour l'export des documents clients (`null` si non défini). */

@@ -22,6 +22,7 @@ const KEYS = {
   // `categorization_norms` retiré (v0.9.31) : l'app suit uniquement le CPAFLA.
   // Une éventuelle ligne résiduelle en base est simplement ignorée.
   mesureFields: 'mesures.fields',
+  compositionEcms: 'composition.ecms',
   documentsFolder: 'documents.folder',
   supplements: 'nutrition.supplements',
   foodsGood: 'nutrition.foods_good',
@@ -208,6 +209,17 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:templateNutrition:set', async (_e, data: unknown) => {
     const validated = EmailTemplateSchema.parse(data)
     await writeKey(KEYS.emailTemplateNutrition, JSON.stringify(validated))
+  })
+
+  // Mode comparatif : composition corporelle calculée strictement d'après la
+  // spécification publique de l'ECMS (Statistique Canada). Sert à mesurer
+  // l'écart avec notre lecture du Guide du conseiller — voir ecms-composition.
+  ipcMain.handle('settings:compositionEcms:get', async () => {
+    return (await readKey(KEYS.compositionEcms)) === '1'
+  })
+
+  ipcMain.handle('settings:compositionEcms:set', async (_e, value: unknown) => {
+    await writeKey(KEYS.compositionEcms, value === true ? '1' : '0')
   })
 
   ipcMain.handle('settings:mesureFields:get', async () => {
