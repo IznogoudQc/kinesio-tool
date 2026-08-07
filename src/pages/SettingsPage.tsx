@@ -8,6 +8,7 @@ import { TestCard, TestSection } from './settings/BilanTestCards'
 import { CompositionBaremes } from './settings/CompositionBaremes'
 import { AerobieBaremes } from './settings/AerobieBaremes'
 import { DosBaremes } from './settings/DosBaremes'
+import { MusculoBaremes } from './settings/MusculoBaremes'
 import { settingsService } from '../services/settings'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
@@ -521,9 +522,11 @@ function BilanTestsTab() {
 
         <TestCard
           titre="Aptitude musculosquelettique globale"
-          role="Force, endurance et souplesse réunies en une cote."
+          role="Cinq tests de force, d’endurance et de souplesse, en moyenne pondérée."
           validationId="dos-musculo"
-        />
+        >
+          <MusculoBaremes />
+        </TestCard>
       </TestSection>
 
       <TestSection
