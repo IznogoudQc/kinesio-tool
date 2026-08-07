@@ -1,7 +1,6 @@
 import {
   WHO_RISK_COLORS,
   WAIST_RISK_LABELS,
-  WAIST_RISK_SOURCE,
   WHO_RISK_LABELS,
   calculateRiskBarPosition,
   getRatioRisk,
@@ -24,10 +23,11 @@ interface WaistRiskBarProps {
 const HABILLAGE = {
   waist: {
     labels: WAIST_RISK_LABELS,
-    source: WAIST_RISK_SOURCE,
+    // Aucune source affichée pour le tour de taille : le libellé se suffit.
+    source: null,
     tooltip:
-      'Barème de l’ancien logiciel de Marie — test « Circonférence de la taille » : ' +
-      'hommes < 94 cm Excellent, < 102 Risque potentiel, au-delà Risque considérable ; femmes 80 et 90 cm'
+      'Tour de taille — hommes : moins de 94 cm Excellent, moins de 102 Risque potentiel, ' +
+      'au-delà Risque considérable. Femmes : 80 et 90 cm.'
   },
   ratio: {
     labels: WHO_RISK_LABELS,
@@ -68,7 +68,8 @@ export function WaistRiskBar({ value, sex, type }: WaistRiskBarProps) {
         </div>
       </div>
       <p className={`text-[10px] uppercase tracking-wide font-semibold mt-1 ${levelColor}`}>
-        {levelLabel} <span className="text-marine/40 font-normal normal-case">· {hab.source}</span>
+        {levelLabel}
+        {hab.source && <span className="text-marine/40 font-normal normal-case"> · {hab.source}</span>}
       </p>
     </div>
   )

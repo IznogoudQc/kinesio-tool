@@ -70,8 +70,9 @@ export const WAIST_RISK_LABELS: Record<WhoRiskLevel, string> = {
   very_high: 'Risque considérable'
 }
 
-/** Source à afficher sous la barre du tour de taille. */
-export const WAIST_RISK_SOURCE = 'barème de Marie'
+// Pas de source affichée sous la barre du tour de taille : le libellé se
+// suffit, et l'origine du barème est documentée dans `clinical.ts` et dans le
+// PDF des barèmes — pas dans l'interface.
 
 // Ratio taille/hanche : inchangé, seuils OMS.
 const RATIO_M: RiskThresholds = { low: 0.9, high: 1.0, scaleMax: 1.15 }
