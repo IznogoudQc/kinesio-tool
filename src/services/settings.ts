@@ -53,24 +53,6 @@ export const settingsService = {
     return window.api.settings.getDefaultNutritionEmailTemplate()
   },
 
-  /** Table de cotation du VO2max (défaut : CPAFLA, tableau 4.10). */
-  async getVo2maxTable(): Promise<'cpafla' | 'acsm'> {
-    return window.api.settings.getVo2maxTable()
-  },
-
-  async setVo2maxTable(value: 'cpafla' | 'acsm'): Promise<void> {
-    return window.api.settings.setVo2maxTable(value)
-  },
-
-  /** Mode comparatif ECMS pour la composition corporelle (défaut : désactivé). */
-  async getCompositionEcms(): Promise<boolean> {
-    return window.api.settings.getCompositionEcms()
-  },
-
-  async setCompositionEcms(value: boolean): Promise<void> {
-    return window.api.settings.setCompositionEcms(value)
-  },
-
   /** `null` : Marie-Eve n'a jamais choisi → toutes les circonférences sont saisies. */
   async getMesureFields(): Promise<MesureFieldKey[] | null> {
     return window.api.settings.getMesureFields()

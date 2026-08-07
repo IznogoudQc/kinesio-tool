@@ -33,7 +33,6 @@ import { MusculoRadar } from '../dashboard/MusculoRadar'
 import { CompositionCpaflaCard } from '../dashboard/CompositionCpaflaCard'
 import { CompositeCpaflaCard } from '../dashboard/CompositeCpaflaCard'
 import { cpaflaCompositionDetail, s5pcForScoring } from '../../../lib/norms/cpafla-composition'
-import { ecmsComposition } from '../../../lib/norms/ecms-composition'
 import { TrainingZones } from '../dashboard/TrainingZones'
 import { BilanSelectorPills } from '../dashboard/BilanSelectorPills'
 import { buildPreviousSynthesisBilan, buildSynthesisBilan } from '../../../lib/synthesisBilan'
@@ -151,16 +150,6 @@ export function DashboardTab() {
     const t = setTimeout(() => setToast(null), 4000)
     return () => clearTimeout(t)
   }, [toast])
-
-  // Mode comparatif ECMS (Paramètres → Norme de catégorisation). Désactivé par
-  // défaut : c'est un outil de vérification, pas le mode normal.
-  const [ecmsActif, setEcmsActif] = useState(false)
-  useEffect(() => {
-    settingsService
-      .getCompositionEcms()
-      .then(setEcmsActif)
-      .catch(() => {})
-  }, [])
 
   const age = useMemo(() => computeAge(client.birthdate), [client.birthdate])
   // Helper partagé avec le rapport PDF et le rapport HTML : les trois surfaces
@@ -798,7 +787,6 @@ export function DashboardTab() {
                 ct={ct}
                 s5pc={s5pc}
                 sex={client.sex}
-                ecms={ecmsActif ? ecmsComposition({ imc: computed.imc, ct, s5pc, sex: client.sex, age }) : null}
               />
             )
           })()}

@@ -101,14 +101,6 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('settings:templateNutrition:set', data),
     getDefaultNutritionEmailTemplate: () =>
       ipcRenderer.invoke('settings:templateNutrition:default'),
-    getVo2maxTable: (): Promise<'cpafla' | 'acsm'> =>
-      ipcRenderer.invoke('settings:vo2maxTable:get'),
-    setVo2maxTable: (value: 'cpafla' | 'acsm'): Promise<void> =>
-      ipcRenderer.invoke('settings:vo2maxTable:set', value),
-    getCompositionEcms: (): Promise<boolean> =>
-      ipcRenderer.invoke('settings:compositionEcms:get'),
-    setCompositionEcms: (value: boolean): Promise<void> =>
-      ipcRenderer.invoke('settings:compositionEcms:set', value),
     getMesureFields: () =>
       ipcRenderer.invoke('settings:mesureFields:get'),
     setMesureFields: (value: string[]) =>
