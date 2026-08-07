@@ -67,7 +67,7 @@ export const VALIDATION: ValidationEntree[] = [
     label: 'Composition corporelle — figures 7-4 / 7-5 / 7-6',
     statut: 'confirme',
     source:
-      'L’IMC sert d’abord à choisir la ligne du barème dans laquelle le tour de taille et les plis sont cotés, chacun sur 4. La note vient ensuite des mesures prises — tour de taille et plis : (cote du tour de taille × 1,5 + cote des plis) ÷ 2,5, arrondi à une décimale ; une seule des deux : sa cote devient la note ; ni l’une ni l’autre : la cote de l’IMC lui-même. Sans IMC, le tour de taille est coté sur la ligne « IMC 27 » et sert seul de note. Source : Statistique Canada — Enquête canadienne sur les mesures de la santé.',
+      'L’IMC choisit la ligne du barème dans laquelle le tour de taille et les plis sont cotés de 0 à 4. La note vient ensuite des mesures prises : avec les plis, (cote du tour de taille × 1,5 + cote des plis) ÷ 2,5 ; sans eux, la cote du tour de taille seule. Elle est affichée à une décimale, mais c’est sa version entière qui entre dans le score global. Source : Statistique Canada — Enquête canadienne sur les mesures de la santé.',
     manque: null,
     entreDansLeScore: true
   },
