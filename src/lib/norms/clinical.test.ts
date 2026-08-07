@@ -1,6 +1,11 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { classifyBloodPressure, bloodPressureBar, waistRatingLegacy } from './clinical.ts'
+import {
+  classifyBloodPressure,
+  bloodPressureBar,
+  waistRatingLegacy,
+  waistRatingExplanation
+} from './clinical.ts'
 
 test('classification PA — systolique', () => {
   assert.equal(classifyBloodPressure(117, 'systolic')!.zone, 'Optimale')
@@ -68,4 +73,34 @@ test('tour de taille — sexe ou valeur manquants → null, jamais de cote inven
   assert.equal(waistRatingLegacy(95, null), null)
   assert.equal(waistRatingLegacy(null, 'M'), null)
   assert.equal(waistRatingLegacy(Number.NaN, 'F'), null)
+})
+
+test('tour de taille — la raison nomme la borne franchie', () => {
+  // Homme : bornes 94 et 102.
+  assert.match(waistRatingExplanation(93, 'M')!, /93 cm, sous la barre des 94 cm/)
+  assert.match(waistRatingExplanation(94, 'M')!, /au-dessus de 94 cm, mais encore sous 102 cm/)
+  assert.match(waistRatingExplanation(105, 'M')!, /au-delà de 102 cm/)
+  // Femme : bornes 80 et 90.
+  assert.match(waistRatingExplanation(79, 'F')!, /sous la barre des 80 cm/)
+  assert.match(waistRatingExplanation(85, 'F')!, /au-dessus de 80 cm, mais encore sous 90 cm/)
+  assert.match(waistRatingExplanation(95, 'F')!, /au-delà de 90 cm/)
+})
+
+test('tour de taille — la raison suit toujours la cote, sans contradiction', () => {
+  for (const sex of ['M', 'F'] as const) {
+    for (let cm = 60; cm <= 160; cm += 0.5) {
+      const cote = waistRatingLegacy(cm, sex)!
+      const raison = waistRatingExplanation(cm, sex)!
+      // Une phrase qui dirait « sous la barre » pour une cote 1 serait pire que
+      // pas de phrase du tout.
+      if (cote.cote === 4) assert.match(raison, /sous la barre/, `${cm} ${sex}`)
+      if (cote.cote === 3) assert.match(raison, /mais encore sous/, `${cm} ${sex}`)
+      if (cote.cote === 1) assert.match(raison, /au-delà/, `${cm} ${sex}`)
+    }
+  }
+})
+
+test('tour de taille — pas de raison sans valeur ni sexe', () => {
+  assert.equal(waistRatingExplanation(null, 'M'), null)
+  assert.equal(waistRatingExplanation(95, null), null)
 })

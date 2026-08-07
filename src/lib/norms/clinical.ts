@@ -188,6 +188,25 @@ export function waistRatingLegacy(
 }
 
 /**
+ * Pourquoi cette valeur tombe dans cette classe — une phrase, pas un tableau.
+ *
+ * Dit la borne franchie plutôt que de répéter le libellé : c'est la seule chose
+ * que le tableau des seuils ne montre pas d'un coup d'œil.
+ */
+export function waistRatingExplanation(
+  value: number | null | undefined,
+  sex: 'F' | 'M' | null | undefined
+): string | null {
+  const r = waistRatingLegacy(value, sex)
+  if (!r || sex !== 'M' && sex !== 'F') return null
+  const cm = (value as number).toLocaleString('fr-CA', { maximumFractionDigits: 1 })
+  const [excellent, potentiel] = WAIST_LEGACY_BOUNDS[sex]
+  if (r.cote === 4) return `${cm} cm, sous la barre des ${excellent} cm.`
+  if (r.cote === 3) return `${cm} cm : au-dessus de ${excellent} cm, mais encore sous ${potentiel} cm.`
+  return `${cm} cm, au-delà de ${potentiel} cm.`
+}
+
+/**
  * Catégorie du tour de taille, dérivée de `waistRatingLegacy`.
  *
  * Le barème n'a que **trois** niveaux et saute la cote 2 — il ne peut donc pas

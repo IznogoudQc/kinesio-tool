@@ -40,6 +40,7 @@ import {
 } from '../../../lib/units'
 import { MeasureDelta } from '../../../components/MeasureDelta'
 import { WaistRiskBar } from '../../../components/WaistRiskBar'
+import { WaistBareme } from '../../../components/WaistBareme'
 import { MetricSelectable } from '../../../components/MetricSelectable'
 import { getWaistRisk, getRatioRisk, WAIST_RISK_LABELS, WHO_RISK_LABELS } from '../../../lib/norms/who'
 
@@ -646,7 +647,7 @@ export function MesuresOverview() {
           }
           extra={
             activeTailleCm !== null && client.sex ? (
-              <WaistRiskBar value={activeTailleCm} sex={client.sex} type="waist" />
+              <WaistBareme value={activeTailleCm} sex={client.sex} />
             ) : null
           }
         />
