@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { cpaflaComposition, cpaflaCompositionDetail } from './cpafla-composition.ts'
+import { cpaflaComposition, cpaflaCompositionDetail, cpaflaCompositionBareme } from './cpafla-composition.ts'
 
 test('exemple du guide — femme IMC 25,8 · CT 91 · S5PC 116,6 → 1 (Acceptable)', () => {
   // Fig 7-5, plage 25-29,9 : CT 91 (>87) → B=1 ; S5PC 116,6 (>113) → C=2.
@@ -219,3 +219,55 @@ test('sans les cinq plis, la valeur reste entière', () => {
   assert.equal(d.valeur, 4)
   assert.equal(d.score, 4)
 })
+
+/**
+ * Chaque libellé du barème affiché doit correspondre à ce que le code calcule
+ * **à ses propres bornes**.
+ *
+ * Les libellés sont montrés à Marie dans deux écrans (carte du dashboard,
+ * paramètres) et servent de référence. Ils étaient jusqu'ici de simples chaînes
+ * posées à côté des seuils, sans rien pour les relier : la bande « moins de
+ * 18,5 » annonçait « 55–77 → 3 » alors qu'une somme de 55 valait 4 points, la
+ * borne ayant été déclarée exclusive. Personne n'aurait vu l'écart en lisant le
+ * tableau — il fallait le calculer.
+ */
+function imcPourBande(index: number, sex: 'F' | 'M'): number {
+  for (let imc = 10; imc <= 60; imc = Math.round((imc + 0.1) * 10) / 10) {
+    if (cpaflaCompositionDetail({ sex, imc, ct: 90, s5pc: null }).imcIndex === index) return imc
+  }
+  throw new Error(`aucun IMC ne tombe dans la bande ${index}`)
+}
+
+/** Valeurs de test déduites du libellé : « < N » → N-1 · « N–M » → N et M · « > N » → N+1. */
+function bornesDuLibelle(label: string): number[] | null {
+  if (label === 'Toutes') return null
+  let m = /^< (\d+)$/.exec(label)
+  if (m) return [Number(m[1]) - 1]
+  m = /^(\d+)[–-](\d+)$/.exec(label)
+  if (m) return [Number(m[1]), Number(m[2])]
+  m = /^> (\d+)[–-](\d+)$/.exec(label)
+  if (m) return [Number(m[1]) + 1, Number(m[2])]
+  m = /^> (\d+)$/.exec(label)
+  if (m) return [Number(m[1]) + 1]
+  throw new Error(`libellé non reconnu : « ${label} »`)
+}
+
+for (const sex of ['M', 'F'] as const) {
+  test(`barème ${sex} — chaque libellé donne bien les points annoncés`, () => {
+    cpaflaCompositionBareme(sex).forEach((row, i) => {
+      const imc = imcPourBande(i, sex)
+      for (const cell of row.ct) {
+        for (const v of bornesDuLibelle(cell.range) ?? []) {
+          const pts = cpaflaCompositionDetail({ sex, imc, ct: v, s5pc: null }).b
+          assert.equal(pts, cell.pts, `IMC ${row.imcLabel} · tour de taille ${v} : « ${cell.range} » annonce ${cell.pts} pt(s), le calcul donne ${pts}`)
+        }
+      }
+      for (const cell of row.s5pc) {
+        for (const v of bornesDuLibelle(cell.range) ?? []) {
+          const pts = cpaflaCompositionDetail({ sex, imc, ct: null, s5pc: v }).c
+          assert.equal(pts, cell.pts, `IMC ${row.imcLabel} · somme des plis ${v} : « ${cell.range} » annonce ${cell.pts} pt(s), le calcul donne ${pts}`)
+        }
+      }
+    })
+  })
+}

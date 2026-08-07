@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { TableProperties } from 'lucide-react'
+import { CpaflaBaremeTable } from '../../components/CpaflaBaremeTable'
 import { WAIST_BOUNDS } from '../../lib/norms/clinical'
 import { bodyFatRiskZones, type BfRiskZone } from '../../lib/body-fat-risk'
 import { getAcsmRange } from '../../lib/norms/acsm'
@@ -34,12 +37,63 @@ const ONGLETS = [
 
 export function CompositionBaremes() {
   const { actif, barre } = useTabulations(ONGLETS)
+  const [bareme, setBareme] = useState(false)
+
   return (
     <div>
-      {barre}
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="flex-1 min-w-[12rem]">{barre}</div>
+        <button
+          type="button"
+          onClick={() => setBareme(b => !b)}
+          aria-pressed={bareme}
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
+            bareme
+              ? 'bg-gold/15 text-gold-dark hover:bg-gold/25'
+              : 'bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine'
+          }`}
+          title="Afficher le barème CPAFLA qui combine les trois mesures"
+        >
+          <TableProperties size={13} />
+          Barème
+        </button>
+      </div>
+
+      {bareme && <BaremeCombine />}
+
       {actif === 'imc' && <PanneauImc />}
       {actif === 'taille' && <PanneauTourDeTaille />}
       {actif === 'gras' && <PanneauGras />}
+    </div>
+  )
+}
+
+/**
+ * Le barème CPAFLA complet — celui qui combine les trois mesures en une note.
+ *
+ * Volontairement hors des tabulations : chaque onglet montre comment UNE mesure
+ * se lit seule, alors que cette table montre comment elles se croisent. La
+ * ranger dans un quatrième onglet l'aurait mise sur le même plan que les trois
+ * autres, alors que c'est elle qui produit la note du bilan.
+ */
+function BaremeCombine() {
+  return (
+    <div className="mb-5 rounded-lg border border-gold/30 bg-gold/[0.04] p-3">
+      <p className="text-marine/60 text-sm leading-relaxed mb-3">
+        C’est cette table qui donne la note. La plage d’IMC choisit le bloc, puis le tour de taille et la somme
+        des plis y sont cotés — d’où le fait qu’une même valeur de tour de taille ne vaut pas les mêmes points
+        selon l’IMC.
+      </p>
+      <div className="space-y-4">
+        {(['M', 'F'] as const).map(sex => (
+          <CpaflaBaremeTable key={sex} sex={sex} titre={sex === 'M' ? 'Hommes' : 'Femmes'} />
+        ))}
+      </div>
+      <Source>
+        Figures 7-4 (hommes) et 7-5 (femmes) du Guide du conseiller. Ce barème ne dépend{' '}
+        <strong>pas de l’âge</strong> — contrairement à l’aptitude aérobie et aux tests musculosquelettiques, il
+        ne varie qu’avec le sexe et la plage d’IMC.
+      </Source>
     </div>
   )
 }
