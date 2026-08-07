@@ -67,7 +67,7 @@ export const VALIDATION: ValidationEntree[] = [
     label: 'Composition corporelle — figures 7-4 / 7-5 / 7-6',
     statut: 'confirme',
     source:
-      'Statistique Canada — Enquête canadienne sur les mesures de la santé. L’organisme y publie la même méthode que le Guide du conseiller : le tour de taille et la somme des plis sont d’abord cotés séparément selon la plage d’IMC du client, puis combinés par la formule (tour de taille × 1,5 + plis) ÷ 2,5. Chaque plage de cotation a été comparée une à une à la référence publiée, sans écart, et le calcul redonne les mêmes résultats que l’ancien logiciel sur les six bilans vérifiés. Variables dérivées SFMDBCA, HWMDWSTA et SFMDS5A.',
+      'L’IMC sert d’abord à choisir la ligne du barème dans laquelle le tour de taille et les plis sont cotés, chacun sur 4. La note vient ensuite des mesures prises — tour de taille et plis : (cote du tour de taille × 1,5 + cote des plis) ÷ 2,5, arrondi à une décimale ; une seule des deux : sa cote devient la note ; ni l’une ni l’autre : la cote de l’IMC lui-même. Sans IMC, le tour de taille est coté sur la ligne « IMC 27 » et sert seul de note. Source : Statistique Canada — Enquête canadienne sur les mesures de la santé.',
     manque: null,
     entreDansLeScore: true
   },
