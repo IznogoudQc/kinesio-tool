@@ -23,6 +23,7 @@ const KEYS = {
   // Une éventuelle ligne résiduelle en base est simplement ignorée.
   mesureFields: 'mesures.fields',
   compositionEcms: 'composition.ecms',
+  vo2maxTable: 'aerobie.vo2max_table',
   documentsFolder: 'documents.folder',
   supplements: 'nutrition.supplements',
   foodsGood: 'nutrition.foods_good',
@@ -214,6 +215,17 @@ export function registerSettingsHandlers(): void {
   // Mode comparatif : composition corporelle calculée strictement d'après la
   // spécification publique de l'ECMS (Statistique Canada). Sert à mesurer
   // l'écart avec notre lecture du Guide du conseiller — voir ecms-composition.
+  // Table de cotation du VO2max — CPAFLA (tableau 4.10) par défaut, ACSM en
+  // option. Le seul réglage qui change une catégorie affichée ET la cote qui
+  // entre dans le score global : à ne pas basculer à la légère.
+  ipcMain.handle('settings:vo2maxTable:get', async () => {
+    return (await readKey(KEYS.vo2maxTable)) === 'acsm' ? 'acsm' : 'cpafla'
+  })
+
+  ipcMain.handle('settings:vo2maxTable:set', async (_e, value: unknown) => {
+    await writeKey(KEYS.vo2maxTable, value === 'acsm' ? 'acsm' : 'cpafla')
+  })
+
   ipcMain.handle('settings:compositionEcms:get', async () => {
     return (await readKey(KEYS.compositionEcms)) === '1'
   })

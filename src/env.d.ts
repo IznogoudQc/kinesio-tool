@@ -527,6 +527,9 @@ interface Window {
       setNutritionEmailTemplate(data: EmailTemplate): Promise<void>
       getDefaultNutritionEmailTemplate(): Promise<EmailTemplate>
       /** `null` = réglage jamais enregistré → afficher toutes les circonférences. */
+      /** Table de cotation du VO2max — CPAFLA (défaut) ou ACSM. */
+      getVo2maxTable(): Promise<'cpafla' | 'acsm'>
+      setVo2maxTable(value: 'cpafla' | 'acsm'): Promise<void>
       /** Mode comparatif ECMS (Statistique Canada) pour la composition corporelle. */
       getCompositionEcms(): Promise<boolean>
       setCompositionEcms(value: boolean): Promise<void>

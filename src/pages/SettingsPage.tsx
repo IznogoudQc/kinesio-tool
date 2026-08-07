@@ -4,6 +4,7 @@ import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
 import { SupplementLibraryCard, FoodListCard } from './settings/NutritionSettingsCards'
+import { TestCard, TestSection } from './settings/BilanTestCards'
 import { settingsService } from '../services/settings'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
@@ -19,7 +20,7 @@ const TEMPLATE_VARIABLES: { key: string; description: string }[] = [
 
 const SETTINGS_TABS = [
   { key: 'general', label: 'Général' },
-  { key: 'bilans', label: 'Bilans' },
+  { key: 'bilans', label: 'Mesures / Bilans' },
   { key: 'nutrition', label: 'Nutrition' },
   { key: 'questionnaires', label: 'Questionnaires' },
   { key: 'courriel', label: 'Courriel' },
@@ -62,7 +63,7 @@ export function SettingsPage() {
               <DummyJeanSeedButton />
             </>
           )}
-          {tab === 'bilans' && <NormsCard />}
+          {tab === 'bilans' && <BilanTestsTab />}
           {tab === 'nutrition' && (
             <>
               <SupplementLibraryCard />
@@ -466,36 +467,112 @@ function SmtpCard() {
   )
 }
 
-/** Norme de catégorisation — plus de choix : l'app suit le CPAFLA, le référentiel
- *  de l'ancien logiciel (ADR 0028). Carte purement informative. */
-function NormsCard() {
+/**
+ * Onglet « Mesures / Bilans » — un test par carte, groupées par section.
+ *
+ * L'ancienne version décrivait toutes les normes dans un seul paragraphe : pour
+ * savoir quel barème s'applique à un test, il fallait le lire en entier, et le
+ * modifier demandait de retrouver la bonne demi-phrase. Chaque test porte
+ * désormais sa source, son état de validation et ses réglages propres.
+ */
+function BilanTestsTab() {
   return (
     <Card
-      title="Norme de catégorisation"
+      title="Mesures / Bilans"
       icon={Gauge}
-      description="Tables utilisées pour situer un résultat (À améliorer → Excellent) selon l'âge et le sexe."
+      description="Chaque test avec son barème, sa source et ses réglages. L'état indique ce qui est confirmé et ce qui reste à valider avec Marie."
     >
-      <div className="p-3 rounded-md border border-gold/60 bg-gold/10">
-        <p className="text-marine font-medium text-base">CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd.</p>
-        <p className="text-marine/55 text-sm mt-1">
-          Société canadienne de physiologie de l’exercice — le référentiel de l’ancien logiciel.
-          L’indice de santé du dos et l’aptitude musculosquelettique en reproduisent les résultats
-          à l’identique, tout comme la composition corporelle.
-        </p>
-        <p className="text-marine/55 text-sm mt-2">
-          Le <strong className="font-medium">% de gras</strong> suit la grille de Marie. Le
-          <strong className="font-medium"> VO2max</strong> est coté par la table CPAFLA de capacité aérobie
-          (Guide du conseiller, 3ᵉ éd., tableau 4.10). L’<strong className="font-medium">IMC</strong> et le
-          <strong className="font-medium"> tour de taille</strong> n’ont pas de table CPAFLA : ils sont cotés
-          avec les tables ACSM. (Dans l’indice de santé du dos, le tour de taille est en revanche coté par les
-          tables de composition CPAFLA.)
-        </p>
-      </div>
-      <EcmsCompositionToggle />
-      <ExportBaremes />
+      <TestSection
+        titre="1 · Ce qui entre dans le score global"
+        sous="Les cinq composantes de « Santé et condition physique globale ». Chacune est ramenée à sa cote 0-4, puis toutes comptent également."
+      >
+        <TestCard
+          titre="Composition corporelle"
+          role="IMC, tour de taille et somme des 5 plis, combinés selon les mesures disponibles."
+          validationId="composition-cpafla"
+        >
+          <EcmsCompositionToggle />
+        </TestCard>
+
+        <TestCard
+          titre="Aptitude aérobie — VO2max"
+          role="Le VO2max estimé (Bruce, Cooper ou Léger), coté par âge et par sexe. Le score global utilise son équivalent en METS."
+          validationId="aerobie-cpafla"
+        >
+          <p className="text-marine/55 text-sm leading-relaxed">
+            <span className="font-medium text-marine/75">Équation : </span>
+            Bruce → Foster/Pollock (1984) · Cooper (1968) · Léger (1988). Le protocole se choisit à la saisie du
+            bilan.
+          </p>
+          <p className="text-marine/45 text-sm mt-2 leading-relaxed">
+            Une table <strong className="font-medium">ACSM</strong> existe aussi pour ce test. Elle classerait
+            certains résultats différemment — d'où l'intérêt de savoir laquelle Marie utilise réellement.
+          </p>
+        </TestCard>
+
+        <TestCard
+          titre="Pression artérielle systolique"
+          role="Une des cinq composantes du score global — souvent oubliée, car elle n'apparaît pas comme un « test »."
+          validationId="pa-systolique-cote"
+        />
+
+        <TestCard
+          titre="Indice de santé du dos"
+          role="Tour de taille, IMC et tests du tronc, en moyenne pondérée."
+          validationId="dos-musculo"
+        />
+
+        <TestCard
+          titre="Aptitude musculosquelettique globale"
+          role="Force, endurance et souplesse réunies en une cote."
+          validationId="dos-musculo"
+        />
+      </TestSection>
+
+      <TestSection
+        titre="2 · Mesures cotées séparément"
+        sous="Elles s'affichent avec leur propre barème mais n'entrent pas directement dans le score global."
+      >
+        <TestCard
+          titre="Tour de taille"
+          role="Coté seul, sur trois niveaux."
+          validationId="tour-taille-autonome"
+        />
+        <TestCard
+          titre="Pourcentage de gras"
+          role="Présenté au client par une grille de risque à cinq zones, avec du risque aux deux extrémités."
+          validationId="pourcentage-gras-grille"
+        />
+        <TestCard
+          titre="IMC"
+          role="Affiché seul avec les catégories de l'OMS. Il entre aussi dans la composition corporelle, mais par les tables CPAFLA, pas par celles-ci."
+        >
+          <p className="text-marine/55 text-sm leading-relaxed">
+            Catégories OMS — indépendantes de l'âge et du sexe. Le calcul est le rapport du poids sur le carré de
+            la taille.
+          </p>
+        </TestCard>
+        <TestCard
+          titre="Pression diastolique"
+          role="Affichage seulement — elle n'entre dans aucun score."
+          validationId="pa-diastolique-seuils"
+        />
+        <TestCard
+          titre="Endurance du dos, saut vertical, puissance, FC repos"
+          role="Quatre tests que les tables ACSM ne couvrent pas."
+          validationId="hors-acsm"
+        />
+      </TestSection>
+
+      <TestSection titre="3 · Document de référence" sous="À imprimer pour une séance de validation avec Marie.">
+        <div className="rounded-lg border border-cream-dark bg-white p-4">
+          <ExportBaremes />
+        </div>
+      </TestSection>
     </Card>
   )
 }
+
 
 /**
  * Mode comparatif : composition corporelle calculée strictement d'après la
