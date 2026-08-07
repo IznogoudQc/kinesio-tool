@@ -7,6 +7,7 @@ import { SupplementLibraryCard, FoodListCard } from './settings/NutritionSetting
 import { TestCard, TestSection } from './settings/BilanTestCards'
 import { CompositionBaremes } from './settings/CompositionBaremes'
 import { AerobieBaremes } from './settings/AerobieBaremes'
+import { DosBaremes } from './settings/DosBaremes'
 import { settingsService } from '../services/settings'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
@@ -512,9 +513,11 @@ function BilanTestsTab() {
 
         <TestCard
           titre="Indice de santé du dos"
-          role="Tour de taille, IMC et tests du tronc, en moyenne pondérée."
+          role="Quatre mesures du tronc et de la taille, en moyenne pondérée."
           validationId="dos-musculo"
-        />
+        >
+          <DosBaremes />
+        </TestCard>
 
         <TestCard
           titre="Aptitude musculosquelettique globale"

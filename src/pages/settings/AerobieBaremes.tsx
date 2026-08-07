@@ -1,5 +1,3 @@
-import { CPAFLA_TABLES } from '../../lib/norms/cpafla'
-import { categoryCells } from '../../lib/norms/bareme'
 import { computeMet } from '../../lib/norms/calc'
 import { VO2MAX_PROTOCOLES } from '../../lib/vo2max-calculator'
 import {
@@ -9,9 +7,7 @@ import {
   Table,
   Source,
   SousTitre,
-  COULEUR_CAT,
-  ORDRE_CAT,
-  CATEGORY_LABELS
+  TableParAge
 } from './bareme-ui'
 
 /**
@@ -24,7 +20,7 @@ import {
  * c'est une façon d'obtenir la valeur qu'on cote ensuite.
  *
  * ⚠️ Rien n'est recopié : les équations viennent de `VO2MAX_PROTOCOLES` (déclaré
- * à côté de son implémentation) et la table de `CPAFLA_TABLES.vo2max`.
+ * à côté de son implémentation) et la table de `TableParAge`, qui lit `CPAFLA_TABLES`.
  */
 
 const ONGLETS = [
@@ -94,8 +90,6 @@ function PanneauProtocoles() {
 // ── Barème VO2max ───────────────────────────────────────────────────────────
 
 function PanneauBareme() {
-  const table = CPAFLA_TABLES.vo2max ?? []
-
   return (
     <div>
       <Explication titre="Comment le VO₂max est coté">
@@ -113,44 +107,11 @@ function PanneauBareme() {
         </p>
       </Explication>
 
-      {(['M', 'F'] as const).map(sex => (
-        <div key={sex} className="mb-4 last:mb-0">
-          <SousTitre>{sex === 'M' ? 'Hommes' : 'Femmes'} · ml/kg/min</SousTitre>
-          <div className="rounded-md border border-cream-dark bg-white overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-cream-dark/60">
-                  <th className="py-1.5 pl-2 text-left font-medium text-marine/45 text-xs">Âge</th>
-                  {ORDRE_CAT.map(c => (
-                    <th key={c} className={`py-1.5 px-2 text-right text-xs font-semibold ${COULEUR_CAT[c]}`}>
-                      {CATEGORY_LABELS[c]}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {table
-                  .filter(r => r.sex === sex)
-                  .map(r => {
-                    const cells = categoryCells(r.percentiles, false)
-                    return (
-                      <tr key={`${r.ageMin}`} className="border-b border-cream-dark/50 last:border-0">
-                        <td className="py-1.5 pl-2 text-marine/70 tabular-nums whitespace-nowrap">
-                          {r.ageMin}–{r.ageMax}
-                        </td>
-                        {ORDRE_CAT.map(c => (
-                          <td key={c} className="py-1.5 px-2 text-right text-marine/70 tabular-nums whitespace-nowrap">
-                            {cells[c]}
-                          </td>
-                        ))}
-                      </tr>
-                    )
-                  })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      ))}
+      <div className="space-y-3">
+        {(['M', 'F'] as const).map(sex => (
+          <TableParAge key={sex} test="vo2max" sex={sex} unite="ml/kg/min" />
+        ))}
+      </div>
 
       <Source>
         CPAFLA / ÉCPHV — Guide du conseiller, 3ᵉ éd., tableau 4.10 « VO₂max estimé : évaluation des avantages pour

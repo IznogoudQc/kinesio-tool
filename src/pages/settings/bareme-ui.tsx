@@ -1,5 +1,8 @@
 import { useState, type ReactNode } from 'react'
 import { CATEGORY_LABELS, type Category } from '../../lib/norms'
+import { CPAFLA_TABLES } from '../../lib/norms/cpafla'
+import { categoryCells } from '../../lib/norms/bareme'
+import type { TestKey } from '../../lib/norms/types'
 
 /**
  * Briques d'affichage des barèmes dans « Mesures / Bilans ».
@@ -105,6 +108,75 @@ export function Source({ children }: { children: ReactNode }) {
 export function SousTitre({ children }: { children: ReactNode }) {
   return (
     <p className="text-marine/45 text-xs uppercase tracking-wide font-semibold mb-1.5">{children}</p>
+  )
+}
+
+/**
+ * Barème CPAFLA d'un test, par tranche d'âge, pour un sexe.
+ *
+ * Les tables musculosquelettiques et l'aérobie ont exactement cette forme : six
+ * tranches d'âge × cinq catégories. La rendre une seule fois évite que l'aérobie
+ * et le dos affichent la même chose de deux façons — et surtout qu'elles se
+ * mettent à diverger sur les bornes, comme le PDF et le dashboard l'ont déjà fait.
+ *
+ * Les plages viennent de `categoryCells`, donc des seuils réellement appliqués
+ * par `categorizeRaw`. Aucune borne n'est écrite ici.
+ */
+export function TableParAge({
+  test,
+  sex,
+  unite,
+  lowerIsBetter = false
+}: {
+  test: TestKey
+  sex: 'F' | 'M'
+  /** Suffixe affiché dans l'entête (« reps », « cm », « s »…). */
+  unite: string
+  lowerIsBetter?: boolean
+}) {
+  const rows = (CPAFLA_TABLES[test] ?? []).filter(r => r.sex === sex)
+  if (rows.length === 0) return null
+
+  return (
+    <div>
+      <SousTitre>
+        {sex === 'M' ? 'Hommes' : 'Femmes'} · {unite}
+      </SousTitre>
+      <div className="rounded-md border border-cream-dark bg-white overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-cream-dark/60">
+              <th className="py-1.5 pl-2 text-left font-medium text-marine/45 text-xs">Âge</th>
+              {ORDRE_CAT.map(c => (
+                <th key={c} className={`py-1.5 px-2 text-right text-xs font-semibold ${COULEUR_CAT[c]}`}>
+                  {CATEGORY_LABELS[c]}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => {
+              const cells = categoryCells(r.percentiles, lowerIsBetter)
+              return (
+                <tr key={r.ageMin} className="border-b border-cream-dark/50 last:border-0">
+                  <td className="py-1.5 pl-2 text-marine/70 tabular-nums whitespace-nowrap">
+                    {r.ageMin}–{r.ageMax}
+                  </td>
+                  {ORDRE_CAT.map(c => (
+                    <td
+                      key={c}
+                      className="py-1.5 px-2 text-right text-marine/70 tabular-nums whitespace-nowrap"
+                    >
+                      {cells[c]}
+                    </td>
+                  ))}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   )
 }
 
