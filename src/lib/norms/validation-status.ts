@@ -67,7 +67,7 @@ export const VALIDATION: ValidationEntree[] = [
     label: 'Composition corporelle — figures 7-4 / 7-5 / 7-6',
     statut: 'confirme',
     source:
-      'Vérifié contre Statistique Canada — Enquête canadienne sur les mesures de la santé, variables dérivées SFMDBCA, HWMDWSTA (tableau 14) et SFMDS5A (tableaux 20-21). La formule y est publiée à l’identique : (tour de taille × 1,5 + plis) ÷ 2,5. Les DEUX colonnes concordent — tour de taille sur 38 010 combinaisons, plis sur 46 426 — et deux tests les verrouillent. Le calcul reproduit aussi l’ancien logiciel sur les 6 bilans réels.',
+      'Statistique Canada — Enquête canadienne sur les mesures de la santé. L’organisme y publie la même méthode que le Guide du conseiller : le tour de taille et la somme des plis sont d’abord cotés séparément selon la plage d’IMC du client, puis combinés par la formule (tour de taille × 1,5 + plis) ÷ 2,5. Chaque plage de cotation a été comparée une à une à la référence publiée, sans écart, et le calcul redonne les mêmes résultats que l’ancien logiciel sur les six bilans vérifiés. Variables dérivées SFMDBCA, HWMDWSTA et SFMDS5A.',
     manque: null,
     entreDansLeScore: true
   },
@@ -103,7 +103,7 @@ export const VALIDATION: ValidationEntree[] = [
     id: 'pourcentage-gras-grille',
     label: '% de gras — grille de risque',
     statut: 'confirme',
-    source: 'Grille de Marie, reprise de son ancien logiciel (palier « moins de 70 ans », 5 zones).',
+    source: 'Reprise à l’identique de l’ancien logiciel : cinq zones, un seul palier d’âge (« moins de 70 ans »).',
     manque: null,
     entreDansLeScore: false
   },
