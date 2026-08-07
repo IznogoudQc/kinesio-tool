@@ -5,6 +5,7 @@ import { AIProviderCard } from './settings/AIProviderCard'
 import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
 import { SupplementLibraryCard, FoodListCard } from './settings/NutritionSettingsCards'
 import { TestCard, TestSection } from './settings/BilanTestCards'
+import { CompositionBaremes } from './settings/CompositionBaremes'
 import { settingsService } from '../services/settings'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
@@ -490,7 +491,9 @@ function BilanTestsTab() {
           titre="Composition corporelle"
           role="IMC, tour de taille et somme des 5 plis, combinés selon les mesures disponibles."
           validationId="composition-cpafla"
-        />
+        >
+          <CompositionBaremes />
+        </TestCard>
 
         <TestCard
           titre="Aptitude aérobie — VO2max"
