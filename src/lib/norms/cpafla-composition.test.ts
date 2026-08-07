@@ -123,3 +123,63 @@ test('sous IMC 18,5 — la borne haute du « 4 » est incluse', () => {
   assert.equal(cpaflaCompositionDetail({ sex: 'F', imc: 18, ct: 75, s5pc: 84 }).c, 4)
   assert.equal(cpaflaCompositionDetail({ sex: 'F', imc: 18, ct: 75, s5pc: 84.5 }).c, 3)
 })
+
+/**
+ * Tableau 14 (HWMDWSTA, « Tour de taille — Normes »), règles évaluées dans
+ * l'ordre 0 → 4, première atteinte — comme une spécification de variable dérivée.
+ *
+ * ⚠️ Coquille dans la page source : la ligne « 1 » répète chez la femme
+ * l'intervalle 79,9-87,1, identique à la ligne « 3 ». Lue au pied de la lettre,
+ * elle laisse 5 796 combinaisons sans aucune règle applicable — une femme d'IMC
+ * normal à plus de 87 cm ne serait couverte par rien. On lit donc « > 87 », par
+ * symétrie avec les hommes (« > 101 »), ce qui rend la spécification complète.
+ */
+function pointsTourDeTailleStatCan(sex: 'M' | 'F', bmi: number, w: number): number | null {
+  const M = sex === 'M'
+  if (bmi > 29.99 && ((M && w > 101.0) || (!M && w > 87.0))) return 0
+  if (bmi > 18.49 && bmi < 30.0 && ((M && w > 101.0) || (!M && w > 87.0))) return 1
+  if (bmi > 29.99 && ((M && w > 93.9 && w < 101.1) || (!M && w > 79.9 && w < 87.1))) return 2
+  if (
+    M
+      ? bmi < 18.5 || (bmi > 18.49 && bmi < 30.0 && w > 93.9 && w < 101.1)
+      : bmi < 18.5 || (bmi > 18.49 && bmi < 30.0 && w > 79.9 && w < 87.1)
+  ) {
+    return 3
+  }
+  if ((M && w > 0 && w < 94.0) || (!M && w > 0 && w < 80.0)) return 4
+  return null
+}
+
+test('colonne du tour de taille — accord total avec Statistique Canada (tableau 14)', () => {
+  // C'est LA colonne qui compte : Marie ne mesurant pas le mollet, la note de
+  // composition vaut exactement ces points. Nos 6 bilans réels n'en couvraient
+  // que 4 cases sur 36 ; cette spécification couvre le reste.
+  const ecarts: string[] = []
+  let compares = 0
+  for (const sex of ['M', 'F'] as const) {
+    for (let bmi = 16; bmi <= 42; bmi += 0.25) {
+      for (let w = 60; w <= 150; w += 0.5) {
+        const attendu = pointsTourDeTailleStatCan(sex, bmi, w)
+        assert.notEqual(attendu, null, `aucune règle pour ${sex} IMC ${bmi} TT ${w}`)
+        const nous = cpaflaCompositionDetail({ sex, imc: bmi, ct: w, s5pc: null }).b
+        compares++
+        if (nous !== attendu) ecarts.push(`${sex} IMC ${bmi} TT ${w} : ${nous} ≠ ${attendu}`)
+      }
+    }
+  }
+  assert.ok(compares > 35000, `couverture trop faible : ${compares}`)
+  assert.deepEqual(ecarts.slice(0, 5), [], `${ecarts.length} écarts avec Statistique Canada`)
+})
+
+test('tour de taille — les cases courantes que nos bilans ne couvraient pas', () => {
+  // Un homme en surpoids avec un tour de taille modéré : profil très fréquent,
+  // et aucun de nos 6 bilans ne le traverse. Confirmé à 3 points.
+  assert.equal(cpaflaCompositionDetail({ sex: 'M', imc: 27, ct: 97, s5pc: null }).b, 3)
+  assert.equal(cpaflaCompositionDetail({ sex: 'M', imc: 22, ct: 105, s5pc: null }).b, 1)
+  assert.equal(cpaflaCompositionDetail({ sex: 'F', imc: 27, ct: 84, s5pc: null }).b, 3)
+  assert.equal(cpaflaCompositionDetail({ sex: 'F', imc: 22, ct: 92, s5pc: null }).b, 1)
+  // Un tour de taille sous le seuil vaut 4, quel que soit l'IMC — sauf en
+  // maigreur, où la règle « IMC < 18,5 → 3 » passe avant.
+  assert.equal(cpaflaCompositionDetail({ sex: 'M', imc: 38, ct: 90, s5pc: null }).b, 4)
+  assert.equal(cpaflaCompositionDetail({ sex: 'M', imc: 17, ct: 80, s5pc: null }).b, 3)
+})

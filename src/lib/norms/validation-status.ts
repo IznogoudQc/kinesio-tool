@@ -67,7 +67,7 @@ export const VALIDATION: ValidationEntree[] = [
     label: 'Composition corporelle — figures 7-4 / 7-5 / 7-6',
     statut: 'confirme',
     source:
-      'Vérifié contre Statistique Canada — Enquête canadienne sur les mesures de la santé, variables dérivées SFMDBCA, HWMDWSTA et SFMDS5A (tableaux 20-21). La formule y est publiée à l’identique : (tour de taille × 1,5 + plis) ÷ 2,5. La colonne des plis concorde sur 46 426 combinaisons, un test le verrouille. Et le calcul reproduit l’ancien logiciel sur les 6 bilans réels disponibles.',
+      'Vérifié contre Statistique Canada — Enquête canadienne sur les mesures de la santé, variables dérivées SFMDBCA, HWMDWSTA (tableau 14) et SFMDS5A (tableaux 20-21). La formule y est publiée à l’identique : (tour de taille × 1,5 + plis) ÷ 2,5. Les DEUX colonnes concordent — tour de taille sur 38 010 combinaisons, plis sur 46 426 — et deux tests les verrouillent. Le calcul reproduit aussi l’ancien logiciel sur les 6 bilans réels.',
     manque: null,
     entreDansLeScore: true
   },

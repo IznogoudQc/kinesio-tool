@@ -7,7 +7,7 @@ santé** (Statistique Canada), qui spécifient les mêmes calculs que le Guide d
 conseiller — elles ont fermé les points 2 et 7. Chacun peut fausser un chiffre remis à
 un client — d'où l'intérêt de les fermer un par un.
 
-Mise à jour : 2026-08-04 · version publiée : v0.9.125
+Mise à jour : 2026-08-04 · version publiée : v0.9.126
 
 **Comment lire** : 🔴 fausse potentiellement un chiffre · 🟡 affichage ou libellé
 seulement · 🟢 décision prise, réversible si Marie change d'avis.
@@ -52,9 +52,22 @@ spécifie le même calcul, en citant le Guide du conseiller 3ᵉ éd.
 
 - La **formule**, à l'identique : `(tour de taille × 1,5 + plis) ÷ 2,5`.
 - Les **trois entrées** — tour de taille, IMC, somme des 5 plis.
-- La **colonne des plis** : concordance sur **46 426 combinaisons** d'IMC et de
-  somme, un test la verrouille en rejouant les conditions de StatCan.
+- La **colonne du tour de taille** (tableau 14, `HWMDWSTA`) : concordance sur
+  **38 010 combinaisons**. C'est la colonne décisive — Marie ne mesurant pas le
+  mollet, la note de composition vaut exactement ces points. Nos six bilans n'en
+  couvraient que **4 cases sur 36**.
+- La **colonne des plis** (tableaux 20-21, `SFMDS5A`) : concordance sur
+  **46 426 combinaisons**.
 - Le calcul **reproduit l'ancien logiciel** sur les 6 bilans réels disponibles.
+
+Deux tests rejouent les conditions de StatCan sur toute la grille.
+
+**Coquille repérée dans la page source** : au tableau 14, la ligne « 1 » répète
+chez la femme l'intervalle 79,9-87,1, identique à la ligne « 3 ». Lue au pied de
+la lettre, elle laisse **5 796 combinaisons sans aucune règle** — une femme d'IMC
+normal à plus de 87 cm ne serait couverte par rien. On lit donc « > 87 », par
+symétrie avec les hommes (« > 101 ») : la spécification redevient complète et
+concorde alors parfaitement avec nos tables.
 
 **Trois écarts de borne trouvés et corrigés** au passage — aucun n'était visible
 sur nos bilans, tous auraient pu fausser un cas limite :
