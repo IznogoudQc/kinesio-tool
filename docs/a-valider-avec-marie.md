@@ -1,10 +1,13 @@
 # À valider avec Marie et son ancien logiciel
 
 Liste vivante des points où l'app repose sur une **déduction**, une **source non
-vérifiée** ou une **décision réversible**. Chacun peut fausser un chiffre remis à
+vérifiée** ou une **décision réversible**. Source publique très utile pour ce
+projet : les **variables dérivées de l'Enquête canadienne sur les mesures de la
+santé** (Statistique Canada), qui spécifient les mêmes calculs que le Guide du
+conseiller — elles ont fermé les points 2 et 7. Chacun peut fausser un chiffre remis à
 un client — d'où l'intérêt de les fermer un par un.
 
-Mise à jour : 2026-08-04 · version publiée : v0.9.124
+Mise à jour : 2026-08-04 · version publiée : v0.9.125
 
 **Comment lire** : 🔴 fausse potentiellement un chiffre · 🟡 affichage ou libellé
 seulement · 🟢 décision prise, réversible si Marie change d'avis.
@@ -35,23 +38,36 @@ découpage à 5 niveaux ne laisse que des jeux confinés entre 114 et 122 mmHg �
 
 ---
 
-## 🟡 2. Figures 7-4 / 7-5 / 7-6 — composition corporelle
+## ✅ 2. Composition corporelle — RÉSOLU (2026-08-04)
 
-**Ce qu'on a mis** : les tables de `cpafla-composition.ts`, saisies d'après le
-Guide du conseiller.
+C'était le point le plus inquiétant : le seul barème entrant dans le score dont
+la transcription n'avait jamais été recontrôlée. **Fermé par une source
+publique**, trouvée par Nicholas.
 
-**Largement vérifié depuis (2026-08-04).** Les **entrées** sont confirmées par
-capture : `CPAFLABodyComposition(tour de taille, IMC, somme des 5 plis)` — nos
-trois colonnes, et la formule est identique hommes/femmes. Le calcul
-**reproduit l'ancien logiciel sur les 6 bilans
-réels** disponibles (IMC 29,6 à 38 · tour de taille 93 à 117 cm · les deux sexes).
+Statistique Canada — Enquête canadienne sur les mesures de la santé, variables
+dérivées `SFMDBCA`, `HWMDWSTA` et `SFMDS5A` (tableaux 20-21). Ce document
+spécifie le même calcul, en citant le Guide du conseiller 3ᵉ éd.
 
-**Ce qui reste** : les plages jamais traversées par ces bilans — IMC sous 18,5 et
-au-dessus de 35. Des photos des **figures 7-4 / 7-5 / 7-6** les fermeraient.
+**Ce qui est confirmé** :
 
-**La colonne des 5 plis reste non testée**, faute de mesure : Marie ne prend pas
-le mollet. Testé le 2026-08-04 — avec ou sans plis, bruts ou mis à l'échelle,
-les 6 bilans donnent le même score. Les données ne peuvent pas départager.
+- La **formule**, à l'identique : `(tour de taille × 1,5 + plis) ÷ 2,5`.
+- Les **trois entrées** — tour de taille, IMC, somme des 5 plis.
+- La **colonne des plis** : concordance sur **46 426 combinaisons** d'IMC et de
+  somme, un test la verrouille en rejouant les conditions de StatCan.
+- Le calcul **reproduit l'ancien logiciel** sur les 6 bilans réels disponibles.
+
+**Trois écarts de borne trouvés et corrigés** au passage — aucun n'était visible
+sur nos bilans, tous auraient pu fausser un cas limite :
+
+- L'IMC **35,0** appartenait chez nous à la bande 32,5-35,0 ; StatCan le place
+  dans la dernière (« BMI > 34,99 »). Cet écart touchait aussi les points d'IMC
+  et de tour de taille, pas seulement ceux des plis.
+- Une somme de **55 mm** (hommes) et de **84 mm** (femmes) sous IMC 18,5 valait
+  3 chez nous, 4 chez StatCan.
+
+**Leçon** : les six bilans réels ne prouvaient que les plages qu'ils traversent.
+La spécification publique a couvert le reste — y compris la colonne des plis,
+que Marie ne mesure jamais et qu'aucune donnée n'aurait pu départager.
 
 ---
 

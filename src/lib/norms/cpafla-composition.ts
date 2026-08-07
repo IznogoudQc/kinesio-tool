@@ -55,7 +55,7 @@ const ALL_CT = [{ from: NEG, inc: true, pts: 3, label: 'Toutes' }]
 // ── Figure 7-4 — HOMMES ───────────────────────────────────────────────────────
 const MEN: ImcBand[] = [
   { imcLt: 18.5, label: 'moins de 18,5', a: 3, ct: ALL_CT,
-    s5pc: [{ from: NEG, inc: true, pts: 3, label: '< 25' }, { from: 25, inc: true, pts: 4, label: '25–54' }, { from: 55, inc: true, pts: 3, label: '55–77' }, { from: 77, inc: false, pts: 2, label: '> 77' }] },
+    s5pc: [{ from: NEG, inc: true, pts: 3, label: '< 25' }, { from: 25, inc: true, pts: 4, label: '25–54' }, { from: 55, inc: false, pts: 3, label: '> 55–77' }, { from: 77, inc: false, pts: 2, label: '> 77' }] },
   { imcLt: 25, label: '18,5–24,9', a: 4,
     ct: [{ from: NEG, inc: true, pts: 4, label: '< 94' }, { from: 94, inc: true, pts: 3, label: '94–101' }, { from: 101, inc: false, pts: 1, label: '> 101' }],
     s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 54' }, { from: 54, inc: true, pts: 3, label: '54–77' }, { from: 77, inc: false, pts: 2, label: '> 77' }] },
@@ -65,7 +65,7 @@ const MEN: ImcBand[] = [
   { imcLt: 32.5, label: '30,0–32,4', a: 2,
     ct: [{ from: NEG, inc: true, pts: 4, label: '< 94' }, { from: 94, inc: true, pts: 2, label: '94–101' }, { from: 101, inc: false, pts: 0, label: '> 101' }],
     s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 54' }, { from: 54, inc: true, pts: 3, label: '54–77' }, { from: 77, inc: false, pts: 2, label: '> 77' }] },
-  { imcLt: 35.05, label: '32,5–35,0', a: 1,
+  { imcLt: 35, label: '32,5–34,9', a: 1,
     ct: [{ from: NEG, inc: true, pts: 4, label: '< 94' }, { from: 94, inc: true, pts: 2, label: '94–101' }, { from: 101, inc: false, pts: 0, label: '> 101' }],
     s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 54' }, { from: 54, inc: true, pts: 2, label: '54–77' }, { from: 77, inc: false, pts: 1, label: '> 77' }] },
   { imcLt: Number.POSITIVE_INFINITY, label: 'plus de 35,0', a: 0,
@@ -76,7 +76,7 @@ const MEN: ImcBand[] = [
 // ── Figure 7-5 — FEMMES ───────────────────────────────────────────────────────
 const WOMEN: ImcBand[] = [
   { imcLt: 18.5, label: 'moins de 18,5', a: 3, ct: ALL_CT,
-    s5pc: [{ from: NEG, inc: true, pts: 3, label: '< 46' }, { from: 46, inc: true, pts: 4, label: '46–83' }, { from: 84, inc: true, pts: 3, label: '84–113' }, { from: 113, inc: false, pts: 2, label: '> 113' }] },
+    s5pc: [{ from: NEG, inc: true, pts: 3, label: '< 46' }, { from: 46, inc: true, pts: 4, label: '46–83' }, { from: 84, inc: false, pts: 3, label: '> 84–113' }, { from: 113, inc: false, pts: 2, label: '> 113' }] },
   { imcLt: 25, label: '18,5–24,9', a: 4,
     ct: [{ from: NEG, inc: true, pts: 4, label: '< 80' }, { from: 80, inc: true, pts: 3, label: '80–87' }, { from: 87, inc: false, pts: 1, label: '> 87' }],
     s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 83' }, { from: 83, inc: true, pts: 3, label: '83–113' }, { from: 113, inc: false, pts: 2, label: '> 113' }] },
@@ -86,7 +86,7 @@ const WOMEN: ImcBand[] = [
   { imcLt: 32.5, label: '30,0–32,4', a: 2,
     ct: [{ from: NEG, inc: true, pts: 4, label: '< 80' }, { from: 80, inc: true, pts: 2, label: '80–87' }, { from: 87, inc: false, pts: 0, label: '> 87' }],
     s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 83' }, { from: 83, inc: true, pts: 3, label: '83–113' }, { from: 113, inc: false, pts: 2, label: '> 113' }] },
-  { imcLt: 35.05, label: '32,5–35,0', a: 1,
+  { imcLt: 35, label: '32,5–34,9', a: 1,
     ct: [{ from: NEG, inc: true, pts: 4, label: '< 80' }, { from: 80, inc: true, pts: 2, label: '80–87' }, { from: 87, inc: false, pts: 0, label: '> 87' }],
     s5pc: [{ from: NEG, inc: true, pts: 4, label: '< 83' }, { from: 83, inc: true, pts: 2, label: '83–113' }, { from: 113, inc: false, pts: 1, label: '> 113' }] },
   { imcLt: Number.POSITIVE_INFINITY, label: 'plus de 35,0', a: 0,

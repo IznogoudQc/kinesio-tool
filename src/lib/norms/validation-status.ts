@@ -65,11 +65,10 @@ export const VALIDATION: ValidationEntree[] = [
   {
     id: 'composition-cpafla',
     label: 'Composition corporelle — figures 7-4 / 7-5 / 7-6',
-    statut: 'a_confirmer',
+    statut: 'confirme',
     source:
-      'Guide du conseiller, 3ᵉ éd. — figures 7-4 (hommes), 7-5 (femmes), 7-6 (catégories), formule p. 7-18. Les ENTRÉES sont confirmées par capture : CPAFLABodyComposition(tour de taille, IMC, somme des 5 plis). Et le calcul reproduit l’ancien logiciel sur les 6 bilans réels disponibles (IMC 29,6 à 38 · tour de taille 93 à 117 cm · les deux sexes).',
-    manque:
-      'Des photos des figures pour couvrir les plages jamais traversées par nos bilans : IMC sous 18,5 et au-dessus de 35. La colonne des 5 plis reste non testée — Marie ne mesure pas le mollet, donc la somme n’existe presque jamais.',
+      'Vérifié contre Statistique Canada — Enquête canadienne sur les mesures de la santé, variables dérivées SFMDBCA, HWMDWSTA et SFMDS5A (tableaux 20-21). La formule y est publiée à l’identique : (tour de taille × 1,5 + plis) ÷ 2,5. La colonne des plis concorde sur 46 426 combinaisons, un test le verrouille. Et le calcul reproduit l’ancien logiciel sur les 6 bilans réels disponibles.',
+    manque: null,
     entreDansLeScore: true
   },
   {

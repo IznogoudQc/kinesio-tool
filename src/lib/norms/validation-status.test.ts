@@ -49,11 +49,16 @@ test('la PA systolique reste « déduit » tant que sa table manque', () => {
   assert.match(pa.manque ?? '', /Propriétés/)
 })
 
-test('la composition corporelle reste à confirmer — elle entre dans le score', () => {
+test('la composition corporelle est confirmée — et sa source le dit', () => {
+  // Passée à « confirmé » le 2026-08-04, contre Statistique Canada : formule
+  // publiée à l'identique, et colonne des plis vérifiée sur 46 426 combinaisons.
+  // Ce garde-fou exige que la source nomme la vérification — un statut
+  // « confirmé » sans preuve citée serait pire que « à confirmer ».
   const compo = VALIDATION.find(e => e.id === 'composition-cpafla')
   assert.ok(compo)
-  assert.notEqual(compo.statut, 'confirme')
+  assert.equal(compo.statut, 'confirme')
   assert.equal(compo.entreDansLeScore, true)
+  assert.match(compo.source, /Statistique Canada/)
 })
 
 test('les compteurs couvrent toutes les entrées, sans trou', () => {
