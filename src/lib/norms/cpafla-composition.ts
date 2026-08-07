@@ -279,6 +279,33 @@ export function s5pcForScoring(plis: {
  *
  * `nf` formate un nombre décimal ; injecté pour que ce module reste pur.
  */
+/**
+ * Ligne de méthode, sous la carte et sous le PDF — elle nomme les mesures
+ * **réellement** utilisées.
+ *
+ * Écrite en dur, elle a menti : elle annonçait « IMC et tour de taille » alors
+ * que les plis étaient redevenus actifs (repéré par Nicholas sur sa capture,
+ * 2026-08-04). Dérivée du calcul, elle ne peut plus se désynchroniser — et une
+ * seule implémentation sert les deux surfaces, comme pour l'explication.
+ */
+export function cpaflaCompositionMethod(detail: CpaflaCompositionDetail): string {
+  const base = 'Méthode du Physitest canadien (CPAFLA)'
+  switch (detail.combo) {
+    case 'imc+ct+s5pc':
+      return `${base} : IMC, tour de taille et somme des 5 plis.`
+    case 'imc+ct':
+      return `${base} : IMC et tour de taille.`
+    case 'imc+s5pc':
+      return `${base} : IMC et somme des 5 plis.`
+    case 'ct':
+      return `${base} : tour de taille seul.`
+    case 'imc':
+      return `${base} : IMC seul.`
+    default:
+      return `${base}.`
+  }
+}
+
 export function cpaflaCompositionExplanation(
   detail: CpaflaCompositionDetail,
   nf: (n: number, d: number) => string

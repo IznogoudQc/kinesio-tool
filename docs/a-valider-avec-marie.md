@@ -7,7 +7,7 @@ santé** (Statistique Canada), qui spécifient les mêmes calculs que le Guide d
 conseiller — elles ont fermé les points 2 et 7. Chacun peut fausser un chiffre remis à
 un client — d'où l'intérêt de les fermer un par un.
 
-Mise à jour : 2026-08-04 · version publiée : v0.9.126
+Mise à jour : 2026-08-04 · version publiée : v0.9.128
 
 **Comment lire** : 🔴 fausse potentiellement un chiffre · 🟡 affichage ou libellé
 seulement · 🟢 décision prise, réversible si Marie change d'avis.

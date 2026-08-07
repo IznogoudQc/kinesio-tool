@@ -19,7 +19,6 @@
 export type ReportSectionKey =
   | 'composition'
   | 'compositionTrend'
-  | 'risqueSante'
   | 'pourcentageGras'
   | 'mesures'
   | 'objectif'
@@ -52,11 +51,6 @@ export const REPORT_SECTIONS: ReportSectionDef[] = [
     key: 'compositionTrend',
     label: 'Évolution de la composition',
     hint: 'La courbe du score de composition dans le temps.'
-  },
-  {
-    key: 'risqueSante',
-    label: 'Risque pour la santé',
-    hint: 'IMC et tour de taille lus ensemble (tableau 4.4 du guide).'
   },
   {
     key: 'pourcentageGras',

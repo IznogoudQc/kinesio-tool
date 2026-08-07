@@ -108,14 +108,6 @@ export const VALIDATION: ValidationEntree[] = [
     entreDansLeScore: false
   },
   {
-    id: 'risque-sante-4-4',
-    label: 'Risque pour la santé — IMC et tour de taille',
-    statut: 'confirme',
-    source: 'Guide du conseiller, 3ᵉ éd., tableau 4.4 — adultes de 20 à 65 ans. Seuils recoupés avec Statistique Canada.',
-    manque: null,
-    entreDansLeScore: false
-  },
-  {
     id: 'tour-taille-autonome',
     label: 'Tour de taille jugé seul',
     statut: 'confirme',

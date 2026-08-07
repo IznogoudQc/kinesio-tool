@@ -7,12 +7,12 @@ import type { ReportSectionKey } from '../lib/report-sections'
  *
  * ── Pourquoi un contexte plutôt que des props ───────────────────────────────
  * Les cartes sont réparties dans une dizaine de fichiers et imbriquées à
- * plusieurs niveaux (`HealthRiskLine`, `CompositionCpaflaCard`, `MusculoRadar`…).
+ * plusieurs niveaux (`CompositionCpaflaCard`, `MusculoRadar`…).
  * Les traverser à coups de props obligerait chacune à porter deux paramètres
  * qui ne la concernent pas.
  *
  * ── Et surtout : l'œil ne doit JAMAIS partir chez le client ─────────────────
- * `HealthRiskLine` et `TrainingZones` sont partagés avec le document HTML remis
+ * `TrainingZones` est partagé avec le document HTML remis
  * au client. Sans fournisseur, `ReportEye` ne rend **rien** — le document ne
  * peut donc pas afficher un bouton de réglage, même par accident. C'est plus sûr
  * qu'un drapeau qu'on oublierait de passer.

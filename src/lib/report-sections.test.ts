@@ -24,7 +24,7 @@ test('une section par carte du dashboard, sans doublon', () => {
   // thèmes. Son exemple — masquer « Risque pour la santé » seul — ne marchait
   // pas avec la découpe grossière.
   assert.equal(new Set(REPORT_SECTIONS.map(s => s.key)).size, REPORT_SECTIONS.length)
-  for (const attendue of ['risqueSante', 'pourcentageGras', 'composition', 'cardio', 'pressionArterielle']) {
+  for (const attendue of ['pourcentageGras', 'composition', 'cardio', 'pressionArterielle']) {
     assert.ok(REPORT_SECTIONS.some(s => s.key === attendue), attendue + ' manquante')
   }
 })

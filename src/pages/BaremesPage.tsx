@@ -300,9 +300,9 @@ export function BaremesPage() {
       <FcReposTable />
 
       <h2>6 · Risque cardio-métabolique</h2>
-      <p className="src">Risque IMC + tour de taille (tableau 4.4) <Etat id="risque-sante-4-4" /> · Tour de taille jugé
-        seul <Etat id="tour-taille-autonome" /> — Statistique Canada, variable dérivée <b>HWMDWSTA</b> ; cotes 4 / 3 / 1
-        (la cote 2 n'existe pas dans ce test) et borne haute incluse. Le ratio taille/hanche reste sur les seuils OMS.</p>
+      <p className="src">Tour de taille <Etat id="tour-taille-autonome" /> — Statistique Canada, variable dérivée
+        <b> HWMDWSTA</b> ; cotes 4 / 3 / 1 (la cote 2 n'existe pas dans ce test) et borne haute incluse. Le ratio
+        taille/hanche reste sur les seuils OMS.</p>
       <div className="baro">
         <table>
           <thead><tr><th>Mesure</th><th className="c5">Faible</th><th className="c2">Élevé</th><th className="c1">Très élevé</th></tr></thead>

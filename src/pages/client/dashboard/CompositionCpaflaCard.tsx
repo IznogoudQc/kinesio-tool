@@ -5,6 +5,7 @@ import {
   cpaflaCompositionBareme,
   USE_CALF_SKINFOLD,
   cpaflaCompositionExplanation,
+  cpaflaCompositionMethod,
   type CpaflaCompositionDetail
 } from '../../../lib/norms/cpafla-composition'
 import { ReportEye } from '../../../components/ReportEye'
@@ -99,7 +100,7 @@ export function CompositionCpaflaCard({ score, category, detail, imc, ct, s5pc, 
       {showBareme && <BaremeTable sex={sex} detail={detail} />}
 
       <p className="text-marine/40 text-xs mt-2">
-        Méthode du Physitest canadien (CPAFLA) : IMC et tour de taille.
+        {cpaflaCompositionMethod(detail)}
       </p>
     </div>
   )
