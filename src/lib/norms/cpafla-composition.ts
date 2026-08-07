@@ -111,7 +111,14 @@ export interface CpaflaCompositionInput {
 export type CpaflaCompositionCombo = 'imc+ct+s5pc' | 'imc+ct' | 'imc+s5pc' | 'ct' | 'imc' | null
 
 export interface CpaflaCompositionDetail {
+  /** Cote entière 0-4 — c'est elle qui entre dans le score global. */
   score: number | null
+  /**
+   * Résultat publié, arrondi à **une décimale** (Statistique Canada, tableau 16).
+   * Identique à `score` sauf quand les trois mesures sont là : la moyenne
+   * pondérée peut alors valoir 3,6 ou 1,4. `null` si rien n'est calculable.
+   */
+  valeur: number | null
   combo: CpaflaCompositionCombo
   imcBandLabel: string | null
   a: number | null
@@ -130,7 +137,7 @@ const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFin
 
 /** Détail du calcul — sert à **expliquer** la note et à **surligner** le barème. */
 export function cpaflaCompositionDetail(input: CpaflaCompositionInput): CpaflaCompositionDetail {
-  const empty: CpaflaCompositionDetail = { score: null, combo: null, imcBandLabel: null, a: null, b: null, c: null, raw: null, imcIndex: null, ctIndex: null, s5pcIndex: null }
+  const empty: CpaflaCompositionDetail = { score: null, valeur: null, combo: null, imcBandLabel: null, a: null, b: null, c: null, raw: null, imcIndex: null, ctIndex: null, s5pcIndex: null }
   const { sex } = input
   if (sex !== 'F' && sex !== 'M') return empty
   const bands = sex === 'M' ? MEN : WOMEN
@@ -151,12 +158,25 @@ export function cpaflaCompositionDetail(input: CpaflaCompositionInput): CpaflaCo
 
   if (hasImc && hasCt && hasS5) {
     const raw = ((b as number) * 1.5 + (c as number)) / 2.5
-    return { ...base, score: Math.round(raw), combo: 'imc+ct+s5pc', raw }
+    // Statistique Canada (tableau 16) : `Round((B × 1,5 + C) / 2,5, .1)` — le
+    // résultat est une valeur à UNE décimale, pas un entier. `score` reste la
+    // cote entière, car c'est elle qui entre dans le score global (moyenne de
+    // cotes entières, ADR 0033) ; `valeur` porte le chiffre publié.
+    //
+    // Les deux s'accordent toujours : les bornes de classification tombent sur
+    // les demis (< 0,5 · < 1,5 …) et `Math.round` arrondit le demi vers le haut.
+    return {
+      ...base,
+      score: Math.round(raw),
+      valeur: Math.round(raw * 10) / 10,
+      combo: 'imc+ct+s5pc',
+      raw
+    }
   }
-  if (hasImc && hasCt) return { ...base, score: b, combo: 'imc+ct', c: null, s5pcIndex: null, raw: null }
-  if (hasImc && hasS5) return { ...base, score: c, combo: 'imc+s5pc', b: null, ctIndex: null, raw: null }
-  if (hasCt) return { ...base, score: b, combo: 'ct', c: null, s5pcIndex: null, raw: null }
-  return { ...base, score: a, combo: 'imc', b: null, c: null, ctIndex: null, s5pcIndex: null, raw: null }
+  if (hasImc && hasCt) return { ...base, score: b, valeur: b, combo: 'imc+ct', c: null, s5pcIndex: null, raw: null }
+  if (hasImc && hasS5) return { ...base, score: c, valeur: c, combo: 'imc+s5pc', b: null, ctIndex: null, raw: null }
+  if (hasCt) return { ...base, score: b, valeur: b, combo: 'ct', c: null, s5pcIndex: null, raw: null }
+  return { ...base, score: a, valeur: a, combo: 'imc', b: null, c: null, ctIndex: null, s5pcIndex: null, raw: null }
 }
 
 /** Score de composition corporelle CPAFLA (0-4), ou `null`. */
@@ -229,7 +249,7 @@ export function cpaflaCompositionBareme(sex: 'F' | 'M'): CpaflaBaremeRow[] {
  * plis (2011-08-17) et il donne **2 / 4 par les deux voies**. Aucun score
  * historique ne change.
  */
-export const USE_CALF_SKINFOLD = false
+export const USE_CALF_SKINFOLD = true
 
 /**
  * Somme des cinq plis retenue pour la cotation, ou `null` si elle ne s'applique
@@ -266,7 +286,10 @@ export function cpaflaCompositionExplanation(
   if (detail.score === null || detail.combo === null) return null
   switch (detail.combo) {
     case 'imc+ct+s5pc':
-      return `Calcul CPAFLA : (tour de taille ${detail.b} × 1,5 + plis ${detail.c}) ÷ 2,5 = ${nf(detail.raw as number, 2)} → arrondi à ${detail.score}.`
+      // Le résultat publié est à une décimale (StatCan, tableau 16). On montre
+      // la valeur, pas la cote entière : dire « arrondi à 4 » quand le calcul
+      // donne 3,6 masquerait justement ce que la formule apporte.
+      return `Calcul CPAFLA : (tour de taille ${detail.b} × 1,5 + plis ${detail.c}) ÷ 2,5 = ${nf(detail.valeur as number, 1)} sur 4.`
     case 'imc+ct':
       // Formulation neutre : c'est l'une des cinq combinaisons prévues par le
       // guide (p. 7-17/18), pas une mesure oubliée. L'ancien texte parlait de

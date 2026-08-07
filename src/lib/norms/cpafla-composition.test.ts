@@ -183,3 +183,39 @@ test('tour de taille — les cases courantes que nos bilans ne couvraient pas', 
   assert.equal(cpaflaCompositionDetail({ sex: 'M', imc: 38, ct: 90, s5pc: null }).b, 4)
   assert.equal(cpaflaCompositionDetail({ sex: 'M', imc: 17, ct: 80, s5pc: null }).b, 3)
 })
+
+test('résultat publié à une décimale (Statistique Canada, tableau 16)', () => {
+  // Round((B × 1,5 + C) / 2,5, .1) — une décimale, pas un entier. `score` reste
+  // la cote entière, qui seule entre dans le score global.
+  const d = cpaflaCompositionDetail({ sex: 'F', imc: 25.8, ct: 91, s5pc: 40 })
+  assert.equal(d.combo, 'imc+ct+s5pc')
+  assert.equal(d.b, 1)
+  assert.equal(d.c, 4)
+  assert.equal(d.valeur, 2.2) // (1×1,5 + 4) ÷ 2,5
+  assert.equal(d.score, 2)
+})
+
+test('la cote entière et la classification ne se contredisent jamais', () => {
+  // Les bornes de classification tombent sur les demis (< 0,5 · < 1,5 …) et
+  // Math.round arrondit le demi vers le haut : les deux coïncident toujours.
+  // Si ce n'était pas le cas, la carte afficherait 3,6 « Très bien » pendant que
+  // le score global compterait 4.
+  for (const sex of ['M', 'F'] as const) {
+    for (let b = 0; b <= 4; b++) {
+      for (let c = 0; c <= 4; c++) {
+        const brut = (b * 1.5 + c) / 2.5
+        const attendu = brut < 0.5 ? 0 : brut < 1.5 ? 1 : brut < 2.5 ? 2 : brut < 3.5 ? 3 : 4
+        assert.equal(Math.round(brut), attendu, `${sex} B=${b} C=${c} → ${brut}`)
+      }
+    }
+  }
+})
+
+test('sans les cinq plis, la valeur reste entière', () => {
+  // Marie ne mesure pas le mollet : c'est le cas courant. Aucune décimale ne
+  // doit apparaître là où la note vaut simplement la colonne B.
+  const d = cpaflaCompositionDetail({ sex: 'M', imc: 29.6, ct: 93, s5pc: null })
+  assert.equal(d.combo, 'imc+ct')
+  assert.equal(d.valeur, 4)
+  assert.equal(d.score, 4)
+})

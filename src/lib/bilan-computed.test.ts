@@ -189,11 +189,14 @@ test('CPAFLA — composition corporelle : exemple du guide (femme) → Acceptabl
   assert.equal(r.composition.category, 'ACCEPTABLE')
 })
 
-test('CPAFLA — les 5 plis ne changent PAS la note, même fournis', () => {
-  // Le vrai garde-fou de la décision : un cas où les deux voies divergent.
-  // Femme IMC 25,8 · CT 91 (> 87 → colonne B = 1) avec des plis très minces
-  // (somme 40 mm → colonne C = 4). L'ancienne formule aurait donné
-  // (1×1,5 + 4)/2,5 = 2,2 → 2. La règle actuelle doit donner 1.
+test('CPAFLA — les 5 plis, quand ils sont là, changent bien la note', () => {
+  // Rallumés le 2026-08-04 : Statistique Canada (tableau 16) applique la
+  // formule complète dès que les trois mesures existent. Cas où les deux voies
+  // divergent — femme IMC 25,8 · CT 91 (> 87 → B = 1) avec des plis très minces
+  // (somme 40 mm → C = 4) : (1×1,5 + 4)/2,5 = 2,2 → cote 2, contre 1 sans plis.
+  //
+  // Marie ne mesurant pas le mollet, ce cas reste rare en pratique — mais le
+  // calcul doit être juste le jour où elle le prend.
   const p: BilanProfile = { age: 50, sex: 'F', norms: 'cpafla' }
   const avecPlis = computeBilan(
     {
@@ -209,9 +212,13 @@ test('CPAFLA — les 5 plis ne changent PAS la note, même fournis', () => {
     p
   )
   const sansPlis = computeBilan({ taille_cm: 168, poids_kg: 72.7, tour_taille_cm: 91 }, p)
-  assert.equal(avecPlis.composition.score, 1, 'les plis ne doivent plus entrer dans la note')
-  assert.equal(sansPlis.composition.score, 1)
-  assert.equal(avecPlis.composition.score, sansPlis.composition.score)
+  assert.equal(avecPlis.composition.score, 2, 'les plis doivent entrer dans la note')
+  assert.equal(sansPlis.composition.score, 1, 'sans les cinq plis, la note vaut la colonne B')
+  assert.notEqual(
+    avecPlis.composition.score,
+    sansPlis.composition.score,
+    'ce cas doit départager les deux voies, sinon il ne prouve rien'
+  )
 })
 
 test('CPAFLA — composition sans plis : IMC + tour de taille (colonne B)', () => {

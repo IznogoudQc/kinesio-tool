@@ -59,7 +59,12 @@ export function CompositionCpaflaCard({ score, category, detail, imc, ct, s5pc, 
         <p className="dash-eyebrow text-gold-dark">Composition corporelle</p>
         <div className="flex items-center gap-3">
           <span className="flex items-baseline gap-2">
-            <span className="text-marine font-bold text-2xl tabular-nums leading-none">{nf(score, 1)}</span>
+            {/* Le résultat publié est à UNE décimale (StatCan, tableau 16) : avec
+                les trois mesures, la moyenne pondérée vaut 3,6 et non 4. La cote
+                entière, elle, reste ce qui entre dans le score global. */}
+            <span className="text-marine font-bold text-2xl tabular-nums leading-none">
+              {nf(detail.valeur ?? score, 1)}
+            </span>
             <span className="text-marine/40 text-xs">/ 4</span>
             {category && <span className={`text-sm font-semibold ${CATEGORY_COLORS[category]}`}>{CATEGORY_LABELS[category]}</span>}
           </span>
