@@ -121,7 +121,7 @@ export const VALIDATION: ValidationEntree[] = [
     label: 'Tour de taille jugé seul',
     statut: 'confirme',
     source:
-      'Fenêtre Propriétés de l’ancien logiciel, test « Circonférence de la taille » (#20), onglet Classification, tous les âges. Hommes < 94 → 4, < 102 → 3, reste → 1. Femmes < 80 → 4, < 90 → 3, reste → 1. Les cotes sautent le 2, et le seuil féminin est 90 — pas 88 comme le référentiel Santé Canada.',
+      'Statistique Canada — Enquête canadienne sur les mesures de la santé, variable dérivée HWMDWSTA. Hommes : moins de 94 → 4, 94 à 101 → 3, au-delà → 1. Femmes : moins de 80 → 4, 80 à 87 → 3, au-delà → 1. Borne haute incluse, et les cotes sautent le 2. Référence publique, préférée à la fenêtre Propriétés de l’ancien logiciel qui montrait 90 chez les femmes.',
     manque: null,
     entreDansLeScore: false
   },

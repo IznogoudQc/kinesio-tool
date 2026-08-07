@@ -125,65 +125,61 @@ export function getClinicalRange(test: TestKey, sex: 'F' | 'M'): NormRange | nul
   }
 }
 
-/** Cote 0-4 de la **pression artérielle systolique** telle que l'utilise le score
- *  « Santé et condition physique globale » de l'ancien logiciel.
- *
- *  ⚠️ **PROVISOIRE — barème non confirmé.** Déduit par rétro-calcul sur 4 bilans
- *  réels (voir ADR 0030) : 112 → 4, 113 → 4, 122 → 0, 129 → 0. La règle « < 120 mmHg
- *  → 4, sinon 0 » est la plus simple compatible avec ces quatre points, et 120 est
- *  la borne clinique standard de la PA optimale.
- *
- *  Ce qu'on ignore encore : la frontière exacte entre 113 et 122, et l'existence
- *  éventuelle de cotes intermédiaires (1, 2, 3). À remplacer dès que Marie fournit
- *  la table de classification du test « Pression artérielle systolique ».
- *
- *  `null` si la mesure est absente → la composante est exclue du score global. */
 /**
- * Barème du **tour de taille** de l'ancien logiciel — test « Circonférence de la
- * taille » (#20, cm), onglet Classification, « Tous les âges ».
+ * Barème du **tour de taille**, trois niveaux.
  *
- * Relevé sur capture de la fenêtre Propriétés (Nicholas, 2026-08-04) :
+ * Source : Statistique Canada — Enquête canadienne sur les mesures de la santé,
+ * variable dérivée **HWMDWSTA** (« Tour de taille — normes »). Retenue plutôt
+ * que la fenêtre Propriétés de l'ancien logiciel pour avoir une **référence
+ * publique et citable** (décision de Nicholas, 2026-08-04).
  *
- * | | Mâle | Femelle |
+ * | | Hommes | Femmes |
  * |---|---|---|
- * | 4 Excellent            | < 94  | < 80 |
- * | 3 Risque potentiel     | < 102 | < 90 |
- * | 1 Risque considérable  | reste | reste |
+ * | 4 Excellent            | < 94 cm      | < 80 cm     |
+ * | 3 Risque potentiel     | 94 à 101 cm  | 80 à 87 cm  |
+ * | 1 Risque considérable  | plus de 101  | plus de 87  |
  *
- * Trois niveaux, et les cotes **sautent le 2** — c'est ainsi que la fenêtre
- * l'imprime. Ne pas « normaliser » en 4/3/2 : ce serait inventer une cote que
- * l'ancien logiciel n'attribue jamais.
+ * ⚠️ Deux détails qui se perdent facilement :
+ *
+ * 1. La borne haute est **inclusive** : 101 cm reste « Risque potentiel », c'est
+ *    au-delà que la classe change. Écrire `< 102` marcherait sur des entiers mais
+ *    classerait 101,5 cm du mauvais côté.
+ * 2. Les cotes **sautent le 2**. La fenêtre de l'ancien logiciel imprime 4 / 3 / 1 ;
+ *    ne pas « normaliser » en 4/3/2, ce serait inventer une cote.
  *
  * ⚠️ Ce barème est **distinct** de la cote de tour de taille utilisée par
  * l'indice de santé du dos et l'aptitude musculosquelettique, qui vient des
  * tables de composition (fig. 7-4/7-5) et dépend de la bande d'IMC — voir
- * `cpaflaWaistPoints`. Les deux coexistent dans l'ancien logiciel ; les
- * confondre casserait une parité vérifiée sur 6 bilans.
+ * `cpaflaWaistPoints`. Les confondre casserait une parité vérifiée sur 6 bilans.
  *
- * La case « Des résultats plus bas indique une amélioration » est cochée.
+ * Plus bas = mieux.
  */
-export interface WaistRatingLegacy {
-  /** Cote 0-4 telle qu'imprimée : 4, 3 ou 1. Jamais 2, jamais 0. */
+export interface WaistRating {
+  /** Cote 0-4 : 4, 3 ou 1. Jamais 2, jamais 0. */
   cote: number
-  /** Libellé exact de la fenêtre Propriétés. */
   label: string
 }
 
-/** Seuils par sexe : [borne « Excellent », borne « Risque potentiel »] en cm. */
-export const WAIST_LEGACY_BOUNDS: Record<'M' | 'F', [number, number]> = {
-  M: [94, 102],
-  F: [80, 90]
+/**
+ * Seuils par sexe, en cm : `[borne « Excellent », HAUT de « Risque potentiel »]`.
+ *
+ * La seconde valeur est **incluse** dans la classe moyenne — 101 cm est encore
+ * « Risque potentiel » chez l'homme, 87 cm chez la femme.
+ */
+export const WAIST_BOUNDS: Record<'M' | 'F', [number, number]> = {
+  M: [94, 101],
+  F: [80, 87]
 }
 
-export function waistRatingLegacy(
+export function waistRating(
   value: number | null | undefined,
   sex: 'F' | 'M' | null | undefined
-): WaistRatingLegacy | null {
+): WaistRating | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
   if (sex !== 'M' && sex !== 'F') return null
-  const [excellent, potentiel] = WAIST_LEGACY_BOUNDS[sex]
+  const [excellent, hautPotentiel] = WAIST_BOUNDS[sex]
   if (value < excellent) return { cote: 4, label: 'Excellent' }
-  if (value < potentiel) return { cote: 3, label: 'Risque potentiel' }
+  if (value <= hautPotentiel) return { cote: 3, label: 'Risque potentiel' }
   return { cote: 1, label: 'Risque considérable' }
 }
 
@@ -197,17 +193,17 @@ export function waistRatingExplanation(
   value: number | null | undefined,
   sex: 'F' | 'M' | null | undefined
 ): string | null {
-  const r = waistRatingLegacy(value, sex)
+  const r = waistRating(value, sex)
   if (!r || sex !== 'M' && sex !== 'F') return null
   const cm = (value as number).toLocaleString('fr-CA', { maximumFractionDigits: 1 })
-  const [excellent, potentiel] = WAIST_LEGACY_BOUNDS[sex]
+  const [excellent, potentiel] = WAIST_BOUNDS[sex]
   if (r.cote === 4) return `${cm} cm, sous la barre des ${excellent} cm.`
-  if (r.cote === 3) return `${cm} cm : au-dessus de ${excellent} cm, mais encore sous ${potentiel} cm.`
+  if (r.cote === 3) return `${cm} cm : au-dessus de ${excellent} cm, sans dépasser ${potentiel} cm.`
   return `${cm} cm, au-delà de ${potentiel} cm.`
 }
 
 /**
- * Catégorie du tour de taille, dérivée de `waistRatingLegacy`.
+ * Catégorie du tour de taille, dérivée de `waistRating`.
  *
  * Le barème n'a que **trois** niveaux et saute la cote 2 — il ne peut donc pas
  * passer par la mécanique des percentiles, qui en produit toujours cinq. D'où
@@ -218,17 +214,30 @@ export function waistRatingExplanation(
  * Le mapping cote → catégorie est direct : notre échelle est celle de l'ancien
  * logiciel (< 0,5 À améliorer … ≥ 3,5 Excellent), confirmée par capture.
  */
-export function waistCategoryLegacy(
+export function waistCategory(
   value: number | null | undefined,
   sex: 'F' | 'M' | null | undefined
 ): Category | null {
-  const r = waistRatingLegacy(value, sex)
+  const r = waistRating(value, sex)
   if (!r) return null
   if (r.cote === 4) return 'EXCELLENT'
   if (r.cote === 3) return 'TRES_BIEN'
   return 'ACCEPTABLE' // cote 1 — « Risque considérable »
 }
 
+/** Cote 0-4 de la **pression artérielle systolique** telle que l'utilise le score
+ *  « Santé et condition physique globale » de l'ancien logiciel.
+ *
+ *  ⚠️ **PROVISOIRE — barème non confirmé.** Déduit par rétro-calcul sur 4 bilans
+ *  réels (voir ADR 0030) : 112 → 4, 113 → 4, 122 → 0, 129 → 0. La règle « < 120 mmHg
+ *  → 4, sinon 0 » est la plus simple compatible avec ces quatre points, et 120 est
+ *  la borne clinique standard de la PA optimale.
+ *
+ *  Ce qu'on ignore encore : la frontière exacte entre 113 et 122, et l'existence
+ *  éventuelle de cotes intermédiaires (1, 2, 3). À remplacer dès que Marie fournit
+ *  la table de classification du test « Pression artérielle systolique ».
+ *
+ *  `null` si la mesure est absente → la composante est exclue du score global. */
 export function systolicRatingLegacy(value: number | null | undefined): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
   return value < 120 ? 4 : 0

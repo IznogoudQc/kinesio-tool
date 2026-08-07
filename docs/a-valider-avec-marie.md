@@ -4,7 +4,7 @@ Liste vivante des points où l'app repose sur une **déduction**, une **source n
 vérifiée** ou une **décision réversible**. Chacun peut fausser un chiffre remis à
 un client — d'où l'intérêt de les fermer un par un.
 
-Mise à jour : 2026-08-04 · version publiée : v0.9.120
+Mise à jour : 2026-08-04 · version publiée : v0.9.124
 
 **Comment lire** : 🔴 fausse potentiellement un chiffre · 🟡 affichage ou libellé
 seulement · 🟢 décision prise, réversible si Marie change d'avis.
@@ -115,22 +115,32 @@ faudra le réintégrer, et **les scores changeront**. La structure le prévoit d
 
 ## ✅ 7. Tour de taille jugé seul — RÉSOLU (2026-08-04)
 
-Marie a fourni la fenêtre Propriétés du test « Circonférence de la taille »
-(#20), onglet Classification, tous les âges :
+**Source retenue** : Statistique Canada — Enquête canadienne sur les mesures de
+la santé, variable dérivée **HWMDWSTA**. Choisie plutôt que la fenêtre
+Propriétés de l'ancien logiciel pour avoir une référence **publique et
+citable** (décision de Nicholas).
 
 | | Hommes | Femmes |
 |---|---|---|
-| **4** Excellent | < 94 cm | < 80 cm |
-| **3** Risque potentiel | < 102 cm | < 90 cm |
-| **1** Risque considérable | reste | reste |
+| **4** Excellent | moins de 94 cm | moins de 80 cm |
+| **3** Risque potentiel | 94 à 101 cm | 80 à 87 cm |
+| **1** Risque considérable | plus de 101 cm | plus de 87 cm |
 
-Deux pièges évités en encodant **tel quel** : les cotes **sautent le 2**, et le
-seuil féminin est **90** et non 88. Le référentiel Santé Canada que j'avais
-proposé aurait donc été faux pour les femmes.
+Deux détails qui se perdent facilement, tous deux verrouillés par un test :
 
-L'ancienne table Santé Canada est supprimée. Ce barème est distinct de la cote
-de tour de taille utilisée par l'indice du dos et le musculo, qui vient des
-tables de composition — les deux coexistent dans son logiciel.
+- La **borne haute est incluse** — 101 cm reste « Risque potentiel ». Écrire
+  `< 102` marcherait sur des entiers mais classerait 101,5 cm du mauvais côté.
+- Les cotes **sautent le 2**. C'est ainsi que la fenêtre de l'ancien logiciel
+  l'imprime ; normaliser en 4/3/2 inventerait une cote.
+
+**Divergence assumée** : la fenêtre de l'ancien logiciel montrait **90** chez les
+femmes, Statistique Canada dit **87**. On suit la source publique. Concrètement,
+une cliente entre 88 et 90 cm est classée « Risque considérable » ici et
+« Risque potentiel » dans son logiciel.
+
+L'ancienne table Santé Canada (qui disait 88) est supprimée. Ce barème reste
+distinct de la cote de tour de taille utilisée par l'indice du dos et le
+musculo, qui vient des tables de composition — les deux coexistent.
 
 ---
 

@@ -150,19 +150,18 @@ test('IMC — agnostique âge/sexe, lowerIsBetter', () => {
   assert.equal(getCategorization('bmi', 32, 50, 'M'), 'A_AMELIORER')
 })
 
-test('Tour de taille — barème de l’ancien logiciel de Marie', () => {
-  // Remplace les seuils Santé Canada le 2026-08-04 (capture de la fenêtre
-  // Propriétés, test #20). Trois niveaux, la cote 2 est sautée :
-  //   H : < 94 → 4 Excellent · < 102 → 3 Risque potentiel · reste → 1 Risque considérable
-  //   F : < 80 → 4           · < 90  → 3                  · reste → 1
+test('Tour de taille — normes Statistique Canada (HWMDWSTA)', () => {
+  // Trois niveaux, la cote 2 est sautée. Borne haute INCLUSE :
+  //   H : < 94 → 4 Excellent · 94 à 101 → 3 Risque potentiel · au-delà → 1
+  //   F : < 80 → 4           · 80 à 87  → 3                  · au-delà → 1
   assert.equal(getCategorization('waistCircumference', 93, 40, 'M'), 'EXCELLENT')
   assert.equal(getCategorization('waistCircumference', 94, 40, 'M'), 'TRES_BIEN')
-  assert.equal(getCategorization('waistCircumference', 105, 40, 'M'), 'ACCEPTABLE')
+  assert.equal(getCategorization('waistCircumference', 101, 40, 'M'), 'TRES_BIEN')
+  assert.equal(getCategorization('waistCircumference', 102, 40, 'M'), 'ACCEPTABLE')
   assert.equal(getCategorization('waistCircumference', 79, 40, 'F'), 'EXCELLENT')
-  // 85 cm chez une femme valait ACCEPTABLE sous Santé Canada ; le barème de
-  // Marie le classe un cran plus haut, sa borne étant à 90 et non 88.
-  assert.equal(getCategorization('waistCircumference', 85, 40, 'F'), 'TRES_BIEN')
-  assert.equal(getCategorization('waistCircumference', 90, 40, 'F'), 'ACCEPTABLE')
+  assert.equal(getCategorization('waistCircumference', 87, 40, 'F'), 'TRES_BIEN')
+  // La plage que ni les anciens tests ACSM ni ceux de who.ts ne sondaient.
+  assert.equal(getCategorization('waistCircumference', 88, 40, 'F'), 'ACCEPTABLE')
 })
 
 test('Tour de taille — l’âge n’intervient pas (« Tous les âges »)', () => {

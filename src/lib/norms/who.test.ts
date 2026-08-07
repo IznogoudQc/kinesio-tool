@@ -1,20 +1,21 @@
 /**
  * Tests du risque cardio-métabolique — tour de taille, ratio T/H.
  *
- * Depuis le 2026-08-04, le **tour de taille** suit le barème de l'ancien
- * logiciel de Marie (voir `clinical.ts`) ; seul le **ratio** reste sur les
- * seuils OMS 2008.
+ * Depuis le 2026-08-04, le **tour de taille** suit les normes de Statistique
+ * Canada (variable HWMDWSTA — voir `clinical.ts`) ; seul le **ratio** reste sur
+ * les seuils OMS 2008.
  *
- * À noter : aucun test d'origine ne sondait 88-89 cm chez les femmes, si bien
- * que le passage du seuil de 88 à 90 leur était invisible. Les tests ajoutés en
- * fin de fichier comparent désormais la barre à la cote sur toute la plage.
+ * À noter : aucun test d'origine ne sondait 88-89 cm chez les femmes ni la borne
+ * haute exacte, si bien qu'un changement de seuil leur restait invisible. Les
+ * tests ajoutés en fin de fichier comparent la barre à la cote sur toute la
+ * plage, et vérifient que la borne haute est bien inclusive.
  *
  * Lancer : `node --test src/lib/norms/who.test.ts`
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { calculateRiskBarPosition, getRatioRisk, getWaistRisk, WAIST_RISK_LABELS, WHO_RISK_LABELS } from './who.ts'
-import { waistRatingLegacy, WAIST_LEGACY_BOUNDS } from './clinical.ts'
+import { waistRating, WAIST_BOUNDS } from './clinical.ts'
 
 // ── Tour de taille — Hommes ──────────────────────────────────────────────────
 test('Waist H 80 → low', () => {
@@ -108,7 +109,7 @@ test('la barre du tour de taille et la cote disent la même chose', () => {
   for (const sex of ['M', 'F'] as const) {
     for (let cm = 60; cm <= 160; cm += 0.5) {
       const barre = getWaistRisk(cm, sex)
-      const cote = waistRatingLegacy(cm, sex)
+      const cote = waistRating(cm, sex)
       assert.ok(barre && cote)
       assert.equal(
         WAIST_RISK_LABELS[barre.level],
@@ -121,20 +122,21 @@ test('la barre du tour de taille et la cote disent la même chose', () => {
 
 test('les bornes de la barre viennent du barème, pas d’une copie', () => {
   for (const sex of ['M', 'F'] as const) {
-    const [excellent, potentiel] = WAIST_LEGACY_BOUNDS[sex]
+    const [excellent, hautPotentiel] = WAIST_BOUNDS[sex]
     assert.equal(getWaistRisk(excellent - 0.1, sex)?.level, 'low')
     assert.equal(getWaistRisk(excellent, sex)?.level, 'high')
-    assert.equal(getWaistRisk(potentiel - 0.1, sex)?.level, 'high')
-    assert.equal(getWaistRisk(potentiel, sex)?.level, 'very_high')
+    // Borne haute INCLUSE : c'est au-delà que la classe change.
+    assert.equal(getWaistRisk(hautPotentiel, sex)?.level, 'high')
+    assert.equal(getWaistRisk(hautPotentiel + 0.1, sex)?.level, 'very_high')
   }
 })
 
 test('la plage 88-89 cm chez les femmes — celle qui manquait', () => {
-  // Sous les seuils OMS elle valait « Très élevé » ; le barème de Marie la
-  // classe « Risque potentiel ». C'est exactement le trou des tests d'origine.
-  assert.equal(getWaistRisk(88, 'F')?.level, 'high')
-  assert.equal(getWaistRisk(89, 'F')?.level, 'high')
-  assert.equal(getWaistRisk(90, 'F')?.level, 'very_high')
+  // Trou des tests d'origine : aucun ne sondait cette plage. Sous Statistique
+  // Canada (« plus de 87 »), elle est « Risque considérable ».
+  assert.equal(getWaistRisk(87, 'F')?.level, 'high')
+  assert.equal(getWaistRisk(88, 'F')?.level, 'very_high')
+  assert.equal(getWaistRisk(89, 'F')?.level, 'very_high')
 })
 
 test('le ratio taille/hanche garde ses seuils ET ses libellés OMS', () => {

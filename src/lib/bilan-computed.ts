@@ -28,7 +28,7 @@ import {
   type CpaflaCombineDetail
 } from './norms/cpafla-combined.ts'
 import { cpaflaComposition, cpaflaWaistPoints, s5pcForScoring } from './norms/cpafla-composition.ts'
-import { systolicRatingLegacy, waistCategoryLegacy } from './norms/clinical.ts'
+import { systolicRatingLegacy, waistCategory } from './norms/clinical.ts'
 import { BILAN_TO_TEST_KEY } from './norms/bilan-keys.ts'
 import { computeAge } from './norms/index.ts'
 import { DEFAULT_NORMS } from './norms/types.ts'
@@ -158,7 +158,7 @@ function categorizeRaw(
   // sans table CPAFLA (VO2max, IMC, tour de taille). Voir ADR 0025.
   // Même barème dédié qu'en affichage — sans quoi le formulaire et le tableau
   // de bord coteraient le tour de taille différemment.
-  if (test === 'waistCircumference') return waistCategoryLegacy(value, sex)
+  if (test === 'waistCircumference') return waistCategory(value, sex)
   const range =
     norms === 'cpafla'
       ? (getCpaflaRange(test, age, sex) ?? getAcsmRange(test, age, sex))

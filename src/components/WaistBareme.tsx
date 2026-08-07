@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { TableProperties } from 'lucide-react'
 import { WaistRiskBar } from './WaistRiskBar'
-import { WAIST_LEGACY_BOUNDS, waistRatingLegacy, waistRatingExplanation } from '../lib/norms/clinical'
+import { WAIST_BOUNDS, waistRating, waistRatingExplanation } from '../lib/norms/clinical'
 
 /**
  * Barre de risque du tour de taille + bouton « Barème » qui déplie les seuils.
@@ -11,21 +11,22 @@ import { WAIST_LEGACY_BOUNDS, waistRatingLegacy, waistRatingExplanation } from '
  * phrase dit **quelle borne a été franchie** — c'est ce que le tableau seul ne
  * montre pas.
  *
- * Les trois lignes viennent de `WAIST_LEGACY_BOUNDS`, pas d'une recopie : ce
+ * Les trois lignes viennent de `WAIST_BOUNDS`, pas d'une recopie : ce
  * barème a déjà existé en quatre exemplaires divergents dans le projet.
  */
 export function WaistBareme({ value, sex }: { value: number | null | undefined; sex: 'F' | 'M' | null }) {
   const [ouvert, setOuvert] = useState(false)
   if (sex === null || typeof value !== 'number' || !Number.isFinite(value)) return null
 
-  const cote = waistRatingLegacy(value, sex)
+  const cote = waistRating(value, sex)
   const raison = waistRatingExplanation(value, sex)
-  const [excellent, potentiel] = WAIST_LEGACY_BOUNDS[sex]
+  const [excellent, potentiel] = WAIST_BOUNDS[sex]
 
+  // `potentiel` est la borne HAUTE incluse : 101 cm reste « Risque potentiel ».
   const lignes = [
     { cote: 4, label: 'Excellent', plage: `moins de ${excellent} cm`, couleur: 'text-green-700' },
-    { cote: 3, label: 'Risque potentiel', plage: `${excellent} à ${potentiel - 1} cm`, couleur: 'text-yellow-700' },
-    { cote: 1, label: 'Risque considérable', plage: `${potentiel} cm et plus`, couleur: 'text-red-700' }
+    { cote: 3, label: 'Risque potentiel', plage: `${excellent} à ${potentiel} cm`, couleur: 'text-yellow-700' },
+    { cote: 1, label: 'Risque considérable', plage: `plus de ${potentiel} cm`, couleur: 'text-red-700' }
   ]
 
   return (
