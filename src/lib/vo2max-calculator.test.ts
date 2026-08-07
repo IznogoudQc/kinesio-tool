@@ -7,9 +7,10 @@
  *  - Bruce H 12 min → ~49 ml/kg/min (Foster/Pollock)
  *  - Bruce F 8 min → 31.14 (4.38 x 8 - 3.9)
  *  - Cooper 2400 m → ~42
- *  - Léger : la formule du brief (palier en entree) donne mathematiquement
- *           ~-3.65 a 30 ans (cf. test commente plus bas). Le ~36 du brief
- *           correspond a la version pediatrique de Leger (enfant 10 ans).
+ *  - Léger : le brief annoncait ~36. On a longtemps cru qu'il parlait d'un
+ *           enfant, parce que la formule sortait -3.65 a 30 ans. En fait le
+ *           code passait le numero de palier la ou l'equation attend une
+ *           VITESSE en km/h. Corrige le 2026-08-07 ; voir `legerSpeedKmh`.
  *  - Nicholas (H 48 ans, 12:30) → ~49 (matche son bilan reel)
  */
 import assert from 'node:assert/strict'
@@ -21,6 +22,8 @@ import {
   cooperVo2max,
   formatMmSs,
   legerVo2max,
+  legerSpeedKmh,
+  VO2MAX_PROTOCOLES,
   parseMmSs,
   sayersLegPower
 } from './vo2max-calculator.ts'
@@ -63,22 +66,55 @@ test('Cooper — distance manquante → NaN', () => {
   assert.ok(Number.isNaN(cooperVo2max(0)))
 })
 
-test('Léger — formule littérale du brief (palier 8, 30 ans → ~-3.65)', () => {
-  // Note: le brief annonçait "~36" mais l'arithmétique de la formule donnée
-  // (31.025 + 3.238*P - 3.248*A + 0.1536*P*A) donne -3.65 à 30 ans.
-  // Le ~36 du brief correspondait probablement à un enfant (~10 ans) :
-  //   31.025 + 25.904 - 32.48 + 12.288 = 36.74 → cas testé en dessous.
-  // Voir docs/daily-notes/2026-05-14-v0117.md pour le détail.
-  assert.ok(close(legerVo2max(8, 30), -3.65, 0.1))
+test('Léger — le palier se convertit en vitesse avant l’équation', () => {
+  // Le palier 1 se court à 8,5 km/h, +0,5 km/h par palier.
+  assert.equal(legerSpeedKmh(1), 8.5)
+  assert.equal(legerSpeedKmh(8), 12)
+  assert.equal(legerSpeedKmh(21), 18.5)
 })
 
-test('Léger — version pédiatrique (palier 8, 10 ans → ~36.7)', () => {
-  assert.ok(close(legerVo2max(8, 10), 36.74, 0.1))
+test('Léger — palier 8, 30 ans → ~27.7', () => {
+  // Ce test a longtemps affirmé -3,65 : le `V` de l'équation publiée est une
+  // VITESSE en km/h et le code lui passait le numéro de palier. Le commentaire
+  // d'alors notait que le brief annonçait « ~36 » et concluait que le brief
+  // parlait d'un enfant — c'était l'inverse. Un VO2max négatif était le signe
+  // que l'entrée n'était pas dans la bonne unité, pas un cas limite à expliquer.
+  assert.ok(close(legerVo2max(8, 30), 27.74, 0.1))
+})
+
+test('Léger — palier 9 à 20 ans ≈ 45, l’ordre de grandeur publié', () => {
+  assert.ok(close(legerVo2max(9, 20), 44.94, 0.1))
+})
+
+test('Léger — croît avec le palier et décroît avec l’âge', () => {
+  // Deux propriétés que la version fautive violait déjà en pratique : elle
+  // rendait négatif tout adulte, donc « plus haut palier » restait ordonné mais
+  // sur des valeurs impossibles. Ancrer le sens du monde réel, pas juste l'ordre.
+  for (let p = 1; p < 21; p++) assert.ok(legerVo2max(p + 1, 30) > legerVo2max(p, 30))
+  for (let a = 15; a < 70; a++) assert.ok(legerVo2max(10, a + 1) < legerVo2max(10, a))
+  // Un adulte moyen sur un palier moyen doit tomber dans une plage physiologique.
+  const v = legerVo2max(8, 40)
+  assert.ok(v > 10 && v < 60, `palier 8 à 40 ans hors plage physiologique : ${v}`)
 })
 
 test('Léger — paramètres invalides → NaN', () => {
   assert.ok(Number.isNaN(legerVo2max(0, 30)))
   assert.ok(Number.isNaN(legerVo2max(8, 0)))
+})
+
+test('VO2MAX_PROTOCOLES — les exemples affichés restent plausibles', () => {
+  // Le seul garde-fou automatique contre une erreur d'unité comme celle du
+  // palier/vitesse : elle sortait -3,65, donc hors plage. Un exemple qui dérive
+  // échoue ici, avant d'aller s'afficher dans l'écran des barèmes.
+  assert.equal(VO2MAX_PROTOCOLES.length, 3)
+  for (const p of VO2MAX_PROTOCOLES) {
+    const { vo2max } = p.exemple()
+    assert.ok(
+      Number.isFinite(vo2max) && vo2max > 15 && vo2max < 70,
+      `${p.nom} : exemple hors plage physiologique (${vo2max})`
+    )
+    assert.ok(p.formule.length > 0 && p.source.length > 0, `${p.nom} : formule ou source vide`)
+  }
 })
 
 test('BRUCE_STAGES — 7 paliers de 3 min', () => {

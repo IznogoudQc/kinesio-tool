@@ -1,9 +1,18 @@
-import { useState, type ReactNode } from 'react'
 import { WAIST_BOUNDS } from '../../lib/norms/clinical'
 import { bodyFatRiskZones, type BfRiskZone } from '../../lib/body-fat-risk'
 import { getAcsmRange } from '../../lib/norms/acsm'
 import { categoryCells } from '../../lib/norms/bareme'
-import { CATEGORY_LABELS, type Category } from '../../lib/norms'
+import {
+  useTabulations,
+  Explication,
+  LigneBareme,
+  Table,
+  Source,
+  SousTitre,
+  COULEUR_CAT,
+  ORDRE_CAT,
+  CATEGORY_LABELS
+} from './bareme-ui'
 
 /**
  * Les trois mesures de la composition corporelle, en tabulations.
@@ -23,100 +32,24 @@ const ONGLETS = [
   { key: 'gras', label: '% de gras' }
 ] as const
 
-type OngletKey = (typeof ONGLETS)[number]['key']
-
 export function CompositionBaremes() {
-  const [onglet, setOnglet] = useState<OngletKey>('imc')
-
+  const { actif, barre } = useTabulations(ONGLETS)
   return (
     <div>
-      <div className="flex flex-wrap gap-1 border-b border-cream-dark mb-4">
-        {ONGLETS.map(o => (
-          <button
-            key={o.key}
-            type="button"
-            onClick={() => setOnglet(o.key)}
-            aria-pressed={onglet === o.key}
-            className={`px-3 py-1.5 text-sm font-medium -mb-px border-b-2 transition-colors ${
-              onglet === o.key
-                ? 'border-gold text-marine'
-                : 'border-transparent text-marine/50 hover:text-marine hover:border-cream-dark'
-            }`}
-          >
-            {o.label}
-          </button>
-        ))}
-      </div>
-
-      {onglet === 'imc' && <PanneauImc />}
-      {onglet === 'taille' && <PanneauTourDeTaille />}
-      {onglet === 'gras' && <PanneauGras />}
+      {barre}
+      {actif === 'imc' && <PanneauImc />}
+      {actif === 'taille' && <PanneauTourDeTaille />}
+      {actif === 'gras' && <PanneauGras />}
     </div>
   )
-}
-
-/** Bloc de texte explicatif — ce que la mesure dit, et ce qu'elle ne dit pas. */
-function Explication({ titre, children }: { titre: string; children: ReactNode }) {
-  return (
-    <div className="mb-4">
-      <h5 className="text-marine font-semibold text-sm">{titre}</h5>
-      <div className="text-marine/60 text-sm mt-1 leading-relaxed space-y-2">{children}</div>
-    </div>
-  )
-}
-
-/** Ligne de barème : intitulé, plage, et une pastille de couleur. */
-function LigneBareme({
-  cote,
-  label,
-  plage,
-  couleur
-}: {
-  cote?: number
-  label: string
-  plage: string
-  couleur: string
-}) {
-  return (
-    <tr className="border-b border-cream-dark/50 last:border-0">
-      {cote !== undefined && <td className="py-1.5 pl-2 w-8 text-marine/45 tabular-nums">{cote}</td>}
-      <td className="py-1.5">
-        <span className={`font-medium ${couleur}`}>{label}</span>
-      </td>
-      <td className="py-1.5 pr-2 text-right text-marine/70 tabular-nums">{plage}</td>
-    </tr>
-  )
-}
-
-function Table({ children }: { children: ReactNode }) {
-  return (
-    <div className="rounded-md border border-cream-dark bg-white overflow-hidden">
-      <table className="w-full text-sm">
-        <tbody>{children}</tbody>
-      </table>
-    </div>
-  )
-}
-
-function Source({ children }: { children: ReactNode }) {
-  return <p className="text-marine/40 text-xs mt-2 leading-relaxed">{children}</p>
 }
 
 // ── IMC ─────────────────────────────────────────────────────────────────────
-
-const COULEUR_CAT: Record<Category, string> = {
-  A_AMELIORER: 'text-red-700',
-  ACCEPTABLE: 'text-amber-700',
-  BIEN: 'text-marine/70',
-  TRES_BIEN: 'text-green-700',
-  EXCELLENT: 'text-green-800'
-}
 
 function PanneauImc() {
   // Table lue depuis le code : les deux sexes partagent les mêmes bornes.
   const r = getAcsmRange('bmi', 40, 'M')
   const cells = r ? categoryCells(r.percentiles, true) : null
-  const ordre: Category[] = ['EXCELLENT', 'TRES_BIEN', 'BIEN', 'ACCEPTABLE', 'A_AMELIORER']
 
   return (
     <div>
@@ -140,7 +73,7 @@ function PanneauImc() {
 
       {cells && (
         <Table>
-          {ordre.map(cat => (
+          {ORDRE_CAT.map(cat => (
             <LigneBareme
               key={cat}
               label={CATEGORY_LABELS[cat]}
@@ -194,9 +127,7 @@ function PanneauTourDeTaille() {
 
       {(['M', 'F'] as const).map(sex => (
         <div key={sex} className="mb-3 last:mb-0">
-          <p className="text-marine/45 text-xs uppercase tracking-wide font-semibold mb-1.5">
-            {sex === 'M' ? 'Hommes' : 'Femmes'} · tous les âges
-          </p>
+          <SousTitre>{sex === 'M' ? 'Hommes' : 'Femmes'} · tous les âges</SousTitre>
           <Table>
             {lignes(sex).map(l => (
               <LigneBareme key={l.cote} cote={l.cote} label={l.label} plage={l.plage} couleur={l.couleur} />
@@ -250,9 +181,7 @@ function PanneauGras() {
 
       {(['M', 'F'] as const).map(sex => (
         <div key={sex} className="mb-3 last:mb-0">
-          <p className="text-marine/45 text-xs uppercase tracking-wide font-semibold mb-1.5">
-            {sex === 'M' ? 'Hommes' : 'Femmes'} · moins de 70 ans
-          </p>
+          <SousTitre>{sex === 'M' ? 'Hommes' : 'Femmes'} · moins de 70 ans</SousTitre>
           <Table>
             {bodyFatRiskZones(sex).map(z => (
               <LigneBareme

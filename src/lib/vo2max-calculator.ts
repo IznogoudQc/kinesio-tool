@@ -44,9 +44,28 @@ export function cooperVo2max(distanceMeters: number): number {
 }
 
 /**
+ * Vitesse (km/h) du palier atteint au test navette 20 m : le palier 1 se court à
+ * 8,5 km/h et chaque palier suivant ajoute 0,5 km/h.
+ *
+ * C'est cette **vitesse** — pas le numéro du palier — qui entre dans l'équation
+ * de Léger. Voir `legerVo2max`.
+ */
+export function legerSpeedKmh(palier: number): number {
+  return 8 + 0.5 * palier
+}
+
+/**
  * Test de Léger (navette 20 m) : VO2max à partir du palier atteint et de l'âge.
- *   VO2max = 31.025 + 3.238·palier - 3.248·age + 0.1536·palier·age
+ *   VO2max = 31.025 + 3.238·V - 3.248·age + 0.1536·V·age
+ *   V = vitesse du palier en km/h (`legerSpeedKmh`).
  * Source : Léger LA et al., J. Sports Sci. 1988 (équation officielle 20 m MSRT).
+ *
+ * ⚠️ Le `V` de l'équation publiée est une **vitesse en km/h**, pas un numéro de
+ * palier. La première version passait le palier directement : un palier 8 à
+ * 30 ans donnait −3,6 ml/kg/min, et tout palier réaliste sortait négatif. Aucun
+ * bilan n'en a souffert (les 12 bilans de la base sont des Bruce), mais le
+ * premier test navette aurait produit un VO2max négatif coté « À améliorer ».
+ * Repéré en documentant les protocoles pour l'écran des barèmes (2026-08-07).
  */
 export function legerVo2max(palier: number, age: number): number {
   if (
@@ -57,8 +76,63 @@ export function legerVo2max(palier: number, age: number): number {
   ) {
     return Number.NaN
   }
-  return 31.025 + 3.238 * palier - 3.248 * age + 0.1536 * palier * age
+  const V = legerSpeedKmh(palier)
+  return 31.025 + 3.238 * V - 3.248 * age + 0.1536 * V * age
 }
+
+// ── Description des protocoles — référence pour l'UI ─────────────────────────
+
+export interface Vo2maxProtocole {
+  key: Exclude<AerobicTestType, 'manual'>
+  nom: string
+  /** Ce qu'on mesure sur le terrain. */
+  mesure: string
+  /** L'équation, telle qu'elle est écrite juste au-dessus. */
+  formule: string
+  source: string
+  /** Un cas concret, **calculé par la fonction réelle** — jamais écrit à la main. */
+  exemple: () => { entree: string; vo2max: number }
+}
+
+/**
+ * Les trois protocoles, décrits pour l'écran des barèmes.
+ *
+ * Volontairement dans ce fichier plutôt que dans le composant : la description
+ * et l'implémentation se relisent d'un coup d'œil, donc changer un coefficient
+ * sans changer la formule affichée demande de l'ignorer sciemment. Et l'exemple
+ * appelle la vraie fonction — s'il dérive, le chiffre à l'écran bouge.
+ */
+export const VO2MAX_PROTOCOLES: Vo2maxProtocole[] = [
+  {
+    key: 'bruce',
+    nom: 'Bruce (tapis roulant)',
+    mesure: 'La durée totale tenue sur le tapis, paliers de 3 minutes.',
+    formule:
+      'Hommes : 14,76 − 1,379·T + 0,451·T² − 0,012·T³ · Femmes : 4,38·T − 3,9 (T = durée en minutes)',
+    source: 'Foster/Pollock (1984), repris par l’ACSM',
+    exemple: () => ({
+      entree: 'homme, 10:00',
+      vo2max: bruceTreadmillVo2max({ durationSeconds: 600, sex: 'M' })
+    })
+  },
+  {
+    key: 'cooper',
+    nom: 'Cooper (12 minutes)',
+    mesure: 'La distance parcourue en 12 minutes de course.',
+    formule: '(distance en mètres − 504,9) ÷ 44,73',
+    source: 'Cooper KH, JAMA 1968',
+    exemple: () => ({ entree: '2 400 m', vo2max: cooperVo2max(2400) })
+  },
+  {
+    key: 'leger',
+    nom: 'Léger (navette 20 m)',
+    mesure:
+      'Le palier atteint au test navette. Dépend aussi de l’âge. Le palier 1 se court à 8,5 km/h, +0,5 km/h par palier.',
+    formule: '31,025 + 3,238·V − 3,248·âge + 0,1536·V·âge (V = vitesse du palier, en km/h)',
+    source: 'Léger LA et coll., J. Sports Sci. 1988',
+    exemple: () => ({ entree: 'palier 8, 30 ans', vo2max: legerVo2max(8, 30) })
+  }
+]
 
 // ── Bruce stages — référence pour l'UI ───────────────────────────────────────
 

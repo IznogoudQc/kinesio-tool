@@ -6,6 +6,7 @@ import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
 import { SupplementLibraryCard, FoodListCard } from './settings/NutritionSettingsCards'
 import { TestCard, TestSection } from './settings/BilanTestCards'
 import { CompositionBaremes } from './settings/CompositionBaremes'
+import { AerobieBaremes } from './settings/AerobieBaremes'
 import { settingsService } from '../services/settings'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
@@ -500,15 +501,7 @@ function BilanTestsTab() {
           role="Le VO2max estimé (Bruce, Cooper ou Léger), coté par âge et par sexe. Le score global utilise son équivalent en METS."
           validationId="aerobie-cpafla"
         >
-          <p className="text-marine/55 text-sm leading-relaxed">
-            <span className="font-medium text-marine/75">Équation : </span>
-            Bruce → Foster/Pollock (1984) · Cooper (1968) · Léger (1988). Le protocole se choisit à la saisie du
-            bilan.
-          </p>
-          <p className="text-marine/45 text-sm mt-2 leading-relaxed">
-            Une table <strong className="font-medium">ACSM</strong> existe aussi pour ce test. Elle classerait
-            certains résultats différemment — d'où l'intérêt de savoir laquelle Marie utilise réellement.
-          </p>
+          <AerobieBaremes />
         </TestCard>
 
         <TestCard
