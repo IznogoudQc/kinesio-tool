@@ -85,6 +85,11 @@ const NutritionPayloadSchema = z.object({
   foodsBad: z.string().max(3000).optional(),
   foodsLiked: z.string().max(3000).optional(),
   foodsDisliked: z.string().max(3000).optional(),
+  /** Aliments privilégiés par macronutriment — bien plus dirigeants qu'une liste
+   *  unique : le modèle sait quoi mettre à quelle place dans l'assiette. */
+  proteinFoods: z.string().max(1500).optional(),
+  carbFoods: z.string().max(1500).optional(),
+  fatFoods: z.string().max(1500).optional(),
   /** Reprise partielle — les autres journées déjà écrites, pour ne pas les répéter
    *  mot pour mot ni proposer exactement la même chose. */
   autresJournees: z.array(z.string().max(2000)).max(7).optional(),
@@ -187,6 +192,7 @@ Règles :
 - EXACTEMENT 7 journées dans « journees » — une semaine complète, aucune journée omise.
 - 4 lignes par journée (Déjeuner, Dîner, Souper, Collations), une seule phrase chacune.
 - Ne mets PAS d'en-tête « Journée N » : la numérotation est ajoutée par l'application.
+- Quand des sources de protéines / glucides / lipides à privilégier sont fournies, CONSTRUIS les repas autour d'elles. Si une liste est « non précisés », choisis librement dans le style méditerranéen.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
 
@@ -259,6 +265,9 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
     `Cibles quotidiennes : ${macros.length ? macros.join(', ') : 'non précisées'}.`,
     fiberLine,
     `Aliments à privilégier (recommandation) : ${clean(p.foodsGood)}.`,
+    `Sources de PROTÉINES à privilégier : ${clean(p.proteinFoods)}.`,
+    `Sources de GLUCIDES à privilégier : ${clean(p.carbFoods)}.`,
+    `Sources de LIPIDES à privilégier : ${clean(p.fatFoods)}.`,
     `Aliments à éviter (recommandation) : ${clean(p.foodsBad)}.`,
     `Aliments que la personne AIME : ${clean(p.foodsLiked)}.`,
     `Aliments que la personne N'AIME PAS / à exclure : ${clean(p.foodsDisliked)}.`

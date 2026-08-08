@@ -57,6 +57,9 @@ export interface MenuContexte {
   foodsBad?: string
   foodsLiked?: string
   foodsDisliked?: string
+  proteinFoods?: string
+  carbFoods?: string
+  fatFoods?: string
 }
 
 /** Les trois portées passent par le même canal et la même gestion d'erreur. */

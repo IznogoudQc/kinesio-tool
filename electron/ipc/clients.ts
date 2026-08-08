@@ -87,6 +87,9 @@ const UpdateClientSchema = z.object({
   // Idées de menu — texte plus long (généré par l'IA), on relève le plafond.
   nutritionMenu: z.union([z.string().max(8000).trim(), z.null()]).optional(),
   alimentsAimes: TexteLibreOrNull,
+  alimentsProteines: TexteLibreOrNull,
+  alimentsGlucides: TexteLibreOrNull,
+  alimentsLipides: TexteLibreOrNull,
   alimentsPasAimes: TexteLibreOrNull
 })
 

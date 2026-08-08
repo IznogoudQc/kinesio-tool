@@ -232,6 +232,13 @@
       "when": 1785606708990,
       "tag": "0032_grey_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1786226753343,
+      "tag": "0033_calm_cyclops",
+      "breakpoints": true
     }
   ]
 }

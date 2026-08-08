@@ -125,6 +125,12 @@ export const clients = sqliteTable('clients', {
   // « privilégier / éviter »). Alimentent la génération IA des idées de menu.
   alimentsAimes: text('aliments_aimes'),
   alimentsPasAimes: text('aliments_pas_aimes'),
+  // Aliments à privilégier PAR MACRONUTRIMENT. Séparés de `alimentsPrivilegier`
+  // (liste unique) : donner à l'IA « pour les protéines, prends ça » structure
+  // bien mieux un menu qu'une liste en vrac où tout se mélange.
+  alimentsProteines: text('aliments_proteines'),
+  alimentsGlucides: text('aliments_glucides'),
+  alimentsLipides: text('aliments_lipides'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()
 })

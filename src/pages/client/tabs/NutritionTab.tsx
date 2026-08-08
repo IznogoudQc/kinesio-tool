@@ -5,6 +5,7 @@ import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
 import { bilansService } from '../../../services/bilans'
 import { REPAS, remplacerRepas, type Repas } from '../../../lib/menu-lines'
+import { SUGGESTIONS_PROTEINES, SUGGESTIONS_GLUCIDES, SUGGESTIONS_LIPIDES } from '../../../lib/food-suggestions'
 import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
 import { nutritionTemplatesService } from '../../../services/nutritionTemplates'
 import { SendBilanModal } from '../SendBilanModal'
@@ -299,6 +300,9 @@ export function NutritionTab() {
   const [alimentsPrivilegier, setAlimentsPrivilegier] = useState(client.alimentsPrivilegier ?? '')
   const [alimentsEviter, setAlimentsEviter] = useState(client.alimentsEviter ?? '')
   const [alimentsAimes, setAlimentsAimes] = useState(client.alimentsAimes ?? '')
+  const [alimentsProteines, setAlimentsProteines] = useState(client.alimentsProteines ?? '')
+  const [alimentsGlucides, setAlimentsGlucides] = useState(client.alimentsGlucides ?? '')
+  const [alimentsLipides, setAlimentsLipides] = useState(client.alimentsLipides ?? '')
   const [alimentsPasAimes, setAlimentsPasAimes] = useState(client.alimentsPasAimes ?? '')
   const [nutritionMot, setNutritionMot] = useState(client.nutritionMot ?? '')
   // Menu : une semaine complète, chaque journée un champ texte (repas + total).
@@ -512,6 +516,9 @@ export function NutritionTab() {
         nutritionMot: nutritionMot.trim() || null,
         nutritionMenu: serializeMenuPlan(menuJours),
         alimentsAimes: alimentsAimes.trim() || null,
+        alimentsProteines: alimentsProteines.trim() || null,
+        alimentsGlucides: alimentsGlucides.trim() || null,
+        alimentsLipides: alimentsLipides.trim() || null,
         alimentsPasAimes: alimentsPasAimes.trim() || null
       })
       onClientUpdated?.(updated)
@@ -599,7 +606,10 @@ export function NutritionTab() {
       foodsGood: alimentsPrivilegier,
       foodsBad: alimentsEviter,
       foodsLiked: alimentsAimes,
-      foodsDisliked: alimentsPasAimes
+      foodsDisliked: alimentsPasAimes,
+      proteinFoods: alimentsProteines,
+      carbFoods: alimentsGlucides,
+      fatFoods: alimentsLipides
     }
   }
 
@@ -1381,6 +1391,33 @@ export function NutritionTab() {
               className={fieldClass}
             />
           </div>
+        </div>
+      </Section>
+
+      {/* ── Sources par macronutriment ──────────────────────────────────────── */}
+      <Section
+        icon={Target}
+        title="Sources à privilégier par macronutriment"
+        desc="Ce sur quoi l’IA construit les repas. Laisser vide = elle choisit librement dans le style méditerranéen."
+      >
+        <div className="grid md:grid-cols-3 gap-5">
+          {[
+            { titre: 'Protéines', v: alimentsProteines, set: setAlimentsProteines, sugg: SUGGESTIONS_PROTEINES },
+            { titre: 'Glucides', v: alimentsGlucides, set: setAlimentsGlucides, sugg: SUGGESTIONS_GLUCIDES },
+            { titre: 'Lipides', v: alimentsLipides, set: setAlimentsLipides, sugg: SUGGESTIONS_LIPIDES }
+          ].map(m => (
+            <div key={m.titre}>
+              <label className="block text-marine/70 text-sm font-medium mb-1">{m.titre}</label>
+              <SuggestChips items={m.sugg} current={m.v} onPick={it => m.set(c => appendLine(c, it))} />
+              <AutoTextarea
+                value={m.v}
+                onChange={e => m.set(e.target.value)}
+                minRows={4}
+                placeholder="Un aliment par ligne"
+                className={fieldClass}
+              />
+            </div>
+          ))}
         </div>
       </Section>
 

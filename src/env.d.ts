@@ -85,6 +85,10 @@ interface Client {
   nutritionMenu: string | null
   /** Goûts du client — aliments aimés (préférences personnelles). */
   alimentsAimes: string | null
+  /** Aliments à privilégier par macronutriment — alimentent l'IA des menus. */
+  alimentsProteines: string | null
+  alimentsGlucides: string | null
+  alimentsLipides: string | null
   /** Goûts du client — aliments non aimés / à exclure. */
   alimentsPasAimes: string | null
   createdAt: string
@@ -467,6 +471,9 @@ interface Window {
           nutritionMot?: string | null
           nutritionMenu?: string | null
           alimentsAimes?: string | null
+          alimentsProteines?: string | null
+          alimentsGlucides?: string | null
+          alimentsLipides?: string | null
           alimentsPasAimes?: string | null
         }
       ): Promise<Client>
@@ -633,6 +640,10 @@ interface Window {
         foodsBad?: string
         foodsLiked?: string
         foodsDisliked?: string
+        /** Aliments privilégiés par macronutriment. */
+        proteinFoods?: string
+        carbFoods?: string
+        fatFoods?: string
         /** `menu-jour` : les autres journées de la semaine, pour ne pas les recopier. */
         autresJournees?: string[]
         /** `menu-repas` : la journée telle qu'elle est, pour rester cohérent. */
