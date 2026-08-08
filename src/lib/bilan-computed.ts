@@ -28,7 +28,7 @@ import {
   type CpaflaCombineDetail
 } from './norms/cpafla-combined.ts'
 import { cpaflaComposition, cpaflaWaistPoints, s5pcForScoring } from './norms/cpafla-composition.ts'
-import { systolicRatingLegacy, waistCategory } from './norms/clinical.ts'
+import { systolicRating, waistCategory } from './norms/clinical.ts'
 import { BILAN_TO_TEST_KEY } from './norms/bilan-keys.ts'
 import { computeAge } from './norms/index.ts'
 import { DEFAULT_NORMS } from './norms/types.ts'
@@ -448,13 +448,13 @@ export function computeBilan(raw: BilanData, profile: BilanProfile): BilanComput
   // tient pas en compte pour l'instant). Notre `aerobic` correspond à leur
   // « METS max » — le METS n'étant que le VO2max ÷ 3,5, la cote est la même.
   //
-  // ⚠️ Seul le barème de la PA systolique reste PROVISOIRE (`systolicRatingLegacy`).
+  // ⚠️ Seul le barème de la PA systolique reste PROVISOIRE (`systolicRating`).
   const coteOf = (c: CompositeScore): number | null =>
     c.score === null ? null : categoryToScore(scoreToCategory(c.score))
   const overallDetail = cpaflaCombineDetail([
     ['composition', coteOf(composition), 1],
     ['aerobic', coteOf(aerobic), 1],
-    ['pa_systolique', systolicRatingLegacy(raw.pa_systolique), 1],
+    ['pa_systolique', systolicRating(raw.pa_systolique), 1],
     ...(SHOW_BACK_HEALTH
       ? ([['backHealth', coteOf(backHealth), 1]] as CpaflaKeyedContribution[])
       : []),

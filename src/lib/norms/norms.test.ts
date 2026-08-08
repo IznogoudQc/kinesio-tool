@@ -261,7 +261,7 @@ test('classifyBloodPressure — zones cliniques nommées', () => {
   assert.equal(classifyBloodPressure(150, 'systolic')?.zone, 'Hypertension 1')
   assert.equal(classifyBloodPressure(165, 'systolic')?.zone, 'Hypertension 2')
   // Bornes diastoliques
-  assert.equal(classifyBloodPressure(82, 'diastolic')?.zone, 'Normale')
+  assert.equal(classifyBloodPressure(77, 'diastolic')?.zone, 'Normale')
   assert.equal(classifyBloodPressure(105, 'diastolic')?.zone, 'Hypertension 2')
   // Couleur : Optimale → EXCELLENT ; HT2 → A_AMELIORER
   assert.equal(classifyBloodPressure(112, 'systolic')?.category, 'EXCELLENT')

@@ -1,5 +1,5 @@
 import { BloodPressureBar } from '../../components/BloodPressureBar'
-import { BP_BOUNDS, BP_ZONES, systolicRatingLegacy } from '../../lib/norms/clinical'
+import { BP_BOUNDS, BP_ZONES, systolicRating } from '../../lib/norms/clinical'
 import { CATEGORY_LABELS } from '../../lib/norms'
 import { useTabulations, Explication, Table, LigneBareme, Source, SousTitre, COULEUR_CAT } from './bareme-ui'
 
@@ -13,7 +13,7 @@ import { useTabulations, Explication, Table, LigneBareme, Source, SousTitre, COU
  * état « Déduit » — ce qui donnait à croire que la barre affichée était douteuse
  * alors que seule la cote l'est.
  *
- * ⚠️ Les bornes viennent de `BP_BOUNDS` et la cote de `systolicRatingLegacy` :
+ * ⚠️ Les bornes viennent de `BP_BOUNDS` et la cote de `systolicRating` :
  * les mêmes fonctions que celles qui colorent le dashboard et alimentent le score.
  */
 
@@ -89,50 +89,53 @@ function PanneauZones() {
 
 // ── Cote dans le score ──────────────────────────────────────────────────────
 
-/** Les quatre points connus de l'ancien logiciel — ce qui a servi au rétro-calcul. */
-const POINTS_CONNUS = [112, 113, 122, 129]
+/** Une valeur par zone, pour montrer la correspondance sans la recopier. */
+const EXEMPLES = [112, 122, 135, 148, 165]
 
 function PanneauCote() {
   return (
     <div>
-      <Explication titre="La cote 0-4, qui n’est pas la couleur">
+      <Explication titre="De la zone à la cote">
         <p>
-          Le score global n’utilise <strong>pas</strong> les cinq zones ci-contre. Il applique une règle bien plus
-          sévère : <strong>moins de 120 mmHg vaut 4, tout le reste vaut 0</strong>. Pas de valeurs intermédiaires.
+          Le score global reprend <strong>exactement</strong> les cinq zones de l’onglet précédent. La couleur que
+          voit le client et la cote qui entre dans son score disent donc la même chose — Optimale vaut 4,
+          Hypertension 2 vaut 0, et les trois niveaux entre les deux se suivent.
         </p>
-        <p className="text-amber-800">
-          Cette règle est <strong>déduite</strong>, pas documentée. Elle a été retrouvée en comparant quatre
-          bilans de l’ancien logiciel — c’est le seul barème du bilan dans ce cas.
+        <p>
+          Aucune distinction d’âge ni de sexe, comme pour les zones elles-mêmes.
         </p>
       </Explication>
 
-      <SousTitre>Ce que donne la règle appliquée</SousTitre>
+      <SousTitre>Une valeur par zone</SousTitre>
       <Table>
-        {POINTS_CONNUS.map(v => (
-          <LigneBareme
-            key={v}
-            label={`${v} mmHg`}
-            plage={`${systolicRatingLegacy(v)} / 4`}
-            couleur={systolicRatingLegacy(v) === 4 ? COULEUR_CAT.EXCELLENT : COULEUR_CAT.A_AMELIORER}
-          />
-        ))}
+        {EXEMPLES.map(v => {
+          const cote = systolicRating(v)
+          const zone = BP_ZONES[4 - (cote ?? 0)]
+          return (
+            <LigneBareme
+              key={v}
+              cote={cote ?? undefined}
+              label={zone.label}
+              plage={`${v} mmHg`}
+              couleur={COULEUR_CAT[zone.category]}
+            />
+          )
+        })}
       </Table>
       <Source>
-        Les quatre valeurs connues de l’ancien logiciel, recalculées ici par la fonction qui alimente réellement
-        le score.
+        Cotes calculées ici par la fonction qui alimente réellement le score, pas recopiées.
       </Source>
 
-      <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+      <div className="mt-4 rounded-lg border border-cream-dark bg-cream/30 p-3">
         <p className="text-marine/70 text-sm leading-relaxed">
-          <strong className="text-marine">Pourquoi pas les zones cliniques ?</strong> Ce serait plus cohérent,
-          mais les chiffres le refusent : une tension de 122 mmHg tombe dans « Normale », ce qui vaudrait{' '}
-          {CATEGORY_LABELS.TRES_BIEN.toLowerCase()} — or l’ancien logiciel lui donne <strong>0</strong>. Une
-          recherche exhaustive sur toutes les combinaisons de seuils possibles ne trouve de solution qu’avec des
-          zones d’environ 1 mmHg, ce qui n’a aucun sens clinique.
+          <strong className="text-marine">Ce qui a changé.</strong> Jusqu’à la version 0.9.144, la cote était
+          binaire : {CATEGORY_LABELS.EXCELLENT.toLowerCase()} sous 120 mmHg, {CATEGORY_LABELS.A_AMELIORER.toLowerCase()}{' '}
+          au-dessus. Cette règle venait d’un rétro-calcul sur quatre anciens bilans, faute de barème documenté.
         </p>
         <p className="text-marine/70 text-sm leading-relaxed mt-2">
-          Trancher demande la fenêtre <strong>Propriétés</strong> du test dans l’ancien logiciel, onglet des
-          cotes. En attendant, la règle déduite est conservée : elle reproduit les quatre bilans connus.
+          Elle reproduisait mieux deux rapports de l’ancien logiciel, qui passent de 2,2 à 2,8 avec les zones.
+          L’écart est assumé : une échelle publiée et cohérente avec ce que voit le client a été préférée à la
+          reproduction de deux bilans. Les scores étant recalculés à l’affichage, aucune donnée n’a été modifiée.
         </p>
       </div>
     </div>

@@ -27,10 +27,11 @@ const CLINICAL: Partial<Record<TestKey, { M: NormPercentiles; F: NormPercentiles
     M: { p10: 160, p25: 140, p50: 130, p75: 120, p90: 110 },
     F: { p10: 160, p25: 140, p50: 130, p75: 120, p90: 110 }
   },
-  // Diastolique : Optimale <80, Normale 80-84, Pré-HT 85-89, HT1 90-99, HT2 ≥100.
+  // Diastolique : Optimale <75, Normale 75-79, Pré-HT 80-89, HT1 90-99, HT2 ≥100.
+  // Alignée sur la capture de l'ancien logiciel (2026-08-07) : il affiche 75/80/90/100.
   bloodPressureDiastolic: {
-    M: { p10: 100, p25: 90, p50: 85, p75: 80, p90: 70 },
-    F: { p10: 100, p25: 90, p50: 85, p75: 80, p90: 70 }
+    M: { p10: 100, p25: 90, p50: 80, p75: 75, p90: 65 },
+    F: { p10: 100, p25: 90, p50: 80, p75: 75, p90: 65 }
   },
   // FC repos (ACSM) : Excellent <56, Bien 57-62, Moyen 63-66, Faible 67-71, Mauvais ≥72.
   restingHeartRate: {
@@ -50,12 +51,12 @@ export interface BpClassification {
 /** Classe une valeur de tension artérielle dans les zones cliniques nommées
  *  (indépendantes de l'âge et du sexe — seuils OMS/JNC, alignés sur `CLINICAL`).
  *    Systolique : Optimale <120 · Normale 120-129 · Pré-HT 130-139 · HT1 140-159 · HT2 ≥160
- *    Diastolique : Optimale <80 · Normale 80-84 · Pré-HT 85-89 · HT1 90-99 · HT2 ≥100
+ *    Diastolique : Optimale <75 · Normale 75-79 · Pré-HT 80-89 · HT1 90-99 · HT2 ≥100
  */
 /** Bornes des zones cliniques de PA (OMS/JNC), par type. */
 export const BP_BOUNDS: Record<BpKind, [number, number, number, number]> = {
   systolic: [120, 130, 140, 160],
-  diastolic: [80, 85, 90, 100]
+  diastolic: [75, 80, 90, 100]
 }
 
 /** Les 5 zones nommées, de la meilleure (Optimale) à la pire (Hypertension 2),
@@ -225,20 +226,37 @@ export function waistCategory(
   return 'ACCEPTABLE' // cote 1 — « Risque considérable »
 }
 
-/** Cote 0-4 de la **pression artérielle systolique** telle que l'utilise le score
- *  « Santé et condition physique globale » de l'ancien logiciel.
+/**
+ * Cote 0-4 de la **pression artérielle systolique** dans le score global.
  *
- *  ⚠️ **PROVISOIRE — barème non confirmé.** Déduit par rétro-calcul sur 4 bilans
- *  réels (voir ADR 0030) : 112 → 4, 113 → 4, 122 → 0, 129 → 0. La règle « < 120 mmHg
- *  → 4, sinon 0 » est la plus simple compatible avec ces quatre points, et 120 est
- *  la borne clinique standard de la PA optimale.
+ * Suit les cinq zones cliniques affichées au client — la barre du bilan et la
+ * cote disent donc enfin la même chose :
  *
- *  Ce qu'on ignore encore : la frontière exacte entre 113 et 122, et l'existence
- *  éventuelle de cotes intermédiaires (1, 2, 3). À remplacer dès que Marie fournit
- *  la table de classification du test « Pression artérielle systolique ».
+ *   Optimale < 120 → 4 · Normale 120-129 → 3 · Pré-HT 130-139 → 2
+ *   Hypertension 1 140-159 → 1 · Hypertension 2 ≥ 160 → 0
  *
- *  `null` si la mesure est absente → la composante est exclue du score global. */
-export function systolicRatingLegacy(value: number | null | undefined): number | null {
+ * Aucune distinction d'âge ni de sexe (confirmé par Nicholas, 2026-08-07 :
+ * la fenêtre Propriétés de l'ancien logiciel n'en fait pas).
+ *
+ * ── Écart assumé avec l'ancien logiciel ──────────────────────────────────────
+ *
+ * La règle précédente (« < 120 → 4, sinon 0 ») venait d'un rétro-calcul sur
+ * quatre bilans : elle était la plus simple qui reproduisait leurs scores
+ * globaux imprimés. Les zones cliniques ne les reproduisent PAS —
+ * `cpafla-parite.test.ts` garde la trace chiffrée de l'écart :
+ *
+ *   Nick 2025-09 (PA 122) : ancien logiciel 2,2 → désormais 2,8
+ *   Nick 2011-08 (PA 129) : ancien logiciel 2,2 → désormais 2,8
+ *
+ * Choix de Nicholas : la cohérence avec les zones cliniques publiées prime sur
+ * la reproduction de ces deux rapports. Rien n'est perdu — les scores sont
+ * recalculés à l'affichage, jamais stockés, donc revenir en arrière suffit à
+ * retrouver les anciennes valeurs.
+ *
+ * `null` si la mesure est absente → la composante est exclue du score global.
+ */
+export function systolicRating(value: number | null | undefined): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
-  return value < 120 ? 4 : 0
+  const b = BP_BOUNDS.systolic
+  return value < b[0] ? 4 : value < b[1] ? 3 : value < b[2] ? 2 : value < b[3] ? 1 : 0
 }

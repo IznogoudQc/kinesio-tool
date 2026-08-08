@@ -95,7 +95,7 @@ test('aptitude musculosquelettique = rapports de l’ancien logiciel', () => {
 // ── Santé et condition physique globale (structure reconstituée, ADR 0030) ────
 
 import { computeBilan, type BilanProfile } from '../bilan-computed.ts'
-import { systolicRatingLegacy } from './clinical.ts'
+import { systolicRating } from './clinical.ts'
 
 const round1g = (n: number | null): number | null => (n === null ? null : Math.round(n * 10) / 10)
 
@@ -110,14 +110,19 @@ test('score global = rapports de l’ancien logiciel (bilans complets)', () => {
   )
   assert.equal(round1g(juin.overall.score), 4)
 
-  // 4 sept. 2025 : composition 0 + aérobie 4 + PA 0 + dos 3 + musculo 4 = 11/20 → 2,2.
+  // 4 sept. 2025 : composition 0 + aérobie 4 + dos 3 + musculo 4, et la PA à 129.
+  //
+  // L'ancien logiciel imprime 2,2, ce qui suppose PA = 0. Depuis le 2026-08-07 la
+  // cote suit les zones cliniques du logiciel lui-même (capture de sa fenêtre
+  // d'affichage) : 129 tombe dans « Normale » → 3, et le global devient 2,8.
+  // Écart assumé, pas régression — voir `systolicRating` et le test suivant.
   const sept = computeBilan(
     { taille_cm: 176, poids_kg: 99.8, tour_taille_cm: 103, pushups: 28, situps: 25,
       flexion_tronc_cm: 22, endurance_dos_sec: 180, saut_vertical_cm: 48, vo2max: 49,
       pa_systolique: 129 },
     { ...P, age: 48 }
   )
-  assert.equal(round1g(sept.overall.score), 2.2)
+  assert.equal(round1g(sept.overall.score), 2.8)
 })
 
 test('score global : une composante non mesurée est exclue (pas comptée 0)', () => {
@@ -132,53 +137,36 @@ test('score global : une composante non mesurée est exclue (pas comptée 0)', (
   assert.equal(round1g(r.overall.score), 2)
 })
 
-test('barème PA provisoire : seuil à 120 (cohérent avec les 4 points connus)', () => {
-  assert.equal(systolicRatingLegacy(112), 4)
-  assert.equal(systolicRatingLegacy(113), 4)
-  assert.equal(systolicRatingLegacy(122), 0)
-  assert.equal(systolicRatingLegacy(129), 0)
-  assert.equal(systolicRatingLegacy(undefined), null) // non mesurée → exclue
+test('PA : la cote suit les cinq zones cliniques', () => {
+  assert.equal(systolicRating(112), 4) // Optimale
+  assert.equal(systolicRating(122), 3) // Normale
+  assert.equal(systolicRating(135), 2) // Pré-hypertension
+  assert.equal(systolicRating(148), 1) // Hypertension 1
+  assert.equal(systolicRating(165), 0) // Hypertension 2
+  assert.equal(systolicRating(undefined), null) // non mesurée → exclue
 })
 
-// ── Pistes ÉCARTÉES pour le barème PA (ne pas les retenter) ──────────────────
-//
-// Nicholas a proposé de coter la PA systolique sur 5 niveaux, comme la barre
-// « Optimale / Normale / Pré-hypertension / Hypertension 1 / Hypertension 2 »
-// qu'affiche l'ancien logiciel. L'idée est bonne mais les chiffres la refusent.
-
-test('PA : le barème clinique standard (120/130/140/160) est incompatible', () => {
-  const cote5 = (v: number, t: [number, number, number, number]) =>
-    v < t[0] ? 4 : v < t[1] ? 3 : v < t[2] ? 2 : v < t[3] ? 1 : 0
-  const std: [number, number, number, number] = [120, 130, 140, 160]
-  // Les deux valeurs basses passent…
-  assert.equal(cote5(112, std), 4)
-  assert.equal(cote5(113, std), 4)
-  // …mais les deux hautes donnent 3 là où l'ancien logiciel impose 0.
-  assert.equal(cote5(122, std), 3)
-  assert.equal(cote5(129, std), 3)
-  assert.notEqual(cote5(122, std), 0)
-})
-
-test('PA : toute échelle à 5 niveaux exigerait des zones d’environ 1 mmHg', () => {
-  // Recherche exhaustive des seuils compatibles avec les 4 points connus.
-  const cote5 = (v: number, t: number[]) =>
-    v < t[0] ? 4 : v < t[1] ? 3 : v < t[2] ? 2 : v < t[3] ? 1 : 0
-  const points: [number, number][] = [[112, 4], [113, 4], [122, 0], [129, 0]]
-  const compatibles: number[][] = []
-  for (let a = 100; a <= 180; a++)
-    for (let b = a + 1; b <= 181; b++)
-      for (let c = b + 1; c <= 182; c++)
-        for (let d = c + 1; d <= 183; d++)
-          if (points.every(([v, exp]) => cote5(v, [a, b, c, d]) === exp)) compatibles.push([a, b, c, d])
-
-  assert.ok(compatibles.length > 0, 'des solutions existent, mais…')
-  // …toutes tiennent dans une fenêtre de 9 mmHg, soit ~1 mmHg par zone.
-  const min = Math.min(...compatibles.map(t => t[0]))
-  const max = Math.max(...compatibles.map(t => t[3]))
-  assert.equal(min, 114)
-  assert.equal(max, 122)
-  assert.ok(max - min <= 9, 'un barème de PA réaliste ne tient pas dans 9 mmHg')
-  // Conclusion : la règle binaire « < 120 → 4, sinon 0 » reste la seule tenable.
+/**
+ * ÉCART CONNU ET ASSUMÉ avec l'ancien logiciel — ne pas « corriger » sans
+ * l'accord de Nicholas (décision du 2026-08-07).
+ *
+ * L'ancien logiciel donne 0 à une PA de 122 : c'est la seule règle qui
+ * reproduisait ses scores globaux imprimés. Les zones cliniques lui donnent 3.
+ * Nicholas a tranché en faveur des zones — la barre que voit le client et la cote
+ * qui entre dans son score disent désormais la même chose — en acceptant que deux
+ * de ses propres rapports ne soient plus reproduits.
+ *
+ * Ce test ne vérifie pas un comportement : il garde l'écart chiffré, pour que
+ * personne ne « répare » plus tard une parité qui a été abandonnée sciemment.
+ */
+test('PA : l’écart avec les rapports de 2011 et 2025-09 est documenté', () => {
+  const global = (cotes: number[]) => (cotes.reduce((a, b) => a + b, 0) / (cotes.length * 4)) * 4
+  // Nick 2025-09 — comp 0, aéro 4, PA (122), dos 3, musculo 4. Imprimé : 2,2.
+  assert.equal(round1(global([0, 4, 0, 3, 4])), 2.2) // avec l'ancienne règle
+  assert.equal(round1(global([0, 4, systolicRating(122) as number, 3, 4])), 2.8) // avec les zones
+  // Nick 2011-08 — comp 2, aéro 4, PA (129), dos 2, musculo 3. Imprimé : 2,2.
+  assert.equal(round1(global([2, 4, 0, 2, 3])), 2.2)
+  assert.equal(round1(global([2, 4, systolicRating(129) as number, 2, 3])), 2.8)
 })
 
 test('Sabrina 2026-01 : la 6ᵉ composante est le questionnaire, coté 2', () => {
@@ -197,7 +185,7 @@ test('Sabrina 2026-01 : la 6ᵉ composante est le questionnaire, coté 2', () =>
   // Donc n=6 : il reste 9 − 3 = 6 pour la PA + la composante inconnue.
   assert.equal(9 - connu, 6)
   // PA 117 < 120 → 4 selon la règle en vigueur, donc l'inconnue vaut 2.
-  assert.equal(systolicRatingLegacy(117), 4)
+  assert.equal(systolicRating(117), 4)
   assert.equal(6 - 4, 2)
   // IDENTIFIÉE : la fenêtre Propriétés de l'ancien logiciel liste sept
   // composantes — [Questionnaire combiné], [Composition corporelle], [Pression

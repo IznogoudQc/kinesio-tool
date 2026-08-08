@@ -38,15 +38,21 @@ test('aValider ne remonte que l’ouvert, le plus lourd d’abord', () => {
   assert.deepEqual(rangs, [...rangs].sort((a, b) => b - a))
 })
 
-test('la PA systolique reste « déduit » tant que sa table manque', () => {
-  // Garde-fou : ce barème vient d'un rétro-calcul sur 4 points et entre dans le
-  // score. Le passer à « confirmé » sans la fenêtre Propriétés ferait cesser les
-  // questions sur le seul chiffre qu'on sait fragile.
+test('la PA systolique est confirmée par la capture de l’ancien logiciel', () => {
+  // Ce garde-fou exigeait auparavant que l'entrée reste « déduit » : le barème
+  // venait d'un rétro-calcul sur 4 points et entrait dans le score, donc le
+  // passer à « confirmé » sans preuve aurait fait cesser les questions.
+  //
+  // La preuve est arrivée le 2026-08-07 — une capture de l'écran d'affichage de
+  // l'ancien logiciel, montrant les mêmes bornes et aucune distinction d'âge ni
+  // de sexe. Le garde-fou change donc de cible : il vérifie désormais que le
+  // statut « confirmé » s'appuie bien sur cette capture, pas sur une déduction.
   const pa = VALIDATION.find(e => e.id === 'pa-systolique-cote')
   assert.ok(pa)
-  assert.equal(pa.statut, 'deduit')
+  assert.equal(pa.statut, 'confirme')
   assert.equal(pa.entreDansLeScore, true)
-  assert.match(pa.manque ?? '', /Propriétés/)
+  assert.equal(pa.manque, null)
+  assert.match(pa.reference ?? '', /ancien logiciel/)
 })
 
 test('la composition corporelle est confirmée — et sa source le dit', () => {

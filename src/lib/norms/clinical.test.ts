@@ -15,9 +15,16 @@ test('classification PA — systolique', () => {
   assert.equal(classifyBloodPressure(170, 'systolic')!.zone, 'Hypertension 2')
 })
 
-test('classification PA — diastolique (87 → Pré-hypertension)', () => {
+test('classification PA — diastolique, bornes de l’ancien logiciel', () => {
+  // Capture de sa fenêtre d'affichage (2026-08-07) : 75 / 80 / 90 / 100.
+  // L'app affichait 80 / 85 / 90 / 100 — deux zones décalées de 5 mmHg.
+  assert.equal(classifyBloodPressure(74, 'diastolic')!.zone, 'Optimale')
+  assert.equal(classifyBloodPressure(75, 'diastolic')!.zone, 'Normale')
+  assert.equal(classifyBloodPressure(79, 'diastolic')!.zone, 'Normale')
+  assert.equal(classifyBloodPressure(80, 'diastolic')!.zone, 'Pré-hypertension')
   assert.equal(classifyBloodPressure(87, 'diastolic')!.zone, 'Pré-hypertension')
-  assert.equal(classifyBloodPressure(79, 'diastolic')!.zone, 'Optimale')
+  assert.equal(classifyBloodPressure(90, 'diastolic')!.zone, 'Hypertension 1')
+  assert.equal(classifyBloodPressure(100, 'diastolic')!.zone, 'Hypertension 2')
 })
 
 test('barre PA : 5 zones contiguës, repère borné, zone courante alignée', () => {

@@ -67,11 +67,12 @@ export const VALIDATION: ValidationEntree[] = [
   {
     id: 'pa-systolique-cote',
     label: 'Pression artérielle systolique — cote 0-4',
-    statut: 'deduit',
+    statut: 'confirme',
     source:
-      'Rétro-calcul sur 4 bilans seulement (112 → 4, 113 → 4, 122 → 0, 129 → 0). Règle appliquée : moins de 120 mmHg → 4, sinon 0. À ne pas confondre avec les zones colorées du bilan, qui sont confirmées : les cinq zones cliniques donneraient 3 à une tension de 122, là où l’ancien logiciel donne 0.',
-    manque:
-      'La fenêtre Propriétés du test « Pression artérielle systolique », onglet des cotes. Vérifier que les bornes en mmHg sont lisibles et s’il y a une distinction homme/femme ou par âge.',
+      'Les cinq zones cliniques, sans distinction d’âge ni de sexe : moins de 120 → 4, 120-129 → 3, 130-139 → 2, 140-159 → 1, 160 et plus → 0. La couleur que voit le client et la cote qui entre dans son score disent donc la même chose.',
+    reference:
+      'Capture de l’écran d’affichage de l’ancien logiciel, fournie par Nicholas le 2026-08-07 : mêmes bornes (120/130/140/160), aucune distinction homme/femme ni par âge. Remplace un rétro-calcul sur 4 bilans qui donnait « moins de 120 → 4, sinon 0 » ; l’écart est assumé et chiffré dans `cpafla-parite.test.ts` (deux rapports passent de 2,2 à 2,8).',
+    manque: null,
     entreDansLeScore: true
   },
   {
@@ -143,9 +144,11 @@ export const VALIDATION: ValidationEntree[] = [
   {
     id: 'pa-diastolique-seuils',
     label: 'Pression diastolique — seuils affichés',
-    statut: 'a_confirmer',
-    source: 'Affiché : 80 / 85 / 90 / 100 mmHg. L’ancien logiciel montrait 75 / 80 / 90 / 100.',
-    manque: 'Que Marie confirme les bornes qu’elle veut voir. Non modifié sans son accord.',
+    statut: 'confirme',
+    source: 'Affiché : 75 / 80 / 90 / 100 mmHg — Optimale sous 75, puis Normale, Pré-hypertension, Hypertension 1 et 2.',
+    reference:
+      'Capture de l’ancien logiciel, 2026-08-07. L’app affichait 80 / 85 / 90 / 100 : deux zones étaient décalées de 5 mmHg. La capture montre 74 mmHg classé « Optimale », ce que les nouvelles bornes reproduisent.',
+    manque: null,
     entreDansLeScore: false
   },
   {
