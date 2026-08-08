@@ -1,6 +1,5 @@
 import { BloodPressureBar } from '../../components/BloodPressureBar'
 import { BP_BOUNDS, BP_ZONES, systolicRating } from '../../lib/norms/clinical'
-import { CATEGORY_LABELS } from '../../lib/norms'
 import { useTabulations, Explication, Table, LigneBareme, Source, SousTitre, COULEUR_CAT } from './bareme-ui'
 
 /**
@@ -126,18 +125,6 @@ function PanneauCote() {
         Cotes calculées ici par la fonction qui alimente réellement le score, pas recopiées.
       </Source>
 
-      <div className="mt-4 rounded-lg border border-cream-dark bg-cream/30 p-3">
-        <p className="text-marine/70 text-sm leading-relaxed">
-          <strong className="text-marine">Ce qui a changé.</strong> Jusqu’à la version 0.9.144, la cote était
-          binaire : {CATEGORY_LABELS.EXCELLENT.toLowerCase()} sous 120 mmHg, {CATEGORY_LABELS.A_AMELIORER.toLowerCase()}{' '}
-          au-dessus. Cette règle venait d’un rétro-calcul sur quatre anciens bilans, faute de barème documenté.
-        </p>
-        <p className="text-marine/70 text-sm leading-relaxed mt-2">
-          Elle reproduisait mieux deux rapports de l’ancien logiciel, qui passent de 2,2 à 2,8 avec les zones.
-          L’écart est assumé : une échelle publiée et cohérente avec ce que voit le client a été préférée à la
-          reproduction de deux bilans. Les scores étant recalculés à l’affichage, aucune donnée n’a été modifiée.
-        </p>
-      </div>
     </div>
   )
 }

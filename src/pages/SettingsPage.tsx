@@ -509,7 +509,7 @@ function BilanTestsTab() {
 
         <TestCard
           titre="Pression artérielle"
-          role="Les zones colorées du bilan sont confirmées ; la cote 0-4 qui entre dans le score, elle, reste déduite."
+          role="Les zones colorées du bilan et la cote 0-4 qui entre dans le score suivent le même barème."
           validationId="pa-systolique-cote"
         >
           <PaBaremes />
