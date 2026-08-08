@@ -9,7 +9,6 @@ import {
   Explication,
   Table,
   LigneBareme,
-  Source,
   SousTitre,
   TableParAge
 } from './bareme-ui'
@@ -55,16 +54,9 @@ const ORDRE_TESTS = ['endurance_dos_sec', 'situps', 'flexion_tronc_cm', 'tour_ta
 function PanneauComposantes() {
   return (
     <div>
-      <Explication titre="Ce que l’indice regroupe">
-        <p>
-          Aucun test ne s’appelle « dos ». L’indice réunit <strong>quatre mesures</strong> qui déterminent
-          ensemble la capacité du tronc à soutenir la colonne : l’endurance des extenseurs, la force des
-          fléchisseurs, la souplesse, et la charge que l’abdomen fait porter au bas du dos.
-        </p>
-        <p>
-          Les poids ne sont pas égaux. L’<strong>extension du dos compte double</strong> chez tout le monde — c’est
-          le test le plus lié à la lombalgie. Chez la femme, le <strong>tour de taille compte double</strong> aussi.
-        </p>
+      <Explication titre="Composantes et poids — figure 7-24">
+        <p>Quatre mesures pondérées. L’extension du dos compte double chez tout le monde ; le tour de taille compte double chez la femme.</p>
+        <p className="text-marine/50">Le guide compte aussi le niveau d’activité physique. Il n’est pas saisi : retiré du calcul, la note maximale baisse d’autant.</p>
       </Explication>
 
       {(['M', 'F'] as const).map(sex => {
@@ -92,11 +84,6 @@ function PanneauComposantes() {
         )
       })}
 
-      <Source>
-        Figure 7-24 du Guide du conseiller. Le guide compte aussi le <strong>niveau d’activité physique</strong>,
-        qui n’est pas saisi ici : il est retiré du calcul plutôt qu’estimé, et la note maximale baisse d’autant —
-        un test absent ne pénalise donc jamais la note.
-      </Source>
     </div>
   )
 }
@@ -106,17 +93,9 @@ function PanneauComposantes() {
 function PanneauBaremes() {
   return (
     <div>
-      <Explication titre="Comment chaque test est coté">
-        <p>
-          Les trois tests du tronc sont cotés par âge et par sexe, sur cinq catégories. Chacun devient une cote
-          de 0 à 4 avant d’entrer dans la moyenne.
-        </p>
-        <p className="text-amber-800">
-          <strong>Le tour de taille fait exception.</strong> Ici il n’est <em>pas</em> coté par le barème de la
-          section « Mesures cotées séparément » (moins de 94 cm → Excellent). Il passe par les tables de
-          composition — celles qui croisent la plage d’IMC. La même valeur peut donc donner des points
-          différents selon l’endroit du bilan où on la lit, et c’est voulu : le guide le prévoit ainsi.
-        </p>
+      <Explication titre="Barèmes des tests — figures 7-18 / 7-19">
+        <p>Par âge et par sexe, cote 0 à 4. L’extension du dos plafonne à 180 secondes.</p>
+        <p className="text-amber-800">Le tour de taille fait exception : ici il est coté par les tables de composition, selon la plage d’IMC — pas par le barème « moins de 94 cm » de la section d’à côté.</p>
       </Explication>
 
       <div className="space-y-4">
@@ -125,10 +104,6 @@ function PanneauBaremes() {
         <BaremeTest test="trunkFlexion" titre="Flexion du tronc" unite="cm" />
       </div>
 
-      <Source>
-        Figures 7-18 (hommes) et 7-19 (femmes) du Guide du conseiller. L’extension du dos est plafonnée à 180
-        secondes : le test s’arrête là, une valeur plus haute n’existe pas.
-      </Source>
     </div>
   )
 }
@@ -175,23 +150,11 @@ function PanneauCalcul() {
 
   return (
     <div>
-      <Explication titre="Comment les quatre cotes deviennent une note">
-        <p>
-          Ce n’est pas une moyenne simple. Chaque cote est multipliée par son poids, on additionne, et on divise
-          par le maximum possible <em>des tests réellement mesurés</em> :
-        </p>
-        <p className="text-marine/75">note = (somme des cotes pondérées ÷ somme des maximums) × 4</p>
-        <p>
-          C’est ce qui fait qu’un test non mesuré ne pénalise pas : il disparaît des deux côtés de la division.
-        </p>
-        <p className="text-marine/50">
-          La note garde ses <strong>décimales</strong>. Le guide publie un nomogramme qui l’arrondit à l’entier,
-          mais l’ancien logiciel affichait la valeur non arrondie — et c’est elle qui est reprise ici, pour que
-          les deux se comparent directement.
-        </p>
+      <Explication titre="Formule">
+        <p className="text-marine/75">Note = (somme des cotes pondérées ÷ somme des maximums) × 4</p>
+        <p className="text-marine/50">Seuls les tests mesurés comptent, des deux côtés de la division : un test absent ne pénalise pas. La note garde ses décimales.</p>
       </Explication>
 
-      <SousTitre>Exemple — une femme, quatre tests mesurés</SousTitre>
       <div className="rounded-md border border-cream-dark bg-white overflow-hidden">
         <table className="w-full text-sm">
           <thead>
@@ -232,11 +195,6 @@ function PanneauCalcul() {
         )}
       </p>
 
-      <Source>
-        Reproduit les résultats de l’ancien logiciel sur les six bilans vérifiés. Les chiffres de cet exemple
-        sont calculés par la fonction qui produit les vraies notes — ils suivent donc toute modification de la
-        pondération.
-      </Source>
     </div>
   )
 }

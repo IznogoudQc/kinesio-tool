@@ -10,7 +10,6 @@ import {
   Explication,
   LigneBareme,
   Table,
-  Source,
   SousTitre,
   COULEUR_CAT,
   ORDRE_CAT,
@@ -79,7 +78,7 @@ export function CompositionBaremes() {
 function BaremeCombine() {
   return (
     <div className="mb-5 rounded-lg border border-gold/30 bg-gold/[0.04] p-3">
-      <p className="text-marine/60 text-sm leading-relaxed mb-3">
+      <p className="text-marine/70 text-sm leading-relaxed mb-3">
         C’est cette table qui donne la note. La plage d’IMC choisit le bloc, puis le tour de taille et la somme
         des plis y sont cotés — d’où le fait qu’une même valeur de tour de taille ne vaut pas les mêmes points
         selon l’IMC.
@@ -89,11 +88,6 @@ function BaremeCombine() {
           <CpaflaBaremeTable key={sex} sex={sex} titre={sex === 'M' ? 'Hommes' : 'Femmes'} />
         ))}
       </div>
-      <Source>
-        Figures 7-4 (hommes) et 7-5 (femmes) du Guide du conseiller. Ce barème ne dépend{' '}
-        <strong>pas de l’âge</strong> — contrairement à l’aptitude aérobie et aux tests musculosquelettiques, il
-        ne varie qu’avec le sexe et la plage d’IMC.
-      </Source>
     </div>
   )
 }
@@ -107,22 +101,9 @@ function PanneauImc() {
 
   return (
     <div>
-      <Explication titre="Ce que l’IMC mesure">
-        <p>
-          Le rapport du poids sur le carré de la taille. C’est un indicateur de <strong>corpulence</strong>, pas
-          de composition : il ne distingue pas le muscle de la graisse, ni où celle-ci se situe.
-        </p>
-        <p>
-          Un client musclé peut donc se retrouver dans la plage de surpoids sans excès de gras. C’est
-          précisément pourquoi l’IMC ne se lit jamais seul dans ce protocole : il sert à choisir la{' '}
-          <strong>ligne du barème</strong> dans laquelle le tour de taille et les plis sont ensuite cotés.
-        </p>
-        <p className="text-amber-800">
-          <strong>Limite connue de cette table.</strong> Elle ne gère pas la maigreur : un IMC de 15 y ressort
-          « Excellent », alors que sous 18,5 le risque remonte. Le calcul de la composition corporelle, lui, le
-          traite correctement — il n’accorde que 3 points sous 18,5, jamais 4. Cette table ne sert donc qu’à
-          situer une valeur d’un coup d’œil, pas à juger un client maigre.
-        </p>
+      <Explication titre="IMC — catégories OMS">
+        <p>IMC = poids ÷ taille². Indépendant de l’âge et du sexe. Affichage seulement.</p>
+        <p className="text-amber-800">Cette table n’a pas de borne basse : un IMC de 15 y ressort « Excellent ». Le calcul de la composition, lui, plafonne à 3 sous 18,5.</p>
       </Explication>
 
       {cells && (
@@ -160,19 +141,9 @@ function PanneauTourDeTaille() {
 
   return (
     <div>
-      <Explication titre="Ce que le tour de taille mesure">
-        <p>
-          La graisse <strong>abdominale</strong> — celle qui entoure les organes. C’est elle qui pèse le plus
-          dans le risque cardio-métabolique, davantage que le poids total.
-        </p>
-        <p>
-          Mesuré à mi-chemin entre la dernière côte et la crête iliaque, en fin d’expiration normale, sans
-          comprimer la peau. Deux mesures qui diffèrent de plus d’un centimètre se reprennent.
-        </p>
-        <p className="text-marine/50">
-          Ce test n’attribue que les cotes <strong>4, 3 et 1</strong> — il saute le 2. C’est ainsi que le barème
-          est publié ; le « corriger » en 4/3/2 inventerait une cote qui n’existe pas.
-        </p>
+      <Explication titre="Tour de taille — coté seul">
+        <p>Bornes de l’ancien logiciel, tous les âges. <strong>Exclusives</strong> : 101,5 cm reste « Risque potentiel », 102 cm n’y est plus.</p>
+        <p className="text-marine/50">Cotes 4, 3 et 1 — le barème saute le 2.</p>
       </Explication>
 
       {(['M', 'F'] as const).map(sex => (
@@ -185,10 +156,6 @@ function PanneauTourDeTaille() {
           </Table>
         </div>
       ))}
-      <Source>
-        Fenêtre Propriétés du test « Circonférence de la taille » de l’ancien logiciel, onglet Classification.
-        Les bornes sont exclusives : 101,5 cm reste « Risque potentiel », 102 cm n’y est plus.
-      </Source>
     </div>
   )
 }
@@ -213,20 +180,9 @@ function plage(z: BfRiskZone): string {
 function PanneauGras() {
   return (
     <div>
-      <Explication titre="Ce que le pourcentage de gras mesure">
-        <p>
-          La part de la masse corporelle qui est du tissu adipeux. Estimée ici par la méthode des{' '}
-          <strong>plis cutanés</strong> (Durnin-Womersley, conversion de Siri) — quatre sites : triceps, biceps,
-          sous-scapulaire et crête iliaque.
-        </p>
-        <p>
-          Contrairement à l’IMC, il distingue le muscle de la graisse. C’est la mesure la plus parlante pour un
-          client, et celle qui bouge le plus vite quand l’entraînement porte.
-        </p>
-        <p className="text-marine/50">
-          La grille comporte du <strong>risque aux deux extrémités</strong> : trop peu de gras est aussi un
-          problème que trop. C’est pourquoi elle n’est pas une échelle « plus bas = mieux ».
-        </p>
+      <Explication titre="% de gras — grille de l’ancien logiciel">
+        <p>Durnin-Womersley sur 4 plis, converti par Siri. Un seul palier d’âge.</p>
+        <p className="text-marine/50">Risque aux deux extrémités : ce n’est pas une échelle « plus bas = mieux ». Affichage seulement, cette grille n’entre dans aucun score.</p>
       </Explication>
 
       {(['M', 'F'] as const).map(sex => (

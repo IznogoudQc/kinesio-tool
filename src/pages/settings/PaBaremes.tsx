@@ -1,6 +1,6 @@
 import { BloodPressureBar } from '../../components/BloodPressureBar'
 import { BP_BOUNDS, BP_ZONES, systolicRating } from '../../lib/norms/clinical'
-import { useTabulations, Explication, Table, LigneBareme, Source, SousTitre, COULEUR_CAT } from './bareme-ui'
+import { useTabulations, Explication, Table, LigneBareme, SousTitre, COULEUR_CAT } from './bareme-ui'
 
 /**
  * La pression artérielle, en deux temps — parce que deux barèmes distincts
@@ -49,15 +49,9 @@ function plages(kind: 'systolic' | 'diastolic'): string[] {
 function PanneauZones() {
   return (
     <div>
-      <Explication titre="Les zones qui colorent la barre">
-        <p>
-          Cinq zones, <strong>indépendantes de l’âge et du sexe</strong> — la tension se juge aux mêmes seuils
-          pour tout le monde. Ce sont elles que le client voit sur son bilan.
-        </p>
-        <p className="text-marine/50">
-          Elles classent la pression <strong>au repos</strong>. Après un effort, il est normal qu’elle soit plus
-          élevée : ce qui compte alors est la vitesse du retour vers les valeurs de repos, pas la zone atteinte.
-        </p>
+      <Explication titre="Zones cliniques">
+        <p>Cinq zones, sans distinction d’âge ni de sexe. Bornes de l’ancien logiciel.</p>
+        <p className="text-marine/50">Elles classent la pression au repos.</p>
       </Explication>
 
       {(['systolic', 'diastolic'] as const).map(kind => (
@@ -79,9 +73,6 @@ function PanneauZones() {
         </div>
       ))}
 
-      <Source>
-        Seuils OMS / JNC — références publiques, les mêmes que celles de l’ancien logiciel.
-      </Source>
     </div>
   )
 }
@@ -94,15 +85,8 @@ const EXEMPLES = [112, 122, 135, 148, 165]
 function PanneauCote() {
   return (
     <div>
-      <Explication titre="De la zone à la cote">
-        <p>
-          Le score global reprend <strong>exactement</strong> les cinq zones de l’onglet précédent. La couleur que
-          voit le client et la cote qui entre dans son score disent donc la même chose — Optimale vaut 4,
-          Hypertension 2 vaut 0, et les trois niveaux entre les deux se suivent.
-        </p>
-        <p>
-          Aucune distinction d’âge ni de sexe, comme pour les zones elles-mêmes.
-        </p>
+      <Explication titre="Cote dans le score">
+        <p>La cote reprend exactement les cinq zones : Optimale vaut 4, Hypertension 2 vaut 0.</p>
       </Explication>
 
       <SousTitre>Une valeur par zone</SousTitre>
@@ -121,9 +105,6 @@ function PanneauCote() {
           )
         })}
       </Table>
-      <Source>
-        Cotes calculées ici par la fonction qui alimente réellement le score, pas recopiées.
-      </Source>
 
     </div>
   )

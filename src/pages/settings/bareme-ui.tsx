@@ -7,11 +7,15 @@ import type { TestKey } from '../../lib/norms/types'
 /**
  * Briques d'affichage des barèmes dans « Mesures / Bilans ».
  *
- * Chaque section (composition, aérobie, …) présente les mêmes choses : un texte
- * qui explique ce que la mesure dit, une ou plusieurs tables de barème, une
- * note de provenance. Écrites une fois par section, elles divergeaient en une
- * version — le premier panneau aérobie avait déjà des lignes plus serrées et
- * une pastille de couleur différente pour la même catégorie.
+ * Chaque section présente les mêmes choses : quelques lignes sur le barème et
+ * les décisions prises, puis une ou plusieurs tables. Écrites une fois par
+ * section, elles divergeaient en une version — le premier panneau aérobie avait
+ * déjà des lignes plus serrées et une pastille de couleur différente pour la
+ * même catégorie.
+ *
+ * Les notes de provenance en petits caractères ont été retirées le 2026-08-08 :
+ * Marie ouvre cet écran pour vérifier un seuil, pas pour lire une bibliographie.
+ * Les sources vivent dans `validation-status.ts` et le PDF des barèmes.
  *
  * ⚠️ Aucune de ces briques ne contient de valeur de barème. Les panneaux les
  * **lisent depuis le code** de cotation : une table de référence recopiée à la
@@ -56,7 +60,8 @@ export function useTabulations<K extends string>(onglets: readonly { key: K; lab
   return { actif, barre: <Tabulations onglets={onglets} actif={actif} onChange={setActif} /> }
 }
 
-/** Bloc de texte explicatif — ce que la mesure dit, et ce qu'elle ne dit pas. */
+/** Quelques lignes sur le barème : ce qu'il vaut, ses bornes, les décisions
+ *  prises avec Marie. Pas de rappel clinique. */
 export function Explication({ titre, children }: { titre: string; children: ReactNode }) {
   return (
     <div className="mb-4">
@@ -97,11 +102,6 @@ export function Table({ children }: { children: ReactNode }) {
       </table>
     </div>
   )
-}
-
-/** Note de provenance, sous une table. */
-export function Source({ children }: { children: ReactNode }) {
-  return <p className="text-marine/40 text-xs mt-2 leading-relaxed">{children}</p>
 }
 
 /** Intertitre d'un groupe de lignes (« Hommes · 30-39 ans »). */
