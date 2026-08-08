@@ -140,7 +140,8 @@ export interface BilanComputed {
   backHealthDetail: CpaflaCombineDetail | null
   musculoDetail: CpaflaCombineDetail | null
   /** Détail du score global. Structure **confirmée** par la formule de l'ancien
-   *  logiciel (ADR 0033) ; seul le barème de la PA systolique reste provisoire. */
+   *  logiciel (ADR 0033). Le barème de la PA systolique l'est aussi depuis la
+   *  v0.9.145 — plus aucune composante n'est provisoire (ADR 0040). */
   overallDetail: CpaflaCombineDetail
   overall: CompositeScore
 }

@@ -17,7 +17,6 @@ interface Props {
   /** Phrase de contexte affichée en pied de carte. */
   footnote: string
   /** Avertissement affiché en évidence (ex. calcul encore en calibration). */
-  warning?: string
 }
 
 const nf1 = (n: number): string => n.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
@@ -30,7 +29,7 @@ const nf1 = (n: number): string => n.toLocaleString('fr-CA', { maximumFractionDi
  *
  *  Même facture que `CompositionCpaflaCard`, avec un bouton « Barème » qui déplie
  *  les pondérations utilisées. */
-export function CompositeCpaflaCard({ title, score, category, detail, storageKey, figure, footnote, warning }: Props) {
+export function CompositeCpaflaCard({ title, score, category, detail, storageKey, figure, footnote }: Props) {
   const [showBareme, setShowBareme] = useState<boolean>(
     () => typeof window !== 'undefined' && window.localStorage.getItem(storageKey) === '1'
   )
@@ -73,12 +72,6 @@ export function CompositeCpaflaCard({ title, score, category, detail, storageKey
           )}
         </div>
       </div>
-
-      {warning && (
-        <p className="mb-3 text-xs text-gold-dark bg-gold/10 border border-gold/30 rounded-md px-3 py-2 leading-relaxed">
-          {warning}
-        </p>
-      )}
 
       {/* Détail : chaque test coté, pondéré, et sa contribution. */}
       <div className="divide-y divide-cream-dark/40 border-y border-cream-dark/40">
