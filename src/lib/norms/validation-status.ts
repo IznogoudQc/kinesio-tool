@@ -27,8 +27,20 @@ export interface ValidationEntree {
   /** Ce dont on parle, tel que Marie le reconnaîtra. */
   label: string
   statut: ValidationStatut
-  /** D'où vient la valeur. Phrase courte, sans jargon de code. */
+  /** D'où vient la valeur. Phrase courte, sans jargon de code. Affichée à l'écran. */
   source: string
+  /**
+   * La **preuve** derrière un statut `'confirme'` — document, tableau, page.
+   *
+   * Séparée de `source` parce que les deux ne s'adressent pas au même lecteur.
+   * `source` est lue tous les jours dans les paramètres et doit rester courte ;
+   * la preuve, elle, ne sert qu'au moment de valider. Tant qu'elles partageaient
+   * un champ, alléger le texte affiché effaçait la traçabilité — c'est
+   * exactement ce qui a failli arriver ici.
+   *
+   * Facultative quand `source` cite déjà la preuve.
+   */
+  reference?: string
   /** Ce qui manque pour passer à `'confirme'`. `null` si déjà confirmé. */
   manque: string | null
   /** `true` si un écart fausserait une note remise au client (pas juste un libellé). */
@@ -67,7 +79,9 @@ export const VALIDATION: ValidationEntree[] = [
     label: 'Composition corporelle — figures 7-4 / 7-5 / 7-6',
     statut: 'confirme',
     source:
-      'L’IMC choisit la ligne du barème dans laquelle le tour de taille et les plis sont cotés de 0 à 4. La note vient ensuite des mesures prises : avec les plis, (cote du tour de taille × 1,5 + cote des plis) ÷ 2,5 ; sans eux, la cote du tour de taille seule. Elle est affichée à une décimale, mais c’est sa version entière qui entre dans le score global. Source : Statistique Canada — Enquête canadienne sur les mesures de la santé.',
+      'L’IMC choisit la ligne du barème dans laquelle le tour de taille et les plis sont cotés de 0 à 4. La note vient ensuite des mesures prises : avec les plis, (cote du tour de taille × 1,5 + cote des plis) ÷ 2,5 ; sans eux, la cote du tour de taille seule. Elle est affichée à une décimale, mais c’est sa version entière qui entre dans le score global.',
+    reference:
+      'Statistique Canada — Enquête canadienne sur les mesures de la santé, variables dérivées SFMDBCA, HWMDWSTA (tableau 14) et SFMDS5A (tableaux 20-21). Formule publiée à l’identique ; tour de taille vérifié sur 38 010 combinaisons, plis sur 46 426, sans écart. Reproduit aussi l’ancien logiciel sur les six bilans réels.',
     manque: null,
     entreDansLeScore: true
   },

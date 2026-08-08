@@ -52,13 +52,24 @@ test('la PA systolique reste « déduit » tant que sa table manque', () => {
 test('la composition corporelle est confirmée — et sa source le dit', () => {
   // Passée à « confirmé » le 2026-08-04, contre Statistique Canada : formule
   // publiée à l'identique, et colonne des plis vérifiée sur 46 426 combinaisons.
-  // Ce garde-fou exige que la source nomme la vérification — un statut
-  // « confirmé » sans preuve citée serait pire que « à confirmer ».
+  // Ce garde-fou exige que la preuve soit nommée — un statut « confirmé » sans
+  // preuve citée serait pire que « à confirmer ». Il lit `reference` OU `source` :
+  // le texte affiché à l'écran a été allégé pour rester lisible, la preuve a donc
+  // son propre champ. Ce qui compte est qu'elle existe quelque part, pas où.
   const compo = VALIDATION.find(e => e.id === 'composition-cpafla')
   assert.ok(compo)
   assert.equal(compo.statut, 'confirme')
   assert.equal(compo.entreDansLeScore, true)
-  assert.match(compo.source, /Statistique Canada/)
+  assert.match(`${compo.reference ?? ''} ${compo.source}`, /Statistique Canada/)
+})
+
+test('toute entrée « confirmé » cite une preuve, dans un champ ou dans l’autre', () => {
+  // Généralise le garde-fou ci-dessus à toutes les entrées : sans lui, alléger
+  // un texte affiché pourrait effacer la dernière trace d'une vérification.
+  for (const e of VALIDATION.filter(v => v.statut === 'confirme')) {
+    const preuve = `${e.reference ?? ''} ${e.source}`.trim()
+    assert.ok(preuve.length > 25, `${e.id} : « confirmé » sans preuve citée`)
+  }
 })
 
 test('les compteurs couvrent toutes les entrées, sans trou', () => {
