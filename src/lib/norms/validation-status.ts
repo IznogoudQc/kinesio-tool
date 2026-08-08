@@ -129,7 +129,9 @@ export const VALIDATION: ValidationEntree[] = [
     label: 'Tour de taille jugé seul',
     statut: 'confirme',
     source:
-      'Statistique Canada — Enquête canadienne sur les mesures de la santé, variable dérivée HWMDWSTA. Hommes : moins de 94 → 4, 94 à 101 → 3, au-delà → 1. Femmes : moins de 80 → 4, 80 à 87 → 3, au-delà → 1. Borne haute incluse, et les cotes sautent le 2. Référence publique, préférée à la fenêtre Propriétés de l’ancien logiciel qui montrait 90 chez les femmes.',
+      'Hommes : moins de 94 → 4, moins de 102 → 3, le reste → 1. Femmes : moins de 80 → 4, moins de 90 → 3, le reste → 1. Sans distinction d’âge, et les cotes sautent le 2.',
+    reference:
+      'Fenêtre Propriétés du test « Circonférence de la taille » de l’ancien logiciel, onglet Classification (capture du 2026-08-08) : « = Scores < » 94 / 102 et 80 / 90, tous les âges. Remplace les bornes de Statistique Canada (HWMDWSTA), qui donnaient 87 chez la femme — retenues en août faute d’avoir cette fenêtre. Écart : les femmes de 88 à 89 cm, cotées 1 au lieu de 3 ; aucun bilan en base n’était concerné.',
     manque: null,
     entreDansLeScore: false
   },

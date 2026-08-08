@@ -22,11 +22,12 @@ export function WaistBareme({ value, sex }: { value: number | null | undefined; 
   const raison = waistRatingExplanation(value, sex)
   const [excellent, potentiel] = WAIST_BOUNDS[sex]
 
-  // `potentiel` est la borne HAUTE incluse : 101 cm reste « Risque potentiel ».
+  // Les deux bornes sont EXCLUSIVES (« Scores < » dans la fenêtre Propriétés).
+  // Écrire « 94 à 102 » suggérerait que 102 est encore dedans — il ne l'est pas.
   const lignes = [
     { cote: 4, label: 'Excellent', plage: `moins de ${excellent} cm`, couleur: 'text-green-700' },
-    { cote: 3, label: 'Risque potentiel', plage: `${excellent} à ${potentiel} cm`, couleur: 'text-yellow-700' },
-    { cote: 1, label: 'Risque considérable', plage: `plus de ${potentiel} cm`, couleur: 'text-red-700' }
+    { cote: 3, label: 'Risque potentiel', plage: `${excellent} à moins de ${potentiel} cm`, couleur: 'text-yellow-700' },
+    { cote: 1, label: 'Risque considérable', plage: `${potentiel} cm et plus`, couleur: 'text-red-700' }
   ]
 
   return (

@@ -129,24 +129,28 @@ export function getClinicalRange(test: TestKey, sex: 'F' | 'M'): NormRange | nul
 /**
  * Barème du **tour de taille**, trois niveaux.
  *
- * Source : Statistique Canada — Enquête canadienne sur les mesures de la santé,
- * variable dérivée **HWMDWSTA** (« Tour de taille — normes »). Retenue plutôt
- * que la fenêtre Propriétés de l'ancien logiciel pour avoir une **référence
- * publique et citable** (décision de Nicholas, 2026-08-04).
+ * Source : la fenêtre **Propriétés** du test « Circonférence de la taille » de
+ * l'ancien logiciel, onglet Classification (capture du 2026-08-08). Elle écrit
+ * littéralement `= Scores <` suivi de la borne, pour tous les âges :
  *
  * | | Hommes | Femmes |
  * |---|---|---|
- * | 4 Excellent            | < 94 cm      | < 80 cm     |
- * | 3 Risque potentiel     | 94 à 101 cm  | 80 à 87 cm  |
- * | 1 Risque considérable  | plus de 101  | plus de 87  |
+ * | 4 Excellent            | < 94 cm  | < 80 cm |
+ * | 3 Risque potentiel     | < 102 cm | < 90 cm |
+ * | 1 Risque considérable  | tous les scores restants |
+ *
+ * Remplace les bornes de Statistique Canada (HWMDWSTA), qui donnaient 87 chez la
+ * femme. Elles avaient été préférées en août pour disposer d'une référence
+ * publique, faute d'avoir cette fenêtre sous les yeux ; la capture tranche.
+ * Écart réel : les femmes entre 88 et 89 cm, cotées 1 au lieu de 3. Aucun des
+ * bilans en base n'était concerné.
  *
  * ⚠️ Deux détails qui se perdent facilement :
  *
- * 1. La borne haute est **inclusive** : 101 cm reste « Risque potentiel », c'est
- *    au-delà que la classe change. Écrire `< 102` marcherait sur des entiers mais
- *    classerait 101,5 cm du mauvais côté.
- * 2. Les cotes **sautent le 2**. La fenêtre de l'ancien logiciel imprime 4 / 3 / 1 ;
- *    ne pas « normaliser » en 4/3/2, ce serait inventer une cote.
+ * 1. Les bornes sont **exclusives** — c'est `< 102`, pas `≤ 101`. Sur des entiers
+ *    les deux coïncident, mais 101,5 cm bascule du mauvais côté avec `≤ 101`.
+ * 2. Les cotes **sautent le 2**. La fenêtre imprime 4 / 3 / 1 ; ne pas
+ *    « normaliser » en 4/3/2, ce serait inventer une cote.
  *
  * ⚠️ Ce barème est **distinct** de la cote de tour de taille utilisée par
  * l'indice de santé du dos et l'aptitude musculosquelettique, qui vient des
@@ -162,14 +166,14 @@ export interface WaistRating {
 }
 
 /**
- * Seuils par sexe, en cm : `[borne « Excellent », HAUT de « Risque potentiel »]`.
+ * Seuils par sexe, en cm : `[borne « Excellent », borne « Risque potentiel »]`.
  *
- * La seconde valeur est **incluse** dans la classe moyenne — 101 cm est encore
- * « Risque potentiel » chez l'homme, 87 cm chez la femme.
+ * Les DEUX sont exclusives, comme les écrit la fenêtre Propriétés (`Scores <`) :
+ * 101,9 cm est encore « Risque potentiel » chez l'homme, 102 ne l'est plus.
  */
 export const WAIST_BOUNDS: Record<'M' | 'F', [number, number]> = {
-  M: [94, 101],
-  F: [80, 87]
+  M: [94, 102],
+  F: [80, 90]
 }
 
 export function waistRating(
@@ -178,9 +182,9 @@ export function waistRating(
 ): WaistRating | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
   if (sex !== 'M' && sex !== 'F') return null
-  const [excellent, hautPotentiel] = WAIST_BOUNDS[sex]
+  const [excellent, potentiel] = WAIST_BOUNDS[sex]
   if (value < excellent) return { cote: 4, label: 'Excellent' }
-  if (value <= hautPotentiel) return { cote: 3, label: 'Risque potentiel' }
+  if (value < potentiel) return { cote: 3, label: 'Risque potentiel' }
   return { cote: 1, label: 'Risque considérable' }
 }
 
@@ -199,8 +203,8 @@ export function waistRatingExplanation(
   const cm = (value as number).toLocaleString('fr-CA', { maximumFractionDigits: 1 })
   const [excellent, potentiel] = WAIST_BOUNDS[sex]
   if (r.cote === 4) return `${cm} cm, sous la barre des ${excellent} cm.`
-  if (r.cote === 3) return `${cm} cm : au-dessus de ${excellent} cm, sans dépasser ${potentiel} cm.`
-  return `${cm} cm, au-delà de ${potentiel} cm.`
+  if (r.cote === 3) return `${cm} cm : au-dessus de ${excellent} cm, sous la barre des ${potentiel} cm.`
+  return `${cm} cm, à ${potentiel} cm ou plus.`
 }
 
 /**

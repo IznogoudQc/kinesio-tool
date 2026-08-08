@@ -150,18 +150,19 @@ test('IMC — agnostique âge/sexe, lowerIsBetter', () => {
   assert.equal(getCategorization('bmi', 32, 50, 'M'), 'A_AMELIORER')
 })
 
-test('Tour de taille — normes Statistique Canada (HWMDWSTA)', () => {
-  // Trois niveaux, la cote 2 est sautée. Borne haute INCLUSE :
-  //   H : < 94 → 4 Excellent · 94 à 101 → 3 Risque potentiel · au-delà → 1
-  //   F : < 80 → 4           · 80 à 87  → 3                  · au-delà → 1
+test('Tour de taille — fenêtre Propriétés de l’ancien logiciel', () => {
+  // Trois niveaux, la cote 2 est sautée. Bornes EXCLUSIVES (« Scores < ») :
+  //   H : < 94 → 4 Excellent · < 102 → 3 Risque potentiel · le reste → 1
+  //   F : < 80 → 4           · < 90  → 3                  · le reste → 1
   assert.equal(getCategorization('waistCircumference', 93, 40, 'M'), 'EXCELLENT')
   assert.equal(getCategorization('waistCircumference', 94, 40, 'M'), 'TRES_BIEN')
   assert.equal(getCategorization('waistCircumference', 101, 40, 'M'), 'TRES_BIEN')
   assert.equal(getCategorization('waistCircumference', 102, 40, 'M'), 'ACCEPTABLE')
   assert.equal(getCategorization('waistCircumference', 79, 40, 'F'), 'EXCELLENT')
   assert.equal(getCategorization('waistCircumference', 87, 40, 'F'), 'TRES_BIEN')
-  // La plage que ni les anciens tests ACSM ni ceux de who.ts ne sondaient.
-  assert.equal(getCategorization('waistCircumference', 88, 40, 'F'), 'ACCEPTABLE')
+  // La plage où l'ancien logiciel et Statistique Canada divergent.
+  assert.equal(getCategorization('waistCircumference', 89, 40, 'F'), 'TRES_BIEN')
+  assert.equal(getCategorization('waistCircumference', 90, 40, 'F'), 'ACCEPTABLE')
 })
 
 test('Tour de taille — l’âge n’intervient pas (« Tous les âges »)', () => {

@@ -44,28 +44,28 @@ test('barre PA : repère saturé et valeur absente', () => {
   assert.equal(bloodPressureBar(null, 'systolic')!.current, null)
 })
 
-test('tour de taille — normes Statistique Canada, aux bornes exactes', () => {
-  // HWMDWSTA. Hommes : < 94 → 4 · 94 à 101 → 3 · au-delà de 101 → 1
+test('tour de taille — fenêtre Propriétés de l’ancien logiciel, aux bornes exactes', () => {
+  // Capture du 2026-08-08, onglet Classification : « = Scores < » 94 / 102 chez
+  // l'homme, 80 / 90 chez la femme, tous les âges.
   assert.deepEqual(waistRating(93.9, 'M'), { cote: 4, label: 'Excellent' })
   assert.deepEqual(waistRating(94, 'M'), { cote: 3, label: 'Risque potentiel' })
-  assert.deepEqual(waistRating(101, 'M'), { cote: 3, label: 'Risque potentiel' })
-  assert.deepEqual(waistRating(101.5, 'M'), { cote: 1, label: 'Risque considérable' })
+  assert.deepEqual(waistRating(101.9, 'M'), { cote: 3, label: 'Risque potentiel' })
   assert.deepEqual(waistRating(102, 'M'), { cote: 1, label: 'Risque considérable' })
-  // Femmes : < 80 → 4 · 80 à 87 → 3 · au-delà de 87 → 1
   assert.deepEqual(waistRating(79.9, 'F'), { cote: 4, label: 'Excellent' })
   assert.deepEqual(waistRating(80, 'F'), { cote: 3, label: 'Risque potentiel' })
-  assert.deepEqual(waistRating(87, 'F'), { cote: 3, label: 'Risque potentiel' })
-  assert.deepEqual(waistRating(87.5, 'F'), { cote: 1, label: 'Risque considérable' })
-  assert.deepEqual(waistRating(88, 'F'), { cote: 1, label: 'Risque considérable' })
+  assert.deepEqual(waistRating(89.9, 'F'), { cote: 3, label: 'Risque potentiel' })
+  assert.deepEqual(waistRating(90, 'F'), { cote: 1, label: 'Risque considérable' })
 })
 
-test('tour de taille — la borne haute est INCLUSE', () => {
-  // Piège : écrire « < 102 » marcherait sur des entiers mais classerait
-  // 101,5 cm en « Risque potentiel » alors que la norme dit « plus de 101 ».
-  assert.equal(waistRating(101, 'M')?.cote, 3)
-  assert.equal(waistRating(101.1, 'M')?.cote, 1)
-  assert.equal(waistRating(87, 'F')?.cote, 3)
-  assert.equal(waistRating(87.1, 'F')?.cote, 1)
+test('tour de taille — la borne haute est EXCLUSIVE', () => {
+  // La fenêtre écrit « Scores < 102 » : 101,5 cm reste « Risque potentiel ».
+  // Ce test a longtemps affirmé l'inverse, quand les bornes venaient de
+  // Statistique Canada (« plus de 101 »). La capture de l'ancien logiciel a
+  // changé la source ET la façon de comparer — les deux allaient ensemble.
+  assert.equal(waistRating(101.5, 'M')?.cote, 3)
+  assert.equal(waistRating(102, 'M')?.cote, 1)
+  assert.equal(waistRating(89.5, 'F')?.cote, 3)
+  assert.equal(waistRating(90, 'F')?.cote, 1)
 })
 
 test('tour de taille — la cote 2 n’existe pas, et la 0 non plus', () => {
@@ -78,13 +78,16 @@ test('tour de taille — la cote 2 n’existe pas, et la 0 non plus', () => {
   assert.deepEqual([...cotes].sort(), [1, 3, 4])
 })
 
-test('tour de taille — le seuil féminin est 87, pas 90', () => {
-  // La fenêtre Propriétés de l'ancien logiciel montrait 90 ; Statistique Canada
-  // (HWMDWSTA) dit « plus de 87 ». C'est la source publique qui fait foi ici —
-  // décision de Nicholas, pour pouvoir citer une référence.
+test('tour de taille — le seuil féminin est 90, pas 87', () => {
+  // Statistique Canada (HWMDWSTA) dit 87 ; la fenêtre Propriétés dit 90. Elle
+  // avait été écartée en août faute d'être visible — la capture du 2026-08-08 la
+  // montre, et c'est le logiciel que l'app remplace qui fait foi.
+  //
+  // C'est exactement la plage où les deux sources divergent : 88 et 89 cm.
   assert.equal(waistRating(87, 'F')?.cote, 3)
-  assert.equal(waistRating(88, 'F')?.cote, 1)
-  assert.equal(waistRating(89, 'F')?.cote, 1)
+  assert.equal(waistRating(88, 'F')?.cote, 3)
+  assert.equal(waistRating(89, 'F')?.cote, 3)
+  assert.equal(waistRating(90, 'F')?.cote, 1)
 })
 
 test('tour de taille — sexe ou valeur manquants → null, jamais de cote inventée', () => {
@@ -96,12 +99,12 @@ test('tour de taille — sexe ou valeur manquants → null, jamais de cote inven
 test('tour de taille — la raison nomme la borne franchie', () => {
   // Homme : bornes 94 et 102.
   assert.match(waistRatingExplanation(93, 'M')!, /93 cm, sous la barre des 94 cm/)
-  assert.match(waistRatingExplanation(94, 'M')!, /au-dessus de 94 cm, sans dépasser 101 cm/)
-  assert.match(waistRatingExplanation(105, 'M')!, /au-delà de 101 cm/)
-  // Femme : bornes 80 et 87.
+  assert.match(waistRatingExplanation(94, 'M')!, /au-dessus de 94 cm, sous la barre des 102 cm/)
+  assert.match(waistRatingExplanation(105, 'M')!, /à 102 cm ou plus/)
+  // Femme : bornes 80 et 90.
   assert.match(waistRatingExplanation(79, 'F')!, /sous la barre des 80 cm/)
-  assert.match(waistRatingExplanation(85, 'F')!, /au-dessus de 80 cm, sans dépasser 87 cm/)
-  assert.match(waistRatingExplanation(95, 'F')!, /au-delà de 87 cm/)
+  assert.match(waistRatingExplanation(85, 'F')!, /au-dessus de 80 cm, sous la barre des 90 cm/)
+  assert.match(waistRatingExplanation(95, 'F')!, /à 90 cm ou plus/)
 })
 
 test('tour de taille — la raison suit toujours la cote, sans contradiction', () => {
@@ -111,9 +114,9 @@ test('tour de taille — la raison suit toujours la cote, sans contradiction', (
       const raison = waistRatingExplanation(cm, sex)!
       // Une phrase qui dirait « sous la barre » pour une cote 1 serait pire que
       // pas de phrase du tout.
-      if (cote.cote === 4) assert.match(raison, /sous la barre/, `${cm} ${sex}`)
-      if (cote.cote === 3) assert.match(raison, /sans dépasser/, `${cm} ${sex}`)
-      if (cote.cote === 1) assert.match(raison, /au-delà/, `${cm} ${sex}`)
+      if (cote.cote === 4) assert.match(raison, /^[\d,]+ cm, sous la barre/, `${cm} ${sex}`)
+      if (cote.cote === 3) assert.match(raison, /au-dessus de .* sous la barre/, `${cm} ${sex}`)
+      if (cote.cote === 1) assert.match(raison, /ou plus\.$/, `${cm} ${sex}`)
     }
   }
 })

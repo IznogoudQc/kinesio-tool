@@ -122,21 +122,22 @@ test('la barre du tour de taille et la cote disent la même chose', () => {
 
 test('les bornes de la barre viennent du barème, pas d’une copie', () => {
   for (const sex of ['M', 'F'] as const) {
-    const [excellent, hautPotentiel] = WAIST_BOUNDS[sex]
+    const [excellent, potentiel] = WAIST_BOUNDS[sex]
     assert.equal(getWaistRisk(excellent - 0.1, sex)?.level, 'low')
     assert.equal(getWaistRisk(excellent, sex)?.level, 'high')
-    // Borne haute INCLUSE : c'est au-delà que la classe change.
-    assert.equal(getWaistRisk(hautPotentiel, sex)?.level, 'high')
-    assert.equal(getWaistRisk(hautPotentiel + 0.1, sex)?.level, 'very_high')
+    // Bornes EXCLUSIVES (« Scores < ») : la borne elle-même bascule la classe.
+    assert.equal(getWaistRisk(potentiel - 0.1, sex)?.level, 'high')
+    assert.equal(getWaistRisk(potentiel, sex)?.level, 'very_high')
   }
 })
 
-test('la plage 88-89 cm chez les femmes — celle qui manquait', () => {
-  // Trou des tests d'origine : aucun ne sondait cette plage. Sous Statistique
-  // Canada (« plus de 87 »), elle est « Risque considérable ».
+test('la plage 88-89 cm chez les femmes — celle où les sources divergeaient', () => {
+  // Statistique Canada la classait « Risque considérable » (« plus de 87 »),
+  // la fenêtre Propriétés « Risque potentiel » (« Scores < 90 »). C'est cette
+  // dernière qui fait foi depuis le 2026-08-08.
   assert.equal(getWaistRisk(87, 'F')?.level, 'high')
-  assert.equal(getWaistRisk(88, 'F')?.level, 'very_high')
-  assert.equal(getWaistRisk(89, 'F')?.level, 'very_high')
+  assert.equal(getWaistRisk(89, 'F')?.level, 'high')
+  assert.equal(getWaistRisk(90, 'F')?.level, 'very_high')
 })
 
 test('le ratio taille/hanche garde ses seuils ET ses libellés OMS', () => {

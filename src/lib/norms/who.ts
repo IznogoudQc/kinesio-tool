@@ -16,7 +16,7 @@
  *   - Santé Canada, Risque pour la santé en fonction du tour de taille.
  */
 
-import { WAIST_BOUNDS } from './clinical.ts'
+import { WAIST_BOUNDS, waistRating } from './clinical.ts'
 
 export type WhoRiskLevel = 'low' | 'high' | 'very_high'
 
@@ -43,9 +43,8 @@ interface RiskThresholds {
 }
 
 /**
- * Tour de taille : bornes importées de `WAIST_BOUNDS` (Statistique Canada),
- * jamais recopiées — ce barème a déjà existé en quatre exemplaires divergents
- * dans le projet.
+ * Tour de taille : bornes importées de `WAIST_BOUNDS`, jamais recopiées — ce
+ * barème a déjà existé en quatre exemplaires divergents dans le projet.
  *
  * Les trois niveaux (cotes 4 / 3 / 1) tombent exactement sur les trois segments
  * de la barre : rien à adapter côté visuel.
@@ -87,14 +86,26 @@ function classifyByThresholds(value: number, t: RiskThresholds): WhoRiskLevel {
   return 'very_high'
 }
 
-/** Risque cardio-métabolique selon le tour de taille (cm). */
+/**
+ * Risque cardio-métabolique selon le tour de taille (cm).
+ *
+ * Délègue à `waistRating` au lieu de recomparer les bornes. `classifyByThresholds`
+ * classe avec `value <= high`, ce qui convient au ratio taille/hanche (seuils OMS
+ * inclusifs) mais PAS au tour de taille, dont la fenêtre Propriétés écrit
+ * `Scores < 102` : 102 cm serait classé « Risque potentiel » ici et « Risque
+ * considérable » sur la carte. Une seule implémentation décide, la barre ne fait
+ * que traduire la cote en niveau visuel.
+ */
 export function getWaistRisk(
   value: number,
   sex: 'F' | 'M'
 ): { level: WhoRiskLevel; thresholds: RiskThresholds } | null {
   if (!Number.isFinite(value) || value <= 0) return null
+  const r = waistRating(value, sex)
+  if (!r) return null
   const thresholds = sex === 'M' ? WAIST_M : WAIST_F
-  return { level: classifyByThresholds(value, thresholds), thresholds }
+  const level: WhoRiskLevel = r.cote === 4 ? 'low' : r.cote === 3 ? 'high' : 'very_high'
+  return { level, thresholds }
 }
 
 /** Risque cardio-métabolique selon le ratio taille / hanche. */

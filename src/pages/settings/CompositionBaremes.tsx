@@ -145,16 +145,16 @@ function PanneauImc() {
 
 function PanneauTourDeTaille() {
   const lignes = (sex: 'M' | 'F') => {
-    const [excellent, hautPotentiel] = WAIST_BOUNDS[sex]
+    const [excellent, potentiel] = WAIST_BOUNDS[sex]
     return [
       { cote: 4, label: 'Excellent', plage: `moins de ${excellent} cm`, couleur: 'text-green-700' },
       {
         cote: 3,
         label: 'Risque potentiel',
-        plage: `${excellent} à ${hautPotentiel} cm`,
+        plage: `${excellent} à moins de ${potentiel} cm`,
         couleur: 'text-amber-700'
       },
-      { cote: 1, label: 'Risque considérable', plage: `plus de ${hautPotentiel} cm`, couleur: 'text-red-700' }
+      { cote: 1, label: 'Risque considérable', plage: `${potentiel} cm et plus`, couleur: 'text-red-700' }
     ]
   }
 
@@ -186,8 +186,8 @@ function PanneauTourDeTaille() {
         </div>
       ))}
       <Source>
-        Statistique Canada — Enquête canadienne sur les mesures de la santé, variable dérivée HWMDWSTA. La borne
-        haute est incluse : 101 cm reste « Risque potentiel ».
+        Fenêtre Propriétés du test « Circonférence de la taille » de l’ancien logiciel, onglet Classification.
+        Les bornes sont exclusives : 101,5 cm reste « Risque potentiel », 102 cm n’y est plus.
       </Source>
     </div>
   )
