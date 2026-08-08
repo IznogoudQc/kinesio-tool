@@ -106,7 +106,7 @@ test('VO2MAX_PROTOCOLES — les exemples affichés restent plausibles', () => {
   // Le seul garde-fou automatique contre une erreur d'unité comme celle du
   // palier/vitesse : elle sortait -3,65, donc hors plage. Un exemple qui dérive
   // échoue ici, avant d'aller s'afficher dans l'écran des barèmes.
-  assert.equal(VO2MAX_PROTOCOLES.length, 3)
+  assert.equal(VO2MAX_PROTOCOLES.length, 1)
   for (const p of VO2MAX_PROTOCOLES) {
     const { vo2max } = p.exemple()
     assert.ok(

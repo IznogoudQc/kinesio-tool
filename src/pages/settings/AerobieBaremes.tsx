@@ -78,10 +78,8 @@ function PanneauProtocoles() {
       </div>
 
       <Source>
-        Une valeur peut aussi être saisie à la main, si elle vient d’un test fait ailleurs. Le test navette de
-        Léger a été validé chez les 8-19 ans : au-delà, l’équation reste utilisable mais devient optimiste, et
-        elle finit par donner des valeurs impossibles chez une personne âgée qui s’arrête tôt. Vérifier que le
-        résultat a du sens avant de le retenir.
+        Une valeur peut aussi être saisie à la main, si elle vient d’un test fait ailleurs — elle est alors cotée
+        sur la même table, sans passer par une équation.
       </Source>
     </div>
   )

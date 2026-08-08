@@ -500,7 +500,7 @@ function BilanTestsTab() {
 
         <TestCard
           titre="Aptitude aérobie — VO2max"
-          role="Le VO2max estimé (Bruce, Cooper ou Léger), coté par âge et par sexe. Le score global utilise son équivalent en METS."
+          role="Le VO2max estimé au tapis roulant (protocole de Bruce), coté par âge et par sexe. Le score global utilise son équivalent en METS."
           validationId="aerobie-cpafla"
         >
           <AerobieBaremes />

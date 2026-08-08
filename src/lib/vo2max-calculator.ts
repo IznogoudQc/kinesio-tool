@@ -95,7 +95,12 @@ export interface Vo2maxProtocole {
 }
 
 /**
- * Les trois protocoles, décrits pour l'écran des barèmes.
+ * Les protocoles décrits dans l'écran des barèmes.
+ *
+ * Marie n'utilise que Bruce. Cooper et Léger restent calculables (le formulaire
+ * de saisie les propose encore, et d'anciens bilans pourraient les porter) mais
+ * ne sont plus documentés ici : une page de référence qui détaille des tests
+ * jamais administrés fait chercher longtemps celui qui sert vraiment.
  *
  * Volontairement dans ce fichier plutôt que dans le composant : la description
  * et l'implémentation se relisent d'un coup d'œil, donc changer un coefficient
@@ -114,23 +119,6 @@ export const VO2MAX_PROTOCOLES: Vo2maxProtocole[] = [
       entree: 'homme, 10:00',
       vo2max: bruceTreadmillVo2max({ durationSeconds: 600, sex: 'M' })
     })
-  },
-  {
-    key: 'cooper',
-    nom: 'Cooper (12 minutes)',
-    mesure: 'La distance parcourue en 12 minutes de course.',
-    formule: '(distance en mètres − 504,9) ÷ 44,73',
-    source: 'Cooper KH, JAMA 1968',
-    exemple: () => ({ entree: '2 400 m', vo2max: cooperVo2max(2400) })
-  },
-  {
-    key: 'leger',
-    nom: 'Léger (navette 20 m)',
-    mesure:
-      'Le palier atteint au test navette. Dépend aussi de l’âge. Le palier 1 se court à 8,5 km/h, +0,5 km/h par palier.',
-    formule: '31,025 + 3,238·V − 3,248·âge + 0,1536·V·âge (V = vitesse du palier, en km/h)',
-    source: 'Léger LA et coll., J. Sports Sci. 1988',
-    exemple: () => ({ entree: 'palier 8, 30 ans', vo2max: legerVo2max(8, 30) })
   }
 ]
 
