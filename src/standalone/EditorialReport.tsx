@@ -54,6 +54,7 @@ import { BilanSelectorPills } from '../pages/client/dashboard/BilanSelectorPills
 import { principesFor, principesCountWord } from '../lib/principes'
 import { dailyWindows, describeProgram, fastingDaysInRange, toISO as fastingToISO, type FastingProgram } from '../lib/fasting-planning'
 import { FastingCalendar } from '../components/FastingCalendar'
+import { headlineFor } from './headline'
 import forestUrl from '../assets/forest.jpg'
 import logoConseil from '../assets/logo-conseil.png'
 
@@ -538,17 +539,6 @@ function CompositeRow({
 // Le cadrage (`cover`, position) est géré par `.ed-hero-forest` dans editorial.css.
 const FOREST_BG = `url(${forestUrl})`
 
-/** Le titre s'adapte à ce que disent les données. Jamais de reproche : un client
- *  qui a régressé est invité à faire le point, pas sermonné. */
-function headlineFor(firstName: string, computed: BilanComputed, previous?: BilanComputed): string {
-  const now = computed.overall.score
-  const before = previous?.overall.score
-  if (now === null || before === null || before === undefined) return `${firstName}, voici où vous en êtes.`
-  const delta = now - before
-  if (delta >= 0.1) return `${firstName}, vous avez progressé.`
-  if (delta <= -0.1) return `${firstName}, faisons le point.`
-  return `${firstName}, vous tenez le cap.`
-}
 
 function Hero({
   data,
