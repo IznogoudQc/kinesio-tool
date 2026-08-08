@@ -4,37 +4,43 @@ Liste vivante des points où l'app repose sur une **déduction**, une **source n
 vérifiée** ou une **décision réversible**. Source publique très utile pour ce
 projet : les **variables dérivées de l'Enquête canadienne sur les mesures de la
 santé** (Statistique Canada), qui spécifient les mêmes calculs que le Guide du
-conseiller — elles ont fermé les points 2 et 7. Chacun peut fausser un chiffre remis à
+conseiller — elles ont fermé les points 2 et 7. Une capture de l’écran de l’ancien logiciel a fermé les points 1 et 3 — **il ne reste plus de 🔴**. Chacun peut fausser un chiffre remis à
 un client — d'où l'intérêt de les fermer un par un.
 
-Mise à jour : 2026-08-04 · version publiée : v0.9.128
+Mise à jour : 2026-08-07 · version publiée : v0.9.145
 
 **Comment lire** : 🔴 fausse potentiellement un chiffre · 🟡 affichage ou libellé
 seulement · 🟢 décision prise, réversible si Marie change d'avis.
 
 ---
 
-## 🔴 1. Barème de la pression artérielle systolique — *bloquant*
+## ✅ 1. Barème de la pression artérielle systolique — RÉSOLU (2026-08-07)
 
-**Ce qu'on a mis** : `< 120 mmHg → cote 4, sinon 0`.
+**Ce qui l'a fermé** : une capture de l'**écran d'affichage de l'ancien logiciel**
+lui-même, fournie par Nicholas. Elle montre les cinq zones et leurs bornes, et
+**aucune distinction homme/femme ni par âge**.
 
-**D'où ça vient** : d'un rétro-calcul sur **4 bilans seulement** — 112 → 4,
-113 → 4, 122 → 0, 129 → 0. C'est la règle la plus simple compatible avec ces
-quatre points. Rien d'autre ne l'appuie.
+**Ce qu'on applique maintenant** : les cinq zones cliniques.
 
-**Pourquoi ça compte** : la PA systolique est une des cinq composantes du score
-global. Un barème plus fin changerait la note remise au client.
+| Systolique | Cote |
+|---|---|
+| moins de 120 mmHg — Optimale | 4 |
+| 120-129 — Normale | 3 |
+| 130-139 — Pré-hypertension | 2 |
+| 140-159 — Hypertension 1 | 1 |
+| 160 et plus — Hypertension 2 | 0 |
 
-**Ce qu'il faut** : la fenêtre **Propriétés** du test « Pression artérielle
-systolique », onglet des cotes / de la classification — la même fenêtre qui avait
-donné la formule `AverageRatings(...)`. Vérifier que les **bornes en mmHg** sont
-lisibles et qu'il n'y a pas de distinction homme/femme ou par âge.
+La barre que voit le client et la cote qui entre dans son score disent donc la
+même chose — ce n'était pas le cas avant.
 
-**Déjà écarté, ne pas y revenir** : la table clinique affichée sur la carte
-(120/130/140/160) **n'est pas** celle du score. Elle prédit la cote 3 à 122 et
-129 mmHg, là où l'ancien logiciel donne 0. Une recherche exhaustive de tout
-découpage à 5 niveaux ne laisse que des jeux confinés entre 114 et 122 mmHg —
-8 mmHg pour cinq zones, cliniquement absurde. Voir [[0033-score-global-formule-confirmee]].
+**⚠️ Écart assumé** : la règle précédente (`< 120 → 4, sinon 0`) venait d'un
+rétro-calcul et reproduisait deux anciens rapports que les zones ne reproduisent
+plus — Nick 2025-09 et 2011-08 passent de **2,2 à 2,8**. Nicholas a tranché en
+faveur des zones publiées. L'écart est gardé chiffré dans `cpafla-parite.test.ts`
+pour que personne ne le « répare » plus tard.
+
+Les scores étant recalculés à l'affichage, aucune donnée n'a été modifiée : revenir
+en arrière suffirait à retrouver les anciennes valeurs. Voir [[0040-pa-bareme-zones-cliniques]].
 
 ---
 
@@ -84,20 +90,15 @@ que Marie ne mesure jamais et qu'aucune donnée n'aurait pu départager.
 
 ---
 
-## 🟡 3. Seuils de la pression diastolique
+## ✅ 3. Seuils de la pression diastolique — RÉSOLU (2026-08-07)
 
-**Ce qu'on affiche** : Optimale < 80 · Normale 80-84 · Pré-HT 85-89 ·
-HT1 90-99 · HT2 ≥ 100.
+La même capture montre la diastolique : **75 / 80 / 90 / 100**. L'app affichait
+80 / 85 / 90 / 100 — **deux zones sur cinq étaient décalées de 5 mmHg**. Une
+tension de 77 s'annonçait « Optimale » au lieu de « Normale », et 82 « Normale »
+au lieu de « Pré-hypertension », sur un écran remis au client.
 
-**Le doute** : l'ancien logiciel montrait **75 / 80 / 90 / 100**, pas
-80 / 85 / 90 / 100.
-
-**Portée** : affichage seulement — la diastolique n'entre pas dans le score. Un
-client peut néanmoins se voir étiqueter « Pré-hypertension » d'un côté et
-« Normale » de l'autre.
-
-**Ce qu'il faut** : que Marie confirme les bornes qu'elle veut voir. Non modifié
-sans son accord.
+Recoupement : la capture classe 74 mmHg « Optimale », ce que les nouvelles bornes
+reproduisent.
 
 ---
 
