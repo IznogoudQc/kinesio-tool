@@ -103,7 +103,6 @@ function PanneauImc() {
     <div>
       <Explication titre="IMC — catégories OMS">
         <p>IMC = poids ÷ taille². Indépendant de l’âge et du sexe. Affichage seulement.</p>
-        <p className="text-amber-800">Cette table n’a pas de borne basse : un IMC de 15 y ressort « Excellent ». Le calcul de la composition, lui, plafonne à 3 sous 18,5.</p>
       </Explication>
 
       {cells && (

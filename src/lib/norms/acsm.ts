@@ -128,6 +128,19 @@ const TRUNK_FLEXION: Ranges = [
 
 // ── IMC — catégories OMS, agnostiques à l'âge et au sexe (lowerIsBetter) ─────
 // ≤22 = Excellent (≥P75), ≤25 = Très bien (P50), ≤27 = Bien (P25), ≤30 = Acceptable (P10), >30 = À améliorer
+//
+// ⚠️ DÉFAUT CONNU, non corrigé : cette table n'a pas de borne basse. Un IMC de
+// 15 y ressort « Excellent » alors que la maigreur est un risque. `lowerIsBetter`
+// suppose qu'une valeur plus basse est toujours meilleure, ce qui est faux sous
+// 18,5.
+//
+// Sans conséquence sur les notes : la composition corporelle passe par les tables
+// CPAFLA (fig. 7-4/7-5), qui plafonnent correctement à 3 points sous 18,5. Seul
+// l'affichage autonome de l'IMC est touché — et aucun client de Marie n'est dans
+// cette plage (le plus bas est à 29,6).
+//
+// Le corriger demanderait de sortir l'IMC de la mécanique des percentiles, comme
+// l'a fait le tour de taille. À faire si un client maigre se présente.
 const BMI: Ranges = [
   { ageMin: 0, ageMax: 120, sex: 'M', lowerIsBetter: true, percentiles: pct(30, 27, 25, 22, 19) },
   { ageMin: 0, ageMax: 120, sex: 'F', lowerIsBetter: true, percentiles: pct(30, 27, 25, 22, 19) }
