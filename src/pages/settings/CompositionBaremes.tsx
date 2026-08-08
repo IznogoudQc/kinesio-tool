@@ -1,5 +1,3 @@
-import { useState } from 'react'
-import { TableProperties } from 'lucide-react'
 import { CpaflaBaremeTable } from '../../components/CpaflaBaremeTable'
 import { WAIST_BOUNDS } from '../../lib/norms/clinical'
 import { bodyFatRiskZones, type BfRiskZone } from '../../lib/body-fat-risk'
@@ -7,6 +5,8 @@ import { getAcsmRange } from '../../lib/norms/acsm'
 import { categoryCells } from '../../lib/norms/bareme'
 import {
   useTabulations,
+  useBoutonBareme,
+  BarreOnglets,
   Explication,
   LigneBareme,
   Table,
@@ -36,29 +36,12 @@ const ONGLETS = [
 
 export function CompositionBaremes() {
   const { actif, barre } = useTabulations(ONGLETS)
-  const [bareme, setBareme] = useState(false)
+  const { ouvert, bouton } = useBoutonBareme('Afficher le barème qui combine les trois mesures')
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div className="flex-1 min-w-[12rem]">{barre}</div>
-        <button
-          type="button"
-          onClick={() => setBareme(b => !b)}
-          aria-pressed={bareme}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
-            bareme
-              ? 'bg-gold/15 text-gold-dark hover:bg-gold/25'
-              : 'bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine'
-          }`}
-          title="Afficher le barème CPAFLA qui combine les trois mesures"
-        >
-          <TableProperties size={13} />
-          Barème
-        </button>
-      </div>
-
-      {bareme && <BaremeCombine />}
+      <BarreOnglets barre={barre} bouton={bouton} />
+      {ouvert && <BaremeCombine />}
 
       {actif === 'imc' && <PanneauImc />}
       {actif === 'taille' && <PanneauTourDeTaille />}

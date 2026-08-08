@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react'
+import { TableProperties } from 'lucide-react'
 import { CATEGORY_LABELS, type Category } from '../../lib/norms'
 import { CPAFLA_TABLES } from '../../lib/norms/cpafla'
 import { categoryCells } from '../../lib/norms/bareme'
@@ -58,6 +59,48 @@ export function Tabulations<K extends string>({
 export function useTabulations<K extends string>(onglets: readonly { key: K; label: string }[]) {
   const [actif, setActif] = useState<K>(onglets[0].key)
   return { actif, barre: <Tabulations onglets={onglets} actif={actif} onChange={setActif} /> }
+}
+
+/**
+ * Bouton « Barème » + son état, à poser à droite de la barre d'onglets.
+ *
+ * Le barème complet d'une section ne rentre pas dans un onglet : les onglets
+ * montrent chacun UNE mesure, alors que la table croise tout. En faire un
+ * onglet de plus la mettrait sur le même plan que les autres, alors que c'est
+ * elle qui produit la note.
+ *
+ * Extrait ici dès la deuxième section qui en a eu besoin — deux copies d'un
+ * même bouton, c'est deux façons de le styler.
+ */
+export function useBoutonBareme(titre: string) {
+  const [ouvert, setOuvert] = useState(false)
+  const bouton = (
+    <button
+      type="button"
+      onClick={() => setOuvert(o => !o)}
+      aria-pressed={ouvert}
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors shrink-0 ${
+        ouvert
+          ? 'bg-gold/15 text-gold-dark hover:bg-gold/25'
+          : 'bg-cream/70 text-marine/70 hover:bg-cream-dark hover:text-marine'
+      }`}
+      title={titre}
+    >
+      <TableProperties size={13} />
+      Barème
+    </button>
+  )
+  return { ouvert, bouton }
+}
+
+/** Barre d'onglets à gauche, bouton « Barème » à droite. */
+export function BarreOnglets({ barre, bouton }: { barre: ReactNode; bouton: ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-3 flex-wrap">
+      <div className="flex-1 min-w-[12rem]">{barre}</div>
+      {bouton}
+    </div>
+  )
 }
 
 /** Quelques lignes sur le barème : ce qu'il vaut, ses bornes, les décisions
