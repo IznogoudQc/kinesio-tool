@@ -137,10 +137,6 @@ function PanneauImc() {
           ))}
         </Table>
       )}
-      <Source>
-        Catégories de l’Organisation mondiale de la Santé — indépendantes de l’âge et du sexe. Plus bas est
-        mieux, jusqu’au seuil de maigreur.
-      </Source>
     </div>
   )
 }

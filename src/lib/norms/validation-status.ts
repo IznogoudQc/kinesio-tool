@@ -90,7 +90,9 @@ export const VALIDATION: ValidationEntree[] = [
     id: 'aerobie-cpafla',
     label: 'Capacité aérobie (VO2max) — tableau 4.10',
     statut: 'confirme',
-    source: 'Guide du conseiller, 3ᵉ éd., tableau 4.10. Attribution corrigée après vérification (ADR 0036).',
+    source: '',
+    reference:
+      'Guide du conseiller CPAFLA / ÉCPHV, 3ᵉ éd., tableau 4.10 « VO2max estimé : évaluation des avantages pour la santé ». Attribution corrigée après vérification (ADR 0036) — les valeurs venaient de l’aide-mémoire SPAP-SCPE, qui reproduit ce tableau. La citation reste affichée sous la table, dans l’onglet « Barème VO₂max ».',
     manque: null,
     entreDansLeScore: true
   },

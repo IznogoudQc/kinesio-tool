@@ -11,7 +11,14 @@ test('chaque entrée est complète et cohérente avec son statut', () => {
   for (const e of VALIDATION) {
     assert.ok(e.id.trim() !== '', 'id vide')
     assert.ok(e.label.trim() !== '', `label vide pour ${e.id}`)
-    assert.ok(e.source.trim() !== '', `source vide pour ${e.id}`)
+    // `source` peut être vide QUAND `reference` prend le relais : certains tests
+    // portent leur citation dans leur propre panneau, sous la table concernée,
+    // et la répéter en en-tête de carte n'apprenait rien. Ce qui reste interdit,
+    // c'est une entrée totalement muette.
+    assert.ok(
+      `${e.reference ?? ''}${e.source}`.trim() !== '',
+      `${e.id} : ni source ni référence — l'entrée ne dit rien`
+    )
     // Le contrat du fichier : confirmé ⇒ rien à demander ; sinon ⇒ dire quoi.
     if (e.statut === 'confirme') {
       assert.equal(e.manque, null, `${e.id} : confirmé mais il manque encore quelque chose`)

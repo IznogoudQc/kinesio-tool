@@ -50,7 +50,10 @@ export function TestCard({
         )}
       </div>
       <p className="text-marine/60 text-sm mt-1">{role}</p>
-      {v && <p className="text-marine/45 text-sm mt-2 leading-relaxed">{v.source}</p>}
+      {/* `source` peut être vide : certains tests portent leur citation dans leur
+          propre panneau, sous la table qu'elle concerne. Mieux placée là qu'en
+          en-tête de carte, où elle se lisait comme un rappel sans objet. */}
+      {v?.source && <p className="text-marine/45 text-sm mt-2 leading-relaxed">{v.source}</p>}
       {v?.manque && (
         <p className="text-amber-800 text-sm mt-2 leading-relaxed">
           <span className="font-semibold">Il manque : </span>
