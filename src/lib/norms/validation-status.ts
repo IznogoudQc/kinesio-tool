@@ -80,7 +80,7 @@ export const VALIDATION: ValidationEntree[] = [
     label: 'Composition corporelle — figures 7-4 / 7-5 / 7-6',
     statut: 'confirme',
     source:
-      'L’IMC choisit la ligne du barème dans laquelle le tour de taille et les plis sont cotés de 0 à 4. La note vient ensuite des mesures prises : avec les plis, (cote du tour de taille × 1,5 + cote des plis) ÷ 2,5 ; sans eux, la cote du tour de taille seule. Elle est affichée à une décimale, mais c’est sa version entière qui entre dans le score global.',
+      'Trois mesures, une note. L’IMC situe le client dans une plage du barème ; le tour de taille et les plis y sont ensuite cotés de 0 à 4. La note combine ces deux cotes en donnant plus de poids au tour de taille — (cote du tour de taille × 1,5 + cote des plis) ÷ 2,5 — ce qui fait qu’un bon tour de taille compense des plis moyens. Sans les plis, elle repose sur le tour de taille seul. Elle est affichée à une décimale, mais c’est sa version entière qui entre dans le score global.',
     reference:
       'Statistique Canada — Enquête canadienne sur les mesures de la santé, variables dérivées SFMDBCA, HWMDWSTA (tableau 14) et SFMDS5A (tableaux 20-21). Formule publiée à l’identique ; tour de taille vérifié sur 38 010 combinaisons, plis sur 46 426, sans écart. Reproduit aussi l’ancien logiciel sur les six bilans réels.',
     manque: null,
@@ -128,16 +128,6 @@ export const VALIDATION: ValidationEntree[] = [
     statut: 'confirme',
     source:
       'Statistique Canada — Enquête canadienne sur les mesures de la santé, variable dérivée HWMDWSTA. Hommes : moins de 94 → 4, 94 à 101 → 3, au-delà → 1. Femmes : moins de 80 → 4, 80 à 87 → 3, au-delà → 1. Borne haute incluse, et les cotes sautent le 2. Référence publique, préférée à la fenêtre Propriétés de l’ancien logiciel qui montrait 90 chez les femmes.',
-    manque: null,
-    entreDansLeScore: false
-  },
-  {
-    id: 'pa-zones-affichage',
-    label: 'Pression artérielle — zones colorées du bilan',
-    statut: 'confirme',
-    source:
-      'Cinq zones indépendantes de l’âge et du sexe. Systolique : moins de 120 Optimale, 120-129 Normale, 130-139 Pré-hypertension, 140-159 Hypertension 1, 160 et plus Hypertension 2. Diastolique : 80 / 85 / 90 / 100.',
-    reference: 'Seuils OMS / JNC — références publiques. Confirmées par Nicholas le 2026-08-07.',
     manque: null,
     entreDansLeScore: false
   },
