@@ -41,11 +41,12 @@ export function syncBilanToMesures(clientId: string, date: string, bilanData: Re
     }
   }
 
-  // ── Plis cutanés (les 4 requis + profil pour le % de gras) ──
+  // ── Plis cutanés (les 4 requis, + le mollet s’il est pris, + profil pour le % de gras) ──
   const t = numOrNull(bilanData['pli_triceps'])
   const b = numOrNull(bilanData['pli_biceps'])
   const s = numOrNull(bilanData['pli_sous_scap'])
   const i = numOrNull(bilanData['pli_iliaque'])
+  const mollet = numOrNull(bilanData['pli_mollet'])
   if (t !== null && b !== null && s !== null && i !== null) {
     const client = db.select().from(clients).where(eq(clients.id, clientId)).get()
     if (client?.sex === 'F' || client?.sex === 'M') {
@@ -57,6 +58,9 @@ export function syncBilanToMesures(clientId: string, date: string, bilanData: Re
           biceps: b,
           sousscapulaire: s,
           iliaque: i,
+          // Reporté SEULEMENT s'il est présent : écrire `null` effacerait un
+          // mollet saisi côté Mesures dès le prochain enregistrement de bilan.
+          ...(mollet !== null ? { mollet } : {}),
           somme4Plis: calc.sumPlis,
           densiteCorporelle: calc.density,
           pourcentageGrasSiri: calc.bodyFatSiri,

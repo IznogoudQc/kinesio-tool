@@ -12,6 +12,10 @@ export interface BilanFieldDef {
   options?: string[]
   /** Hint affiché sous le champ — explication ou rappel de la formule. */
   hint?: string
+  /** Champ que Marie peut laisser vide sans que la section soit « incomplète ».
+   *  Exclu du compteur « x / y champs » : sinon une section ne serait jamais
+   *  pleine dès qu'une mesure optionnelle n'est pas prise. */
+  optional?: boolean
 }
 
 export interface BilanFieldGroup {
@@ -71,10 +75,19 @@ export const BILAN_FIELD_GROUPS: BilanFieldGroup[] = [
       { key: 'pli_biceps', label: 'Biceps', unit: 'mm' },
       { key: 'pli_sous_scap', label: 'Sous-scapulaire', unit: 'mm' },
       { key: 'pli_iliaque', label: 'Crête iliaque', unit: 'mm' },
-      // Le pli du MOLLET a été retiré de la saisie : Marie ne le mesure pas, et
-      // il n'entre plus dans aucun calcul (voir `USE_CALF_SKINFOLD`). Le champ
-      // reste dans le modèle de données — un bilan importé de 2011 en porte un,
-      // et `setField` préserve les valeurs qui ne sont plus affichées.
+      // Le pli du MOLLET est FACULTATIF. Marie ne le prend pas d'habitude, mais
+      // sans champ pour le saisir la somme des 5 plis ne pouvait jamais exister
+      // — alors que `USE_CALF_SKINFOLD` est actif depuis la v0.9.127 et que le
+      // calcul de composition l'attend. La branche était donc morte en pratique.
+      // Le renseigner change la note de composition : elle passe de « IMC + tour
+      // de taille » à la formule complète (tour de taille × 1,5 + plis) ÷ 2,5.
+      {
+        key: 'pli_mollet',
+        label: 'Mollet',
+        unit: 'mm',
+        optional: true,
+        hint: 'Facultatif — s’il est pris, la composition utilise la somme des 5 plis'
+      },
       {
         key: 'pourcentage_gras',
         label: 'Pourcentage de gras',

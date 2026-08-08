@@ -316,8 +316,10 @@ export function BilanForm({
   function renderSection(group: BilanFieldGroup) {
     const isOpen = openSections.has(group.id)
     // Compteur de complétion : nombre de champs non vides sur le total (hors champs
-    // calculés, qui sont auto-remplis et ne traduisent pas l'effort de saisie).
-    const userFields = group.fields.filter(f => f.type !== 'computed')
+    // calculés, qui sont auto-remplis et ne traduisent pas l'effort de saisie, et
+    // hors champs facultatifs — sinon la section « Plis cutanés » resterait à 4/5
+    // en permanence parce que Marie ne prend pas le mollet).
+    const userFields = group.fields.filter(f => f.type !== 'computed' && !f.optional)
     const filled = userFields.filter(f => {
       const v = derivedData[f.key]
       return v !== undefined && v !== '' && !(typeof v === 'number' && Number.isNaN(v))

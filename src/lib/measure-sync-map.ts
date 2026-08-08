@@ -18,12 +18,18 @@ export const CIRC_MAP: readonly { bilan: string; circ: string }[] = [
   { bilan: 'circ_epaules_pec_cm', circ: 'epaule' }
 ] as const
 
-/** clé bilan.data ↔ colonne de `mesures_plis_cutanes` (les 4 plis). */
+/** clé bilan.data ↔ colonne de `mesures_plis_cutanes`.
+ *
+ *  Le mollet est le 5ᵉ, facultatif : Marie ne le prend pas d'habitude, mais s'il
+ *  est saisi il doit suivre le bilan comme les autres. La synchro ne le reporte
+ *  que s'il a une valeur — l'écrire à `null` effacerait un mollet saisi côté
+ *  Mesures au prochain enregistrement de bilan. */
 export const PLIS_MAP: readonly { bilan: string; plis: string }[] = [
   { bilan: 'pli_triceps', plis: 'triceps' },
   { bilan: 'pli_biceps', plis: 'biceps' },
   { bilan: 'pli_sous_scap', plis: 'sousscapulaire' },
-  { bilan: 'pli_iliaque', plis: 'iliaque' }
+  { bilan: 'pli_iliaque', plis: 'iliaque' },
+  { bilan: 'pli_mollet', plis: 'mollet' }
 ] as const
 
 export function numOrNull(v: unknown): number | null {
