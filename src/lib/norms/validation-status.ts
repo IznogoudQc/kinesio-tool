@@ -69,7 +69,7 @@ export const VALIDATION: ValidationEntree[] = [
     label: 'Pression artérielle systolique — cote 0-4',
     statut: 'deduit',
     source:
-      'Rétro-calcul sur 4 bilans seulement (112 → 4, 113 → 4, 122 → 0, 129 → 0). Règle appliquée : moins de 120 mmHg → 4, sinon 0.',
+      'Rétro-calcul sur 4 bilans seulement (112 → 4, 113 → 4, 122 → 0, 129 → 0). Règle appliquée : moins de 120 mmHg → 4, sinon 0. À ne pas confondre avec les zones colorées du bilan, qui sont confirmées : les cinq zones cliniques donneraient 3 à une tension de 122, là où l’ancien logiciel donne 0.',
     manque:
       'La fenêtre Propriétés du test « Pression artérielle systolique », onglet des cotes. Vérifier que les bornes en mmHg sont lisibles et s’il y a une distinction homme/femme ou par âge.',
     entreDansLeScore: true
@@ -127,6 +127,16 @@ export const VALIDATION: ValidationEntree[] = [
     statut: 'confirme',
     source:
       'Statistique Canada — Enquête canadienne sur les mesures de la santé, variable dérivée HWMDWSTA. Hommes : moins de 94 → 4, 94 à 101 → 3, au-delà → 1. Femmes : moins de 80 → 4, 80 à 87 → 3, au-delà → 1. Borne haute incluse, et les cotes sautent le 2. Référence publique, préférée à la fenêtre Propriétés de l’ancien logiciel qui montrait 90 chez les femmes.',
+    manque: null,
+    entreDansLeScore: false
+  },
+  {
+    id: 'pa-zones-affichage',
+    label: 'Pression artérielle — zones colorées du bilan',
+    statut: 'confirme',
+    source:
+      'Cinq zones indépendantes de l’âge et du sexe. Systolique : moins de 120 Optimale, 120-129 Normale, 130-139 Pré-hypertension, 140-159 Hypertension 1, 160 et plus Hypertension 2. Diastolique : 80 / 85 / 90 / 100.',
+    reference: 'Seuils OMS / JNC — références publiques. Confirmées par Nicholas le 2026-08-07.',
     manque: null,
     entreDansLeScore: false
   },

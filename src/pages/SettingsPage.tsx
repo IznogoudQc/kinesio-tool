@@ -9,6 +9,7 @@ import { CompositionBaremes } from './settings/CompositionBaremes'
 import { AerobieBaremes } from './settings/AerobieBaremes'
 import { DosBaremes } from './settings/DosBaremes'
 import { MusculoBaremes } from './settings/MusculoBaremes'
+import { PaBaremes } from './settings/PaBaremes'
 import { settingsService } from '../services/settings'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
@@ -507,10 +508,12 @@ function BilanTestsTab() {
         </TestCard>
 
         <TestCard
-          titre="Pression artérielle systolique"
-          role="Une des cinq composantes du score global — souvent oubliée, car elle n'apparaît pas comme un « test »."
+          titre="Pression artérielle"
+          role="Les zones colorées du bilan sont confirmées ; la cote 0-4 qui entre dans le score, elle, reste déduite."
           validationId="pa-systolique-cote"
-        />
+        >
+          <PaBaremes />
+        </TestCard>
 
         <TestCard
           titre="Indice de santé du dos"
