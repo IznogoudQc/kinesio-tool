@@ -46,6 +46,31 @@ export class AIAdviceError extends Error {
  * Service de génération de conseils IA — appelle Anthropic Claude via l'IPC.
  * La clé API vit dans le trousseau OS (keytar) — le renderer ne la voit jamais.
  */
+/** Cibles et préférences — identiques quelle que soit la portée demandée. */
+export interface MenuContexte {
+  kcal?: number | null
+  proteinG?: number | null
+  fatG?: number | null
+  carbsG?: number | null
+  fiberG?: number | null
+  foodsGood?: string
+  foodsBad?: string
+  foodsLiked?: string
+  foodsDisliked?: string
+}
+
+/** Les trois portées passent par le même canal et la même gestion d'erreur. */
+async function callMenu<T>(payload: Parameters<typeof window.api.ai.generateNutrition>[0]): Promise<T> {
+  const res = await window.api.ai.generateNutrition(payload)
+  if (!res.ok || !res.plan) {
+    throw new AIAdviceError(
+      (res.code as AIErrorCode) ?? 'BAD_RESPONSE',
+      res.error ?? 'Erreur inconnue lors de la génération.'
+    )
+  }
+  return res.plan as T
+}
+
 export const aiAdviceService = {
   async hasApiKey(): Promise<boolean> {
     return window.api.ai.hasApiKey()
@@ -91,25 +116,26 @@ export const aiAdviceService = {
   },
 
   /** IA : idées de menu structurées (une semaine) selon macros + aliments. */
-  async generateMenuPlan(payload: {
-    kcal?: number | null
-    proteinG?: number | null
-    fatG?: number | null
-    carbsG?: number | null
-    fiberG?: number | null
-    foodsGood?: string
-    foodsBad?: string
-    foodsLiked?: string
-    foodsDisliked?: string
-  }): Promise<AiMenuPlan> {
-    const res = await window.api.ai.generateNutrition({ type: 'menu', ...payload })
-    if (!res.ok || !res.plan) {
-      throw new AIAdviceError(
-        (res.code as AIErrorCode) ?? 'BAD_RESPONSE',
-        res.error ?? 'Erreur inconnue lors de la génération.'
-      )
-    }
-    return res.plan as AiMenuPlan
+  async generateMenuPlan(payload: MenuContexte): Promise<AiMenuPlan> {
+    return callMenu<AiMenuPlan>({ type: 'menu', ...payload })
+  },
+
+  /**
+   * IA : refait UNE journée. `autresJournees` sert à ne pas reproposer ce qui
+   * est déjà écrit ailleurs dans la semaine.
+   */
+  async regenerateMenuDay(payload: MenuContexte & { autresJournees: string[] }): Promise<{ lignes: string[] }> {
+    return callMenu<{ lignes: string[] }>({ type: 'menu-jour', ...payload })
+  },
+
+  /**
+   * IA : refait UN repas. `journee` donne le contexte des autres repas du jour,
+   * pour ne pas répéter un aliment déjà présent.
+   */
+  async regenerateMenuMeal(
+    payload: MenuContexte & { journee: string; repas: string }
+  ): Promise<{ ligne: string }> {
+    return callMenu<{ ligne: string }>({ type: 'menu-repas', ...payload })
   },
 
   /** IA : moment de prise recommandé pour un supplément (nom → phrase courte). */

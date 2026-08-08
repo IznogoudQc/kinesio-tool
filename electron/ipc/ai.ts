@@ -72,7 +72,9 @@ Règles :
 
 // ── Nutrition : plan de suppléments + idées de menu ─────────────────────────
 const NutritionPayloadSchema = z.object({
-  type: z.enum(['supplements', 'menu']),
+  /** `menu` = la semaine · `menu-jour` = une journée · `menu-repas` = un repas.
+   *  Les deux dernières évitent de tout refaire pour corriger une seule idée. */
+  type: z.enum(['supplements', 'menu', 'menu-jour', 'menu-repas']),
   kcal: z.number().nullable().optional(),
   proteinG: z.number().nullable().optional(),
   fatG: z.number().nullable().optional(),
@@ -82,7 +84,14 @@ const NutritionPayloadSchema = z.object({
   foodsGood: z.string().max(3000).optional(),
   foodsBad: z.string().max(3000).optional(),
   foodsLiked: z.string().max(3000).optional(),
-  foodsDisliked: z.string().max(3000).optional()
+  foodsDisliked: z.string().max(3000).optional(),
+  /** Reprise partielle — les autres journées déjà écrites, pour ne pas les répéter
+   *  mot pour mot ni proposer exactement la même chose. */
+  autresJournees: z.array(z.string().max(2000)).max(7).optional(),
+  /** Reprise d'un repas — la journée telle qu'elle est, pour rester cohérent. */
+  journee: z.string().max(2000).optional(),
+  /** Repas à refaire : « Déjeuner », « Dîner », « Souper » ou « Collations ». */
+  repas: z.string().max(40).optional()
 })
 
 /** Plan de suppléments structuré : une liste de lignes par moment de prise. */
@@ -103,6 +112,12 @@ const SuppPlanSchema = z.object({
 const MenuPlanSchema = z.object({
   journees: z.array(z.object({ lignes: z.array(z.string()) })).max(7).default([])
 })
+
+/** Une seule journée refaite. */
+const MenuJourSchema = z.object({ lignes: z.array(z.string()).default([]) })
+
+/** Un seul repas refait — la ligne complète, « Déjeuner : ... ». */
+const MenuRepasSchema = z.object({ ligne: z.string().default('') })
 
 const SUPPLEMENTS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
@@ -125,32 +140,86 @@ Règles :
 - Laisse un tableau VIDE [] pour un moment sans supplément. Place chaque supplément dans UN SEUL moment (le plus pertinent).
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
 
+/**
+ * Le style des menus, partagé par les trois portées (semaine / journée / repas).
+ *
+ * Écrit une fois : trois prompts qui décrivent le même style finissent par en
+ * décrire trois. Une journée refaite doit ressembler aux six autres.
+ *
+ * Ces règles répondent à un constat de Marie — « les idées sont parfois
+ * bizarres ». Trois causes identifiées dans le prompt d'origine :
+ *
+ *  · il EXIGEAIT que tout diffère d'un jour à l'autre, ce qui poussait vers
+ *    l'exotique dès le milieu de semaine ;
+ *  · il criait la cible de fibres, ce qui faisait empiler graines et son ;
+ *  · il n'ancrait aucune cuisine ni aucune contrainte de simplicité.
+ */
+const MENU_STYLE = `Style imposé — cuisine MÉDITERRANÉENNE et repas SIMPLES :
+- Base méditerranéenne : légumes, légumineuses, poisson, volaille, œufs, yogourt grec, feta, huile d'olive, noix, grains entiers, fruits frais, herbes fraîches. Viande rouge rare.
+- SIMPLE avant tout : 5 à 6 ingrédients courants par repas, 30 minutes maximum, rien qui demande une épicerie spécialisée. Ce sont des gens qui cuisinent le soir après le travail.
+- Vocabulaire québécois : « déjeuner » le matin, « dîner » le midi, « souper » le soir.
+- RÉPÉTER un plat dans la semaine est normal et souhaitable. Ne force pas la nouveauté : sept déjeuners tous différents ne ressemblent à la vie de personne.
+- Les fibres viennent naturellement de cette cuisine (légumineuses, légumes, grains entiers, fruits). N'empile PAS graines, son ou poudres pour gonfler un total.
+- Portions concrètes et approximatives (« 1 tasse », « une poignée », « 2 œufs »), jamais de grammes au gramme près.
+- Une ligne par repas, format « Repas : aliments ». SANS puce et SANS Markdown (pas de #, *, tableaux, émojis). Aucun total de calories, de macros ou de fibres.
+
+Exemple d'une journée bien faite :
+Déjeuner : yogourt grec, petits fruits, une poignée d'amandes, filet de miel
+Dîner : salade de pois chiches, concombre, tomates, feta et huile d'olive, pain pita de blé entier
+Souper : filet de saumon au citron, riz brun, brocoli rôti à l'ail
+Collations : pomme et fromage, ou houmous avec bâtonnets de carotte`
+
 const MENU_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
 Propose EXACTEMENT 7 EXEMPLES de journées (IDÉES DE MENU génériques, NON prescriptives) qui respectent approximativement les cibles de calories et de macros fournies, en tenant compte des aliments à privilégier / à éviter / aimés / non aimés.
+
+${MENU_STYLE}
 
 Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suivant exactement ce schéma :
 
 {
   "journees": [
-    { "lignes": [
-      "Déjeuner : aliments et portions approximatives",
-      "Dîner : ...",
-      "Souper : ...",
-      "Collations : ..."
-    ] }
+    { "lignes": ["Déjeuner : ...", "Dîner : ...", "Souper : ...", "Collations : ..."] }
   ]
 }
 
 Règles :
-- EXACTEMENT 7 journées dans « journees » — une semaine complète, aucune journée omise. Chaque « lignes » = des lignes « Repas : aliments », SANS puce et SANS Markdown (pas de #, *, tableaux, émojis).
-- Reste CONCIS : 4 lignes par journée (Déjeuner, Dîner, Souper, Collations), une seule phrase chacune. Sept journées doivent tenir dans la réponse.
-- Ne mets PAS d'en-tête « Journée N » dans les lignes : la numérotation est ajoutée par l'application.
-- N'ajoute AUCUN total de calories ou de macros : ces calculs relèvent d'une nutritionniste et ne doivent pas figurer.
-- PRIORISE les aliments RICHES EN FIBRES (légumes, fruits avec pelure, légumineuses, grains entiers, noix/graines) pour t'approcher de la cible de fibres indiquée. N'écris AUCUN total de fibres en grammes.
-- VARIE les journées : aliments principaux DIFFÉRENTS d'une journée à l'autre.
+- EXACTEMENT 7 journées dans « journees » — une semaine complète, aucune journée omise.
+- 4 lignes par journée (Déjeuner, Dîner, Souper, Collations), une seule phrase chacune.
+- Ne mets PAS d'en-tête « Journée N » : la numérotation est ajoutée par l'application.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
+
+const MENU_JOUR_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
+
+Propose UNE SEULE journée d'exemple (IDÉE DE MENU générique, NON prescriptive) qui respecte approximativement les cibles fournies.
+
+${MENU_STYLE}
+
+Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown :
+
+{ "lignes": ["Déjeuner : ...", "Dîner : ...", "Souper : ...", "Collations : ..."] }
+
+Règles :
+- EXACTEMENT 4 lignes : Déjeuner, Dîner, Souper, Collations.
+- On te donne les autres journées de la semaine. Propose autre chose qu'une copie de l'une d'elles, sans chercher l'originalité à tout prix : un aliment qui revient est normal.
+- PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter.`
+
+const MENU_REPAS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
+
+Refais UN SEUL repas d'une journée d'exemple. On te donne la journée complète et le repas à remplacer.
+
+${MENU_STYLE}
+
+Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown :
+
+{ "ligne": "Déjeuner : ..." }
+
+Règles :
+- UNE seule ligne, commençant par le nom du repas demandé suivi de « : ».
+- Reste COHÉRENT avec le reste de la journée : ne répète pas un aliment déjà présent aux autres repas de cette même journée.
+- Propose autre chose que la version actuelle du repas.
+- PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter.`
 
 const SUPPLEMENT_TIMING_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
@@ -194,6 +263,22 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
     `Aliments que la personne AIME : ${clean(p.foodsLiked)}.`,
     `Aliments que la personne N'AIME PAS / à exclure : ${clean(p.foodsDisliked)}.`
   ]
+
+  // Reprise partielle : le modèle a besoin de voir ce qui existe déjà, sinon il
+  // repropose la même chose ou casse la cohérence de la journée.
+  if (p.type === 'menu-jour') {
+    const autres = (p.autresJournees ?? []).map(j => j.trim()).filter(Boolean)
+    lines.push(
+      autres.length
+        ? `\nAutres journées déjà proposées cette semaine (ne les recopie pas) :\n${autres.join('\n---\n')}`
+        : '\n(aucune autre journée écrite pour l\'instant)'
+    )
+  }
+  if (p.type === 'menu-repas') {
+    lines.push(`\nRepas à refaire : ${p.repas ?? 'Déjeuner'}.`)
+    lines.push(`Journée actuelle :\n${(p.journee ?? '').trim() || '(vide)'}`)
+  }
+
   return lines.join('\n')
 }
 
@@ -381,18 +466,29 @@ export function registerAIHandlers(): void {
       return { ok: false, error: 'Payload invalide.', code: 'BAD_RESPONSE' as AIErrorCode }
     }
     try {
+      const SYSTEMES = {
+        supplements: SUPPLEMENTS_SYSTEM,
+        menu: MENU_SYSTEM,
+        'menu-jour': MENU_JOUR_SYSTEM,
+        'menu-repas': MENU_REPAS_SYSTEM
+      } as const
+      // Sept journées ne tiennent pas dans le budget d'une seule : une réponse
+      // coupée casse le JSON et remonte en « BAD_RESPONSE ».
+      const BUDGETS = { supplements: 1600, menu: 4000, 'menu-jour': 700, 'menu-repas': 250 } as const
       const response = await callAnthropic(apiKey, {
         model: MODEL_GENERATE,
-        // Sept journées de menu ne tiennent pas dans le budget des suppléments :
-        // une réponse coupée casse le JSON et remonte en « BAD_RESPONSE ».
-        max_tokens: payload.type === 'supplements' ? 1600 : 4000,
-        system: payload.type === 'supplements' ? SUPPLEMENTS_SYSTEM : MENU_SYSTEM,
+        max_tokens: BUDGETS[payload.type],
+        // Un menu n'est pas un exercice de créativité. À la température par défaut
+        // (1,0), le modèle allait chercher l'inhabituel — c'est l'essentiel du
+        // « bizarre » signalé par Marie. Les suppléments restent à leur réglage.
+        ...(payload.type === 'supplements' ? {} : { temperature: 0.3 }),
+        system: SYSTEMES[payload.type],
         messages: [{ role: 'user', content: buildNutritionMessage(payload) }]
       })
       const parsed = parseAdviceJson(extractText(response))
-      if (payload.type === 'supplements') {
-        return { ok: true, plan: SuppPlanSchema.parse(parsed) }
-      }
+      if (payload.type === 'supplements') return { ok: true, plan: SuppPlanSchema.parse(parsed) }
+      if (payload.type === 'menu-jour') return { ok: true, plan: MenuJourSchema.parse(parsed) }
+      if (payload.type === 'menu-repas') return { ok: true, plan: MenuRepasSchema.parse(parsed) }
       return { ok: true, plan: MenuPlanSchema.parse(parsed) }
     } catch (err) {
       if (err instanceof AIError) return { ok: false, error: err.message, code: err.code }

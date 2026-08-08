@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pill, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
+import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pill, RefreshCw, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
 import { bilansService } from '../../../services/bilans'
+import { REPAS, remplacerRepas, type Repas } from '../../../lib/menu-lines'
 import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
 import { nutritionTemplatesService } from '../../../services/nutritionTemplates'
 import { SendBilanModal } from '../SendBilanModal'
@@ -325,6 +326,10 @@ export function NutritionTab() {
 
   // Génération IA (plan de suppléments / idées de menu).
   const [aiBusy, setAiBusy] = useState<'supp' | 'menu' | null>(null)
+  /** Reprise partielle en cours : « 2 » pour la journée 2, « 2:Souper » pour un
+   *  repas. Un seul identifiant plutôt que deux états — il ne peut y en avoir
+   *  qu'une à la fois, et le bouton concerné doit être le seul à réagir. */
+  const [reprise, setReprise] = useState<string | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
 
   // Modèles de protocole réutilisables.
@@ -583,22 +588,63 @@ export function NutritionTab() {
     }
   }
 
+  /** Cibles et préférences — identiques pour la semaine, une journée ou un repas. */
+  function contexteMenu() {
+    return {
+      kcal: liveMacros?.targetKcal ?? null,
+      proteinG: liveMacros?.proteinG ?? null,
+      fatG: liveMacros?.fatG ?? null,
+      carbsG: liveMacros?.carbsG ?? null,
+      fiberG: liveMacros?.fiberG ?? null,
+      foodsGood: alimentsPrivilegier,
+      foodsBad: alimentsEviter,
+      foodsLiked: alimentsAimes,
+      foodsDisliked: alimentsPasAimes
+    }
+  }
+
+  /** IA : refait UNE journée, sans toucher aux six autres. */
+  async function regenerateDay(i: number) {
+    setAiError(null)
+    setReprise(String(i))
+    try {
+      const plan = await aiAdviceService.regenerateMenuDay({
+        ...contexteMenu(),
+        autresJournees: menuJours.filter((_, j) => j !== i)
+      })
+      if (plan.lignes.length) setMenuJour(i, plan.lignes.join('\n\n'))
+    } catch (err) {
+      setAiError(aiErrorMessage(err))
+    } finally {
+      setReprise(null)
+    }
+  }
+
+  /** IA : refait UN repas. Le reste de la journée est conservé tel quel — y
+   *  compris ce que Marie y a écrit à la main. */
+  async function regenerateMeal(i: number, repas: Repas) {
+    setAiError(null)
+    setReprise(`${i}:${repas}`)
+    try {
+      const plan = await aiAdviceService.regenerateMenuMeal({
+        ...contexteMenu(),
+        journee: menuJours[i] ?? '',
+        repas
+      })
+      if (plan.ligne.trim()) setMenuJour(i, remplacerRepas(menuJours[i] ?? '', repas, plan.ligne))
+    } catch (err) {
+      setAiError(aiErrorMessage(err))
+    } finally {
+      setReprise(null)
+    }
+  }
+
   /** IA : idées de menu (une semaine) selon les macros + aliments. */
   async function generateMenuIdeas() {
     setAiError(null)
     setAiBusy('menu')
     try {
-      const plan = await aiAdviceService.generateMenuPlan({
-        kcal: liveMacros?.targetKcal ?? null,
-        proteinG: liveMacros?.proteinG ?? null,
-        fatG: liveMacros?.fatG ?? null,
-        carbsG: liveMacros?.carbsG ?? null,
-        fiberG: liveMacros?.fiberG ?? null,
-        foodsGood: alimentsPrivilegier,
-        foodsBad: alimentsEviter,
-        foodsLiked: alimentsAimes,
-        foodsDisliked: alimentsPasAimes
-      })
+      const plan = await aiAdviceService.generateMenuPlan(contexteMenu())
       // Ligne vide entre chaque repas → séparation visuelle lisible dans le champ.
       // (Le document filtre les lignes vides : PDF inchangé.)
       const days = plan.journees.map(j => j.lignes.join('\n\n'))
@@ -1407,18 +1453,49 @@ export function NutritionTab() {
           )}
         </div>
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
-          {menuJours.map((jour, i) => (
-            <div key={i}>
-              <label className="block text-marine/70 text-sm font-medium mb-1">Journée {i + 1}</label>
-              <AutoTextarea
-                value={jour}
-                onChange={e => setMenuJour(i, e.target.value)}
-                minRows={6}
-                placeholder={`Journée ${i + 1} — un repas par ligne. Ex. Déjeuner : ...&#10;Dîner : ...&#10;Souper : ...&#10;Collations : ...&#10;Total approximatif : ...`}
-                className={fieldClass}
-              />
-            </div>
-          ))}
+          {menuJours.map((jour, i) => {
+            const occupe = aiBusy !== null || reprise !== null
+            return (
+              <div key={i}>
+                <div className="flex items-baseline justify-between gap-2 mb-1">
+                  <label className="block text-marine/70 text-sm font-medium">Journée {i + 1}</label>
+                  <button
+                    type="button"
+                    onClick={() => regenerateDay(i)}
+                    disabled={occupe}
+                    className="inline-flex items-center gap-1 text-xs text-marine/50 hover:text-gold-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Refaire cette journée seulement"
+                  >
+                    <RefreshCw size={12} className={reprise === String(i) ? 'animate-spin' : ''} />
+                    {reprise === String(i) ? 'En cours…' : 'Refaire'}
+                  </button>
+                </div>
+                <AutoTextarea
+                  value={jour}
+                  onChange={e => setMenuJour(i, e.target.value)}
+                  minRows={6}
+                  placeholder={`Journée ${i + 1} — un repas par ligne. Ex. Déjeuner : ...&#10;Dîner : ...&#10;Souper : ...&#10;Collations : ...`}
+                  className={fieldClass}
+                />
+                {/* Refaire un seul repas : le reste de la journée, y compris ce
+                    que Marie a retouché, n'est pas régénéré. */}
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="text-marine/35 text-xs">Refaire :</span>
+                  {REPAS.map(r => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => regenerateMeal(i, r)}
+                      disabled={occupe}
+                      className="text-xs text-marine/45 hover:text-gold-dark underline decoration-dotted underline-offset-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+                    >
+                      {reprise === `${i}:${r}` ? `${r}…` : r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
         <p className="text-marine/40 text-xs mt-1.5">
           Idées génériques à titre d’exemple — un plan nutritionnel personnalisé relève d’une nutritionniste.

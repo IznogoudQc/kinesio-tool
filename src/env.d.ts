@@ -621,7 +621,8 @@ interface Window {
       }): Promise<{ ok: boolean; advice?: unknown; error?: string; code?: string }>
       /** Génère un plan nutrition STRUCTURÉ (suppléments par moment / menu par journée). */
       generateNutrition(payload: {
-        type: 'supplements' | 'menu'
+        /** `menu` = la semaine · `menu-jour` = une journée · `menu-repas` = un repas. */
+        type: 'supplements' | 'menu' | 'menu-jour' | 'menu-repas'
         kcal?: number | null
         proteinG?: number | null
         fatG?: number | null
@@ -632,6 +633,12 @@ interface Window {
         foodsBad?: string
         foodsLiked?: string
         foodsDisliked?: string
+        /** `menu-jour` : les autres journées de la semaine, pour ne pas les recopier. */
+        autresJournees?: string[]
+        /** `menu-repas` : la journée telle qu'elle est, pour rester cohérent. */
+        journee?: string
+        /** `menu-repas` : quel repas refaire. */
+        repas?: string
       }): Promise<{ ok: boolean; plan?: unknown; error?: string; code?: string }>
       /** Propose le moment de prise recommandé pour un supplément (nom → moment court). */
       supplementTiming(name: string): Promise<{ ok: boolean; timing?: string; error?: string; code?: string }>
