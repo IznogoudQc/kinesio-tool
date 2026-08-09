@@ -128,6 +128,9 @@ export const clients = sqliteTable('clients', {
   // Aliments à privilégier PAR MACRONUTRIMENT. Séparés de `alimentsPrivilegier`
   // (liste unique) : donner à l'IA « pour les protéines, prends ça » structure
   // bien mieux un menu qu'une liste en vrac où tout se mélange.
+  /** Collations par jour (0-3). Séparé du nombre de repas : la structure du
+   *  menu en dépend — zéro collation veut dire aucune ligne de collation. */
+  nutritionCollationsParJour: integer('nutrition_collations_par_jour'),
   alimentsProteines: text('aliments_proteines'),
   alimentsGlucides: text('aliments_glucides'),
   alimentsLipides: text('aliments_lipides'),

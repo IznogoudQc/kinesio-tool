@@ -60,6 +60,8 @@ export interface MenuContexte {
   proteinFoods?: string
   carbFoods?: string
   fatFoods?: string
+  /** Lignes attendues dans une journée, dans l'ordre. */
+  structure?: string[]
 }
 
 /** Les trois portées passent par le même canal et la même gestion d'erreur. */

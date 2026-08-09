@@ -85,6 +85,8 @@ interface Client {
   nutritionMenu: string | null
   /** Goûts du client — aliments aimés (préférences personnelles). */
   alimentsAimes: string | null
+  /** Collations par jour (0-3) — décide la structure des journées de menu. */
+  nutritionCollationsParJour: number | null
   /** Aliments à privilégier par macronutriment — alimentent l'IA des menus. */
   alimentsProteines: string | null
   alimentsGlucides: string | null
@@ -471,6 +473,7 @@ interface Window {
           nutritionMot?: string | null
           nutritionMenu?: string | null
           alimentsAimes?: string | null
+          nutritionCollationsParJour?: number | null
           alimentsProteines?: string | null
           alimentsGlucides?: string | null
           alimentsLipides?: string | null
@@ -643,6 +646,8 @@ interface Window {
         proteinFoods?: string
         carbFoods?: string
         fatFoods?: string
+        /** Lignes attendues dans une journée, dans l'ordre. */
+        structure?: string[]
         /** `menu-jour` : les autres journées de la semaine, pour ne pas les recopier. */
         autresJournees?: string[]
         /** `menu-repas` : la journée telle qu'elle est, pour rester cohérent. */

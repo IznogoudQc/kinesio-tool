@@ -95,8 +95,13 @@ const NutritionPayloadSchema = z.object({
   autresJournees: z.array(z.string().max(2000)).max(7).optional(),
   /** Reprise d'un repas — la journée telle qu'elle est, pour rester cohérent. */
   journee: z.string().max(2000).optional(),
-  /** Repas à refaire : « Déjeuner », « Dîner », « Souper » ou « Collations ». */
-  repas: z.string().max(40).optional()
+  /** `menu-repas` : quel repas refaire (« Déjeuner », « Collation 2 »…). */
+  repas: z.string().max(40).optional(),
+  /** Les lignes attendues dans une journée, dans l'ordre — construites par
+   *  `structureJournee` selon le nombre de repas et de collations du client.
+   *  Sans elle, le modèle proposait toujours quatre repas, y compris à qui n'en
+   *  prend que deux et aucune collation. */
+  structure: z.array(z.string().max(40)).min(1).max(6).optional()
 })
 
 /** Plan de suppléments structuré : une liste de lignes par moment de prise. */
@@ -190,7 +195,7 @@ Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suiv
 
 Règles :
 - EXACTEMENT 7 journées dans « journees » — une semaine complète, aucune journée omise.
-- 4 lignes par journée (Déjeuner, Dîner, Souper, Collations), une seule phrase chacune.
+- Chaque journée suit la STRUCTURE EXACTE donnée dans le message : une ligne par élément, dans l'ordre, une seule phrase chacune. N'ajoute AUCUN repas absent de cette liste — pas de collation si elle n'y figure pas, pas de déjeuner si la journée commence au dîner.
 - Ne mets PAS d'en-tête « Journée N » : la numérotation est ajoutée par l'application.
 - Quand des sources de protéines / glucides / lipides à privilégier sont fournies, CONSTRUIS les repas autour d'elles. Si une liste est « non précisés », choisis librement dans le style méditerranéen.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
@@ -207,7 +212,7 @@ Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown :
 { "lignes": ["Déjeuner : ...", "Dîner : ...", "Souper : ...", "Collations : ..."] }
 
 Règles :
-- EXACTEMENT 4 lignes : Déjeuner, Dîner, Souper, Collations.
+- Une ligne par élément de la STRUCTURE EXACTE donnée dans le message, dans l'ordre, et rien d'autre.
 - On te donne les autres journées de la semaine. Propose autre chose qu'une copie de l'une d'elles, sans chercher l'originalité à tout prix : un aliment qui revient est normal.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter.`
 
@@ -261,7 +266,9 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
     typeof p.fiberG === 'number'
       ? `Cible de fibres : environ ${Math.round(p.fiberG)} g/jour — construis des journées RICHES EN FIBRES pour t'en approcher (sans écrire de total de fibres).`
       : `Vise des journées riches en fibres (légumes, fruits, légumineuses, grains entiers).`
+  const structure = p.structure ?? ['Déjeuner', 'Dîner', 'Souper', 'Collation']
   const lines = [
+    `Structure EXACTE de chaque journée, dans cet ordre — ${structure.length} ligne(s), ni plus ni moins : ${structure.join(' · ')}.`,
     `Cibles quotidiennes : ${macros.length ? macros.join(', ') : 'non précisées'}.`,
     fiberLine,
     `Aliments à privilégier (recommandation) : ${clean(p.foodsGood)}.`,

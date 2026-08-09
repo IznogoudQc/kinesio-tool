@@ -57,6 +57,7 @@ export const clientsService = {
       nutritionMot?: string | null
       nutritionMenu?: string | null
       alimentsAimes?: string | null
+      nutritionCollationsParJour?: number | null
       alimentsProteines?: string | null
       alimentsGlucides?: string | null
       alimentsLipides?: string | null

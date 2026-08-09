@@ -71,6 +71,8 @@ const UpdateClientSchema = z.object({
   nutritionManualFiberG: z.union([z.number().min(0).max(200), z.null()]).optional(),
   nutritionManualCarbG: z.union([z.number().min(0).max(800), z.null()]).optional(),
   nutritionRepasParJour: z.union([z.number().int().min(1).max(8), z.null()]).optional(),
+  // Zéro collation est un choix valide — la borne basse ne peut pas être 1.
+  nutritionCollationsParJour: z.union([z.number().int().min(0).max(3), z.null()]).optional(),
   principePersoTitre: z.union([z.string().max(60).trim(), z.null()]).optional(),
   principePersoTexte: z.union([z.string().max(300).trim(), z.null()]).optional(),
   jeuneType: JeuneType,

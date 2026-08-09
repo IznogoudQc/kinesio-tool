@@ -4,7 +4,12 @@ import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
 import { bilansService } from '../../../services/bilans'
-import { REPAS, remplacerRepas, type Repas } from '../../../lib/menu-lines'
+import {
+  structureJournee,
+  remplacerRepas,
+  REPAS_POSSIBLES,
+  COLLATIONS_POSSIBLES
+} from '../../../lib/menu-lines'
 import { SUGGESTIONS_PROTEINES, SUGGESTIONS_GLUCIDES, SUGGESTIONS_LIPIDES } from '../../../lib/food-suggestions'
 import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
 import { nutritionTemplatesService } from '../../../services/nutritionTemplates'
@@ -284,6 +289,10 @@ export function NutritionTab() {
     client.nutritionManualCarbG != null ? String(client.nutritionManualCarbG) : ''
   )
   const [repasParJour, setRepasParJour] = useState<number>(client.nutritionRepasParJour ?? DEFAULT_MEALS_PER_DAY)
+  const [collationsParJour, setCollationsParJour] = useState<number>(client.nutritionCollationsParJour ?? 1)
+  /** Les lignes d'une journée — une seule source pour l'IA, les boutons et le
+   *  remplacement de ligne. */
+  const structure = structureJournee(repasParJour, collationsParJour)
 
   // ── Planning de jeûne flexible ────────────────────────────────────────────────
   const [programs, setPrograms] = useState<FastingProgram[]>(() => parseInitialPrograms(client.jeunePlanning))
@@ -511,6 +520,7 @@ export function NutritionTab() {
         nutritionManualCarbG: carbGVal,
         nutritionManualFiberG: fiberGVal,
         nutritionRepasParJour: nutritionEnabled ? repasParJour : null,
+        nutritionCollationsParJour: nutritionEnabled ? collationsParJour : null,
         // Ancien modèle de jeûne (type unique + fenêtre) remplacé par le planning.
         jeuneType: null,
         jeuneFenetreDebut: null,
@@ -617,7 +627,8 @@ export function NutritionTab() {
       foodsDisliked: alimentsPasAimes,
       proteinFoods: alimentsProteines,
       carbFoods: alimentsGlucides,
-      fatFoods: alimentsLipides
+      fatFoods: alimentsLipides,
+      structure
     }
   }
 
@@ -640,7 +651,7 @@ export function NutritionTab() {
 
   /** IA : refait UN repas. Le reste de la journée est conservé tel quel — y
    *  compris ce que Marie y a écrit à la main. */
-  async function regenerateMeal(i: number, repas: Repas) {
+  async function regenerateMeal(i: number, repas: string) {
     setAiError(null)
     setReprise(`${i}:${repas}`)
     try {
@@ -649,7 +660,7 @@ export function NutritionTab() {
         journee: menuJours[i] ?? '',
         repas
       })
-      if (plan.ligne.trim()) setMenuJour(i, remplacerRepas(menuJours[i] ?? '', repas, plan.ligne))
+      if (plan.ligne.trim()) setMenuJour(i, remplacerRepas(menuJours[i] ?? '', repas, plan.ligne, structure))
     } catch (err) {
       setAiError(aiErrorMessage(err))
     } finally {
@@ -695,6 +706,7 @@ export function NutritionTab() {
       nutritionManualCarbG: manualCarbG.trim() !== '' ? Number(manualCarbG) : null,
       nutritionManualFiberG: manualFiberG.trim() !== '' ? Number(manualFiberG) : null,
       nutritionRepasParJour: repasParJour,
+      nutritionCollationsParJour: collationsParJour,
       jeunePlanning: programs,
       hydratationMlParJour: hydratationMl.trim() !== '' ? Number(hydratationMl) : null,
       supplementsNotes: serializeSuppPlan(supp),
@@ -1254,6 +1266,7 @@ export function NutritionTab() {
                 <div className="mt-4 border-t border-cream-dark pt-3">
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-[11px] uppercase tracking-wide text-gold-dark font-semibold">Par repas</p>
+                    <div className="flex items-center gap-4 flex-wrap">
                     <label className="flex items-center gap-2 text-sm text-marine/70">
                       Repas / jour
                       <select
@@ -1261,13 +1274,28 @@ export function NutritionTab() {
                         onChange={e => setRepasParJour(Number(e.target.value))}
                         className="px-2 py-1 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
                       >
-                        {[1, 2, 3, 4, 5].map(n => (
+                        {REPAS_POSSIBLES.map(n => (
                           <option key={n} value={n}>
                             {n}
                           </option>
                         ))}
                       </select>
                     </label>
+                    <label className="flex items-center gap-2 text-sm text-marine/70">
+                      Collations / jour
+                      <select
+                        value={collationsParJour}
+                        onChange={e => setCollationsParJour(Number(e.target.value))}
+                        className="px-2 py-1 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+                      >
+                        {COLLATIONS_POSSIBLES.map(n => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    </div>
                   </div>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
                     {(() => {
@@ -1479,7 +1507,7 @@ export function NutritionTab() {
       <Section
         icon={Utensils}
         title="Idées de menu"
-        desc="Exemples de journées types selon les macros et les aliments — modifiables."
+        desc={`Journées types selon les macros et les aliments — ${structure.join(', ')}. Modifiables.`}
       >
         <div className="mb-2 flex items-center gap-3 flex-wrap">
           <button
@@ -1526,7 +1554,7 @@ export function NutritionTab() {
                     que Marie a retouché, n'est pas régénéré. */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                   <span className="text-marine/35 text-xs">Refaire :</span>
-                  {REPAS.map(r => (
+                  {structure.map(r => (
                     <button
                       key={r}
                       type="button"

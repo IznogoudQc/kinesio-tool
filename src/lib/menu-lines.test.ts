@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { estLigneDe, ligneDuRepas, remplacerRepas } from './menu-lines.ts'
+import { estLigneDe, ligneDuRepas, remplacerRepas, structureJournee } from './menu-lines.ts'
 
 const JOURNEE = [
   'Déjeuner : yogourt grec, petits fruits, amandes',
@@ -16,8 +16,26 @@ const JOURNEE = [
   '',
   'Souper : saumon au citron, riz brun, brocoli',
   '',
-  'Collations : pomme et fromage'
+  'Collation : pomme et fromage'
 ].join('\n')
+
+test('la structure suit le nombre de repas et de collations', () => {
+  assert.deepEqual(structureJournee(3, 1), ['Déjeuner', 'Dîner', 'Souper', 'Collation'])
+  // Deux repas = pas de déjeuner. C'est le matin qui saute, pas le souper.
+  assert.deepEqual(structureJournee(2, 0), ['Dîner', 'Souper'])
+  assert.deepEqual(structureJournee(1, 0), ['Souper'])
+  // Zéro collation ne doit produire AUCUNE ligne de collation.
+  assert.ok(!structureJournee(3, 0).some(r => r.startsWith('Collation')))
+  // Plusieurs collations sont numérotées, pour pouvoir en refaire une seule.
+  assert.deepEqual(structureJournee(2, 2), ['Dîner', 'Souper', 'Collation 1', 'Collation 2'])
+})
+
+test('la structure reste valide sur des nombres aberrants', () => {
+  // Les bornes viennent d'un `<select>`, mais une donnée en base peut être hors
+  // plage : mieux vaut une journée plausible qu'une liste vide.
+  assert.deepEqual(structureJournee(0, 0), ['Souper'])
+  assert.deepEqual(structureJournee(9, 9), ['Déjeuner', 'Dîner', 'Souper', 'Collation 1', 'Collation 2', 'Collation 3'])
+})
 
 test('reconnaît un repas malgré accents, casse et puces', () => {
   assert.ok(estLigneDe('Déjeuner : œufs', 'Déjeuner'))
@@ -29,7 +47,7 @@ test('reconnaît un repas malgré accents, casse et puces', () => {
 test('n’attrape pas une note libre qui commence par le mot', () => {
   // Sans l'exigence du deux-points, cette note serait écrasée par une reprise.
   assert.ok(!estLigneDe('Souper léger les soirs d’entraînement', 'Souper'))
-  assert.ok(!estLigneDe('Collations à éviter après 20 h', 'Collations'))
+  assert.ok(!estLigneDe('Collation à éviter après 20 h', 'Collation'))
 })
 
 test('lit la ligne d’un repas, ou null s’il est absent', () => {
@@ -50,20 +68,29 @@ test('remplace un repas sans toucher aux autres', () => {
 
 test('un repas absent s’insère à sa place, pas à la fin', () => {
   const sansDiner = 'Déjeuner : œufs et pain\n\nSouper : poisson et légumes'
-  const out = remplacerRepas(sansDiner, 'Dîner', 'Dîner : salade de lentilles')
+  const out = remplacerRepas(sansDiner, 'Dîner', 'Dîner : salade de lentilles', structureJournee(3, 1))
   const ordre = out.split('\n').filter(l => l.trim())
   assert.match(ordre[0], /^Déjeuner/)
   assert.match(ordre[1], /^Dîner/)
   assert.match(ordre[2], /^Souper/)
 })
 
+test('une collation numérotée s’insère après l’autre, pas avant', () => {
+  const ordre = structureJournee(3, 2)
+  const j = 'Déjeuner : gruau\n\nDîner : salade\n\nSouper : poisson\n\nCollation 1 : pomme'
+  const out = remplacerRepas(j, 'Collation 2', 'Collation 2 : yogourt', ordre)
+  const lignes = out.split('\n').filter(l => l.trim())
+  assert.match(lignes[3], /^Collation 1/)
+  assert.match(lignes[4], /^Collation 2/)
+})
+
 test('un repas absent et dernier de l’ordre va à la fin', () => {
-  const out = remplacerRepas('Déjeuner : œufs', 'Collations', 'Collations : noix')
-  assert.match(out, /^Déjeuner : œufs\n\nCollations : noix$/)
+  const out = remplacerRepas('Déjeuner : œufs', 'Collation', 'Collation : noix', structureJournee(3, 1))
+  assert.match(out, /^Déjeuner : œufs\n\nCollation : noix$/)
 })
 
 test('journée vide, ou remplacement vide — rien ne casse', () => {
-  assert.equal(remplacerRepas('', 'Déjeuner', 'Déjeuner : œufs'), 'Déjeuner : œufs')
+  assert.equal(remplacerRepas('', 'Déjeuner', 'Déjeuner : œufs', structureJournee(3, 1)), 'Déjeuner : œufs')
   assert.equal(remplacerRepas(JOURNEE, 'Déjeuner', '   '), JOURNEE, 'un vide ne doit rien effacer')
 })
 
