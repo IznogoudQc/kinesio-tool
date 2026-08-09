@@ -1,4 +1,5 @@
 import type { SupplementItem } from '../lib/supplements'
+import type { FoodListName } from '../lib/food-suggestions'
 
 export const settingsService = {
   async getProfile(): Promise<ProfileSettings> {
@@ -85,24 +86,16 @@ export const settingsService = {
     return window.api.settings.getDefaultSupplements()
   },
 
-  /** Listes globales d'aliments proposés (à privilégier / à éviter). */
-  async getFoodsGood(): Promise<string[]> {
-    return window.api.settings.getFoodsGood()
+  /** Listes globales d'aliments proposés — à privilégier, à éviter, et les trois
+   *  sources par macronutriment. Toutes éditables dans les Paramètres. */
+  async getFoodList(nom: FoodListName): Promise<string[]> {
+    return window.api.settings.getFoodList(nom)
   },
-  async setFoodsGood(value: string[]): Promise<void> {
-    return window.api.settings.setFoodsGood(value)
+  async setFoodList(nom: FoodListName, value: string[]): Promise<void> {
+    return window.api.settings.setFoodList(nom, value)
   },
-  async getDefaultFoodsGood(): Promise<string[]> {
-    return window.api.settings.getDefaultFoodsGood()
-  },
-  async getFoodsBad(): Promise<string[]> {
-    return window.api.settings.getFoodsBad()
-  },
-  async setFoodsBad(value: string[]): Promise<void> {
-    return window.api.settings.setFoodsBad(value)
-  },
-  async getDefaultFoodsBad(): Promise<string[]> {
-    return window.api.settings.getDefaultFoodsBad()
+  async getDefaultFoodList(nom: FoodListName): Promise<string[]> {
+    return window.api.settings.getDefaultFoodList(nom)
   },
   async getPainSuggestions(): Promise<Record<string, string[]>> {
     return window.api.settings.getPainSuggestions()

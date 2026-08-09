@@ -1,3 +1,24 @@
+/** Les cinq listes d'aliments proposés, éditables dans les Paramètres. */
+export type FoodListName = 'good' | 'bad' | 'proteines' | 'glucides' | 'lipides'
+
+/** Icône de chaque liste, par son nom lucide — résolue par la carte. */
+export const FOOD_LIST_ICONES: Record<FoodListName, 'apple' | 'ban' | 'target'> = {
+  good: 'apple',
+  bad: 'ban',
+  proteines: 'target',
+  glucides: 'target',
+  lipides: 'target'
+}
+
+/** Intitulé de chaque liste — un seul endroit pour les nommer. */
+export const FOOD_LIST_TITRES: Record<FoodListName, string> = {
+  good: 'Aliments à privilégier',
+  bad: 'Aliments à éviter',
+  proteines: 'Sources de protéines',
+  glucides: 'Sources de glucides',
+  lipides: 'Sources de lipides'
+}
+
 /**
  * Aliments proposés dans l'onglet Nutrition (puces cliquables) pour « À privilégier »
  * et « À éviter ». GLOBALES (valent pour tous les clients) et modifiables par Marie :

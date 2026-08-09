@@ -72,8 +72,11 @@ export function SettingsPage() {
           {tab === 'nutrition' && (
             <>
               <SupplementLibraryCard />
-              <FoodListCard title="Aliments à privilégier" variant="good" />
-              <FoodListCard title="Aliments à éviter" variant="bad" />
+              <FoodListCard liste="good" />
+              <FoodListCard liste="bad" />
+              <FoodListCard liste="proteines" />
+              <FoodListCard liste="glucides" />
+              <FoodListCard liste="lipides" />
             </>
           )}
           {tab === 'questionnaires' && <PainSuggestionsCard />}

@@ -322,10 +322,18 @@ export function NutritionTab() {
   const [suppLibrary, setSuppLibrary] = useState<SupplementItem[]>(DEFAULT_SUPPLEMENTS)
   const [foodsGoodLib, setFoodsGoodLib] = useState<string[]>(DEFAULT_FOODS_GOOD)
   const [foodsBadLib, setFoodsBadLib] = useState<string[]>(DEFAULT_FOODS_BAD)
+  const [libProteines, setLibProteines] = useState<string[]>(SUGGESTIONS_PROTEINES)
+  const [libGlucides, setLibGlucides] = useState<string[]>(SUGGESTIONS_GLUCIDES)
+  const [libLipides, setLibLipides] = useState<string[]>(SUGGESTIONS_LIPIDES)
   useEffect(() => {
     settingsService.getSupplements().then(setSuppLibrary).catch(() => {})
-    settingsService.getFoodsGood().then(setFoodsGoodLib).catch(() => {})
-    settingsService.getFoodsBad().then(setFoodsBadLib).catch(() => {})
+    settingsService.getFoodList('good').then(setFoodsGoodLib).catch(() => {})
+    settingsService.getFoodList('bad').then(setFoodsBadLib).catch(() => {})
+    // Les trois palettes par macronutriment sont éditables dans les Paramètres :
+    // les constantes ne servent plus que de valeur initiale avant chargement.
+    settingsService.getFoodList('proteines').then(setLibProteines).catch(() => {})
+    settingsService.getFoodList('glucides').then(setLibGlucides).catch(() => {})
+    settingsService.getFoodList('lipides').then(setLibLipides).catch(() => {})
   }, [])
 
   // Génération IA (plan de suppléments / idées de menu).
@@ -1402,9 +1410,9 @@ export function NutritionTab() {
       >
         <div className="grid md:grid-cols-3 gap-5">
           {[
-            { titre: 'Protéines', v: alimentsProteines, set: setAlimentsProteines, sugg: SUGGESTIONS_PROTEINES },
-            { titre: 'Glucides', v: alimentsGlucides, set: setAlimentsGlucides, sugg: SUGGESTIONS_GLUCIDES },
-            { titre: 'Lipides', v: alimentsLipides, set: setAlimentsLipides, sugg: SUGGESTIONS_LIPIDES }
+            { titre: 'Protéines', v: alimentsProteines, set: setAlimentsProteines, sugg: libProteines },
+            { titre: 'Glucides', v: alimentsGlucides, set: setAlimentsGlucides, sugg: libGlucides },
+            { titre: 'Lipides', v: alimentsLipides, set: setAlimentsLipides, sugg: libLipides }
           ].map(m => (
             <div key={m.titre}>
               <label className="block text-marine/70 text-sm font-medium mb-1">{m.titre}</label>

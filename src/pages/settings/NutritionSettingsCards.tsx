@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Apple, Ban, Check, Loader2, Pill, Plus, RotateCcw, Sparkles, X } from 'lucide-react'
+import { Apple, Ban, Check, Loader2, Pill, Plus, RotateCcw, Sparkles, Target, X } from 'lucide-react'
+import { FOOD_LIST_ICONES, FOOD_LIST_TITRES, type FoodListName } from '../../lib/food-suggestions'
 import { settingsService } from '../../services/settings'
 import { aiAdviceService, AIAdviceError } from '../../services/aiAdvice'
 import type { SupplementItem } from '../../lib/supplements'
@@ -186,20 +187,25 @@ export function SupplementLibraryCard() {
 }
 
 /** Éditeur d'une liste d'aliments proposés (à privilégier / à éviter). */
-export function FoodListCard({ title, variant }: { title: string; variant: 'good' | 'bad' }) {
+/**
+ * Une liste d'aliments proposés, éditable.
+ *
+ * Générique sur `liste` : cinq listes partagent ce composant, et le motif
+ * précédent (un couple de méthodes par liste) en aurait demandé quinze.
+ */
+export function FoodListCard({ liste }: { liste: FoodListName }) {
+  const title = FOOD_LIST_TITRES[liste]
   const [list, setList] = useState<string[] | null>(null)
   const [draft, setDraft] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [dirty, setDirty] = useState(false)
 
-  const set = (v: string[]) => (variant === 'good' ? settingsService.setFoodsGood(v) : settingsService.setFoodsBad(v))
-  const getDefault = () =>
-    variant === 'good' ? settingsService.getDefaultFoodsGood() : settingsService.getDefaultFoodsBad()
+  const set = (v: string[]) => settingsService.setFoodList(liste, v)
+  const getDefault = () => settingsService.getDefaultFoodList(liste)
 
   useEffect(() => {
-    const p = variant === 'good' ? settingsService.getFoodsGood() : settingsService.getFoodsBad()
-    p.then(setList).catch(() => setList([]))
-  }, [variant])
+    settingsService.getFoodList(liste).then(setList).catch(() => setList([]))
+  }, [liste])
 
   function mutate(next: string[]) {
     setList(next)
@@ -233,7 +239,7 @@ export function FoodListCard({ title, variant }: { title: string; variant: 'good
     }
   }
 
-  const Icon = variant === 'good' ? Apple : Ban
+  const Icon = { apple: Apple, ban: Ban, target: Target }[FOOD_LIST_ICONES[liste]]
   return (
     <section className="bg-white border border-cream-dark rounded-xl p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-1">

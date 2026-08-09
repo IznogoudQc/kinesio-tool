@@ -545,12 +545,11 @@ interface Window {
       setSupplements(value: { label: string; timing: string }[]): Promise<void>
       getDefaultSupplements(): Promise<{ label: string; timing: string }[]>
       /** Listes globales d'aliments proposés (à privilégier / à éviter). */
-      getFoodsGood(): Promise<string[]>
-      setFoodsGood(value: string[]): Promise<void>
-      getDefaultFoodsGood(): Promise<string[]>
-      getFoodsBad(): Promise<string[]>
-      setFoodsBad(value: string[]): Promise<void>
-      getDefaultFoodsBad(): Promise<string[]>
+      /** Listes d'aliments proposés, éditables dans les Paramètres.
+       *  `FoodListName` vient de `src/lib/food-suggestions.ts`. */
+      getFoodList(nom: FoodListName): Promise<string[]>
+      setFoodList(nom: FoodListName, value: string[]): Promise<void>
+      getDefaultFoodList(nom: FoodListName): Promise<string[]>
       /** Bibliothèque globale de suggestions de douleur (famille → phrases). */
       getPainSuggestions(): Promise<Record<string, string[]>>
       setPainSuggestions(value: Record<string, string[]>): Promise<void>

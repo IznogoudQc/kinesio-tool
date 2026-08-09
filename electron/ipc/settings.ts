@@ -6,7 +6,13 @@ import { eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { settings } from '../../db/schema'
 import { DEFAULT_SUPPLEMENTS } from '../../src/lib/supplements'
-import { DEFAULT_FOODS_GOOD, DEFAULT_FOODS_BAD } from '../../src/lib/food-suggestions'
+import {
+  DEFAULT_FOODS_GOOD,
+  DEFAULT_FOODS_BAD,
+  SUGGESTIONS_PROTEINES,
+  SUGGESTIONS_GLUCIDES,
+  SUGGESTIONS_LIPIDES
+} from '../../src/lib/food-suggestions'
 import { DEFAULT_PAIN_SUGGESTIONS } from '../../src/lib/pain-suggestions'
 import { DEFAULT_BILAN_EMAIL, DEFAULT_NUTRITION_EMAIL } from '../../src/lib/email-templates'
 
@@ -26,6 +32,9 @@ const KEYS = {
   supplements: 'nutrition.supplements',
   foodsGood: 'nutrition.foods_good',
   foodsBad: 'nutrition.foods_bad',
+  foodsProteines: 'nutrition.foods_proteines',
+  foodsGlucides: 'nutrition.foods_glucides',
+  foodsLipides: 'nutrition.foods_lipides',
   painSuggestions: 'pain.suggestions'
 } as const
 
@@ -257,17 +266,26 @@ export function registerSettingsHandlers(): void {
     }
   }
 
-  ipcMain.handle('settings:foodsGood:get', async () => readFoodList(KEYS.foodsGood, DEFAULT_FOODS_GOOD))
-  ipcMain.handle('settings:foodsGood:set', async (_e, value: unknown) => {
-    await writeKey(KEYS.foodsGood, JSON.stringify(FoodListSchema.parse(value)))
-  })
-  ipcMain.handle('settings:foodsGood:default', () => DEFAULT_FOODS_GOOD)
+  // Cinq listes, un seul jeu de handlers. Le motif précédent en demandait trois
+  // par liste — quinze au total, tous identiques à la clé près, et autant de
+  // méthodes à recopier dans le préchargement, les types et le service.
+  const LISTES = {
+    good: { key: KEYS.foodsGood, defaut: DEFAULT_FOODS_GOOD },
+    bad: { key: KEYS.foodsBad, defaut: DEFAULT_FOODS_BAD },
+    proteines: { key: KEYS.foodsProteines, defaut: SUGGESTIONS_PROTEINES },
+    glucides: { key: KEYS.foodsGlucides, defaut: SUGGESTIONS_GLUCIDES },
+    lipides: { key: KEYS.foodsLipides, defaut: SUGGESTIONS_LIPIDES }
+  } as const
+  const NomListe = z.enum(['good', 'bad', 'proteines', 'glucides', 'lipides'])
 
-  ipcMain.handle('settings:foodsBad:get', async () => readFoodList(KEYS.foodsBad, DEFAULT_FOODS_BAD))
-  ipcMain.handle('settings:foodsBad:set', async (_e, value: unknown) => {
-    await writeKey(KEYS.foodsBad, JSON.stringify(FoodListSchema.parse(value)))
+  ipcMain.handle('settings:foodList:get', async (_e, nom: unknown) => {
+    const l = LISTES[NomListe.parse(nom)]
+    return readFoodList(l.key, l.defaut)
   })
-  ipcMain.handle('settings:foodsBad:default', () => DEFAULT_FOODS_BAD)
+  ipcMain.handle('settings:foodList:set', async (_e, nom: unknown, value: unknown) => {
+    await writeKey(LISTES[NomListe.parse(nom)].key, JSON.stringify(FoodListSchema.parse(value)))
+  })
+  ipcMain.handle('settings:foodList:default', (_e, nom: unknown) => LISTES[NomListe.parse(nom)].defaut)
 
   // ── Bibliothèque de suggestions de douleur (globale, tous clients) ──────────
   ipcMain.handle('settings:painSuggestions:get', async () => {
