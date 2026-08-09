@@ -212,7 +212,7 @@ Règles :
 - Les journées 1 à 5 sont des journées de SEMAINE, les journées 6 et 7 des journées de FIN DE SEMAINE. Respecte les contraintes propres à chacune : ce qui est trop long à préparer en semaine ne doit pas y apparaître.
 - Chaque journée suit la STRUCTURE EXACTE donnée dans le message : une ligne par élément, dans l'ordre, une seule phrase chacune. N'ajoute AUCUN repas absent de cette liste — pas de collation si elle n'y figure pas, pas de déjeuner si la journée commence au dîner.
 - Ne mets PAS d'en-tête « Journée N » : la numérotation est ajoutée par l'application.
-- Si des SUPPLÉMENTS sont fournis, intègre-les au repas correspondant à leur moment de prise, entre parenthèses à la fin de la ligne : « Déjeuner : yogourt grec 0 % (¾ tasse), petits fruits, amandes (+ 1 mesure de protéine whey) ». N'en invente AUCUN, ne change ni le supplément ni sa dose, et n'en ajoute pas à un repas qui n'y correspond pas.
+- Si un supplément PROTÉINÉ est fourni (whey, caséine, isolat), intègre-le au repas correspondant à son moment de prise, entre parenthèses à la fin de la ligne : « Déjeuner : yogourt grec 0 % (¾ tasse), petits fruits, amandes (+ 1 mesure de protéine whey) », et compte-le dans la cible de protéines de ce repas. N'en invente AUCUN, ne change pas la dose, et n'ajoute JAMAIS de vitamine, minéral ou autre supplément non protéiné à une ligne de repas — ils ont leur propre section.
 - Les listes d'aliments à privilégier sont une PALETTE où puiser, pas une liste à caser. Rien ne t'oblige à utiliser chaque élément : si un aliment ne s'intègre pas naturellement à un repas, ne l'y mets pas — il servira ailleurs dans la semaine, ou pas du tout. Si une liste est « non précisés », choisis librement dans le style méditerranéen.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
@@ -301,7 +301,7 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
   // prendre sa protéine — mais l'IA n'a pas le droit d'en ajouter.
   if (p.supplements?.trim()) {
     lines.push(`
-Suppléments prescrits par la kinésiologue, par moment de prise :
+Suppléments PROTÉINÉS prescrits par la kinésiologue, par moment de prise :
 ${p.supplements.trim()}`)
   }
 

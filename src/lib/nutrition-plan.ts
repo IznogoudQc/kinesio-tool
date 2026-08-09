@@ -49,6 +49,44 @@ export const EMPTY_SUPP_PLAN: SuppPlan = {
   interactions: ''
 }
 
+/**
+ * Suppléments qui APPORTENT DES PROTÉINES, et eux seuls.
+ *
+ * Ce sont les seuls à avoir leur place dans une idée de menu : une whey se boit
+ * avec le déjeuner et compte dans la cible de protéines. Une vitamine D, un
+ * oméga-3 ou un magnésium n'ont rien à faire dans la description d'un repas —
+ * ils ont leur propre section, avec leurs consignes d'espacement.
+ *
+ * Heuristique par mots-clés, volontairement étroite : mieux vaut oublier une
+ * protéine exotique que de faire apparaître « (+ magnésium) » dans un souper.
+ */
+const MOTS_PROTEINE = /prot[ée]ine|whey|cas[ée]ine|isolat|hydrolysat|petit-lait|prot[ée]in/i
+
+/** Vrai si cette ligne de supplément apporte des protéines. */
+export function estSupplementProteine(ligne: string): boolean {
+  return MOTS_PROTEINE.test(ligne)
+}
+
+/**
+ * Le plan de suppléments réduit aux protéines, par moment de prise — ou
+ * `undefined` s'il n'y en a aucune.
+ *
+ * Chaque moment peut contenir plusieurs suppléments, un par ligne : le filtre
+ * s'applique ligne à ligne, pas au bloc entier. Sinon un moment contenant
+ * « Protéine (whey) » ET « Créatine » aurait tout emporté.
+ */
+export function supplementsProteines(plan: SuppPlan): string | undefined {
+  const out: string[] = []
+  for (const m of SUPP_MOMENTS) {
+    const items = plan[m.key]
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => l && estSupplementProteine(l))
+    if (items.length) out.push(`${m.label} : ${items.join(' ; ')}`)
+  }
+  return out.length ? out.join('\n') : undefined
+}
+
 const str = (v: unknown): string => (typeof v === 'string' ? v : '')
 
 function tryParseObject(raw: string): Record<string, unknown> | null {
