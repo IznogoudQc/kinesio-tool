@@ -101,7 +101,13 @@ const NutritionPayloadSchema = z.object({
    *  `structureJournee` selon le nombre de repas et de collations du client.
    *  Sans elle, le modèle proposait toujours quatre repas, y compris à qui n'en
    *  prend que deux et aucune collation. */
-  structure: z.array(z.string().max(40)).min(1).max(6).optional()
+  structure: z.array(z.string().max(40)).min(1).max(6).optional(),
+  /** Consignes par repas pour une journée de SEMAINE — « Déjeuner : rapide ». */
+  consignesSemaine: z.array(z.string().max(300)).max(6).optional(),
+  /** Idem pour une journée de FIN DE SEMAINE. */
+  consignesWeekend: z.array(z.string().max(300)).max(6).optional(),
+  /** `menu-jour` / `menu-repas` : de quel moment relève la journée visée. */
+  moment: z.enum(['semaine', 'weekend']).optional()
 })
 
 /** Plan de suppléments structuré : une liste de lignes par moment de prise. */
@@ -195,6 +201,7 @@ Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suiv
 
 Règles :
 - EXACTEMENT 7 journées dans « journees » — une semaine complète, aucune journée omise.
+- Les journées 1 à 5 sont des journées de SEMAINE, les journées 6 et 7 des journées de FIN DE SEMAINE. Respecte les contraintes propres à chacune : ce qui est trop long à préparer en semaine ne doit pas y apparaître.
 - Chaque journée suit la STRUCTURE EXACTE donnée dans le message : une ligne par élément, dans l'ordre, une seule phrase chacune. N'ajoute AUCUN repas absent de cette liste — pas de collation si elle n'y figure pas, pas de déjeuner si la journée commence au dîner.
 - Ne mets PAS d'en-tête « Journée N » : la numérotation est ajoutée par l'application.
 - Quand des sources de protéines / glucides / lipides à privilégier sont fournies, CONSTRUIS les repas autour d'elles. Si une liste est « non précisés », choisis librement dans le style méditerranéen.
@@ -279,6 +286,24 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
     `Aliments que la personne AIME : ${clean(p.foodsLiked)}.`,
     `Aliments que la personne N'AIME PAS / à exclure : ${clean(p.foodsDisliked)}.`
   ]
+
+  // Contraintes de vie réelle : ce qui est faisable un mardi matin ne l'est pas
+  // un dimanche. Sans elles, le modèle propose une omelette sept jours sur sept.
+  const cs = p.consignesSemaine ?? []
+  const cw = p.consignesWeekend ?? []
+  if (p.type === 'menu' && (cs.length || cw.length)) {
+    lines.push(
+      `\nContraintes par repas — journées 1 à 5 (SEMAINE) :\n${cs.length ? cs.join('\n') : '(aucune)'}`
+    )
+    lines.push(
+      `Contraintes par repas — journées 6 et 7 (FIN DE SEMAINE) :\n${cw.length ? cw.join('\n') : '(aucune)'}`
+    )
+  }
+  if (p.type !== 'menu' && p.moment) {
+    const c = p.moment === 'semaine' ? cs : cw
+    lines.push(`\nCette journée est une journée de ${p.moment === 'semaine' ? 'SEMAINE' : 'FIN DE SEMAINE'}.`)
+    if (c.length) lines.push(`Contraintes par repas :\n${c.join('\n')}`)
+  }
 
   // Reprise partielle : le modèle a besoin de voir ce qui existe déjà, sinon il
   // repropose la même chose ou casse la cohérence de la journée.

@@ -5,6 +5,15 @@ import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
 import { bilansService } from '../../../services/bilans'
 import {
+  consignesPourMoment,
+  libelleMoment,
+  momentDeJournee,
+  parsePrefsRepas,
+  prefDe,
+  serializePrefsRepas,
+  type PrefsRepas
+} from '../../../lib/menu-prefs'
+import {
   structureJournee,
   remplacerRepas,
   REPAS_POSSIBLES,
@@ -293,6 +302,15 @@ export function NutritionTab() {
   /** Les lignes d'une journée — une seule source pour l'IA, les boutons et le
    *  remplacement de ligne. */
   const structure = structureJournee(repasParJour, collationsParJour)
+  const [prefsRepas, setPrefsRepas] = useState<PrefsRepas>(() => parsePrefsRepas(client.nutritionPrefsRepas))
+  /** Onglet ouvert dans « Préférences par repas ». Suit la structure : si Marie
+   *  retire une collation, l'onglet actif ne doit pas rester sur un repas absent. */
+  const [ongletPref, setOngletPref] = useState(0)
+  const repasActif = structure[Math.min(ongletPref, structure.length - 1)] ?? structure[0]
+
+  function setPref(repas: string, moment: 'semaine' | 'weekend', v: string) {
+    setPrefsRepas(p => ({ ...p, [repas]: { ...prefDe(p, repas), [moment]: v } }))
+  }
 
   // ── Planning de jeûne flexible ────────────────────────────────────────────────
   const [programs, setPrograms] = useState<FastingProgram[]>(() => parseInitialPrograms(client.jeunePlanning))
@@ -521,6 +539,7 @@ export function NutritionTab() {
         nutritionManualFiberG: fiberGVal,
         nutritionRepasParJour: nutritionEnabled ? repasParJour : null,
         nutritionCollationsParJour: nutritionEnabled ? collationsParJour : null,
+        nutritionPrefsRepas: serializePrefsRepas(prefsRepas),
         // Ancien modèle de jeûne (type unique + fenêtre) remplacé par le planning.
         jeuneType: null,
         jeuneFenetreDebut: null,
@@ -628,7 +647,9 @@ export function NutritionTab() {
       proteinFoods: alimentsProteines,
       carbFoods: alimentsGlucides,
       fatFoods: alimentsLipides,
-      structure
+      structure,
+      consignesSemaine: consignesPourMoment(prefsRepas, structure, 'semaine'),
+      consignesWeekend: consignesPourMoment(prefsRepas, structure, 'weekend')
     }
   }
 
@@ -639,6 +660,7 @@ export function NutritionTab() {
     try {
       const plan = await aiAdviceService.regenerateMenuDay({
         ...contexteMenu(),
+        moment: momentDeJournee(i),
         autresJournees: menuJours.filter((_, j) => j !== i)
       })
       if (plan.lignes.length) setMenuJour(i, plan.lignes.join('\n\n'))
@@ -657,6 +679,7 @@ export function NutritionTab() {
     try {
       const plan = await aiAdviceService.regenerateMenuMeal({
         ...contexteMenu(),
+        moment: momentDeJournee(i),
         journee: menuJours[i] ?? '',
         repas
       })
@@ -707,6 +730,7 @@ export function NutritionTab() {
       nutritionManualFiberG: manualFiberG.trim() !== '' ? Number(manualFiberG) : null,
       nutritionRepasParJour: repasParJour,
       nutritionCollationsParJour: collationsParJour,
+      nutritionPrefsRepas: serializePrefsRepas(prefsRepas),
       jeunePlanning: programs,
       hydratationMlParJour: hydratationMl.trim() !== '' ? Number(hydratationMl) : null,
       supplementsNotes: serializeSuppPlan(supp),
@@ -1430,6 +1454,54 @@ export function NutritionTab() {
         </div>
       </Section>
 
+      {/* ── Préférences par repas et par moment ─────────────────────────────── */}
+      <Section
+        icon={CalendarClock}
+        title="Préférences par repas"
+        desc="Ce qui est réaliste en semaine ne l’est pas toujours la fin de semaine. Laisser vide = aucune contrainte."
+      >
+        <div className="flex flex-wrap gap-1 border-b border-cream-dark mb-4">
+          {structure.map((r, i) => (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setOngletPref(i)}
+              aria-pressed={r === repasActif}
+              className={`px-3 py-1.5 text-sm font-medium -mb-px border-b-2 transition-colors ${
+                r === repasActif
+                  ? 'border-gold text-marine'
+                  : 'border-transparent text-marine/50 hover:text-marine hover:border-cream-dark'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
+        <div className="grid md:grid-cols-2 gap-5">
+          {([
+            { moment: 'semaine' as const, titre: 'Semaine', ex: 'Ex. rapide, sans cuisson' },
+            { moment: 'weekend' as const, titre: 'Fin de semaine', ex: 'Ex. omelette, plus de temps' }
+          ]).map(m => (
+            <div key={m.moment}>
+              <label className="block text-marine/70 text-sm font-medium mb-1">
+                {m.titre}
+                <span className="text-marine/40 font-normal"> — {repasActif}</span>
+              </label>
+              <AutoTextarea
+                value={prefDe(prefsRepas, repasActif)[m.moment]}
+                onChange={e => setPref(repasActif, m.moment, e.target.value)}
+                minRows={3}
+                placeholder={m.ex}
+                className={fieldClass}
+              />
+            </div>
+          ))}
+        </div>
+        <p className="text-marine/40 text-xs mt-2">
+          Journées 1 à 5 = semaine · journées 6 et 7 = fin de semaine.
+        </p>
+      </Section>
+
       {/* ── Sources par macronutriment ──────────────────────────────────────── */}
       <Section
         icon={Target}
@@ -1531,7 +1603,10 @@ export function NutritionTab() {
             return (
               <div key={i}>
                 <div className="flex items-baseline justify-between gap-2 mb-1">
-                  <label className="block text-marine/70 text-sm font-medium">Journée {i + 1}</label>
+                  <label className="block text-marine/70 text-sm font-medium">
+                    Journée {i + 1}
+                    <span className="text-marine/40 font-normal"> · {libelleMoment(momentDeJournee(i))}</span>
+                  </label>
                   <button
                     type="button"
                     onClick={() => regenerateDay(i)}

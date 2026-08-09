@@ -131,6 +131,10 @@ export const clients = sqliteTable('clients', {
   /** Collations par jour (0-3). Séparé du nombre de repas : la structure du
    *  menu en dépend — zéro collation veut dire aucune ligne de collation. */
   nutritionCollationsParJour: integer('nutrition_collations_par_jour'),
+  /** Préférences par repas ET par moment de la semaine, en JSON —
+   *  `{ "Déjeuner": { semaine, weekend }, … }`. Une colonne plutôt que huit :
+   *  la largeur du tableau suit la structure des journées, qui varie déjà. */
+  nutritionPrefsRepas: text('nutrition_prefs_repas'),
   alimentsProteines: text('aliments_proteines'),
   alimentsGlucides: text('aliments_glucides'),
   alimentsLipides: text('aliments_lipides'),

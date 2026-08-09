@@ -62,6 +62,11 @@ export interface MenuContexte {
   fatFoods?: string
   /** Lignes attendues dans une journée, dans l'ordre. */
   structure?: string[]
+  /** Contraintes par repas, selon le moment de la semaine. */
+  consignesSemaine?: string[]
+  consignesWeekend?: string[]
+  /** Pour une reprise : de quel moment relève la journée visée. */
+  moment?: 'semaine' | 'weekend'
 }
 
 /** Les trois portées passent par le même canal et la même gestion d'erreur. */

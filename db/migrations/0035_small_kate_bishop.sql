@@ -1,0 +1,1 @@
+ALTER TABLE `clients` ADD `nutrition_prefs_repas` text;

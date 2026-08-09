@@ -85,6 +85,7 @@ const NUTRITION_KEYS = [
   'alimentsEviter',
   'alimentsAimes',
   'nutritionCollationsParJour',
+  'nutritionPrefsRepas',
   'alimentsProteines',
   'alimentsGlucides',
   'alimentsLipides',
