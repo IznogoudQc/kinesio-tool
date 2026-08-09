@@ -182,7 +182,8 @@ const MENU_STYLE = `Style imposé — cuisine MÉDITERRANÉENNE et repas SIMPLES
 - Vocabulaire québécois : « déjeuner » le matin, « dîner » le midi, « souper » le soir.
 - RÉPÉTER un plat dans la semaine est normal et souhaitable. Ne force pas la nouveauté : sept déjeuners tous différents ne ressemblent à la vie de personne.
 - Les fibres viennent naturellement de cette cuisine (légumineuses, légumes, grains entiers, fruits). N'empile PAS graines, son ou poudres pour gonfler un total.
-- Portions concrètes et approximatives (« 1 tasse », « une poignée », « 2 œufs »), jamais de grammes au gramme près.
+- La SOURCE DE PROTÉINES de chaque repas porte TOUJOURS une quantité : « yogourt grec 0 % (¾ tasse) », « saumon (1 filet, 150 g) », « 2 œufs ». C'est elle qui décide si la cible est atteinte — sans chiffre, la ligne ne sert à rien.
+- Pour le reste, portions concrètes et approximatives (« 1 tasse », « une poignée »), jamais de grammes au gramme près.
 - Une ligne par repas, format « Repas : aliments ». SANS puce et SANS Markdown (pas de #, *, tableaux, émojis). Aucun total de calories, de macros ou de fibres.
 
 Exemple d'une journée bien faite :
@@ -211,6 +212,7 @@ Règles :
 - Les journées 1 à 5 sont des journées de SEMAINE, les journées 6 et 7 des journées de FIN DE SEMAINE. Respecte les contraintes propres à chacune : ce qui est trop long à préparer en semaine ne doit pas y apparaître.
 - Chaque journée suit la STRUCTURE EXACTE donnée dans le message : une ligne par élément, dans l'ordre, une seule phrase chacune. N'ajoute AUCUN repas absent de cette liste — pas de collation si elle n'y figure pas, pas de déjeuner si la journée commence au dîner.
 - Ne mets PAS d'en-tête « Journée N » : la numérotation est ajoutée par l'application.
+- Si des SUPPLÉMENTS sont fournis, intègre-les au repas correspondant à leur moment de prise, entre parenthèses à la fin de la ligne : « Déjeuner : yogourt grec 0 % (¾ tasse), petits fruits, amandes (+ 1 mesure de protéine whey) ». N'en invente AUCUN, ne change ni le supplément ni sa dose, et n'en ajoute pas à un repas qui n'y correspond pas.
 - Les listes d'aliments à privilégier sont une PALETTE où puiser, pas une liste à caser. Rien ne t'oblige à utiliser chaque élément : si un aliment ne s'intègre pas naturellement à un repas, ne l'y mets pas — il servira ailleurs dans la semaine, ou pas du tout. Si une liste est « non précisés », choisis librement dans le style méditerranéen.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
@@ -293,6 +295,15 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
     `Aliments que la personne AIME : ${clean(p.foodsLiked)}.`,
     `Aliments que la personne N'AIME PAS / à exclure : ${clean(p.foodsDisliked)}.`
   ]
+
+  // Suppléments : Marie les a déjà répartis par moment. Les rattacher au repas
+  // correspondant évite au client de lire deux documents pour savoir quand
+  // prendre sa protéine — mais l'IA n'a pas le droit d'en ajouter.
+  if (p.supplements?.trim()) {
+    lines.push(`
+Suppléments prescrits par la kinésiologue, par moment de prise :
+${p.supplements.trim()}`)
+  }
 
   if (p.cibleRepas) {
     lines.push(`Cible approximative par REPAS : ${p.cibleRepas}.`)

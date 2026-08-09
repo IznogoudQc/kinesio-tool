@@ -654,6 +654,20 @@ export function NutritionTab() {
     }
   }
 
+  /**
+   * Les suppléments déjà répartis par Marie, un moment par ligne.
+   *
+   * Envoyés au générateur de menus pour qu'il les rattache au bon repas. Ce sont
+   * SES prescriptions : le prompt interdit d'en inventer ou d'en changer la dose.
+   */
+  function resumeSupplements(): string | undefined {
+    const lignes = SUPP_MOMENTS.map(m => {
+      const v = supp[m.key].trim()
+      return v ? `${m.label} : ${v.replace(/\s*\n\s*/g, ' ; ')}` : null
+    }).filter(Boolean)
+    return lignes.length ? lignes.join('\n') : undefined
+  }
+
   /** Une cible de prise, en une ligne lisible par le modèle. */
   function resumeCible(m: MacroEstimate): string {
     return `${m.targetKcal} kcal, ${m.proteinG} g de protéines, ${m.fatG} g de lipides, ${m.carbsG} g de glucides nets`
@@ -675,6 +689,7 @@ export function NutritionTab() {
       carbFoods: alimentsGlucides,
       fatFoods: alimentsLipides,
       structure,
+      supplements: resumeSupplements(),
       cibleRepas: cibles ? resumeCible(cibles.repas) : undefined,
       cibleCollation: cibles?.collation ? resumeCible(cibles.collation) : undefined,
       consignesSemaine: consignesPourMoment(prefsRepas, structure, 'semaine'),
