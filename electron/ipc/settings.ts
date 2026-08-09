@@ -11,7 +11,9 @@ import {
   DEFAULT_FOODS_BAD,
   SUGGESTIONS_PROTEINES,
   SUGGESTIONS_GLUCIDES,
-  SUGGESTIONS_LIPIDES
+  SUGGESTIONS_LIPIDES,
+  SUGGESTIONS_PREF_SEMAINE,
+  SUGGESTIONS_PREF_WEEKEND
 } from '../../src/lib/food-suggestions'
 import { DEFAULT_PAIN_SUGGESTIONS } from '../../src/lib/pain-suggestions'
 import { DEFAULT_BILAN_EMAIL, DEFAULT_NUTRITION_EMAIL } from '../../src/lib/email-templates'
@@ -35,6 +37,8 @@ const KEYS = {
   foodsProteines: 'nutrition.foods_proteines',
   foodsGlucides: 'nutrition.foods_glucides',
   foodsLipides: 'nutrition.foods_lipides',
+  prefSemaine: 'nutrition.pref_semaine',
+  prefWeekend: 'nutrition.pref_weekend',
   painSuggestions: 'pain.suggestions'
 } as const
 
@@ -274,9 +278,11 @@ export function registerSettingsHandlers(): void {
     bad: { key: KEYS.foodsBad, defaut: DEFAULT_FOODS_BAD },
     proteines: { key: KEYS.foodsProteines, defaut: SUGGESTIONS_PROTEINES },
     glucides: { key: KEYS.foodsGlucides, defaut: SUGGESTIONS_GLUCIDES },
-    lipides: { key: KEYS.foodsLipides, defaut: SUGGESTIONS_LIPIDES }
+    lipides: { key: KEYS.foodsLipides, defaut: SUGGESTIONS_LIPIDES },
+    pref_semaine: { key: KEYS.prefSemaine, defaut: SUGGESTIONS_PREF_SEMAINE },
+    pref_weekend: { key: KEYS.prefWeekend, defaut: SUGGESTIONS_PREF_WEEKEND }
   } as const
-  const NomListe = z.enum(['good', 'bad', 'proteines', 'glucides', 'lipides'])
+  const NomListe = z.enum(['good', 'bad', 'proteines', 'glucides', 'lipides', 'pref_semaine', 'pref_weekend'])
 
   ipcMain.handle('settings:foodList:get', async (_e, nom: unknown) => {
     const l = LISTES[NomListe.parse(nom)]

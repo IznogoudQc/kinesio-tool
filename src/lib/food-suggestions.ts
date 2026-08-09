@@ -1,13 +1,22 @@
 /** Les cinq listes d'aliments proposés, éditables dans les Paramètres. */
-export type FoodListName = 'good' | 'bad' | 'proteines' | 'glucides' | 'lipides'
+export type FoodListName =
+  | 'good'
+  | 'bad'
+  | 'proteines'
+  | 'glucides'
+  | 'lipides'
+  | 'pref_semaine'
+  | 'pref_weekend'
 
 /** Icône de chaque liste, par son nom lucide — résolue par la carte. */
-export const FOOD_LIST_ICONES: Record<FoodListName, 'apple' | 'ban' | 'target'> = {
+export const FOOD_LIST_ICONES: Record<FoodListName, 'apple' | 'ban' | 'target' | 'clock'> = {
   good: 'apple',
   bad: 'ban',
   proteines: 'target',
   glucides: 'target',
-  lipides: 'target'
+  lipides: 'target',
+  pref_semaine: 'clock',
+  pref_weekend: 'clock'
 }
 
 /** Intitulé de chaque liste — un seul endroit pour les nommer. */
@@ -16,8 +25,44 @@ export const FOOD_LIST_TITRES: Record<FoodListName, string> = {
   bad: 'Aliments à éviter',
   proteines: 'Sources de protéines',
   glucides: 'Sources de glucides',
-  lipides: 'Sources de lipides'
+  lipides: 'Sources de lipides',
+  pref_semaine: 'Contraintes de semaine',
+  pref_weekend: 'Contraintes de fin de semaine'
 }
+
+/**
+ * Propositions pour « Préférences par repas ».
+ *
+ * Ce ne sont PAS des aliments : ce sont des contraintes de vie réelle — combien
+ * de temps on a, ce qu'on peut préparer d'avance, ce qui se transporte. Les
+ * aliments se choisissent déjà ailleurs ; ici on décrit la situation, et l'IA en
+ * déduit quoi proposer.
+ */
+export const SUGGESTIONS_PREF_SEMAINE: string[] = [
+  'Rapide, moins de 15 minutes',
+  'Sans cuisson',
+  'Préparé la veille',
+  'Se transporte (boîte à lunch)',
+  'Restes du souper',
+  'Se mange froid',
+  'Sur le pouce',
+  'Peu de vaisselle',
+  'Souvent des salades',
+  'Léger'
+]
+
+export const SUGGESTIONS_PREF_WEEKEND: string[] = [
+  'Plus de temps pour cuisiner',
+  'Cuisson possible (four, poêle)',
+  'Brunch',
+  'Repas familial',
+  'Occasion de cuisiner en double pour la semaine',
+  'Plat mijoté',
+  'Poisson frais',
+  'Déjeuner plus copieux',
+  'Sortie ou repas au restaurant',
+  'Dessert occasionnel'
+]
 
 /**
  * Aliments proposés dans l'onglet Nutrition (puces cliquables) pour « À privilégier »

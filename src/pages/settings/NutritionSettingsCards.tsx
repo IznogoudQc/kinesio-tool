@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Apple, Ban, Check, Loader2, Pill, Plus, RotateCcw, Sparkles, Target, X } from 'lucide-react'
+import { Apple, Ban, CalendarClock, Check, Loader2, Pill, Plus, RotateCcw, Sparkles, Target, X } from 'lucide-react'
 import { FOOD_LIST_ICONES, FOOD_LIST_TITRES, type FoodListName } from '../../lib/food-suggestions'
 import { settingsService } from '../../services/settings'
 import { aiAdviceService, AIAdviceError } from '../../services/aiAdvice'
@@ -239,7 +239,7 @@ export function FoodListCard({ liste }: { liste: FoodListName }) {
     }
   }
 
-  const Icon = { apple: Apple, ban: Ban, target: Target }[FOOD_LIST_ICONES[liste]]
+  const Icon = { apple: Apple, ban: Ban, target: Target, clock: CalendarClock }[FOOD_LIST_ICONES[liste]]
   return (
     <section className="bg-white border border-cream-dark rounded-xl p-6 shadow-sm">
       <div className="flex items-center gap-2 mb-1">

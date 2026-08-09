@@ -77,6 +77,8 @@ export function SettingsPage() {
               <FoodListCard liste="proteines" />
               <FoodListCard liste="glucides" />
               <FoodListCard liste="lipides" />
+              <FoodListCard liste="pref_semaine" />
+              <FoodListCard liste="pref_weekend" />
             </>
           )}
           {tab === 'questionnaires' && <PainSuggestionsCard />}

@@ -19,7 +19,13 @@ import {
   REPAS_POSSIBLES,
   COLLATIONS_POSSIBLES
 } from '../../../lib/menu-lines'
-import { SUGGESTIONS_PROTEINES, SUGGESTIONS_GLUCIDES, SUGGESTIONS_LIPIDES } from '../../../lib/food-suggestions'
+import {
+  SUGGESTIONS_PROTEINES,
+  SUGGESTIONS_GLUCIDES,
+  SUGGESTIONS_LIPIDES,
+  SUGGESTIONS_PREF_SEMAINE,
+  SUGGESTIONS_PREF_WEEKEND
+} from '../../../lib/food-suggestions'
 import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
 import { nutritionTemplatesService } from '../../../services/nutritionTemplates'
 import { SendBilanModal } from '../SendBilanModal'
@@ -352,6 +358,8 @@ export function NutritionTab() {
   const [libProteines, setLibProteines] = useState<string[]>(SUGGESTIONS_PROTEINES)
   const [libGlucides, setLibGlucides] = useState<string[]>(SUGGESTIONS_GLUCIDES)
   const [libLipides, setLibLipides] = useState<string[]>(SUGGESTIONS_LIPIDES)
+  const [libPrefSemaine, setLibPrefSemaine] = useState<string[]>(SUGGESTIONS_PREF_SEMAINE)
+  const [libPrefWeekend, setLibPrefWeekend] = useState<string[]>(SUGGESTIONS_PREF_WEEKEND)
   useEffect(() => {
     settingsService.getSupplements().then(setSuppLibrary).catch(() => {})
     settingsService.getFoodList('good').then(setFoodsGoodLib).catch(() => {})
@@ -361,6 +369,8 @@ export function NutritionTab() {
     settingsService.getFoodList('proteines').then(setLibProteines).catch(() => {})
     settingsService.getFoodList('glucides').then(setLibGlucides).catch(() => {})
     settingsService.getFoodList('lipides').then(setLibLipides).catch(() => {})
+    settingsService.getFoodList('pref_semaine').then(setLibPrefSemaine).catch(() => {})
+    settingsService.getFoodList('pref_weekend').then(setLibPrefWeekend).catch(() => {})
   }, [])
 
   // Génération IA (plan de suppléments / idées de menu).
@@ -1479,19 +1489,24 @@ export function NutritionTab() {
         </div>
         <div className="grid md:grid-cols-2 gap-5">
           {([
-            { moment: 'semaine' as const, titre: 'Semaine', ex: 'Ex. rapide, sans cuisson' },
-            { moment: 'weekend' as const, titre: 'Fin de semaine', ex: 'Ex. omelette, plus de temps' }
+            { moment: 'semaine' as const, titre: 'Semaine', sugg: libPrefSemaine },
+            { moment: 'weekend' as const, titre: 'Fin de semaine', sugg: libPrefWeekend }
           ]).map(m => (
             <div key={m.moment}>
               <label className="block text-marine/70 text-sm font-medium mb-1">
                 {m.titre}
                 <span className="text-marine/40 font-normal"> — {repasActif}</span>
               </label>
+              <SuggestChips
+                items={m.sugg}
+                current={prefDe(prefsRepas, repasActif)[m.moment]}
+                onPick={it => setPref(repasActif, m.moment, appendLine(prefDe(prefsRepas, repasActif)[m.moment], it))}
+              />
               <AutoTextarea
                 value={prefDe(prefsRepas, repasActif)[m.moment]}
                 onChange={e => setPref(repasActif, m.moment, e.target.value)}
                 minRows={3}
-                placeholder={m.ex}
+                placeholder="Une contrainte par ligne"
                 className={fieldClass}
               />
             </div>
