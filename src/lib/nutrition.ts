@@ -283,6 +283,67 @@ export function fiberDensityPer1000Kcal(fiberG: number, targetKcal: number): num
   return (fiberG * 1000) / targetKcal
 }
 
+/**
+ * Poids d'une collation par rapport à un repas, en pourcentage.
+ *
+ * Une collation ne vaut pas un repas : dans la pratique courante, un repas pèse
+ * 25-30 % de la journée et une collation 10-15 %, donc environ la moitié. Marie
+ * peut ajuster — un tiers pour une vraie petite collation, deux tiers pour un
+ * mini-repas.
+ */
+export const RATIOS_COLLATION = [33, 50, 67] as const
+export const DEFAULT_RATIO_COLLATION = 50
+
+/** Cibles d'une prise alimentaire — `collation` absent s'il n'y en a aucune. */
+export interface MacrosParPrise {
+  repas: MacroEstimate
+  collation: MacroEstimate | null
+  /** Total des parts, pour pouvoir l'expliquer à l'écran (« 3,5 parts »). */
+  parts: number
+}
+
+/**
+ * Répartit les macros du jour entre repas et collations, **en parts**.
+ *
+ * Un repas vaut 1 part, une collation `ratioPct / 100`. Diviser à parts égales
+ * par le seul nombre de repas — ce que faisait `macrosPerMeal` — ne laissait
+ * rien pour les collations : une journée à 3 repas + 1 collation annonçait
+ * 3 × 656 kcal, soit la totalité des calories avant même la collation.
+ *
+ * Sans collation, le résultat est identique à l'ancien calcul : personne qui ne
+ * s'en sert pas ne voit ses chiffres bouger.
+ */
+export function macrosParPrise(
+  macros: MacroEstimate,
+  repas: number,
+  collations: number,
+  ratioPct: number = DEFAULT_RATIO_COLLATION
+): MacrosParPrise {
+  const nRepas = Math.max(1, Math.round(repas))
+  const nColl = Math.max(0, Math.round(collations))
+  const ratio = Math.min(1, Math.max(0.05, ratioPct / 100))
+  const parts = nRepas + nColl * ratio
+
+  const partager = (facteur: number): MacroEstimate => {
+    const per = (v: number) => Math.round((v / parts) * facteur)
+    return {
+      bmr: 0,
+      tdee: 0,
+      targetKcal: per(macros.targetKcal),
+      proteinG: per(macros.proteinG),
+      carbsG: per(macros.carbsG),
+      fatG: per(macros.fatG),
+      fiberG: per(macros.fiberG)
+    }
+  }
+
+  return {
+    repas: partager(1),
+    collation: nColl > 0 ? partager(ratio) : null,
+    parts
+  }
+}
+
 /** Répartit (à parts égales) les macros du jour sur `meals` repas. Chaque valeur
  *  est arrondie ; c'est indicatif, pas une somme exacte au gramme près. */
 export function macrosPerMeal(macros: MacroEstimate, meals: number): MacroEstimate {

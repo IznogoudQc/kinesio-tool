@@ -67,6 +67,9 @@ export interface MenuContexte {
   consignesWeekend?: string[]
   /** Pour une reprise : de quel moment relève la journée visée. */
   moment?: 'semaine' | 'weekend'
+  /** Cibles d'une prise, déjà réparties en parts. */
+  cibleRepas?: string
+  cibleCollation?: string
 }
 
 /** Les trois portées passent par le même canal et la même gestion d'erreur. */

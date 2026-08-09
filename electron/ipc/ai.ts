@@ -107,7 +107,11 @@ const NutritionPayloadSchema = z.object({
   /** Idem pour une journée de FIN DE SEMAINE. */
   consignesWeekend: z.array(z.string().max(300)).max(6).optional(),
   /** `menu-jour` / `menu-repas` : de quel moment relève la journée visée. */
-  moment: z.enum(['semaine', 'weekend']).optional()
+  moment: z.enum(['semaine', 'weekend']).optional(),
+  /** Cibles d'UN repas et d'UNE collation, déjà réparties. Sans elles, le modèle
+   *  proposait des collations aussi copieuses qu'un souper. */
+  cibleRepas: z.string().max(200).optional(),
+  cibleCollation: z.string().max(200).optional()
 })
 
 /** Plan de suppléments structuré : une liste de lignes par moment de prise. */
@@ -201,6 +205,7 @@ Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown, suiv
 
 Règles :
 - EXACTEMENT 7 journées dans « journees » — une semaine complète, aucune journée omise.
+- Une collation est nettement PLUS PETITE qu'un repas : respecte les cibles par prise données dans le message.
 - Les journées 1 à 5 sont des journées de SEMAINE, les journées 6 et 7 des journées de FIN DE SEMAINE. Respecte les contraintes propres à chacune : ce qui est trop long à préparer en semaine ne doit pas y apparaître.
 - Chaque journée suit la STRUCTURE EXACTE donnée dans le message : une ligne par élément, dans l'ordre, une seule phrase chacune. N'ajoute AUCUN repas absent de cette liste — pas de collation si elle n'y figure pas, pas de déjeuner si la journée commence au dîner.
 - Ne mets PAS d'en-tête « Journée N » : la numérotation est ajoutée par l'application.
@@ -286,6 +291,11 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
     `Aliments que la personne AIME : ${clean(p.foodsLiked)}.`,
     `Aliments que la personne N'AIME PAS / à exclure : ${clean(p.foodsDisliked)}.`
   ]
+
+  if (p.cibleRepas) {
+    lines.push(`Cible approximative par REPAS : ${p.cibleRepas}.`)
+    if (p.cibleCollation) lines.push(`Cible approximative par COLLATION : ${p.cibleCollation}.`)
+  }
 
   // Contraintes de vie réelle : ce qui est faisable un mardi matin ne l'est pas
   // un dimanche. Sans elles, le modèle propose une omelette sept jours sur sept.

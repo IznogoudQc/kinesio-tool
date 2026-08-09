@@ -134,6 +134,9 @@ export const clients = sqliteTable('clients', {
   /** Préférences par repas ET par moment de la semaine, en JSON —
    *  `{ "Déjeuner": { semaine, weekend }, … }`. Une colonne plutôt que huit :
    *  la largeur du tableau suit la structure des journées, qui varie déjà. */
+  /** Poids d'une collation face à un repas, en % (33, 50 ou 67). Réglable par
+   *  Marie : une collation n'est pas un repas, mais son ampleur varie. */
+  nutritionRatioCollation: integer('nutrition_ratio_collation'),
   nutritionPrefsRepas: text('nutrition_prefs_repas'),
   alimentsProteines: text('aliments_proteines'),
   alimentsGlucides: text('aliments_glucides'),

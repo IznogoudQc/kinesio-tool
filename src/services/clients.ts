@@ -58,6 +58,7 @@ export const clientsService = {
       nutritionMenu?: string | null
       alimentsAimes?: string | null
       nutritionCollationsParJour?: number | null
+      nutritionRatioCollation?: number | null
       nutritionPrefsRepas?: string | null
       alimentsProteines?: string | null
       alimentsGlucides?: string | null

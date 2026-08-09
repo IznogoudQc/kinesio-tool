@@ -49,7 +49,8 @@ import {
   fiberDensityPer1000Kcal,
   macroEnergyShares,
   NET_CARBS_EXPLANATION,
-  macrosPerMeal,
+  macrosParPrise,
+  DEFAULT_RATIO_COLLATION,
   type ActivityLevel,
   type MacroEstimate
 } from '../../../lib/nutrition'
@@ -305,6 +306,9 @@ export function NutritionTab() {
   )
   const [repasParJour, setRepasParJour] = useState<number>(client.nutritionRepasParJour ?? DEFAULT_MEALS_PER_DAY)
   const [collationsParJour, setCollationsParJour] = useState<number>(client.nutritionCollationsParJour ?? 1)
+  const [ratioCollation, setRatioCollation] = useState<number>(
+    client.nutritionRatioCollation ?? DEFAULT_RATIO_COLLATION
+  )
   /** Les lignes d'une journée — une seule source pour l'IA, les boutons et le
    *  remplacement de ligne. */
   const structure = structureJournee(repasParJour, collationsParJour)
@@ -451,6 +455,9 @@ export function NutritionTab() {
       targetKcalOverride: null
     })
   }, [nutritionEnabled, macroManual, manualProteinG, manualFatG, manualCarbG, manualFiberG, latestData, targetBodyFat, activityLevel, age, client.sex, rateKgPerWeek, proteinPerKgInput, fatMaxG, fatMode, fatPctInput])
+  /** Cibles par prise — un repas vaut 1 part, une collation `ratioCollation` %.
+   *  Une seule source : la carte « Par repas » et le prompt de l'IA la lisent. */
+  const cibles = liveMacros ? macrosParPrise(liveMacros, repasParJour, collationsParJour, ratioCollation) : null
 
   // Hydratation recommandée ≈ 35 ml/kg (milieu de la fourchette 30–40), arrondie à 100 ml.
   /** Poids du dernier bilan : ce que le facteur protéique multiplie, et la base
@@ -549,6 +556,7 @@ export function NutritionTab() {
         nutritionManualFiberG: fiberGVal,
         nutritionRepasParJour: nutritionEnabled ? repasParJour : null,
         nutritionCollationsParJour: nutritionEnabled ? collationsParJour : null,
+        nutritionRatioCollation: nutritionEnabled ? ratioCollation : null,
         nutritionPrefsRepas: serializePrefsRepas(prefsRepas),
         // Ancien modèle de jeûne (type unique + fenêtre) remplacé par le planning.
         jeuneType: null,
@@ -642,6 +650,11 @@ export function NutritionTab() {
     }
   }
 
+  /** Une cible de prise, en une ligne lisible par le modèle. */
+  function resumeCible(m: MacroEstimate): string {
+    return `${m.targetKcal} kcal, ${m.proteinG} g de protéines, ${m.fatG} g de lipides, ${m.carbsG} g de glucides nets`
+  }
+
   /** Cibles et préférences — identiques pour la semaine, une journée ou un repas. */
   function contexteMenu() {
     return {
@@ -658,6 +671,8 @@ export function NutritionTab() {
       carbFoods: alimentsGlucides,
       fatFoods: alimentsLipides,
       structure,
+      cibleRepas: cibles ? resumeCible(cibles.repas) : undefined,
+      cibleCollation: cibles?.collation ? resumeCible(cibles.collation) : undefined,
       consignesSemaine: consignesPourMoment(prefsRepas, structure, 'semaine'),
       consignesWeekend: consignesPourMoment(prefsRepas, structure, 'weekend')
     }
@@ -740,6 +755,7 @@ export function NutritionTab() {
       nutritionManualFiberG: manualFiberG.trim() !== '' ? Number(manualFiberG) : null,
       nutritionRepasParJour: repasParJour,
       nutritionCollationsParJour: collationsParJour,
+      nutritionRatioCollation: ratioCollation,
       nutritionPrefsRepas: serializePrefsRepas(prefsRepas),
       jeunePlanning: programs,
       hydratationMlParJour: hydratationMl.trim() !== '' ? Number(hydratationMl) : null,
@@ -1329,26 +1345,52 @@ export function NutritionTab() {
                         ))}
                       </select>
                     </label>
+                    {collationsParJour > 0 && (
+                      <label className="flex items-center gap-2 text-sm text-marine/70">
+                        Une collation vaut
+                        <select
+                          value={ratioCollation}
+                          onChange={e => setRatioCollation(Number(e.target.value))}
+                          className="px-2 py-1 border border-cream-dark rounded-md bg-white text-marine text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+                          title="Poids d’une collation par rapport à un repas"
+                        >
+                          <option value={33}>⅓ d’un repas</option>
+                          <option value={50}>½ d’un repas</option>
+                          <option value={67}>⅔ d’un repas</option>
+                        </select>
+                      </label>
+                    )}
                     </div>
                   </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
-                    {(() => {
-                      const pm = macrosPerMeal(liveMacros, repasParJour)
-                      return [
-                        { l: 'Calories', v: pm.targetKcal, u: 'kcal' },
-                        { l: 'Protéines', v: pm.proteinG, u: 'g' },
-                        { l: 'Lipides', v: pm.fatG, u: 'g' },
-                        { l: 'Glucides nets', v: pm.carbsG, u: 'g' },
-                        { l: 'Fibres', v: pm.fiberG, u: 'g' }
-                      ]
-                    })().map(m => (
-                      <div key={m.l} className="rounded-md bg-white/70 border border-cream-dark py-2">
-                        <p className="text-[10px] uppercase tracking-wide text-marine/40">{m.l}</p>
-                        <p className="text-base font-semibold tabular-nums text-marine leading-tight">{m.v.toLocaleString('fr-CA')}</p>
-                        <p className="text-[10px] text-marine/40">{m.u}</p>
+                  {([
+                    { titre: 'Par repas', m: cibles?.repas ?? null },
+                    { titre: 'Par collation', m: cibles?.collation ?? null }
+                  ]).filter(x => x.m !== null).map(({ titre, m }) => (
+                    <div key={titre} className="mb-3 last:mb-0">
+                      <p className="text-[10px] uppercase tracking-wide text-marine/45 font-semibold mb-1">{titre}</p>
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 text-center">
+                        {[
+                          { l: 'Calories', v: m!.targetKcal, u: 'kcal' },
+                          { l: 'Protéines', v: m!.proteinG, u: 'g' },
+                          { l: 'Lipides', v: m!.fatG, u: 'g' },
+                          { l: 'Glucides nets', v: m!.carbsG, u: 'g' },
+                          { l: 'Fibres', v: m!.fiberG, u: 'g' }
+                        ].map(x => (
+                          <div key={x.l} className="rounded-md bg-white/70 border border-cream-dark py-2">
+                            <p className="text-[10px] uppercase tracking-wide text-marine/40">{x.l}</p>
+                            <p className="text-base font-semibold tabular-nums text-marine leading-tight">{x.v.toLocaleString('fr-CA')}</p>
+                            <p className="text-[10px] text-marine/40">{x.u}</p>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
+                  {cibles && cibles.collation && (
+                    <p className="text-marine/40 text-xs mt-1">
+                      La journée compte {cibles.parts.toLocaleString('fr-CA', { maximumFractionDigits: 2 })} parts —
+                      {' '}{repasParJour} repas + {collationsParJour} collation{collationsParJour > 1 ? 's' : ''} à {ratioCollation} %.
+                    </p>
+                  )}
                 </div>
               )}
             </div>

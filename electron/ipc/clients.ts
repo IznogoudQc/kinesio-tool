@@ -73,6 +73,7 @@ const UpdateClientSchema = z.object({
   nutritionRepasParJour: z.union([z.number().int().min(1).max(8), z.null()]).optional(),
   // Zéro collation est un choix valide — la borne basse ne peut pas être 1.
   nutritionCollationsParJour: z.union([z.number().int().min(0).max(3), z.null()]).optional(),
+  nutritionRatioCollation: z.union([z.number().int().min(20).max(80), z.null()]).optional(),
   nutritionPrefsRepas: TexteLibreOrNull,
   principePersoTitre: z.union([z.string().max(60).trim(), z.null()]).optional(),
   principePersoTexte: z.union([z.string().max(300).trim(), z.null()]).optional(),

@@ -87,6 +87,8 @@ interface Client {
   alimentsAimes: string | null
   /** Collations par jour (0-3) — décide la structure des journées de menu. */
   nutritionCollationsParJour: number | null
+  /** Poids d'une collation face à un repas, en % (33 / 50 / 67). */
+  nutritionRatioCollation: number | null
   /** Préférences par repas et par moment (JSON) — voir `menu-prefs.ts`. */
   nutritionPrefsRepas: string | null
   /** Aliments à privilégier par macronutriment — alimentent l'IA des menus. */
@@ -476,6 +478,7 @@ interface Window {
           nutritionMenu?: string | null
           alimentsAimes?: string | null
           nutritionCollationsParJour?: number | null
+          nutritionRatioCollation?: number | null
           nutritionPrefsRepas?: string | null
           alimentsProteines?: string | null
           alimentsGlucides?: string | null
@@ -656,6 +659,9 @@ interface Window {
         consignesWeekend?: string[]
         /** Pour une reprise : de quel moment relève la journée visée. */
         moment?: 'semaine' | 'weekend'
+        /** Cibles d'une prise, déjà réparties en parts. */
+        cibleRepas?: string
+        cibleCollation?: string
         /** `menu-jour` : les autres journées de la semaine, pour ne pas les recopier. */
         autresJournees?: string[]
         /** `menu-repas` : la journée telle qu'elle est, pour rester cohérent. */
