@@ -175,6 +175,8 @@ Règles :
  *  · il n'ancrait aucune cuisine ni aucune contrainte de simplicité.
  */
 const MENU_STYLE = `Style imposé — cuisine MÉDITERRANÉENNE et repas SIMPLES :
+- Chaque ligne doit être un PLAT RÉEL, qu'on pourrait nommer dans une conversation ordinaire et retrouver dans un livre de cuisine. Un assemblage d'aliments corrects n'est pas un plat : « salade de fromage cottage » n'existe pas, même si la salade et le cottage sont tous deux excellents. Dans le doute, choisis le plat le plus banal qui respecte les cibles.
+- Respecte la façon dont chaque aliment se mange VRAIMENT : le fromage cottage se prend nature, avec des fruits ou en trempette, pas en salade composée ; le yogourt au déjeuner ou en collation, pas au souper.
 - Base méditerranéenne : légumes, légumineuses, poisson, volaille, œufs, yogourt grec, feta, huile d'olive, noix, grains entiers, fruits frais, herbes fraîches. Viande rouge rare.
 - SIMPLE avant tout : 5 à 6 ingrédients courants par repas, 30 minutes maximum, rien qui demande une épicerie spécialisée. Ce sont des gens qui cuisinent le soir après le travail.
 - Vocabulaire québécois : « déjeuner » le matin, « dîner » le midi, « souper » le soir.
@@ -209,7 +211,7 @@ Règles :
 - Les journées 1 à 5 sont des journées de SEMAINE, les journées 6 et 7 des journées de FIN DE SEMAINE. Respecte les contraintes propres à chacune : ce qui est trop long à préparer en semaine ne doit pas y apparaître.
 - Chaque journée suit la STRUCTURE EXACTE donnée dans le message : une ligne par élément, dans l'ordre, une seule phrase chacune. N'ajoute AUCUN repas absent de cette liste — pas de collation si elle n'y figure pas, pas de déjeuner si la journée commence au dîner.
 - Ne mets PAS d'en-tête « Journée N » : la numérotation est ajoutée par l'application.
-- Quand des sources de protéines / glucides / lipides à privilégier sont fournies, CONSTRUIS les repas autour d'elles. Si une liste est « non précisés », choisis librement dans le style méditerranéen.
+- Les listes d'aliments à privilégier sont une PALETTE où puiser, pas une liste à caser. Rien ne t'oblige à utiliser chaque élément : si un aliment ne s'intègre pas naturellement à un repas, ne l'y mets pas — il servira ailleurs dans la semaine, ou pas du tout. Si une liste est « non précisés », choisis librement dans le style méditerranéen.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
 
