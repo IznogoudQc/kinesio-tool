@@ -383,6 +383,10 @@ export function NutritionTab() {
    *  repas. Un seul identifiant plutôt que deux états — il ne peut y en avoir
    *  qu'une à la fois, et le bouton concerné doit être le seul à réagir. */
   const [reprise, setReprise] = useState<string | null>(null)
+  /** Deuxième clic pour effacer les sept journées. Une confirmation en place du
+   *  bouton plutôt qu'une fenêtre système : sept journées, dont les retouches de
+   *  Marie, ne se perdent pas sur un clic mal placé. */
+  const [confirmeEffacer, setConfirmeEffacer] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
 
   // Modèles de protocole réutilisables.
@@ -1648,6 +1652,29 @@ export function NutritionTab() {
             <Sparkles size={15} className="text-gold-dark" />
             {aiBusy === 'menu' ? 'Génération…' : 'Générer des idées (IA)'}
           </button>
+          {menuJours.some(j => j.trim()) && (
+            <button
+              type="button"
+              onClick={() => {
+                if (!confirmeEffacer) {
+                  setConfirmeEffacer(true)
+                  return
+                }
+                setMenuJours(Array.from({ length: MENU_NB_JOURS }, () => ''))
+                setConfirmeEffacer(false)
+              }}
+              onBlur={() => setConfirmeEffacer(false)}
+              disabled={aiBusy !== null || reprise !== null}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-md border text-sm transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                confirmeEffacer
+                  ? 'border-red-400 bg-red-50 text-red-700'
+                  : 'border-cream-dark text-marine/60 hover:border-marine/30 hover:text-marine'
+              }`}
+            >
+              <Trash2 size={15} />
+              {confirmeEffacer ? 'Confirmer — tout effacer' : 'Effacer le menu'}
+            </button>
+          )}
           {liveMacros && (
             <span className="text-marine/40 text-xs">
               Basé sur ≈ {liveMacros.targetKcal.toLocaleString('fr-CA')} kcal · {liveMacros.proteinG} P / {liveMacros.fatG} L / {liveMacros.carbsG} G
