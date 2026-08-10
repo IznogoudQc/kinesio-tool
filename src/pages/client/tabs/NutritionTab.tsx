@@ -19,6 +19,7 @@ import {
   REPAS_POSSIBLES,
   COLLATIONS_POSSIBLES
 } from '../../../lib/menu-lines'
+import { etiquetteMacro, type MacroMisEnAvant } from '../../../lib/food-macros'
 import {
   SUGGESTIONS_PROTEINES,
   SUGGESTIONS_GLUCIDES,
@@ -197,7 +198,25 @@ function appendLine(current: string, item: string): string {
 }
 
 /** Rangée de propositions cliquables ; un clic ajoute la ligne (coché si déjà présent). */
-function SuggestChips({ items, current, onPick }: { items: string[]; current: string; onPick: (item: string) => void }) {
+/**
+ * Propositions cliquables. `macro` affiche en plus la composition indicative de
+ * chaque aliment pour 100 g — les protéines dans la colonne des protéines, etc.
+ *
+ * Omis pour les listes qui ne sont pas des aliments (contraintes de semaine) et
+ * pour tout aliment absent de la table : Marie ajoute les siens, et une valeur
+ * inventée serait pire que pas de valeur.
+ */
+function SuggestChips({
+  items,
+  current,
+  onPick,
+  macro
+}: {
+  items: string[]
+  current: string
+  onPick: (item: string) => void
+  macro?: MacroMisEnAvant
+}) {
   const present = new Set(current.split('\n').map(l => l.trim().toLowerCase()))
   return (
     <div className="mb-2.5">
@@ -215,6 +234,9 @@ function SuggestChips({ items, current, onPick }: { items: string[]; current: st
             >
               {used ? '✓ ' : '+ '}
               {it}
+              {macro && etiquetteMacro(it, macro) && (
+                <span className="ml-1.5 text-marine/35 tabular-nums">{etiquetteMacro(it, macro)}</span>
+              )}
             </button>
           )
         })}
@@ -1604,17 +1626,17 @@ export function NutritionTab() {
       <Section
         icon={Target}
         title="Sources à privilégier par macronutriment"
-        desc="Ce sur quoi l’IA construit les repas. Laisser vide = elle choisit librement dans le style méditerranéen."
+        desc="Ce sur quoi l’IA construit les repas. Laisser vide = elle choisit librement. Les valeurs sont indicatives, pour 100 g."
       >
         <div className="grid md:grid-cols-3 gap-5">
           {[
-            { titre: 'Protéines', v: alimentsProteines, set: setAlimentsProteines, sugg: libProteines },
-            { titre: 'Glucides', v: alimentsGlucides, set: setAlimentsGlucides, sugg: libGlucides },
-            { titre: 'Lipides', v: alimentsLipides, set: setAlimentsLipides, sugg: libLipides }
+            { titre: 'Protéines', v: alimentsProteines, set: setAlimentsProteines, sugg: libProteines, macro: 'p' as const },
+            { titre: 'Glucides', v: alimentsGlucides, set: setAlimentsGlucides, sugg: libGlucides, macro: 'g' as const },
+            { titre: 'Lipides', v: alimentsLipides, set: setAlimentsLipides, sugg: libLipides, macro: 'l' as const }
           ].map(m => (
             <div key={m.titre}>
               <label className="block text-marine/70 text-sm font-medium mb-1">{m.titre}</label>
-              <SuggestChips items={m.sugg} current={m.v} onPick={it => m.set(c => appendLine(c, it))} />
+              <SuggestChips items={m.sugg} current={m.v} onPick={it => m.set(c => appendLine(c, it))} macro={m.macro} />
               <AutoTextarea
                 value={m.v}
                 onChange={e => m.set(e.target.value)}
