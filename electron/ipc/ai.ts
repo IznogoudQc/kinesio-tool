@@ -74,7 +74,7 @@ Règles :
 const NutritionPayloadSchema = z.object({
   /** `menu` = la semaine · `menu-jour` = une journée · `menu-repas` = un repas.
    *  Les deux dernières évitent de tout refaire pour corriger une seule idée. */
-  type: z.enum(['supplements', 'menu', 'menu-jour', 'menu-repas']),
+  type: z.enum(['supplements', 'menu', 'menu-jour', 'menu-repas', 'menu-verif']),
   kcal: z.number().nullable().optional(),
   proteinG: z.number().nullable().optional(),
   fatG: z.number().nullable().optional(),
@@ -138,6 +138,18 @@ const MenuJourSchema = z.object({ lignes: z.array(z.string()).default([]) })
 
 /** Un seul repas refait — la ligne complète, « Déjeuner : ... ». */
 const MenuRepasSchema = z.object({ ligne: z.string().default('') })
+
+/**
+ * Vérification des protéines — un total ESTIMÉ par journée.
+ *
+ * Sert uniquement à Marie, dans l'app, pour juger si le menu tient la cible.
+ * Ces chiffres ne sont ni stockés ni écrits dans le document du client : un
+ * modèle estime mal la composition des aliments, et le calcul nutritionnel
+ * relève de la nutritionniste (voir ADR / mémoire « champ de pratique »).
+ */
+const MenuVerifSchema = z.object({
+  journees: z.array(z.object({ proteinesG: z.number() })).max(7).default([])
+})
 
 const SUPPLEMENTS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
@@ -232,6 +244,21 @@ Règles :
 - On te donne les autres journées de la semaine. Propose autre chose qu'une copie de l'une d'elles, sans chercher l'originalité à tout prix : un aliment qui revient est normal.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter.`
 
+const MENU_VERIF_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
+
+On te donne des journées de menu déjà écrites. Estime, pour CHAQUE journée, le total de PROTÉINES en grammes.
+
+Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown :
+
+{ "journees": [{ "proteinesG": 152 }] }
+
+Règles :
+- UNE entrée par journée fournie, dans le MÊME ORDRE, aucune omise.
+- « proteinesG » est un nombre entier, en grammes, pour la journée entière.
+- Additionne les protéines de chaque aliment mentionné, y compris les suppléments protéinés indiqués entre parenthèses.
+- Quand une quantité manque, suppose une portion usuelle plutôt que d'ignorer l'aliment.
+- N'ajoute AUCUN commentaire, aucune autre macro, aucun texte : seulement le JSON.`
+
 const MENU_REPAS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
 Refais UN SEUL repas d'une journée d'exemple. On te donne la journée complète et le repas à remplacer.
@@ -282,6 +309,13 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
     typeof p.fiberG === 'number'
       ? `Cible de fibres : environ ${Math.round(p.fiberG)} g/jour — construis des journées RICHES EN FIBRES pour t'en approcher (sans écrire de total de fibres).`
       : `Vise des journées riches en fibres (légumes, fruits, légumineuses, grains entiers).`
+  if (p.type === 'menu-verif') {
+    const jours = (p.autresJournees ?? []).map(
+      (j, i) => ['Journée ' + (i + 1) + ' :', j.trim() || '(vide)'].join('\n')
+    )
+    return ['Journées à évaluer :', '', jours.join('\n\n')].join('\n')
+  }
+
   const structure = p.structure ?? ['Déjeuner', 'Dîner', 'Souper', 'Collation']
   const lines = [
     `Structure EXACTE de chaque journée, dans cet ordre — ${structure.length} ligne(s), ni plus ni moins : ${structure.join(' · ')}.`,
@@ -534,11 +568,12 @@ export function registerAIHandlers(): void {
         supplements: SUPPLEMENTS_SYSTEM,
         menu: MENU_SYSTEM,
         'menu-jour': MENU_JOUR_SYSTEM,
-        'menu-repas': MENU_REPAS_SYSTEM
+        'menu-repas': MENU_REPAS_SYSTEM,
+        'menu-verif': MENU_VERIF_SYSTEM
       } as const
       // Sept journées ne tiennent pas dans le budget d'une seule : une réponse
       // coupée casse le JSON et remonte en « BAD_RESPONSE ».
-      const BUDGETS = { supplements: 1600, menu: 4000, 'menu-jour': 700, 'menu-repas': 250 } as const
+      const BUDGETS = { supplements: 1600, menu: 4000, 'menu-jour': 700, 'menu-repas': 250, 'menu-verif': 400 } as const
       const response = await callAnthropic(apiKey, {
         model: MODEL_GENERATE,
         max_tokens: BUDGETS[payload.type],
@@ -553,6 +588,7 @@ export function registerAIHandlers(): void {
       if (payload.type === 'supplements') return { ok: true, plan: SuppPlanSchema.parse(parsed) }
       if (payload.type === 'menu-jour') return { ok: true, plan: MenuJourSchema.parse(parsed) }
       if (payload.type === 'menu-repas') return { ok: true, plan: MenuRepasSchema.parse(parsed) }
+      if (payload.type === 'menu-verif') return { ok: true, plan: MenuVerifSchema.parse(parsed) }
       return { ok: true, plan: MenuPlanSchema.parse(parsed) }
     } catch (err) {
       if (err instanceof AIError) return { ok: false, error: err.message, code: err.code }

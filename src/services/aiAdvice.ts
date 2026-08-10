@@ -142,6 +142,21 @@ export const aiAdviceService = {
   },
 
   /**
+   * IA : ESTIME les protéines de chaque journée, pour que Marie vérifie que le
+   * menu tient la cible.
+   *
+   * Rien n'est stocké et rien n'entre dans le document du client : un modèle
+   * estime mal la composition des aliments, et le calcul nutritionnel relève de
+   * la nutritionniste. C'est un outil de contrôle, pas un chiffre à publier.
+   */
+  async verifierProteines(journees: string[]): Promise<{ journees: { proteinesG: number }[] }> {
+    return callMenu<{ journees: { proteinesG: number }[] }>({
+      type: 'menu-verif',
+      autresJournees: journees
+    })
+  },
+
+  /**
    * IA : refait UN repas. `journee` donne le contexte des autres repas du jour,
    * pour ne pas répéter un aliment déjà présent.
    */

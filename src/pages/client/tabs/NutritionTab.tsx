@@ -353,7 +353,12 @@ export function NutritionTab() {
     // Rétro-compat : ancien texte libre → placé dans la journée 1 (régénérable).
     return Array.from({ length: MENU_NB_JOURS }, (_, i) => (i === 0 ? client.nutritionMenu ?? '' : ''))
   })
-  const setMenuJour = (i: number, v: string) => setMenuJours(js => js.map((j, k) => (k === i ? v : j)))
+  const setMenuJour = (i: number, v: string) => {
+    // Toute modification périme l'estimation : un chiffre à côté d'un texte
+    // qu'il ne décrit plus est pire que pas de chiffre.
+    setProteinesEstimees(null)
+    setMenuJours(js => js.map((j, k) => (k === i ? v : j)))
+  }
 
   // Bibliothèques proposées (suppléments, aliments) — GLOBALES, chargées depuis
   // les réglages en lecture seule ici ; leur ÉDITION vit dans Paramètres → Nutrition.
@@ -388,6 +393,15 @@ export function NutritionTab() {
    *  bouton plutôt qu'une fenêtre système : sept journées, dont les retouches de
    *  Marie, ne se perdent pas sur un clic mal placé. */
   const [confirmeEffacer, setConfirmeEffacer] = useState(false)
+  /**
+   * Protéines estimées par journée — outil de contrôle pour Marie.
+   *
+   * Volontairement dans l'état React, jamais en base et jamais dans le document
+   * du client : ce sont des estimations d'un modèle, et le calcul nutritionnel
+   * relève de la nutritionniste. Effacées dès qu'une journée change, pour ne
+   * jamais afficher un chiffre à côté d'un texte qu'il ne décrit plus.
+   */
+  const [proteinesEstimees, setProteinesEstimees] = useState<(number | null)[] | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
 
   // Modèles de protocole réutilisables.
@@ -717,6 +731,25 @@ export function NutritionTab() {
         repas
       })
       if (plan.ligne.trim()) setMenuJour(i, remplacerRepas(menuJours[i] ?? '', repas, plan.ligne, structure))
+    } catch (err) {
+      setAiError(aiErrorMessage(err))
+    } finally {
+      setReprise(null)
+    }
+  }
+
+  /**
+   * IA : estime les protéines de chaque journée, pour contrôle.
+   *
+   * Le résultat reste en mémoire : il n'est ni enregistré ni transmis au
+   * document du client. Voir `proteinesEstimees`.
+   */
+  async function verifierProteines() {
+    setAiError(null)
+    setReprise('verif')
+    try {
+      const r = await aiAdviceService.verifierProteines(menuJours)
+      setProteinesEstimees(menuJours.map((j, i) => (j.trim() ? (r.journees[i]?.proteinesG ?? null) : null)))
     } catch (err) {
       setAiError(aiErrorMessage(err))
     } finally {
@@ -1679,6 +1712,18 @@ export function NutritionTab() {
               {confirmeEffacer ? 'Confirmer — tout effacer' : 'Effacer le menu'}
             </button>
           )}
+          {menuJours.some(j => j.trim()) && (
+            <button
+              type="button"
+              onClick={verifierProteines}
+              disabled={aiBusy !== null || reprise !== null}
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-cream-dark text-marine/60 text-sm hover:border-marine/30 hover:text-marine transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              title="Estimer les protéines de chaque journée — pour vérification, jamais dans le document du client"
+            >
+              <Check size={15} />
+              {reprise === 'verif' ? 'Estimation…' : 'Vérifier les protéines'}
+            </button>
+          )}
           {liveMacros && (
             <span className="text-marine/40 text-xs">
               Basé sur ≈ {liveMacros.targetKcal.toLocaleString('fr-CA')} kcal · {liveMacros.proteinG} P / {liveMacros.fatG} L / {liveMacros.carbsG} G
@@ -1713,6 +1758,15 @@ export function NutritionTab() {
                   placeholder={`Journée ${i + 1} — un repas par ligne. Ex. Déjeuner : ...&#10;Dîner : ...&#10;Souper : ...&#10;Collations : ...`}
                   className={fieldClass}
                 />
+                {proteinesEstimees?.[i] != null && liveMacros && (
+                  <p className="mt-1 text-xs text-marine/50">
+                    ≈ <span className="tabular-nums font-medium text-marine/70">{proteinesEstimees[i]} g</span> de
+                    protéines · cible <span className="tabular-nums">{liveMacros.proteinG} g</span>
+                    {Math.abs((proteinesEstimees[i] as number) - liveMacros.proteinG) > liveMacros.proteinG * 0.15 && (
+                      <span className="text-amber-700"> — écart important</span>
+                    )}
+                  </p>
+                )}
                 {/* Refaire un seul repas : le reste de la journée, y compris ce
                     que Marie a retouché, n'est pas régénéré. */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
