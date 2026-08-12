@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { clipboard, ipcMain } from 'electron'
 import keytar from 'keytar'
 import { z } from 'zod'
 
@@ -295,6 +295,24 @@ Contraintes :
 - Réponds UNIQUEMENT par un tableau JSON de chaînes, sans texte autour, sans Markdown.
 Exemple : ["Douleur en flexion", "Raideur matinale", "Irradie dans la jambe"]`
 
+const NUTRITION_SYSTEMES = {
+  supplements: SUPPLEMENTS_SYSTEM,
+  menu: MENU_SYSTEM,
+  'menu-jour': MENU_JOUR_SYSTEM,
+  'menu-repas': MENU_REPAS_SYSTEM,
+  'menu-verif': MENU_VERIF_SYSTEM
+} as const
+
+// Sept journées ne tiennent pas dans le budget d'une seule : une réponse coupée
+// casse le JSON et remonte en « BAD_RESPONSE ».
+const NUTRITION_BUDGETS = {
+  supplements: 1600,
+  menu: 4000,
+  'menu-jour': 700,
+  'menu-repas': 250,
+  'menu-verif': 400
+} as const
+
 function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): string {
   if (p.type === 'supplements') {
     return `Suppléments à organiser en horaire :\n${(p.supplements ?? '').trim() || '(aucun supplément fourni)'}`
@@ -552,6 +570,11 @@ export function registerAIHandlers(): void {
 
   // ── Génération nutrition (plan de suppléments / idées de menu) ─────────────
   // Retourne du TEXTE éditable (pas de JSON strict) : Marie l'ajuste ensuite.
+  //
+  // `NUTRITION_SYSTEMES` et `NUTRITION_BUDGETS` sont au niveau du module, et non
+  // dans le handler : « ai:nutrition-prompt » doit rendre EXACTEMENT ce qui part
+  // à l'API. Deux copies auraient divergé au premier ajustement de prompt, et on
+  // aurait comparé des modèles sur une consigne qui n'est plus celle de l'app.
   ipcMain.handle('ai:generate-nutrition', async (_e, rawPayload: unknown) => {
     const apiKey = await getApiKey()
     if (!apiKey) {
@@ -564,24 +587,14 @@ export function registerAIHandlers(): void {
       return { ok: false, error: 'Payload invalide.', code: 'BAD_RESPONSE' as AIErrorCode }
     }
     try {
-      const SYSTEMES = {
-        supplements: SUPPLEMENTS_SYSTEM,
-        menu: MENU_SYSTEM,
-        'menu-jour': MENU_JOUR_SYSTEM,
-        'menu-repas': MENU_REPAS_SYSTEM,
-        'menu-verif': MENU_VERIF_SYSTEM
-      } as const
-      // Sept journées ne tiennent pas dans le budget d'une seule : une réponse
-      // coupée casse le JSON et remonte en « BAD_RESPONSE ».
-      const BUDGETS = { supplements: 1600, menu: 4000, 'menu-jour': 700, 'menu-repas': 250, 'menu-verif': 400 } as const
       const response = await callAnthropic(apiKey, {
         model: MODEL_GENERATE,
-        max_tokens: BUDGETS[payload.type],
+        max_tokens: NUTRITION_BUDGETS[payload.type],
         // Un menu n'est pas un exercice de créativité. À la température par défaut
         // (1,0), le modèle allait chercher l'inhabituel — c'est l'essentiel du
         // « bizarre » signalé par Marie. Les suppléments restent à leur réglage.
         ...(payload.type === 'supplements' ? {} : { temperature: 0.3 }),
-        system: SYSTEMES[payload.type],
+        system: NUTRITION_SYSTEMES[payload.type],
         messages: [{ role: 'user', content: buildNutritionMessage(payload) }]
       })
       const parsed = parseAdviceJson(extractText(response))
@@ -597,6 +610,33 @@ export function registerAIHandlers(): void {
       }
       return { ok: false, error: err instanceof Error ? err.message : 'Erreur inconnue', code: 'BAD_RESPONSE' as AIErrorCode }
     }
+  })
+
+  // ── Le même prompt, copié au presse-papiers ────────────────────────────────
+  // Pour essayer la consigne ailleurs (un autre modèle, un projet Claude) sans
+  // rien changer dans l'app. Aucun appel à l'API, donc aucune clé nécessaire :
+  // on ne fait que rendre visible ce qui est déjà construit.
+  ipcMain.handle('ai:nutrition-prompt', async (_e, rawPayload: unknown) => {
+    let payload: z.infer<typeof NutritionPayloadSchema>
+    try {
+      payload = NutritionPayloadSchema.parse(rawPayload)
+    } catch {
+      return { ok: false, error: 'Payload invalide.', code: 'BAD_RESPONSE' as AIErrorCode }
+    }
+    const texte = [
+      '===== CONSIGNE (system) =====',
+      NUTRITION_SYSTEMES[payload.type],
+      '',
+      '===== DEMANDE (user) =====',
+      buildNutritionMessage(payload),
+      '',
+      '===== RÉGLAGES =====',
+      `Modèle utilisé par l'app : ${MODEL_GENERATE}`,
+      `Température : ${payload.type === 'supplements' ? 'par défaut' : '0,3'}`,
+      `Longueur maximale de la réponse : ${NUTRITION_BUDGETS[payload.type]} tokens`
+    ].join('\n')
+    clipboard.writeText(texte)
+    return { ok: true, chars: texte.length }
   })
 
   // ── Moment de prise recommandé pour un supplément (bibliothèque) ────────────

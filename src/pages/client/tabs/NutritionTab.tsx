@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pill, RefreshCw, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
+import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardCopy, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pill, RefreshCw, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
@@ -415,6 +415,7 @@ export function NutritionTab() {
    *  bouton plutôt qu'une fenêtre système : sept journées, dont les retouches de
    *  Marie, ne se perdent pas sur un clic mal placé. */
   const [confirmeEffacer, setConfirmeEffacer] = useState(false)
+  const [promptCopie, setPromptCopie] = useState(false)
   /**
    * Protéines estimées par journée — outil de contrôle pour Marie.
    *
@@ -776,6 +777,24 @@ export function NutritionTab() {
       setAiError(aiErrorMessage(err))
     } finally {
       setReprise(null)
+    }
+  }
+
+  /**
+   * Copie la consigne au presse-papiers, sans rien générer.
+   *
+   * Pour essayer la même demande ailleurs et comparer sur pièce. Le texte est
+   * construit dans le processus principal, à partir des mêmes constantes que
+   * l'appel réel : ce qui est collé est ce que l'app envoie.
+   */
+  async function copierPrompt() {
+    setAiError(null)
+    try {
+      await aiAdviceService.copyMenuPrompt(contexteMenu())
+      setPromptCopie(true)
+      window.setTimeout(() => setPromptCopie(false), 2500)
+    } catch (err) {
+      setAiError(aiErrorMessage(err))
     }
   }
 
@@ -1710,6 +1729,16 @@ export function NutritionTab() {
           >
             <Sparkles size={15} className="text-gold-dark" />
             {aiBusy === 'menu' ? 'Génération…' : 'Générer des idées (IA)'}
+          </button>
+          <button
+            type="button"
+            onClick={copierPrompt}
+            disabled={aiBusy !== null || reprise !== null}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-cream-dark text-marine/60 text-sm hover:border-marine/30 hover:text-marine transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Copie la demande envoyée à l’IA, pour l’essayer ailleurs et comparer"
+          >
+            <ClipboardCopy size={15} />
+            {promptCopie ? 'Copié' : 'Copier le prompt'}
           </button>
           {menuJours.some(j => j.trim()) && (
             <button

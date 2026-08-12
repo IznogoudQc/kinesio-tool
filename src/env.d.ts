@@ -669,6 +669,13 @@ interface Window {
         /** `menu-repas` : quel repas refaire. */
         repas?: string
       }): Promise<{ ok: boolean; plan?: unknown; error?: string; code?: string }>
+      /**
+       * Copie au presse-papiers le prompt EXACT qu'enverrait `generateNutrition`.
+       * N'appelle pas l'API et ne demande pas de clé.
+       */
+      copyNutritionPrompt(
+        payload: Parameters<Window['api']['ai']['generateNutrition']>[0]
+      ): Promise<{ ok: boolean; chars?: number; error?: string; code?: string }>
       /** Propose le moment de prise recommandé pour un supplément (nom → moment court). */
       supplementTiming(name: string): Promise<{ ok: boolean; timing?: string; error?: string; code?: string }>
       painSuggestions(payload: {

@@ -134,6 +134,24 @@ export const aiAdviceService = {
   },
 
   /**
+   * Copie le prompt de la semaine au presse-papiers, sans rien générer.
+   *
+   * Sert à essayer la même consigne ailleurs — un autre modèle, un projet Claude
+   * — et à comparer sur pièce. Le texte vient des mêmes constantes que l'appel
+   * réel : ce qu'on colle est ce que l'app envoie.
+   */
+  async copyMenuPrompt(payload: MenuContexte): Promise<number> {
+    const res = await window.api.ai.copyNutritionPrompt({ type: 'menu', ...payload })
+    if (!res.ok || typeof res.chars !== 'number') {
+      throw new AIAdviceError(
+        (res.code as AIErrorCode) ?? 'BAD_RESPONSE',
+        res.error ?? 'Impossible de copier le prompt.'
+      )
+    }
+    return res.chars
+  },
+
+  /**
    * IA : refait UNE journée. `autresJournees` sert à ne pas reproposer ce qui
    * est déjà écrit ailleurs dans la semaine.
    */

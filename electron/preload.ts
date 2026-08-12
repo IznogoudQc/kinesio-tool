@@ -192,6 +192,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('ai:generate', payload),
     generateNutrition: (payload: unknown): Promise<{ ok: boolean; plan?: unknown; error?: string; code?: string }> =>
       ipcRenderer.invoke('ai:generate-nutrition', payload),
+    copyNutritionPrompt: (payload: unknown): Promise<{ ok: boolean; chars?: number; error?: string; code?: string }> =>
+      ipcRenderer.invoke('ai:nutrition-prompt', payload),
     supplementTiming: (name: string): Promise<{ ok: boolean; timing?: string; error?: string; code?: string }> =>
       ipcRenderer.invoke('ai:supplement-timing', { name }),
     painSuggestions: (payload: {
