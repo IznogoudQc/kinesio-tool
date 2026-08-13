@@ -84,20 +84,43 @@ export type MacroMisEnAvant = 'p' | 'g' | 'l'
 
 export const SUFFIXE_MACRO: Record<MacroMisEnAvant, string> = { p: 'P', g: 'G', l: 'L' }
 
+/** Une table de composition — celle du code, ou celle que Marie a ajustée. */
+export type TableMacros = Record<string, MacrosPour100g>
+
 /**
  * Composition d'un aliment, ou `null` s'il n'est pas dans la table.
  *
  * `null` est un cas NORMAL, pas une erreur : Marie ajoute ses propres aliments,
- * et ils n'auront pas de valeur. Mieux vaut ne rien afficher qu'un chiffre
- * inventé pour « Fromage cottage » parce qu'il ressemble à « Fromage feta ».
+ * et ils n'auront pas de valeur tant qu'elle ne l'a pas saisie. Mieux vaut ne
+ * rien afficher qu'un chiffre inventé pour « Fromage de chèvre » parce qu'il
+ * ressemble à « Fromage feta ».
+ *
+ * `table` permet de passer la version ajustée dans les Paramètres. Le paramètre
+ * plutôt qu'un état global : la fonction reste pure, donc testable, et l'écran
+ * qui l'appelle décide explicitement quelle table il utilise.
  */
-export function macrosDe(aliment: string): MacrosPour100g | null {
-  return MACROS_PAR_100G[aliment.trim()] ?? null
+export function macrosDe(aliment: string, table: TableMacros = MACROS_PAR_100G): MacrosPour100g | null {
+  return table[aliment.trim()] ?? null
 }
 
 /** « ≈ 31 g P » — l'étiquette compacte affichée sur une proposition. */
-export function etiquetteMacro(aliment: string, macro: MacroMisEnAvant): string | null {
-  const m = macrosDe(aliment)
+export function etiquetteMacro(
+  aliment: string,
+  macro: MacroMisEnAvant,
+  table: TableMacros = MACROS_PAR_100G
+): string | null {
+  const m = macrosDe(aliment, table)
   if (!m) return null
   return `≈ ${m[macro]} g ${SUFFIXE_MACRO[macro]}`
+}
+
+/**
+ * Fusionne les valeurs enregistrées par-dessus celles du code.
+ *
+ * Dans ce sens précis : un aliment ajouté plus tard au code apparaît même si
+ * Marie a déjà enregistré sa table, et ses ajustements à elle survivent aux
+ * mises à jour. L'inverse ferait disparaître l'un ou écraserait l'autre.
+ */
+export function fusionnerMacros(enregistrees: TableMacros | null | undefined): TableMacros {
+  return { ...MACROS_PAR_100G, ...(enregistrees ?? {}) }
 }

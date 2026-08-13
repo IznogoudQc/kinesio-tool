@@ -23,7 +23,7 @@
  * n'entre dans le document du client — le calcul de l'apport d'une personne
  * relève de la nutritionniste.
  */
-import { MACROS_PAR_100G, type MacrosPour100g } from './food-macros.ts'
+import { MACROS_PAR_100G, type MacrosPour100g, type TableMacros } from './food-macros.ts'
 
 /**
  * Ce qu'on cherche dans le texte, et l'entrée de la table qui lui correspond.
@@ -136,8 +136,8 @@ function extraitAvant(texte: string, position: number): string {
   return mots.trim().replace(/\s+/g, ' ') || 'portion pesée'
 }
 
-function proteinesDe(aliment: string, grammes: number): number | null {
-  const m: MacrosPour100g | undefined = MACROS_PAR_100G[aliment]
+function proteinesDe(aliment: string, grammes: number, table: TableMacros): number | null {
+  const m: MacrosPour100g | undefined = table[aliment]
   return m ? (m.p * grammes) / 100 : null
 }
 
@@ -145,8 +145,13 @@ function proteinesDe(aliment: string, grammes: number): number | null {
  * Calcule les protéines d'UNE ligne de repas.
  *
  * @param ligne « Dîner : salade de poulet grillé (180 g), quinoa, concombre »
+ * @param table composition à utiliser — celle du code par défaut, ou celle que
+ *              Marie a ajustée dans les Paramètres
  */
-export function proteinesDeLigne(ligne: string): ProteinesRepas {
+export function proteinesDeLigne(
+  ligne: string,
+  table: TableMacros = MACROS_PAR_100G
+): ProteinesRepas {
   const portions: PortionPesee[] = []
   const inconnus: string[] = []
   let hypothese = false
@@ -161,13 +166,13 @@ export function proteinesDeLigne(ligne: string): ProteinesRepas {
       portions.push({ aliment: extraitAvant(ligne, position), grammes, proteinesG: null })
       continue
     }
-    portions.push({ aliment, grammes, proteinesG: proteinesDe(aliment, grammes) })
+    portions.push({ aliment, grammes, proteinesG: proteinesDe(aliment, grammes, table) })
   }
 
   // ── Ce qui se compte à l'unité ────────────────────────────────────────────
   for (const m of ligne.matchAll(OEUFS)) {
     const grammes = Number(m[1]) * POIDS_OEUF_G
-    portions.push({ aliment: 'Œufs', grammes, proteinesG: proteinesDe('Œufs', grammes) })
+    portions.push({ aliment: 'Œufs', grammes, proteinesG: proteinesDe('Œufs', grammes, table) })
   }
 
   // ── Supplément protéiné sans dose écrite ──────────────────────────────────
@@ -186,8 +191,11 @@ export function proteinesDeLigne(ligne: string): ProteinesRepas {
 }
 
 /** Le même calcul sur une journée entière (ses lignes de repas). */
-export function proteinesDeJournee(lignes: string[]): ProteinesRepas {
-  const parRepas = lignes.map(proteinesDeLigne)
+export function proteinesDeJournee(
+  lignes: string[],
+  table: TableMacros = MACROS_PAR_100G
+): ProteinesRepas {
+  const parRepas = lignes.map(l => proteinesDeLigne(l, table))
   return {
     totalG: parRepas.reduce((t, r) => t + r.totalG, 0),
     portions: parRepas.flatMap(r => r.portions),

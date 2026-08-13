@@ -3,7 +3,7 @@ import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown,
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
-import { SupplementLibraryCard, FoodListCard } from './settings/NutritionSettingsCards'
+import { SupplementLibraryCard, FoodListCard, FoodMacrosCard } from './settings/NutritionSettingsCards'
 import { TestCard, TestSection } from './settings/BilanTestCards'
 import { CompositionBaremes } from './settings/CompositionBaremes'
 import { AerobieBaremes } from './settings/AerobieBaremes'
@@ -77,6 +77,9 @@ export function SettingsPage() {
               <FoodListCard liste="proteines" />
               <FoodListCard liste="glucides" />
               <FoodListCard liste="lipides" />
+              {/* Juste après les trois palettes : c'est de leurs aliments qu'on
+                  ajuste la composition. */}
+              <FoodMacrosCard />
               <FoodListCard liste="pref_semaine" />
               <FoodListCard liste="pref_weekend" />
             </>

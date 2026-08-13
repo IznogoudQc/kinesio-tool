@@ -23,6 +23,7 @@ import { etiquetteMacro, type MacroMisEnAvant } from '../../../lib/food-macros'
 import { cleListe, elementsListe } from '../../../lib/nutrition-lists'
 import { importerMenu } from '../../../lib/menu-import'
 import { proteinesDeLigne } from '../../../lib/menu-macros'
+import { MACROS_PAR_100G, type TableMacros } from '../../../lib/food-macros'
 import {
   SUGGESTIONS_PROTEINES,
   SUGGESTIONS_GLUCIDES,
@@ -222,16 +223,21 @@ function nomDuRepas(ligne: string): string {
 export function ControleJournee({
   jour,
   estimation,
-  cibleProteinesJour
+  cibleProteinesJour,
+  table
 }: {
   jour: string
   estimation?: { repas: EstimationRepas[] }
   cibleProteinesJour?: number
+  /** Composition à utiliser — celle ajustée dans les Paramètres. */
+  table?: TableMacros
 }) {
   const lignes = lignesDeJournee(jour)
   if (lignes.length === 0) return null
 
-  const calculs = lignes.map(proteinesDeLigne)
+  // `l => proteinesDeLigne(l, table)` et non `map(proteinesDeLigne)` : `map`
+  // passe l'index en second argument, qui atterrirait dans `table`.
+  const calculs = lignes.map(l => proteinesDeLigne(l, table))
   const totalP = calculs.reduce((t, c) => t + c.totalG, 0)
   const est = estimation?.repas ?? []
   const totalKcal = est.reduce((t, e) => t + e.kcal, 0)
@@ -331,12 +337,15 @@ export function SuggestChips({
   items,
   current,
   onPick,
-  macro
+  macro,
+  table
 }: {
   items: string[]
   current: string
   onPick: (item: string) => void
   macro?: MacroMisEnAvant
+  /** Composition à afficher — celle ajustée dans les Paramètres. */
+  table?: TableMacros
 }) {
   const present = new Set(elementsListe(current).map(cleListe))
   return (
@@ -360,8 +369,8 @@ export function SuggestChips({
             >
               {used ? '✓ ' : '+ '}
               {it}
-              {macro && etiquetteMacro(it, macro) && (
-                <span className="ml-1.5 text-marine/35 tabular-nums">{etiquetteMacro(it, macro)}</span>
+              {macro && etiquetteMacro(it, macro, table) && (
+                <span className="ml-1.5 text-marine/35 tabular-nums">{etiquetteMacro(it, macro, table)}</span>
               )}
             </button>
           )
@@ -522,7 +531,16 @@ export function NutritionTab() {
   const [libLipides, setLibLipides] = useState<string[]>(SUGGESTIONS_LIPIDES)
   const [libPrefSemaine, setLibPrefSemaine] = useState<string[]>(SUGGESTIONS_PREF_SEMAINE)
   const [libPrefWeekend, setLibPrefWeekend] = useState<string[]>(SUGGESTIONS_PREF_WEEKEND)
+  /**
+   * Composition des aliments, ajustable dans les Paramètres.
+   *
+   * `MACROS_PAR_100G` sert de valeur initiale : les pastilles affichent tout de
+   * suite une teneur plausible plutôt que de rester muettes le temps du
+   * chargement, et le calcul des protéines ne repart pas de zéro.
+   */
+  const [tableMacros, setTableMacros] = useState<TableMacros>(MACROS_PAR_100G)
   useEffect(() => {
+    settingsService.getFoodMacros().then(setTableMacros).catch(() => {})
     settingsService.getSupplements().then(setSuppLibrary).catch(() => {})
     settingsService.getFoodList('good').then(setFoodsGoodLib).catch(() => {})
     settingsService.getFoodList('bad').then(setFoodsBadLib).catch(() => {})
@@ -1842,7 +1860,7 @@ export function NutritionTab() {
           ].map(m => (
             <div key={m.titre}>
               <label className="block text-marine/70 text-sm font-medium mb-1">{m.titre}</label>
-              <SuggestChips items={m.sugg} current={m.v} onPick={it => m.set(c => appendLine(c, it))} macro={m.macro} />
+              <SuggestChips items={m.sugg} current={m.v} onPick={it => m.set(c => appendLine(c, it))} macro={m.macro} table={tableMacros} />
               <AutoTextarea
                 value={m.v}
                 onChange={e => m.set(e.target.value)}
@@ -2034,6 +2052,7 @@ export function NutritionTab() {
                     jour={jour}
                     estimation={estimations?.[i]}
                     cibleProteinesJour={liveMacros?.proteinG}
+                    table={tableMacros}
                   />
                 )}
                 {/* Refaire un seul repas : le reste de la journée, y compris ce

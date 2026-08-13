@@ -559,6 +559,10 @@ interface Window {
       getFoodList(nom: FoodListName): Promise<string[]>
       setFoodList(nom: FoodListName, value: string[]): Promise<void>
       getDefaultFoodList(nom: FoodListName): Promise<string[]>
+      /** Composition des aliments : valeurs du code, ajustements de Marie par-dessus. */
+      getFoodMacros(): Promise<Record<string, { p: number; g: number; l: number }>>
+      setFoodMacros(value: Record<string, { p: number; g: number; l: number }>): Promise<void>
+      getDefaultFoodMacros(): Promise<Record<string, { p: number; g: number; l: number }>>
       /** Bibliothèque globale de suggestions de douleur (famille → phrases). */
       getPainSuggestions(): Promise<Record<string, string[]>>
       setPainSuggestions(value: Record<string, string[]>): Promise<void>

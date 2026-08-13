@@ -118,6 +118,9 @@ contextBridge.exposeInMainWorld('api', {
     getFoodList: (nom: string) => ipcRenderer.invoke('settings:foodList:get', nom),
     setFoodList: (nom: string, value: string[]) => ipcRenderer.invoke('settings:foodList:set', nom, value),
     getDefaultFoodList: (nom: string) => ipcRenderer.invoke('settings:foodList:default', nom),
+    getFoodMacros: () => ipcRenderer.invoke('settings:foodMacros:get'),
+    setFoodMacros: (value: unknown) => ipcRenderer.invoke('settings:foodMacros:set', value),
+    getDefaultFoodMacros: () => ipcRenderer.invoke('settings:foodMacros:default'),
     getPainSuggestions: () => ipcRenderer.invoke('settings:painSuggestions:get'),
     setPainSuggestions: (value: Record<string, string[]>) =>
       ipcRenderer.invoke('settings:painSuggestions:set', value),

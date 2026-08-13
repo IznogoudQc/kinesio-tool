@@ -15,6 +15,7 @@ import {
   SUGGESTIONS_PREF_SEMAINE,
   SUGGESTIONS_PREF_WEEKEND
 } from '../../src/lib/food-suggestions'
+import { MACROS_PAR_100G } from '../../src/lib/food-macros'
 import { DEFAULT_PAIN_SUGGESTIONS } from '../../src/lib/pain-suggestions'
 import { DEFAULT_BILAN_EMAIL, DEFAULT_NUTRITION_EMAIL } from '../../src/lib/email-templates'
 
@@ -41,7 +42,9 @@ const KEYS = {
   prefWeekend: 'nutrition.pref_weekend',
   painSuggestions: 'pain.suggestions',
   /** Dernier dossier d'où un menu a été importé — pour y rouvrir directement. */
-  menuImportFolder: 'nutrition.menu_import_folder'
+  menuImportFolder: 'nutrition.menu_import_folder',
+  /** Composition des aliments ajustée par Marie (grammes pour 100 g). */
+  foodMacros: 'nutrition.food_macros'
 } as const
 
 /** Listes d'aliments proposés (à privilégier / à éviter), globales et éditables. */
@@ -294,6 +297,36 @@ export function registerSettingsHandlers(): void {
     await writeKey(LISTES[NomListe.parse(nom)].key, JSON.stringify(FoodListSchema.parse(value)))
   })
   ipcMain.handle('settings:foodList:default', (_e, nom: unknown) => LISTES[NomListe.parse(nom)].defaut)
+
+  // ── Composition des aliments (globale, tous clients) ────────────────────────
+  // Bornes 0-100 : ce sont des grammes POUR 100 g d'aliment. Au-delà, la valeur
+  // n'a pas de sens physique, et une faute de frappe (310 au lieu de 31) fausse
+  // silencieusement le calcul des protéines de tous les menus.
+  const MacrosSchema = z.record(
+    z.string().min(1).max(120),
+    z.object({
+      p: z.number().min(0).max(100),
+      g: z.number().min(0).max(100),
+      l: z.number().min(0).max(100)
+    })
+  )
+
+  ipcMain.handle('settings:foodMacros:get', async () => {
+    const raw = await readKey(KEYS.foodMacros)
+    if (!raw) return MACROS_PAR_100G
+    try {
+      const parsed = MacrosSchema.safeParse(JSON.parse(raw))
+      // Les valeurs du code d'abord, celles de Marie par-dessus : un aliment
+      // ajouté plus tard au code apparaît, et ses ajustements survivent.
+      return parsed.success ? { ...MACROS_PAR_100G, ...parsed.data } : MACROS_PAR_100G
+    } catch {
+      return MACROS_PAR_100G
+    }
+  })
+  ipcMain.handle('settings:foodMacros:set', async (_e, value: unknown) => {
+    await writeKey(KEYS.foodMacros, JSON.stringify(MacrosSchema.parse(value)))
+  })
+  ipcMain.handle('settings:foodMacros:default', () => MACROS_PAR_100G)
 
   // ── Bibliothèque de suggestions de douleur (globale, tous clients) ──────────
   ipcMain.handle('settings:painSuggestions:get', async () => {

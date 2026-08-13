@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Apple, Ban, CalendarClock, Check, Loader2, Pill, Plus, RotateCcw, Sparkles, Target, X } from 'lucide-react'
+import { Apple, Ban, CalendarClock, Check, Loader2, Pill, Plus, RotateCcw, Scale, Sparkles, Target, X } from 'lucide-react'
 import { FOOD_LIST_ICONES, FOOD_LIST_TITRES, type FoodListName } from '../../lib/food-suggestions'
 import { settingsService } from '../../services/settings'
 import { aiAdviceService, AIAdviceError } from '../../services/aiAdvice'
 import type { SupplementItem } from '../../lib/supplements'
+import { MACROS_PAR_100G, type TableMacros } from '../../lib/food-macros'
 
 type Status = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -332,5 +333,184 @@ function SaveRow({
       {status === 'saved' && <span className="text-green-600 text-sm">Enregistré ✓</span>}
       {status === 'error' && <span className="text-red-600 text-sm">Erreur d'enregistrement</span>}
     </div>
+  )
+}
+
+/**
+ * Composition des aliments, en grammes POUR 100 g.
+ *
+ * Ces valeurs font tourner deux choses : la teneur affichée sur chaque
+ * proposition de l'onglet Nutrition, et la colonne « P » CALCULÉE du tableau de
+ * contrôle des menus. Les ajuster ici les change aux deux endroits.
+ *
+ * Les valeurs du code servent de base et celles enregistrées ici passent
+ * par-dessus — un aliment ajouté plus tard au code apparaîtra donc quand même.
+ * « Réinitialiser » ramène toute la table à son état d'origine.
+ */
+export function FoodMacrosCard() {
+  /**
+   * Les valeurs du code comme état initial, remplacées par celles enregistrées
+   * dès leur arrivée. La table s'affiche donc pleine tout de suite au lieu d'un
+   * « Chargement… », et une lecture qui échoue laisse une table utilisable
+   * plutôt qu'une carte vide.
+   */
+  const [table, setTable] = useState<TableMacros>(MACROS_PAR_100G)
+  const [nouveau, setNouveau] = useState('')
+  const [status, setStatus] = useState<Status>('idle')
+  const [dirty, setDirty] = useState(false)
+
+  useEffect(() => {
+    settingsService.getFoodMacros().then(setTable).catch(() => {})
+  }, [])
+
+  function mutate(next: TableMacros) {
+    setTable(next)
+    setDirty(true)
+    setStatus('idle')
+  }
+
+  /**
+   * Une saisie illisible vaut 0, jamais NaN.
+   *
+   * Vider un champ pour le retaper produit une chaîne vide, et un NaN
+   * traverserait la validation du processus principal pour fausser en silence
+   * le calcul des protéines de tous les menus.
+   */
+  function setValeur(aliment: string, macro: 'p' | 'g' | 'l', brut: string) {
+    const n = Number(brut)
+    const valeur = Number.isFinite(n) ? Math.min(100, Math.max(0, n)) : 0
+    mutate({ ...table, [aliment]: { ...table[aliment], [macro]: valeur } })
+  }
+
+  function ajouter() {
+    const nom = nouveau.trim()
+    if (!nom) return
+    if (Object.keys(table).some(k => k.toLowerCase() === nom.toLowerCase())) return
+    mutate({ ...table, [nom]: { p: 0, g: 0, l: 0 } })
+    setNouveau('')
+  }
+
+  function retirer(aliment: string) {
+    const next = { ...table }
+    delete next[aliment]
+    mutate(next)
+  }
+
+  async function save() {
+    setStatus('saving')
+    try {
+      await settingsService.setFoodMacros(table)
+      setDirty(false)
+      setStatus('saved')
+      setTimeout(() => setStatus(s => (s === 'saved' ? 'idle' : s)), 2500)
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  async function reset() {
+    try {
+      mutate(await settingsService.getDefaultFoodMacros())
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const noms = Object.keys(table).sort((a, b) => a.localeCompare(b, 'fr'))
+
+  return (
+    <section className="bg-white border border-cream-dark rounded-xl p-6 shadow-sm">
+      <div className="flex items-center gap-2 mb-1">
+        <Scale size={18} className="text-gold-dark" />
+        <h2 className="text-marine font-semibold text-lg">Composition des aliments</h2>
+      </div>
+      <p className="text-marine/55 text-sm mb-4">
+        Protéines, glucides et lipides <strong>pour 100 g d’aliment</strong>. Sert à la teneur
+        affichée sur les propositions et au calcul des protéines du tableau de contrôle des menus.
+      </p>
+
+      <div className="max-h-96 overflow-y-auto border border-cream-dark rounded-md">
+          <table className="w-full text-sm">
+            <thead className="sticky top-0 bg-cream">
+              <tr className="text-marine/50 text-xs">
+                <th className="text-left font-medium px-3 py-1.5">Aliment</th>
+                <th className="text-right font-medium px-1 py-1.5 w-16">P</th>
+                <th className="text-right font-medium px-1 py-1.5 w-16">G</th>
+                <th className="text-right font-medium px-1 py-1.5 w-16">L</th>
+                <th className="w-8" />
+              </tr>
+            </thead>
+            <tbody>
+              {noms.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-3 py-2 text-marine/35">
+                    Aucun aliment.
+                  </td>
+                </tr>
+              )}
+              {noms.map(nom => (
+                <tr key={nom} className="border-t border-cream-dark/60">
+                  <td className="px-3 py-1 text-marine">{nom}</td>
+                  {(['p', 'g', 'l'] as const).map(macro => (
+                    <td key={macro} className="px-1 py-1">
+                      <input
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={table[nom][macro]}
+                        onChange={e => setValeur(nom, macro, e.target.value)}
+                        className="w-full px-1.5 py-1 border border-cream-dark rounded text-marine text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold"
+                      />
+                    </td>
+                  ))}
+                  <td className="px-1 py-1 text-center">
+                    <button
+                      type="button"
+                      onClick={() => retirer(nom)}
+                      className="text-marine/30 hover:text-red-600 transition-colors"
+                      title="Retirer cet aliment"
+                    >
+                      <X size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+      </div>
+
+      <div className="flex gap-2 mt-3">
+        <input
+          value={nouveau}
+          onChange={e => setNouveau(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              ajouter()
+            }
+          }}
+          placeholder="Ajouter un aliment (ex. Fromage de chèvre)"
+          className={`flex-1 ${fieldClass}`}
+        />
+        <button
+          type="button"
+          onClick={ajouter}
+          className="inline-flex items-center gap-1 px-3 py-1.5 border border-cream-dark rounded-md text-marine/70 text-sm hover:border-gold hover:text-marine transition-colors"
+        >
+          <Plus size={14} /> Ajouter
+        </button>
+      </div>
+
+      {/* Dit franchement ce que l'ajout fait et ne fait pas. Le lecteur de menus
+          reconnaît les aliments par une liste de synonymes écrite dans le code ;
+          sans ce mot, Marie croirait le calcul étendu à son nouvel aliment. */}
+      <p className="text-marine/40 text-xs mt-2">
+        Un aliment ajouté ici affiche sa teneur sur les propositions. Le calcul des protéines des
+        menus, lui, ne reconnaît que les aliments d’origine.
+      </p>
+
+      <SaveRow status={status} dirty={dirty} onSave={save} onReset={reset} />
+    </section>
   )
 }

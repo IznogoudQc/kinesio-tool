@@ -1,5 +1,6 @@
 import type { SupplementItem } from '../lib/supplements'
 import type { FoodListName } from '../lib/food-suggestions'
+import type { TableMacros } from '../lib/food-macros'
 
 export const settingsService = {
   async getProfile(): Promise<ProfileSettings> {
@@ -94,6 +95,25 @@ export const settingsService = {
   async setFoodList(nom: FoodListName, value: string[]): Promise<void> {
     return window.api.settings.setFoodList(nom, value)
   },
+  /**
+   * Composition des aliments, pour 100 g.
+   *
+   * Le principal appelle rend DÉJÀ la fusion « valeurs du code + ajustements de
+   * Marie » : le renderer n'a rien à recomposer, et il n'existe donc qu'un seul
+   * endroit où la règle de fusion est écrite.
+   */
+  async getFoodMacros(): Promise<TableMacros> {
+    return window.api.settings.getFoodMacros()
+  },
+
+  async setFoodMacros(value: TableMacros): Promise<void> {
+    return window.api.settings.setFoodMacros(value)
+  },
+
+  async getDefaultFoodMacros(): Promise<TableMacros> {
+    return window.api.settings.getDefaultFoodMacros()
+  },
+
   async getDefaultFoodList(nom: FoodListName): Promise<string[]> {
     return window.api.settings.getDefaultFoodList(nom)
   },

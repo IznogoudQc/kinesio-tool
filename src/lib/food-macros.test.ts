@@ -8,7 +8,7 @@
  */
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { MACROS_PAR_100G, etiquetteMacro, macrosDe } from './food-macros.ts'
+import { MACROS_PAR_100G, etiquetteMacro, fusionnerMacros, macrosDe } from './food-macros.ts'
 import {
   SUGGESTIONS_PROTEINES,
   SUGGESTIONS_GLUCIDES,
@@ -66,6 +66,40 @@ test('chaque aliment est cohérent avec la colonne qui le propose', () => {
     const m = macrosDe(a)!
     assert.ok(m.l >= 11, `« ${a} » proposé en lipides mais n'en contient que ${m.l} g`)
   }
+})
+
+test('les ajustements de Marie passent PAR-DESSUS ceux du code', () => {
+  // Le sens de la fusion est la seule chose qui compte ici. À l'envers, ses
+  // valeurs seraient écrasées à chaque mise à jour de l'application.
+  const fusion = fusionnerMacros({ 'Yogourt grec': { p: 12, g: 3, l: 0 } })
+  assert.equal(fusion['Yogourt grec'].p, 12, 'la valeur ajustée doit gagner')
+  assert.equal(
+    fusion['Poulet, dinde'].p,
+    MACROS_PAR_100G['Poulet, dinde'].p,
+    'un aliment non ajusté garde la valeur du code'
+  )
+})
+
+test('un aliment ajouté au code apparaît malgré une table déjà enregistrée', () => {
+  // L'autre moitié de la règle : une table enregistrée avant l'ajout d'un
+  // aliment ne doit pas le faire disparaître de l'écran.
+  const fusion = fusionnerMacros({ 'Yogourt grec': { p: 12, g: 3, l: 0 } })
+  assert.ok(fusion['Crevettes'], 'les aliments du code restent tous présents')
+  assert.equal(Object.keys(fusion).length, Object.keys(MACROS_PAR_100G).length)
+})
+
+test('sans rien d’enregistré, la fusion rend la table du code', () => {
+  assert.deepEqual(fusionnerMacros(null), MACROS_PAR_100G)
+  assert.deepEqual(fusionnerMacros(undefined), MACROS_PAR_100G)
+})
+
+test('une table passée en argument remplace celle du code', () => {
+  // C'est ce qui permet aux pastilles et au calcul des protéines d'utiliser
+  // les valeurs de Marie sans état global.
+  const perso = { 'Yogourt grec': { p: 12, g: 3, l: 0 } }
+  assert.equal(macrosDe('Yogourt grec', perso)?.p, 12)
+  assert.equal(etiquetteMacro('Yogourt grec', 'p', perso), '≈ 12 g P')
+  assert.equal(macrosDe('Poulet, dinde', perso), null, 'la table fournie fait foi')
 })
 
 test('les valeurs sont des entiers — pas de fausse précision', () => {
