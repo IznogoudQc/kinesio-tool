@@ -327,7 +327,7 @@ function appendLine(current: string, item: string): string {
  * pour tout aliment absent de la table : Marie ajoute les siens, et une valeur
  * inventée serait pire que pas de valeur.
  */
-function SuggestChips({
+export function SuggestChips({
   items,
   current,
   onPick,
@@ -341,7 +341,12 @@ function SuggestChips({
   const present = new Set(elementsListe(current).map(cleListe))
   return (
     <div className="mb-2.5">
-      <p className="text-marine/40 text-xs mb-1.5">Propositions — cliquez pour ajouter :</p>
+      {/* La base de référence doit être à l'écran : « ≈ 10 g P » ne veut rien
+          dire sans elle, et on ne peut pas deviner qu'il s'agit de 100 g.
+          Écrite une fois en tête de rangée plutôt que sur chaque pastille. */}
+      <p className="text-marine/40 text-xs mb-1.5">
+        Propositions{macro && <span> (valeurs pour 100 g d’aliment)</span>} — cliquez pour ajouter :
+      </p>
       <div className="flex flex-wrap gap-1.5">
         {items.map(it => {
           const used = present.has(cleListe(it))
