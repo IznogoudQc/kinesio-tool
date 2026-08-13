@@ -152,8 +152,19 @@ const MenuRepasSchema = z.object({ ligne: z.string().default('') })
  * modèle estime mal la composition des aliments, et le calcul nutritionnel
  * relève de la nutritionniste (voir ADR / mémoire « champ de pratique »).
  */
+/** Estimations PAR REPAS. Les protéines n'y sont pas : l'app les calcule. */
 const MenuVerifSchema = z.object({
-  journees: z.array(z.object({ proteinesG: z.number() })).max(7).default([])
+  journees: z
+    .array(
+      z.object({
+        repas: z
+          .array(z.object({ kcal: z.number(), glucidesG: z.number(), lipidesG: z.number() }))
+          .max(6)
+          .default([])
+      })
+    )
+    .max(7)
+    .default([])
 })
 
 const SUPPLEMENTS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
@@ -254,20 +265,36 @@ Règles :
 - On te donne les autres journées de la semaine. Propose autre chose qu'une copie de l'une d'elles, sans chercher l'originalité à tout prix : un aliment qui revient est normal.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter.`
 
+/**
+ * Ce que l'IA estime — et surtout ce qu'elle N'estime PAS.
+ *
+ * Les protéines ne sont plus demandées : l'app les CALCULE à partir des poids
+ * en grammes et de sa table de composition (`src/lib/menu-macros.ts`). Un
+ * calcul se recoupe et ne bouge pas d'un appel à l'autre ; une estimation fait
+ * ni l'un ni l'autre. Redemander les protéines donnerait deux chiffres pour la
+ * même chose, et Marie n'aurait aucun moyen de savoir lequel croire.
+ *
+ * Restent les calories, glucides et lipides : eux n'ont pas de poids à
+ * multiplier — le quinoa est « 1 tasse », le brocoli n'a pas de quantité — donc
+ * seule une estimation est possible, et l'écran l'affiche comme telle.
+ */
 const MENU_VERIF_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
-On te donne des journées de menu déjà écrites. Estime, pour CHAQUE journée, le total de PROTÉINES en grammes.
+On te donne des journées de menu déjà écrites. Estime, pour CHAQUE REPAS de chaque journée, les calories, les glucides nets et les lipides.
+
+N'estime PAS les protéines : l'application les calcule elle-même à partir des poids écrits. Ne renvoie aucun champ de protéines.
 
 Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown :
 
-{ "journees": [{ "proteinesG": 152 }] }
+{ "journees": [{ "repas": [{ "kcal": 620, "glucidesG": 48, "lipidesG": 26 }] }] }
 
 Règles :
 - UNE entrée par journée fournie, dans le MÊME ORDRE, aucune omise.
-- « proteinesG » est un nombre entier, en grammes, pour la journée entière.
-- Additionne les protéines de chaque aliment mentionné, y compris les suppléments protéinés indiqués entre parenthèses.
+- Dans « repas », UNE entrée par ligne de repas de cette journée, dans le MÊME ORDRE, aucune omise. Une journée de 3 repas donne 3 entrées.
+- Les trois valeurs sont des nombres entiers : « kcal » en calories, « glucidesG » et « lipidesG » en grammes.
+- Les glucides sont NETS, fibres exclues.
 - Quand une quantité manque, suppose une portion usuelle plutôt que d'ignorer l'aliment.
-- N'ajoute AUCUN commentaire, aucune autre macro, aucun texte : seulement le JSON.`
+- N'ajoute AUCUN commentaire, aucune autre valeur, aucun texte : seulement le JSON.`
 
 const MENU_REPAS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
