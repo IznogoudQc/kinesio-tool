@@ -1791,6 +1791,13 @@ export function NutritionTab() {
               ensuite avec « Importer un menu ».
             </span>
           )}
+          {/* La génération réfléchit avant de répondre : sans ce mot, une attente
+              de deux minutes ressemble à une application figée. */}
+          {aiBusy === 'menu' && (
+            <span className="text-marine/50 text-xs">
+              L’IA réfléchit avant de proposer — comptez jusqu’à deux minutes pour une semaine.
+            </span>
+          )}
           <button
             type="button"
             onClick={ouvrirImport}

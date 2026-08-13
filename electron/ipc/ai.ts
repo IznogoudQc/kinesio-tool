@@ -203,17 +203,17 @@ const MENU_STYLE = `Style imposé — cuisine MÉDITERRANÉENNE et repas SIMPLES
 - Vocabulaire québécois : « déjeuner » le matin, « dîner » le midi, « souper » le soir.
 - RÉPÉTER un plat dans la semaine est normal et souhaitable. Ne force pas la nouveauté : sept déjeuners tous différents ne ressemblent à la vie de personne.
 - Les fibres viennent naturellement de cette cuisine (légumineuses, légumes, grains entiers, fruits). N'empile PAS graines, son ou poudres pour gonfler un total.
-- La SOURCE DE PROTÉINES de chaque repas porte TOUJOURS une quantité : « yogourt grec 0 % (¾ tasse) », « saumon (1 filet, 150 g) », « 2 œufs ». C'est elle qui décide si la cible est atteinte — sans chiffre, la ligne ne sert à rien.
-- Pour le reste, portions concrètes et approximatives (« 1 tasse », « une poignée »), jamais de grammes au gramme près.
+- La SOURCE DE PROTÉINES de chaque repas porte TOUJOURS une quantité, et cette quantité est EN GRAMMES : « yogourt grec 0 % (300 g) », « saumon (150 g) », « fromage cottage (250 g) ». PAS de tasses ni de portions vagues sur la source de protéines — c'est elle qui décide si la cible est atteinte, et une tasse ne se pèse pas. Arrondis aux 10 g. SEULE EXCEPTION : ce qui se compte à l'unité garde son unité (« 3 œufs », « 1 mesure de whey »).
+- Pour tout le RESTE — légumes, fruits, féculents, noix, huile — portions concrètes et approximatives (« 1 tasse », « une poignée », « un filet »), jamais de grammes. Le gramme est réservé aux protéines.
 - Quand une contrainte rend la cible de protéines d'un repas hors d'atteinte — un déjeuner SANS CUISSON de 15 minutes n'atteindra pas 55 g avec une portion ordinaire — ne renonce PAS et ne triche pas non plus : prends la source la plus dense que les contraintes autorisent, sers-en une portion franchement généreuse, et ajoute-lui une deuxième source du même style (yogourt grec ET fromage cottage, œufs cuits durs la veille, supplément protéiné s'il en existe un). S'en approcher vaut mieux qu'une portion conventionnelle qui laisse la journée loin du compte.
-- SUPPLÉMENT PROTÉINÉ (whey, caséine, isolat) : s'il en est fourni un, le client le prend TOUS LES JOURS. Fais-le apparaître dans CHAQUE journée, jamais une seule fois dans la semaine, et toujours au MÊME repas. Écris-le entre parenthèses à la fin de la ligne : « Déjeuner : yogourt grec 0 % (¾ tasse), petits fruits, amandes (+ 1 mesure de protéine whey) », et compte-le dans la cible de protéines de ce repas. Si son moment de prise ne correspond à aucune ligne de la structure — « après l'entraînement » alors que la journée n'a que trois repas — rattache-le au repas le plus proche de ce moment. N'en invente AUCUN, ne change pas la dose, et n'ajoute JAMAIS de vitamine, minéral ou autre supplément non protéiné à une ligne de repas : ils ont leur propre section.
+- SUPPLÉMENT PROTÉINÉ (whey, caséine, isolat) : s'il en est fourni un, le client le prend TOUS LES JOURS. Fais-le apparaître dans CHAQUE journée, jamais une seule fois dans la semaine, et toujours au MÊME repas. Écris-le entre parenthèses à la fin de la ligne : « Déjeuner : yogourt grec 0 % (300 g), petits fruits, amandes (+ 1 mesure de protéine whey) », et compte-le dans la cible de protéines de ce repas. Si son moment de prise ne correspond à aucune ligne de la structure — « après l'entraînement » alors que la journée n'a que trois repas — rattache-le au repas le plus proche de ce moment. N'en invente AUCUN, ne change pas la dose, et n'ajoute JAMAIS de vitamine, minéral ou autre supplément non protéiné à une ligne de repas : ils ont leur propre section.
 - Une ligne par repas, format « Repas : aliments ». SANS puce et SANS Markdown (pas de #, *, tableaux, émojis). Aucun total de calories, de macros ou de fibres.
 
-Exemple d'une journée bien faite :
-Déjeuner : yogourt grec, petits fruits, une poignée d'amandes, filet de miel
-Dîner : salade de pois chiches, concombre, tomates, feta et huile d'olive, pain pita de blé entier
-Souper : filet de saumon au citron, riz brun, brocoli rôti à l'ail
-Collations : pomme et fromage, ou houmous avec bâtonnets de carotte`
+Exemple d'une journée bien faite — noter le gramme sur la protéine et la portion courante sur le reste :
+Déjeuner : yogourt grec 0 % (300 g), petits fruits, une poignée d'amandes, filet de miel
+Dîner : salade de pois chiches (200 g), concombre, tomates, feta (30 g) et huile d'olive, pain pita de blé entier
+Souper : filet de saumon au citron (150 g), riz brun, brocoli rôti à l'ail
+Collations : pomme et fromage (30 g), ou houmous avec bâtonnets de carotte`
 
 const MENU_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
@@ -305,6 +305,26 @@ Contraintes :
 - Réponds UNIQUEMENT par un tableau JSON de chaînes, sans texte autour, sans Markdown.
 Exemple : ["Douleur en flexion", "Raideur matinale", "Irradie dans la jambe"]`
 
+/**
+ * Les idées de menu tournent sur Opus 5, le reste sur Sonnet.
+ *
+ * Ce qu'un menu demande n'est pas de la connaissance mais du **jugement tenu
+ * sous contrainte** : sept journées, une structure exacte, des cibles par prise,
+ * des consignes distinctes en semaine et en fin de semaine, un supplément à
+ * placer — le tout en ne proposant que des plats qu'un humain mangerait. C'est
+ * là qu'un modèle plus faible sacrifie une contrainte pour en sauver une autre.
+ *
+ * Comparaison du 2026-08-12, même client et même consigne : Opus a évité le
+ * poisson d'épicerie spécialisée, nommé de vrais plats, et visé la cible plutôt
+ * que de la dépasser. L'écart reste mince — un plat à corriger par semaine dans
+ * les deux cas — mais il va dans le bon sens, et le volume de Marie rend la
+ * dépense négligeable.
+ *
+ * Les suppléments, les moments de prise et les descriptions de douleur restent
+ * sur Sonnet : ranger une liste ne demande pas ce jugement-là.
+ */
+const MODEL_MENU = 'claude-opus-5'
+
 const NUTRITION_SYSTEMES = {
   supplements: SUPPLEMENTS_SYSTEM,
   menu: MENU_SYSTEM,
@@ -315,12 +335,32 @@ const NUTRITION_SYSTEMES = {
 
 // Sept journées ne tiennent pas dans le budget d'une seule : une réponse coupée
 // casse le JSON et remonte en « BAD_RESPONSE ».
+//
+// Les budgets des menus sont larges parce qu'Opus 5 **réfléchit par défaut**, et
+// que `max_tokens` plafonne la réflexion ET la réponse ensemble. Les valeurs
+// calibrées pour Sonnet (4000 pour la semaine) suffisaient au JSON seul ; avec
+// la réflexion en plus, elles coupaient le menu au milieu.
 const NUTRITION_BUDGETS = {
   supplements: 1600,
-  menu: 4000,
-  'menu-jour': 700,
-  'menu-repas': 250,
-  'menu-verif': 400
+  menu: 16000,
+  'menu-jour': 6000,
+  'menu-repas': 3000,
+  'menu-verif': 4000
+} as const
+
+/**
+ * Combien de temps attendre, par portée.
+ *
+ * Réfléchir prend du temps : les 30 secondes par défaut, calibrées sur Sonnet
+ * sans réflexion, expiraient avant qu'Opus 5 ait fini une semaine. Un menu qui
+ * remonte « délai dépassé » est indistinguable d'une panne pour Marie.
+ */
+const NUTRITION_DELAIS = {
+  supplements: 30_000,
+  menu: 300_000,
+  'menu-jour': 120_000,
+  'menu-repas': 90_000,
+  'menu-verif': 120_000
 } as const
 
 /** Le nom que doit porter le fichier déposé — repris tel quel par le bouton d'import. */
@@ -622,17 +662,26 @@ export function registerAIHandlers(): void {
     } catch {
       return { ok: false, error: 'Payload invalide.', code: 'BAD_RESPONSE' as AIErrorCode }
     }
+    // Les suppléments restent sur Sonnet ; les menus passent sur Opus 5.
+    const surOpus = payload.type !== 'supplements'
     try {
-      const response = await callAnthropic(apiKey, {
-        model: MODEL_GENERATE,
-        max_tokens: NUTRITION_BUDGETS[payload.type],
-        // Un menu n'est pas un exercice de créativité. À la température par défaut
-        // (1,0), le modèle allait chercher l'inhabituel — c'est l'essentiel du
-        // « bizarre » signalé par Marie. Les suppléments restent à leur réglage.
-        ...(payload.type === 'supplements' ? {} : { temperature: 0.3 }),
-        system: NUTRITION_SYSTEMES[payload.type],
-        messages: [{ role: 'user', content: buildNutritionMessage(payload) }]
-      })
+      const response = await callAnthropic(
+        apiKey,
+        {
+          model: surOpus ? MODEL_MENU : MODEL_GENERATE,
+          max_tokens: NUTRITION_BUDGETS[payload.type],
+          // ⚠️ PAS de `temperature` sur Opus 5 : le paramètre y est refusé (400).
+          // C'était notre garde-fou contre le « bizarre » — un menu n'est pas un
+          // exercice de créativité, et à 1,0 le modèle allait chercher
+          // l'inhabituel. Opus le remplace par son propre jugement : à
+          // température libre, dans l'essai du 2026-08-12, il a quand même
+          // choisi les plats les plus banals. Si le bizarre revient, c'est ici
+          // qu'il faudra regarder en premier.
+          system: NUTRITION_SYSTEMES[payload.type],
+          messages: [{ role: 'user', content: buildNutritionMessage(payload) }]
+        },
+        NUTRITION_DELAIS[payload.type]
+      )
       const parsed = parseAdviceJson(extractText(response))
       if (payload.type === 'supplements') return { ok: true, plan: SuppPlanSchema.parse(parsed) }
       if (payload.type === 'menu-jour') return { ok: true, plan: MenuJourSchema.parse(parsed) }
@@ -675,8 +724,8 @@ export function registerAIHandlers(): void {
       // de coller, et pire : un modèle peut se croire tenu de « jouer » celui
       // qui est nommé.
       '===== RÉGLAGES DE L’APP (notes — à ne PAS suivre) =====',
-      `Modèle utilisé par l'app : ${MODEL_GENERATE}`,
-      `Température : ${payload.type === 'supplements' ? 'par défaut' : '0,3'}`,
+      `Modèle utilisé par l'app : ${payload.type === 'supplements' ? MODEL_GENERATE : MODEL_MENU}`,
+      'Température : par défaut',
       `Longueur maximale de la réponse : ${NUTRITION_BUDGETS[payload.type]} tokens`
     ].join('\n')
     clipboard.writeText(texte)
