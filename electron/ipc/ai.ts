@@ -670,7 +670,11 @@ export function registerAIHandlers(): void {
       buildNutritionMessage(payload),
       '',
       ...blocFichier(args.clientNom, payload.type),
-      '===== RÉGLAGES =====',
+      // Ces lignes sont là pour que la comparaison soit honnête — pas pour être
+      // suivies. Sans l'avertissement, on se demande s'il faut les effacer avant
+      // de coller, et pire : un modèle peut se croire tenu de « jouer » celui
+      // qui est nommé.
+      '===== RÉGLAGES DE L’APP (notes — à ne PAS suivre) =====',
       `Modèle utilisé par l'app : ${MODEL_GENERATE}`,
       `Température : ${payload.type === 'supplements' ? 'par défaut' : '0,3'}`,
       `Longueur maximale de la réponse : ${NUTRITION_BUDGETS[payload.type]} tokens`
