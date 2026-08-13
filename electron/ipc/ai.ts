@@ -1,9 +1,11 @@
 import { readFile } from 'node:fs/promises'
-import { basename } from 'node:path'
+import { basename, dirname } from 'node:path'
 import { clipboard, dialog, ipcMain } from 'electron'
 import keytar from 'keytar'
 import { z } from 'zod'
 import { listeLisible } from '../../src/lib/nutrition-lists'
+import { safeClientFileName } from '../lib/report-generator'
+import { getMenuImportFolder, setMenuImportFolder } from './settings'
 
 /**
  * IPC pour les conseils IA via Anthropic Claude.
@@ -321,6 +323,32 @@ const NUTRITION_BUDGETS = {
   'menu-verif': 400
 } as const
 
+/** Le nom que doit porter le fichier déposé — repris tel quel par le bouton d'import. */
+function nomFichierMenu(clientNom?: string): string {
+  const slug = safeClientFileName(clientNom ?? '').toLowerCase()
+  return slug === 'client' ? 'menu.json' : `menu-${slug}.json`
+}
+
+/**
+ * Demande à l'IA d'écrire sa réponse dans un fichier, quand elle en est capable.
+ *
+ * Le repli explicite n'est pas décoratif : la plupart des interfaces ne créent
+ * aucun fichier. Sans lui, un modèle qui ne peut pas écrire s'excuse au lieu de
+ * répondre, et il n'y a plus ni fichier NI menu.
+ *
+ * Réservé aux menus : personne ne dépose un plan de suppléments dans un dossier.
+ */
+function blocFichier(clientNom: string | undefined, type: string): string[] {
+  if (type === 'supplements' || type === 'menu-verif') return []
+  return [
+    '===== OÙ ÉCRIRE LA RÉPONSE =====',
+    `Si tu peux créer des fichiers, écris ta réponse dans un fichier nommé exactement : ${nomFichierMenu(clientNom)}`,
+    'Ce fichier ne doit contenir QUE le JSON — aucune phrase avant ou après, aucun bloc de code.',
+    "Si tu ne peux pas créer de fichier, réponds simplement avec le JSON dans le message : c'est aussi bien.",
+    ''
+  ]
+}
+
 function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): string {
   if (p.type === 'supplements') {
     return `Suppléments à organiser en horaire :\n${(p.supplements ?? '').trim() || '(aucun supplément fourni)'}`
@@ -624,13 +652,16 @@ export function registerAIHandlers(): void {
   // Pour essayer la consigne ailleurs (un autre modèle, un projet Claude) sans
   // rien changer dans l'app. Aucun appel à l'API, donc aucune clé nécessaire :
   // on ne fait que rendre visible ce qui est déjà construit.
-  ipcMain.handle('ai:nutrition-prompt', async (_e, rawPayload: unknown) => {
-    let payload: z.infer<typeof NutritionPayloadSchema>
+  ipcMain.handle('ai:nutrition-prompt', async (_e, raw: unknown) => {
+    let args: { payload: z.infer<typeof NutritionPayloadSchema>; clientNom?: string }
     try {
-      payload = NutritionPayloadSchema.parse(rawPayload)
+      args = z
+        .object({ payload: NutritionPayloadSchema, clientNom: z.string().max(200).optional() })
+        .parse(raw)
     } catch {
       return { ok: false, error: 'Payload invalide.', code: 'BAD_RESPONSE' as AIErrorCode }
     }
+    const { payload } = args
     const texte = [
       '===== CONSIGNE (system) =====',
       NUTRITION_SYSTEMES[payload.type],
@@ -638,13 +669,14 @@ export function registerAIHandlers(): void {
       '===== DEMANDE (user) =====',
       buildNutritionMessage(payload),
       '',
+      ...blocFichier(args.clientNom, payload.type),
       '===== RÉGLAGES =====',
       `Modèle utilisé par l'app : ${MODEL_GENERATE}`,
       `Température : ${payload.type === 'supplements' ? 'par défaut' : '0,3'}`,
       `Longueur maximale de la réponse : ${NUTRITION_BUDGETS[payload.type]} tokens`
     ].join('\n')
     clipboard.writeText(texte)
-    return { ok: true, chars: texte.length }
+    return { ok: true, chars: texte.length, fichier: nomFichierMenu(args.clientNom) }
   })
 
   // ── Le chemin de retour : relire un menu produit ailleurs ──────────────────
@@ -652,15 +684,21 @@ export function registerAIHandlers(): void {
   // que pour un menu collé à la main. Une seule relecture, donc un seul
   // comportement à tester.
   ipcMain.handle('ai:read-menu-file', async () => {
+    // Rouvrir au dernier dossier utilisé : les menus arrivent toujours au même
+    // endroit, et refaire le chemin à chaque fois est le genre de friction qui
+    // finit par décourager l'usage de la fonction.
+    const dernier = await getMenuImportFolder()
     const { canceled, filePaths } = await dialog.showOpenDialog({
       title: 'Importer un menu',
       properties: ['openFile'],
+      ...(dernier ? { defaultPath: dernier } : {}),
       filters: [
         { name: 'Menu (JSON ou texte)', extensions: ['json', 'txt', 'md'] },
         { name: 'Tous les fichiers', extensions: ['*'] }
       ]
     })
     if (canceled || filePaths.length === 0) return null
+    await setMenuImportFolder(dirname(filePaths[0]))
     return { fileName: basename(filePaths[0]), texte: await readFile(filePaths[0], 'utf-8') }
   })
 

@@ -419,7 +419,8 @@ export function NutritionTab() {
    *  bouton plutôt qu'une fenêtre système : sept journées, dont les retouches de
    *  Marie, ne se perdent pas sur un clic mal placé. */
   const [confirmeEffacer, setConfirmeEffacer] = useState(false)
-  const [promptCopie, setPromptCopie] = useState(false)
+  /** Nom du fichier demandé dans le prompt copié — rappelé à l'écran un moment. */
+  const [promptCopie, setPromptCopie] = useState<string | null>(null)
   const [importOuvert, setImportOuvert] = useState(false)
   const [importTexte, setImportTexte] = useState('')
   const [importSource, setImportSource] = useState<string | null>(null)
@@ -799,9 +800,9 @@ export function NutritionTab() {
   async function copierPrompt() {
     setAiError(null)
     try {
-      await aiAdviceService.copyMenuPrompt(contexteMenu())
-      setPromptCopie(true)
-      window.setTimeout(() => setPromptCopie(false), 2500)
+      const fichier = await aiAdviceService.copyMenuPrompt(contexteMenu(), client.name)
+      setPromptCopie(fichier)
+      window.setTimeout(() => setPromptCopie(null), 8000)
     } catch (err) {
       setAiError(aiErrorMessage(err))
     }
@@ -1784,6 +1785,12 @@ export function NutritionTab() {
             <ClipboardCopy size={15} />
             {promptCopie ? 'Copié' : 'Copier le prompt'}
           </button>
+          {promptCopie && (
+            <span className="text-marine/50 text-xs">
+              L’IA écrira <span className="font-mono text-marine/70">{promptCopie}</span> — reprenez-le
+              ensuite avec « Importer un menu ».
+            </span>
+          )}
           <button
             type="button"
             onClick={ouvrirImport}

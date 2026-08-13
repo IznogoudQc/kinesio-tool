@@ -39,7 +39,9 @@ const KEYS = {
   foodsLipides: 'nutrition.foods_lipides',
   prefSemaine: 'nutrition.pref_semaine',
   prefWeekend: 'nutrition.pref_weekend',
-  painSuggestions: 'pain.suggestions'
+  painSuggestions: 'pain.suggestions',
+  /** Dernier dossier d'où un menu a été importé — pour y rouvrir directement. */
+  menuImportFolder: 'nutrition.menu_import_folder'
 } as const
 
 /** Listes d'aliments proposés (à privilégier / à éviter), globales et éditables. */
@@ -329,6 +331,20 @@ export function registerSettingsHandlers(): void {
  *  peut avoir été déplacé depuis — l'export le (re)crée au besoin. */
 export async function getDocumentsFolder(): Promise<string | null> {
   return readKey(KEYS.documentsFolder)
+}
+
+/**
+ * Dernier dossier d'où un menu a été importé.
+ *
+ * Marie récupère toujours ses menus au même endroit — le dossier de travail où
+ * l'IA les dépose. Sans mémoire, elle refait le même chemin à chaque import.
+ */
+export async function getMenuImportFolder(): Promise<string | null> {
+  return readKey(KEYS.menuImportFolder)
+}
+
+export async function setMenuImportFolder(folder: string): Promise<void> {
+  await writeKey(KEYS.menuImportFolder, folder)
 }
 
 export async function getSmtpCredentials(): Promise<

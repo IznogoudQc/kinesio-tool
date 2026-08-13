@@ -673,9 +673,18 @@ interface Window {
        * Copie au presse-papiers le prompt EXACT qu'enverrait `generateNutrition`.
        * N'appelle pas l'API et ne demande pas de clé.
        */
-      copyNutritionPrompt(
+      copyNutritionPrompt(args: {
         payload: Parameters<Window['api']['ai']['generateNutrition']>[0]
-      ): Promise<{ ok: boolean; chars?: number; error?: string; code?: string }>
+        /** Sert à nommer le fichier que l'IA est invitée à écrire. */
+        clientNom?: string
+      }): Promise<{
+        ok: boolean
+        chars?: number
+        /** Le nom de fichier demandé dans le prompt — à rappeler à l'écran. */
+        fichier?: string
+        error?: string
+        code?: string
+      }>
       /**
        * Ouvre un fichier de menu et rend son TEXTE BRUT — la relecture se fait
        * côté renderer. `null` si Marie annule la sélection.

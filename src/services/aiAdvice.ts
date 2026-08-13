@@ -140,15 +140,18 @@ export const aiAdviceService = {
    * — et à comparer sur pièce. Le texte vient des mêmes constantes que l'appel
    * réel : ce qu'on colle est ce que l'app envoie.
    */
-  async copyMenuPrompt(payload: MenuContexte): Promise<number> {
-    const res = await window.api.ai.copyNutritionPrompt({ type: 'menu', ...payload })
-    if (!res.ok || typeof res.chars !== 'number') {
+  async copyMenuPrompt(payload: MenuContexte, clientNom?: string): Promise<string> {
+    const res = await window.api.ai.copyNutritionPrompt({
+      payload: { type: 'menu', ...payload },
+      clientNom
+    })
+    if (!res.ok || typeof res.fichier !== 'string') {
       throw new AIAdviceError(
         (res.code as AIErrorCode) ?? 'BAD_RESPONSE',
         res.error ?? 'Impossible de copier le prompt.'
       )
     }
-    return res.chars
+    return res.fichier
   },
 
   /**
