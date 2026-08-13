@@ -20,6 +20,7 @@ import {
   COLLATIONS_POSSIBLES
 } from '../../../lib/menu-lines'
 import { etiquetteMacro, type MacroMisEnAvant } from '../../../lib/food-macros'
+import { cleListe, elementsListe } from '../../../lib/nutrition-lists'
 import {
   SUGGESTIONS_PROTEINES,
   SUGGESTIONS_GLUCIDES,
@@ -192,8 +193,10 @@ function aiErrorMessage(err: unknown): string {
 
 /** Ajoute `item` en nouvelle ligne (sans doublon, insensible à la casse). */
 function appendLine(current: string, item: string): string {
-  const lines = current.split('\n').map(l => l.trim()).filter(Boolean)
-  if (lines.some(l => l.toLowerCase() === item.toLowerCase())) return current
+  // `cleListe` et non un simple `toLowerCase` : une virgule de fin laissée par
+  // Marie ferait passer « Poulet, » pour un aliment différent de « Poulet », et
+  // la proposition s'ajouterait une deuxième fois.
+  if (elementsListe(current).some(l => cleListe(l) === cleListe(item))) return current
   return current.trim() ? `${current.replace(/\s+$/, '')}\n${item}` : item
 }
 
@@ -217,13 +220,13 @@ function SuggestChips({
   onPick: (item: string) => void
   macro?: MacroMisEnAvant
 }) {
-  const present = new Set(current.split('\n').map(l => l.trim().toLowerCase()))
+  const present = new Set(elementsListe(current).map(cleListe))
   return (
     <div className="mb-2.5">
       <p className="text-marine/40 text-xs mb-1.5">Propositions — cliquez pour ajouter :</p>
       <div className="flex flex-wrap gap-1.5">
         {items.map(it => {
-          const used = present.has(it.toLowerCase())
+          const used = present.has(cleListe(it))
           return (
             <button
               key={it}

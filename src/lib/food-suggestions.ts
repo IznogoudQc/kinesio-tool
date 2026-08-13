@@ -89,7 +89,8 @@ export const SUGGESTIONS_PROTEINES: string[] = [
   'Tofu, tempeh',
   'Fromage feta, ricotta',
   'Thon en conserve',
-  'Crevettes'
+  'Crevettes',
+  'Fromage cottage'
 ]
 
 export const SUGGESTIONS_GLUCIDES: string[] = [

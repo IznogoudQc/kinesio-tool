@@ -29,9 +29,9 @@ test('chaque proposition par défaut a sa composition', () => {
 
 test('un aliment ajouté par Marie n’invente pas de valeur', () => {
   // Cas normal : elle tape ce qu'elle veut. Mieux vaut rien qu'un chiffre pris
-  // sur un aliment qui ressemble.
-  assert.equal(macrosDe('Fromage cottage'), null)
-  assert.equal(etiquetteMacro('Fromage cottage', 'p'), null)
+  // sur un aliment qui ressemble — « Fromage de chèvre » ne vaut pas la feta.
+  assert.equal(macrosDe('Fromage de chèvre'), null)
+  assert.equal(etiquetteMacro('Fromage de chèvre', 'p'), null)
   assert.equal(macrosDe(''), null)
 })
 

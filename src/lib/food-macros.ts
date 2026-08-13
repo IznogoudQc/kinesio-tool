@@ -50,6 +50,9 @@ export const MACROS_PAR_100G: Record<string, MacrosPour100g> = {
   'Fromage feta, ricotta': { p: 12, g: 4, l: 18 },
   'Thon en conserve': { p: 25, g: 0, l: 1 },
   'Crevettes': { p: 24, g: 0, l: 1 },
+  // Pas dans les propositions par défaut, mais assez courant dans les listes de
+  // Marie pour mériter sa composition : sans entrée, sa pastille reste muette.
+  'Fromage cottage': { p: 11, g: 4, l: 2 },
 
   // ── Glucides ──────────────────────────────────────────────────────────────
   'Riz brun': { p: 3, g: 23, l: 1 },

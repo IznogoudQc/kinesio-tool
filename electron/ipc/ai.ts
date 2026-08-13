@@ -1,6 +1,7 @@
 import { clipboard, ipcMain } from 'electron'
 import keytar from 'keytar'
 import { z } from 'zod'
+import { listeLisible } from '../../src/lib/nutrition-lists'
 
 /**
  * IPC pour les conseils IA via Anthropic Claude.
@@ -185,6 +186,10 @@ Règles :
  *    l'exotique dès le milieu de semaine ;
  *  · il criait la cible de fibres, ce qui faisait empiler graines et son ;
  *  · il n'ancrait aucune cuisine ni aucune contrainte de simplicité.
+ *
+ * La règle du supplément protéiné vit ici, et non dans le seul prompt de la
+ * semaine : une journée refaite la perdait, et la whey disparaissait du menu
+ * sans que rien ne le signale.
  */
 const MENU_STYLE = `Style imposé — cuisine MÉDITERRANÉENNE et repas SIMPLES :
 - Chaque ligne doit être un PLAT RÉEL, qu'on pourrait nommer dans une conversation ordinaire et retrouver dans un livre de cuisine. Un assemblage d'aliments corrects n'est pas un plat : « salade de fromage cottage » n'existe pas, même si la salade et le cottage sont tous deux excellents. Dans le doute, choisis le plat le plus banal qui respecte les cibles.
@@ -196,6 +201,8 @@ const MENU_STYLE = `Style imposé — cuisine MÉDITERRANÉENNE et repas SIMPLES
 - Les fibres viennent naturellement de cette cuisine (légumineuses, légumes, grains entiers, fruits). N'empile PAS graines, son ou poudres pour gonfler un total.
 - La SOURCE DE PROTÉINES de chaque repas porte TOUJOURS une quantité : « yogourt grec 0 % (¾ tasse) », « saumon (1 filet, 150 g) », « 2 œufs ». C'est elle qui décide si la cible est atteinte — sans chiffre, la ligne ne sert à rien.
 - Pour le reste, portions concrètes et approximatives (« 1 tasse », « une poignée »), jamais de grammes au gramme près.
+- Quand une contrainte rend la cible de protéines d'un repas hors d'atteinte — un déjeuner SANS CUISSON de 15 minutes n'atteindra pas 55 g avec une portion ordinaire — ne renonce PAS et ne triche pas non plus : prends la source la plus dense que les contraintes autorisent, sers-en une portion franchement généreuse, et ajoute-lui une deuxième source du même style (yogourt grec ET fromage cottage, œufs cuits durs la veille, supplément protéiné s'il en existe un). S'en approcher vaut mieux qu'une portion conventionnelle qui laisse la journée loin du compte.
+- SUPPLÉMENT PROTÉINÉ (whey, caséine, isolat) : s'il en est fourni un, le client le prend TOUS LES JOURS. Fais-le apparaître dans CHAQUE journée, jamais une seule fois dans la semaine, et toujours au MÊME repas. Écris-le entre parenthèses à la fin de la ligne : « Déjeuner : yogourt grec 0 % (¾ tasse), petits fruits, amandes (+ 1 mesure de protéine whey) », et compte-le dans la cible de protéines de ce repas. Si son moment de prise ne correspond à aucune ligne de la structure — « après l'entraînement » alors que la journée n'a que trois repas — rattache-le au repas le plus proche de ce moment. N'en invente AUCUN, ne change pas la dose, et n'ajoute JAMAIS de vitamine, minéral ou autre supplément non protéiné à une ligne de repas : ils ont leur propre section.
 - Une ligne par repas, format « Repas : aliments ». SANS puce et SANS Markdown (pas de #, *, tableaux, émojis). Aucun total de calories, de macros ou de fibres.
 
 Exemple d'une journée bien faite :
@@ -224,7 +231,6 @@ Règles :
 - Les journées 1 à 5 sont des journées de SEMAINE, les journées 6 et 7 des journées de FIN DE SEMAINE. Respecte les contraintes propres à chacune : ce qui est trop long à préparer en semaine ne doit pas y apparaître.
 - Chaque journée suit la STRUCTURE EXACTE donnée dans le message : une ligne par élément, dans l'ordre, une seule phrase chacune. N'ajoute AUCUN repas absent de cette liste — pas de collation si elle n'y figure pas, pas de déjeuner si la journée commence au dîner.
 - Ne mets PAS d'en-tête « Journée N » : la numérotation est ajoutée par l'application.
-- Si un supplément PROTÉINÉ est fourni (whey, caséine, isolat), intègre-le au repas correspondant à son moment de prise, entre parenthèses à la fin de la ligne : « Déjeuner : yogourt grec 0 % (¾ tasse), petits fruits, amandes (+ 1 mesure de protéine whey) », et compte-le dans la cible de protéines de ce repas. N'en invente AUCUN, ne change pas la dose, et n'ajoute JAMAIS de vitamine, minéral ou autre supplément non protéiné à une ligne de repas — ils ont leur propre section.
 - Les listes d'aliments à privilégier sont une PALETTE où puiser, pas une liste à caser. Rien ne t'oblige à utiliser chaque élément : si un aliment ne s'intègre pas naturellement à un repas, ne l'y mets pas — il servira ailleurs dans la semaine, ou pas du tout. Si une liste est « non précisés », choisis librement dans le style méditerranéen.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter. N'invente aucune allergie ni restriction non fournie.
 - N'ajoute AUCUNE mention finale : l'application l'ajoute automatiquement.`
@@ -322,7 +328,7 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
   if (typeof p.proteinG === 'number') macros.push(`${Math.round(p.proteinG)} g de protéines`)
   if (typeof p.fatG === 'number') macros.push(`${Math.round(p.fatG)} g de lipides`)
   if (typeof p.carbsG === 'number') macros.push(`${Math.round(p.carbsG)} g de glucides nets (hors fibres)`)
-  const clean = (s?: string) => (s ?? '').trim().replace(/\n/g, ', ') || 'non précisés'
+  const clean = (s?: string) => listeLisible(s) || 'non précisés'
   const fiberLine =
     typeof p.fiberG === 'number'
       ? `Cible de fibres : environ ${Math.round(p.fiberG)} g/jour — construis des journées RICHES EN FIBRES pour t'en approcher (sans écrire de total de fibres).`
