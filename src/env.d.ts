@@ -676,6 +676,11 @@ interface Window {
       copyNutritionPrompt(
         payload: Parameters<Window['api']['ai']['generateNutrition']>[0]
       ): Promise<{ ok: boolean; chars?: number; error?: string; code?: string }>
+      /**
+       * Ouvre un fichier de menu et rend son TEXTE BRUT — la relecture se fait
+       * côté renderer. `null` si Marie annule la sélection.
+       */
+      readMenuFile(): Promise<{ fileName: string; texte: string } | null>
       /** Propose le moment de prise recommandé pour un supplément (nom → moment court). */
       supplementTiming(name: string): Promise<{ ok: boolean; timing?: string; error?: string; code?: string }>
       painSuggestions(payload: {

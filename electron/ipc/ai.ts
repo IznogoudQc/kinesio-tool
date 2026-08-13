@@ -1,4 +1,6 @@
-import { clipboard, ipcMain } from 'electron'
+import { readFile } from 'node:fs/promises'
+import { basename } from 'node:path'
+import { clipboard, dialog, ipcMain } from 'electron'
 import keytar from 'keytar'
 import { z } from 'zod'
 import { listeLisible } from '../../src/lib/nutrition-lists'
@@ -643,6 +645,23 @@ export function registerAIHandlers(): void {
     ].join('\n')
     clipboard.writeText(texte)
     return { ok: true, chars: texte.length }
+  })
+
+  // ── Le chemin de retour : relire un menu produit ailleurs ──────────────────
+  // On rend le TEXTE BRUT ; c'est le renderer qui le relit, avec le même code
+  // que pour un menu collé à la main. Une seule relecture, donc un seul
+  // comportement à tester.
+  ipcMain.handle('ai:read-menu-file', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Importer un menu',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Menu (JSON ou texte)', extensions: ['json', 'txt', 'md'] },
+        { name: 'Tous les fichiers', extensions: ['*'] }
+      ]
+    })
+    if (canceled || filePaths.length === 0) return null
+    return { fileName: basename(filePaths[0]), texte: await readFile(filePaths[0], 'utf-8') }
   })
 
   // ── Moment de prise recommandé pour un supplément (bibliothèque) ────────────

@@ -194,6 +194,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('ai:generate-nutrition', payload),
     copyNutritionPrompt: (payload: unknown): Promise<{ ok: boolean; chars?: number; error?: string; code?: string }> =>
       ipcRenderer.invoke('ai:nutrition-prompt', payload),
+    readMenuFile: (): Promise<{ fileName: string; texte: string } | null> =>
+      ipcRenderer.invoke('ai:read-menu-file'),
     supplementTiming: (name: string): Promise<{ ok: boolean; timing?: string; error?: string; code?: string }> =>
       ipcRenderer.invoke('ai:supplement-timing', { name }),
     painSuggestions: (payload: {

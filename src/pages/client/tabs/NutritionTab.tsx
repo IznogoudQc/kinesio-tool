@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardCopy, ClipboardList, Droplet, ExternalLink, Heart, Mail, MessageSquareQuote, Pill, RefreshCw, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
+import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardCopy, ClipboardList, Droplet, ExternalLink, FileInput, Heart, Mail, MessageSquareQuote, Pill, RefreshCw, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
@@ -21,6 +21,7 @@ import {
 } from '../../../lib/menu-lines'
 import { etiquetteMacro, type MacroMisEnAvant } from '../../../lib/food-macros'
 import { cleListe, elementsListe } from '../../../lib/nutrition-lists'
+import { importerMenu } from '../../../lib/menu-import'
 import {
   SUGGESTIONS_PROTEINES,
   SUGGESTIONS_GLUCIDES,
@@ -419,6 +420,11 @@ export function NutritionTab() {
    *  Marie, ne se perdent pas sur un clic mal placé. */
   const [confirmeEffacer, setConfirmeEffacer] = useState(false)
   const [promptCopie, setPromptCopie] = useState(false)
+  const [importOuvert, setImportOuvert] = useState(false)
+  const [importTexte, setImportTexte] = useState('')
+  const [importSource, setImportSource] = useState<string | null>(null)
+  const [importErreur, setImportErreur] = useState<string | null>(null)
+  const [importAvis, setImportAvis] = useState<string[]>([])
   /**
    * Protéines estimées par journée — outil de contrôle pour Marie.
    *
@@ -799,6 +805,41 @@ export function NutritionTab() {
     } catch (err) {
       setAiError(aiErrorMessage(err))
     }
+  }
+
+  /** Ouvre le dialogue d'import, remis à zéro. */
+  function ouvrirImport() {
+    setImportTexte('')
+    setImportSource(null)
+    setImportErreur(null)
+    setImportAvis([])
+    setImportOuvert(true)
+  }
+
+  /** Charge un fichier dans la zone de texte — la relecture reste la même. */
+  async function chargerFichierMenu() {
+    setImportErreur(null)
+    const lu = await window.api.ai.readMenuFile()
+    if (!lu) return
+    setImportTexte(lu.texte)
+    setImportSource(lu.fileName)
+  }
+
+  /**
+   * Relit le menu collé ou chargé et remplace les sept journées.
+   *
+   * Rien n'est écrit tant que la relecture n'a pas abouti : un texte illisible
+   * laisse le menu existant intact.
+   */
+  function validerImport() {
+    const res = importerMenu(importTexte, MENU_NB_JOURS, structure.length)
+    if (!res.ok) {
+      setImportErreur(res.erreur)
+      return
+    }
+    setMenuJours(res.menu.journees)
+    setImportAvis(res.menu.avertissements)
+    setImportOuvert(false)
   }
 
   /** IA : idées de menu (une semaine) selon les macros + aliments. */
@@ -1743,6 +1784,16 @@ export function NutritionTab() {
             <ClipboardCopy size={15} />
             {promptCopie ? 'Copié' : 'Copier le prompt'}
           </button>
+          <button
+            type="button"
+            onClick={ouvrirImport}
+            disabled={aiBusy !== null || reprise !== null}
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-cream-dark text-marine/60 text-sm hover:border-marine/30 hover:text-marine transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="Reprendre un menu produit ailleurs — colle la réponse ou choisis un fichier"
+          >
+            <FileInput size={15} />
+            Importer un menu
+          </button>
           {menuJours.some(j => j.trim()) && (
             <button
               type="button"
@@ -1784,6 +1835,16 @@ export function NutritionTab() {
             </span>
           )}
         </div>
+        {importAvis.length > 0 && (
+          <div className="mb-3 rounded-md border border-gold/40 bg-gold/5 px-3 py-2">
+            <p className="text-marine/70 text-sm font-medium mb-1">Menu importé — à vérifier :</p>
+            <ul className="text-marine/60 text-sm list-disc pl-5 space-y-0.5">
+              {importAvis.map(a => (
+                <li key={a}>{a}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-4">
           {menuJours.map((jour, i) => {
             const occupe = aiBusy !== null || reprise !== null
@@ -1904,6 +1965,71 @@ export function NutritionTab() {
           </button>
         </div>
       </div>
+
+      {importOuvert && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-6">
+          <div className="bg-cream rounded-2xl p-6 w-[720px] max-w-[92vw] shadow-2xl border border-cream-dark">
+            <h3 className="text-marine text-lg font-semibold mb-1">Importer un menu</h3>
+            <p className="text-marine/60 text-sm mb-4">
+              Colle ici la réponse obtenue ailleurs, ou choisis le fichier. Les {MENU_NB_JOURS} journées
+              ci-dessous seront remplacées.
+            </p>
+
+            {menuJours.some(j => j.trim()) && (
+              <p className="mb-3 rounded-md border border-gold/40 bg-gold/5 px-3 py-2 text-marine/70 text-sm">
+                Un menu est déjà écrit pour ce client — l’import le remplacera.
+              </p>
+            )}
+
+            <textarea
+              value={importTexte}
+              onChange={e => {
+                setImportTexte(e.target.value)
+                setImportErreur(null)
+              }}
+              rows={10}
+              spellCheck={false}
+              placeholder={'{ "journees": [ { "lignes": ["Déjeuner : …", "Dîner : …", "Souper : …"] } ] }'}
+              className="w-full rounded-md border border-cream-dark bg-white/60 px-3 py-2 text-marine text-sm font-mono resize-y focus:outline-none focus:border-gold"
+            />
+
+            {importSource && (
+              <p className="mt-1.5 text-marine/50 text-xs">Chargé depuis {importSource}</p>
+            )}
+            {importErreur && (
+              <p className="mt-2 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-red-700 text-sm">
+                {importErreur}
+              </p>
+            )}
+
+            <div className="mt-4 flex items-center gap-3 flex-wrap">
+              <button
+                type="button"
+                onClick={validerImport}
+                disabled={!importTexte.trim()}
+                className="px-4 py-2 rounded-md bg-gold text-marine font-semibold text-sm hover:bg-gold-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Importer
+              </button>
+              <button
+                type="button"
+                onClick={chargerFichierMenu}
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-cream-dark text-marine/60 text-sm hover:border-marine/30 hover:text-marine transition-colors"
+              >
+                <FileInput size={15} />
+                Choisir un fichier…
+              </button>
+              <button
+                type="button"
+                onClick={() => setImportOuvert(false)}
+                className="px-3.5 py-2 rounded-md text-marine/50 text-sm hover:text-marine transition-colors"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
