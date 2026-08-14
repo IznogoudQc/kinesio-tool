@@ -37,7 +37,7 @@ test('un aliment ajouté par Marie n’invente pas de valeur', () => {
 
 test('l’étiquette met en avant le macro de sa colonne', () => {
   assert.equal(etiquetteMacro('Poulet, dinde', 'p'), '≈ 31 g P')
-  assert.equal(etiquetteMacro('Riz brun', 'g'), '≈ 23 g G')
+  assert.equal(etiquetteMacro('Riz brun', 'g'), '≈ 24 g G')
   assert.equal(etiquetteMacro('Huile d’olive', 'l'), '≈ 100 g L')
 })
 
@@ -58,9 +58,12 @@ test('chaque aliment est cohérent avec la colonne qui le propose', () => {
     const m = macrosDe(a)!
     assert.ok(m.p >= 9, `« ${a} » proposé en protéines mais n'en contient que ${m.p} g`)
   }
+  // Seuil à 9 et non 12 depuis le passage aux glucides NETS : le gruau cuit
+  // tombe à 10 g nets et les fruits frais à 11, sans cesser d'être des sources
+  // de glucides. Le seuil sert à attraper une faute de frappe, pas à trier.
   for (const a of SUGGESTIONS_GLUCIDES) {
     const m = macrosDe(a)!
-    assert.ok(m.g >= 12, `« ${a} » proposé en glucides mais n'en contient que ${m.g} g`)
+    assert.ok(m.g >= 9, `« ${a} » proposé en glucides mais n'en contient que ${m.g} g`)
   }
   for (const a of SUGGESTIONS_LIPIDES) {
     const m = macrosDe(a)!
@@ -100,6 +103,14 @@ test('une table passée en argument remplace celle du code', () => {
   assert.equal(macrosDe('Yogourt grec', perso)?.p, 12)
   assert.equal(etiquetteMacro('Yogourt grec', 'p', perso), '≈ 12 g P')
   assert.equal(macrosDe('Poulet, dinde', perso), null, 'la table fournie fait foi')
+})
+
+test('les glucides sont NETS — les aliments très fibreux sont bas', () => {
+  // Verrouille la conversion du 2026-08-13. En totaux, ces trois-là affichaient
+  // 29, 9 et 21 g : des chiffres incomparables à une cible exprimée en nets.
+  assert.equal(macrosDe('Graines de lin moulues')!.g, 2, 'lin : 29 g totaux, 27 de fibres')
+  assert.equal(macrosDe('Avocat')!.g, 2, 'avocat : 8,5 g totaux, 6,7 de fibres')
+  assert.equal(macrosDe('Tahini')!.g, 12, 'tahini : 21 g totaux, 9,3 de fibres')
 })
 
 test('les valeurs sont des entiers — pas de fausse précision', () => {

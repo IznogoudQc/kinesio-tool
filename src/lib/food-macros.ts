@@ -13,9 +13,15 @@
  * D'où l'affichage « ≈ » partout et le pas de 1 g — donner une décimale
  * suggérerait une précision que la catégorie n'a pas.
  *
- * Ordres de grandeur d'après le Fichier canadien sur les éléments nutritifs
- * (Santé Canada) et l'USDA FoodData Central, portions cuites quand ça a du sens
- * (riz, pâtes, légumineuses) — c'est ainsi qu'on les mange.
+ * Ordres de grandeur d'après l'USDA FoodData Central, portions cuites quand ça
+ * a du sens (riz, pâtes, légumineuses) — c'est ainsi qu'on les mange. Les 31
+ * entrées ont été recoupées une à une le 2026-08-13 ; les catégories qui
+ * couvrent deux aliments (« Poisson blanc (morue, tilapia) ») portent leur
+ * moyenne.
+ *
+ * ⚠️ La colonne des glucides est en **NETS**, fibres déduites — voir
+ * `MacrosPour100g`. Reprendre une valeur dans une table de composition ordinaire
+ * suppose donc de soustraire les fibres avant de la saisir.
  *
  * ⚠️ Sert à AIDER MARIE à juger une portion, jamais à calculer l'apport d'un
  * client : ce calcul relève de la nutritionniste (voir la note « champ de
@@ -25,7 +31,15 @@
 export interface MacrosPour100g {
   /** Protéines (g). */
   p: number
-  /** Glucides (g). */
+  /**
+   * Glucides **NETS** (g) — fibres déduites.
+   *
+   * Nets et non totaux, pour dire la même chose que partout ailleurs dans
+   * l'app : les cibles du client et le prompt des menus parlent de « glucides
+   * nets (hors fibres) ». En totaux, les graines de lin annonçaient 29 g au
+   * lieu de 1,6 et l'avocat 9 au lieu de 1,8 — incomparables à la cible
+   * affichée juste à côté.
+   */
   g: number
   /** Lipides (g). */
   l: number
@@ -40,43 +54,53 @@ export interface MacrosPour100g {
  */
 export const MACROS_PAR_100G: Record<string, MacrosPour100g> = {
   // ── Protéines ─────────────────────────────────────────────────────────────
-  'Poisson blanc (morue, tilapia)': { p: 22, g: 0, l: 1 },
+  // Morue 18 g de protéines, tilapia 23 : la catégorie vaut leur moyenne.
+  'Poisson blanc (morue, tilapia)': { p: 20, g: 0, l: 1 },
   'Saumon, truite': { p: 22, g: 0, l: 12 },
   'Poulet, dinde': { p: 31, g: 0, l: 4 },
   'Œufs': { p: 13, g: 1, l: 10 },
-  'Légumineuses (pois chiches, lentilles)': { p: 9, g: 20, l: 2 },
+  // Lentilles 12 g nets, pois chiches 20 : moyenne 16.
+  'Légumineuses (pois chiches, lentilles)': { p: 9, g: 16, l: 2 },
   'Yogourt grec': { p: 10, g: 4, l: 0 },
-  'Tofu, tempeh': { p: 15, g: 4, l: 8 },
-  'Fromage feta, ricotta': { p: 12, g: 4, l: 18 },
+  // Tofu ferme 17 g de protéines, tempeh 20 — la valeur précédente (15) était
+  // sous les deux.
+  'Tofu, tempeh': { p: 19, g: 4, l: 10 },
+  'Fromage feta, ricotta': { p: 13, g: 4, l: 17 },
   'Thon en conserve': { p: 25, g: 0, l: 1 },
   'Crevettes': { p: 24, g: 0, l: 1 },
   // Pas dans les propositions par défaut, mais assez courant dans les listes de
   // Marie pour mériter sa composition : sans entrée, sa pastille reste muette.
-  'Fromage cottage': { p: 11, g: 4, l: 2 },
+  'Fromage cottage': { p: 11, g: 5, l: 2 },
 
   // ── Glucides ──────────────────────────────────────────────────────────────
-  'Riz brun': { p: 3, g: 23, l: 1 },
-  'Quinoa': { p: 4, g: 21, l: 2 },
-  'Pâtes de blé entier': { p: 5, g: 27, l: 1 },
-  'Pain de blé entier, pita': { p: 9, g: 43, l: 3 },
-  'Patate douce': { p: 2, g: 20, l: 0 },
-  'Couscous de blé entier': { p: 4, g: 23, l: 0 },
-  'Avoine (gruau)': { p: 2, g: 12, l: 1 },
-  'Fruits frais': { p: 1, g: 14, l: 0 },
-  'Légumineuses': { p: 9, g: 20, l: 2 },
+  'Riz brun': { p: 3, g: 24, l: 1 },
+  'Quinoa': { p: 4, g: 18, l: 2 },
+  'Pâtes de blé entier': { p: 5, g: 26, l: 1 },
+  // Pain de blé entier 12,7 g de protéines, pita 9,8 : la valeur précédente (9)
+  // était sous les deux.
+  'Pain de blé entier, pita': { p: 11, g: 40, l: 3 },
+  'Patate douce': { p: 2, g: 17, l: 0 },
+  'Couscous de blé entier': { p: 4, g: 20, l: 0 },
+  'Avoine (gruau)': { p: 2, g: 10, l: 1 },
+  'Fruits frais': { p: 1, g: 11, l: 0 },
+  'Légumineuses': { p: 9, g: 16, l: 2 },
+  // Orge 24 g nets, boulgour 14 : moyenne 19 — la même valeur qu'avant, mais
+  // qui voulait dire « totaux » et se trouvait fausse à ce titre.
   'Orge, boulgour': { p: 3, g: 19, l: 0 },
 
   // ── Lipides ───────────────────────────────────────────────────────────────
   'Huile d’olive': { p: 0, g: 0, l: 100 },
-  'Avocat': { p: 2, g: 9, l: 15 },
-  'Amandes, noix de Grenoble': { p: 18, g: 15, l: 55 },
-  'Graines de tournesol, de citrouille': { p: 23, g: 20, l: 49 },
-  'Olives': { p: 1, g: 6, l: 11 },
+  // 8,5 g de glucides totaux mais 6,7 g de fibres : presque rien de net.
+  'Avocat': { p: 2, g: 2, l: 15 },
+  'Amandes, noix de Grenoble': { p: 18, g: 8, l: 56 },
+  'Graines de tournesol, de citrouille': { p: 25, g: 10, l: 50 },
+  'Olives': { p: 1, g: 4, l: 11 },
   'Poissons gras (saumon, sardines)': { p: 22, g: 0, l: 12 },
-  'Beurre d’arachide naturel': { p: 25, g: 20, l: 50 },
-  'Tahini': { p: 17, g: 21, l: 54 },
+  'Beurre d’arachide naturel': { p: 23, g: 15, l: 53 },
+  'Tahini': { p: 17, g: 12, l: 53 },
   'Fromage feta': { p: 14, g: 4, l: 21 },
-  'Graines de lin moulues': { p: 18, g: 29, l: 42 }
+  // Le cas extrême : 29 g de glucides totaux, dont 27 de fibres.
+  'Graines de lin moulues': { p: 18, g: 2, l: 42 }
 }
 
 /** Le macro mis en avant selon la colonne où l'aliment est proposé. */
