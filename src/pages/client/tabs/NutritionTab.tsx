@@ -584,13 +584,6 @@ export function NutritionTab() {
    * depuis le texte du menu, et n'ont donc rien à mémoriser.
    */
   const [estimations, setEstimations] = useState<{ repas: EstimationRepas[] }[] | null>(null)
-  /**
-   * Le tableau de contrôle est-il visible.
-   *
-   * Séparé de `estimations` pour que les protéines — calculées, donc immédiates
-   * — s'affichent dès le clic, sans attendre l'aller-retour avec l'IA.
-   */
-  const [controleAffiche, setControleAffiche] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
 
   // Modèles de protocole réutilisables.
@@ -938,7 +931,6 @@ export function NutritionTab() {
    */
   async function verifierMacros() {
     setAiError(null)
-    setControleAffiche(true)
     setReprise('verif')
     try {
       const r = await aiAdviceService.verifierMacros(menuJours)
@@ -2003,6 +1995,14 @@ export function NutritionTab() {
               {reprise === 'verif' ? 'Estimation…' : 'Vérifier les macros'}
             </button>
           )}
+          {/* Trois colonnes du tableau restent à « — » tant que l'IA n'a pas
+              estimé. Sans ce mot, les tirets ressemblent à une panne alors
+              qu'ils attendent un clic. */}
+          {menuJours.some(j => j.trim()) && estimations === null && reprise !== 'verif' && (
+            <span className="text-marine/50 text-xs">
+              Protéines calculées ci-dessous ; « Vérifier les macros » remplit les colonnes estimées.
+            </span>
+          )}
           {liveMacros && (
             <span className="text-marine/40 text-xs">
               Basé sur ≈ {liveMacros.targetKcal.toLocaleString('fr-CA')} kcal · {liveMacros.proteinG} P / {liveMacros.fatG} L / {liveMacros.carbsG} G
@@ -2047,14 +2047,12 @@ export function NutritionTab() {
                   placeholder={`Journée ${i + 1} — un repas par ligne. Ex. Déjeuner : ...&#10;Dîner : ...&#10;Souper : ...&#10;Collations : ...`}
                   className={fieldClass}
                 />
-                {controleAffiche && (
-                  <ControleJournee
+                <ControleJournee
                     jour={jour}
                     estimation={estimations?.[i]}
-                    cibleProteinesJour={liveMacros?.proteinG}
-                    table={tableMacros}
-                  />
-                )}
+                  cibleProteinesJour={liveMacros?.proteinG}
+                  table={tableMacros}
+                />
                 {/* Refaire un seul repas : le reste de la journée, y compris ce
                     que Marie a retouché, n'est pas régénéré. */}
                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">

@@ -35,7 +35,11 @@ import { MACROS_PAR_100G, type MacrosPour100g, type TableMacros } from './food-m
  * L'ordre compte : le premier motif qui correspond gagne. Les plus spécifiques
  * d'abord — « fromage cottage » avant « fromage ».
  */
-const SYNONYMES: { motif: RegExp; aliment: string }[] = [
+const SYNONYMES: { motif: RegExp; aliment: string; prioritaire?: boolean }[] = [
+  // `prioritaire` : gagne quel que soit l'ordre des mots. « hauts de cuisse de
+  // poulet » contient « poulet », qui apparaît APRÈS — sans priorité, la règle
+  // de proximité choisirait la poitrine et surestimerait de 6 g aux 100 g.
+  { motif: /haut(s)? de cuisse|cuisse(s)? de poulet|pilon/i, aliment: 'Poulet, haut de cuisse', prioritaire: true },
   { motif: /cottage/i, aliment: 'Fromage cottage' },
   { motif: /feta|ricotta/i, aliment: 'Fromage feta, ricotta' },
   { motif: /yogourt|yaourt/i, aliment: 'Yogourt grec' },
@@ -109,13 +113,21 @@ function normalise(s: string): string {
  */
 function alimentAvant(texte: string, positionDuPoids: number): string | null {
   const avant = normalise(texte.slice(0, positionDuPoids))
-  let gagnant: { aliment: string; index: number } | null = null
-  for (const { motif, aliment } of SYNONYMES) {
+  let gagnant: { aliment: string; index: number; prioritaire: boolean } | null = null
+  for (const { motif, aliment, prioritaire } of SYNONYMES) {
     const global = new RegExp(motif.source, 'gi')
     let m: RegExpExecArray | null
     let dernier = -1
     while ((m = global.exec(avant)) !== null) dernier = m.index
-    if (dernier > (gagnant?.index ?? -1)) gagnant = { aliment, index: dernier }
+    if (dernier === -1) continue
+    // Une correspondance prioritaire l'emporte sur une ordinaire, où qu'elle
+    // soit ; entre égales, c'est la plus proche du poids qui gagne.
+    const bat = gagnant === null
+      ? true
+      : !!prioritaire !== gagnant.prioritaire
+        ? !!prioritaire
+        : dernier > gagnant.index
+    if (bat) gagnant = { aliment, index: dernier, prioritaire: !!prioritaire }
   }
   return gagnant ? gagnant.aliment : null
 }

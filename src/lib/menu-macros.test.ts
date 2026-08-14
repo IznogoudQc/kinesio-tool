@@ -32,6 +32,25 @@ test('c’est l’aliment le PLUS PROCHE du poids qui est pesé', () => {
   assert.equal(r.totalG, 56)
 })
 
+test('le haut de cuisse n’est pas compté comme de la poitrine', () => {
+  // « hauts de cuisse de poulet » contient « poulet », et ce mot arrive APRÈS :
+  // la règle de proximité seule choisirait la poitrine (31 g) au lieu du haut
+  // de cuisse (25 g) — 11 g de trop sur une portion de 180 g.
+  const r = proteinesDeLigne(
+    'Souper : hauts de cuisse de poulet au citron (180 g), patate douce rôtie'
+  )
+  assert.equal(r.portions[0].aliment, 'Poulet, haut de cuisse')
+  assert.equal(r.totalG, 45)
+})
+
+test('la poitrine reste de la poitrine', () => {
+  // L'autre moitié : la règle prioritaire ne doit pas déteindre sur le poulet
+  // ordinaire, sinon toutes les salades perdraient 6 g aux 100 g.
+  const r = proteinesDeLigne('Dîner : salade de poulet grillé (180 g), quinoa')
+  assert.equal(r.portions[0].aliment, 'Poulet, dinde')
+  assert.equal(r.totalG, 56)
+})
+
 test('plusieurs aliments pesés sur la même ligne', () => {
   const r = proteinesDeLigne(
     'Déjeuner : fromage cottage (250 g) et yogourt grec 0 % (150 g), petits fruits'

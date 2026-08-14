@@ -58,6 +58,9 @@ export const MACROS_PAR_100G: Record<string, MacrosPour100g> = {
   'Poisson blanc (morue, tilapia)': { p: 20, g: 0, l: 1 },
   'Saumon, truite': { p: 22, g: 0, l: 12 },
   'Poulet, dinde': { p: 31, g: 0, l: 4 },
+  // La poitrine et le haut de cuisse ne se valent pas — 31 g contre 25 aux
+  // 100 g. Sur les 180 g d'un souper, l'écart atteint 11 g de protéines.
+  'Poulet, haut de cuisse': { p: 25, g: 0, l: 8 },
   'Œufs': { p: 13, g: 1, l: 10 },
   // Lentilles 12 g nets, pois chiches 20 : moyenne 16.
   'Légumineuses (pois chiches, lentilles)': { p: 9, g: 16, l: 2 },
