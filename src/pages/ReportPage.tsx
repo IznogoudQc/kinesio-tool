@@ -13,6 +13,9 @@ import {
 import { Trophy, Target } from 'lucide-react'
 import { clientsService } from '../services/clients'
 import { bilansService } from '../services/bilans'
+import { serieComposition, serieGras } from '../lib/trend-series'
+import { ScoreTrend } from '../components/ScoreTrend'
+import { BodyFatTrend } from '../components/BodyFatTrend'
 import { settingsService } from '../services/settings'
 import { formatBilanDate, formatBilanMonth } from './client/bilanFields'
 import { CategoryRangeBar } from '../components/CategoryRangeBar'
@@ -1521,6 +1524,63 @@ function CompositionCpaflaPdf({ latest, computed, sex }: { latest: Bilan; comput
   )
 }
 
+/**
+ * Les deux courbes de tendance du tableau de bord, portées dans le PDF.
+ *
+ * Elles y manquaient : le PDF traçait le % de gras avec sa courbe générique,
+ * sans les zones de risque, et n'avait aucune courbe du score de composition.
+ * Une note isolée ne dit pas si elle monte ou descend — c'est la trajectoire
+ * qui intéresse la personne qui se relit.
+ *
+ * Les séries viennent du même module que le tableau de bord et le document
+ * HTML : trois copies auraient fini par raconter trois histoires.
+ */
+function CompositionTendances({
+  bilans,
+  profile,
+  sex,
+  hidden
+}: {
+  bilans: Bilan[]
+  profile: BilanProfile
+  sex: 'F' | 'M' | null
+  hidden: Set<ReportSectionKey>
+}) {
+  const gras = serieGras(bilans)
+  const compo = serieComposition(bilans, b => computeBilan(b.data, profile))
+  const montreCompo = isSectionVisible('compositionTrend', hidden) && compo.length >= 2
+  const montreGras = isSectionVisible('pourcentageGras', hidden) && gras.length >= 2 && sex
+  if (!montreCompo && !montreGras) return null
+
+  const titre = {
+    fontSize: '8.5pt',
+    textTransform: 'uppercase' as const,
+    letterSpacing: '0.08em',
+    color: INK_SOFT,
+    marginBottom: '2mm',
+    breakAfter: 'avoid' as const
+  }
+  return (
+    <>
+      {montreCompo && (
+        <div className="break-inside-avoid" style={{ marginBottom: '6mm' }}>
+          <p style={titre}>Évolution de la composition corporelle</p>
+          <ScoreTrend
+            series={compo}
+            ariaLabel="Progression du score de composition corporelle (0 à 4) dans le temps."
+          />
+        </div>
+      )}
+      {montreGras && (
+        <div className="break-inside-avoid" style={{ marginBottom: '6mm' }}>
+          <p style={titre}>Évolution du % de gras</p>
+          <BodyFatTrend series={gras} sex={sex} />
+        </div>
+      )}
+    </>
+  )
+}
+
 function CompositionExtras({ latest, computed, sex, hidden }: { latest: Bilan; computed: BilanComputed; sex: 'F' | 'M' | null; hidden: Set<ReportSectionKey> }) {
   const d = latest.data as Record<string, unknown>
   const plis = [
@@ -1749,15 +1809,16 @@ function CompositionSection({ computed, hidden, ...props }: DomainProps & { comp
       // Pas de courbe pour l'IMC ni le tour de taille : ils sont **mentionnés, pas
       // évalués** (ADR/v0.9.44 & v0.9.46). Leur consacrer un graphique leur redonnerait
       // l'importance qu'on vient de leur retirer. Leurs valeurs restent en tête de section.
-      charts={[
-        { kind: 'line', key: 'pourcentage_gras', title: '% de gras corporel', color: MARINE },
-        { kind: 'line', key: 'poids_kg', title: 'Poids (kg)', color: GOLD }
-      ]}
+      // Le % de gras a désormais sa courbe AVEC les zones de risque juste
+      // au-dessus (`CompositionTendances`) : la ligne générique ferait doublon,
+      // en moins lisible. Le poids garde la sienne, il n'en a pas d'autre.
+      charts={[{ kind: 'line', key: 'poids_kg', title: 'Poids (kg)', color: GOLD }]}
       topExtra={
         <>
           <AnthropoLine latest={props.latest} weightUnit={props.weightUnit} />
           <CompositionCpaflaPdf latest={props.latest} computed={computed} sex={props.profile.sex} />
           <CompositionExtras latest={props.latest} computed={computed} sex={props.profile.sex} hidden={hidden} />
+          <CompositionTendances bilans={props.chrono} profile={props.profile} sex={props.profile.sex} hidden={hidden} />
         </>
       }
     />

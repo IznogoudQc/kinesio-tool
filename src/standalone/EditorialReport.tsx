@@ -46,6 +46,9 @@ import { BloodPressureBar } from '../components/BloodPressureBar'
 import { RestVsRecovery } from '../components/RestVsRecovery'
 import { isSectionVisible, parseHiddenSections } from '../lib/report-sections'
 import { libelleMoment, momentDeJournee } from '../lib/menu-prefs'
+import { serieComposition, serieGras } from '../lib/trend-series'
+import { ScoreTrend } from '../components/ScoreTrend'
+import { BodyFatTrend } from '../components/BodyFatTrend'
 import { classifyBloodPressure } from '../lib/norms/clinical'
 import { kgToLb, cmToFeetInches } from '../lib/units'
 import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
@@ -1585,6 +1588,11 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
 
   const measureProps = { age, sex: client.sex, norms }
 
+  // Mêmes séries que le tableau de bord, construites par le même module : les
+  // trois surfaces doivent raconter la même trajectoire.
+  const serieGrasTendance = serieGras(bilans)
+  const serieCompositionTendance = serieComposition(bilans, b => computeBilan(b.data, profile))
+
   return (
     /* `overflow-x-hidden` : rien ne doit faire défiler la page latéralement sur
        un téléphone — ni la frise, ni une étiquette de graphique. */
@@ -1744,6 +1752,27 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         <Measure label="Indice de masse corporelle" value={activeData.imc} unit="kg/m²" {...measureProps} previousValue={compareData?.imc} lowerIsBetter history={historyOf('imc')} />
         <Measure label="Tour de taille" value={activeData.tour_taille_cm} unit="cm" {...measureProps} previousValue={compareData?.tour_taille_cm} lowerIsBetter history={historyOf('tour_taille_cm')} />
         {!cache('pourcentageGras') && <Measure id="pourcentage-gras" label="Pourcentage de gras" value={activeData.pourcentage_gras} unit="%" test="bodyFat" {...measureProps} previousValue={compareData?.pourcentage_gras} lowerIsBetter history={historyOf('pourcentage_gras')} weightKg={typeof activeData.poids_kg === 'number' ? activeData.poids_kg : null} />}
+
+        {/* Les deux courbes du tableau de bord, désormais dans le document du
+            client : une note isolée ne dit pas si elle monte ou descend, et
+            c'est la trajectoire qui intéresse la personne qui se relit. Deux
+            points au minimum — une courbe à un point n'est pas une courbe. */}
+        {!cache('compositionTrend') && serieCompositionTendance.length >= 2 && (
+          <div className="mt-10">
+            <p className="ed-eyebrow text-gold-dark">Évolution de la composition corporelle</p>
+            <ScoreTrend
+              className="mt-3"
+              series={serieCompositionTendance}
+              ariaLabel="Progression du score de composition corporelle (0 à 4) dans le temps, avec les zones de catégories en fond."
+            />
+          </div>
+        )}
+        {!cache('pourcentageGras') && serieGrasTendance.length >= 2 && client.sex && (
+          <div className="mt-10">
+            <p className="ed-eyebrow text-gold-dark">Évolution du % de gras</p>
+            <BodyFatTrend className="mt-3" series={serieGrasTendance} sex={client.sex} />
+          </div>
+        )}
       </Section>
 
       <Section
