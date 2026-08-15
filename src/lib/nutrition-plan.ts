@@ -162,9 +162,17 @@ export function parseMenuPlan(raw: string | null | undefined): MenuPlan | null {
   return null
 }
 
-/** Sérialise pour la colonne `nutritionMenu`. `null` si aucune journée remplie. */
+/**
+ * Sérialise pour la colonne `nutritionMenu`. `null` si aucune journée remplie.
+ *
+ * Les journées vides sont CONSERVÉES à leur place, seules celles de la fin
+ * étant coupées. Leur position porte une information depuis que les journées 6
+ * et 7 sont la fin de semaine : les retirer décalait les suivantes, et une
+ * journée de weekend se retrouvait annoncée comme une journée de semaine.
+ */
 export function serializeMenuPlan(jours: string[]): string | null {
-  const clean = jours.map((j) => j.trim()).filter(Boolean)
-  if (clean.length === 0) return null
-  return JSON.stringify({ v: 2, kind: 'menu', jours: clean })
+  const propres = jours.map((j) => j.trim())
+  const dernierRempli = propres.reduce((last, j, i) => (j ? i : last), -1)
+  if (dernierRempli === -1) return null
+  return JSON.stringify({ v: 2, kind: 'menu', jours: propres.slice(0, dernierRempli + 1) })
 }

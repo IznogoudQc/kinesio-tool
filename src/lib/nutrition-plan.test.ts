@@ -52,11 +52,26 @@ test('parseMenuPlan: texte libre → null (rendu hérité)', () => {
   assert.equal(parseMenuPlan(null), null)
 })
 
-test('serialize/parse menu : journées séparées, vides ignorées', () => {
+test('serialize/parse menu : journées séparées, vides de FIN coupées', () => {
   const json = serializeMenuPlan(['Déjeuner : gruau\nSouper : saumon', '', '  '])
   assert.ok(json && json.includes('"kind":"menu"'))
   const round = parseMenuPlan(json)
   assert.deepEqual(round, { jours: ['Déjeuner : gruau\nSouper : saumon'] })
+})
+
+test('une journée vide au MILIEU garde sa place', () => {
+  // La position porte une information : les journées 6 et 7 sont la fin de
+  // semaine. Retirer un trou décalerait les suivantes, et une journée de
+  // weekend serait annoncée au client comme une journée de semaine.
+  const jours = ['J1', '', 'J3', '', '', 'J6', 'J7']
+  const round = parseMenuPlan(serializeMenuPlan(jours))
+  assert.deepEqual(round?.jours, jours)
+  assert.equal(round?.jours[5], 'J6', 'la 6e journée doit rester en 6e position')
+})
+
+test('les journées vides de fin ne gonflent pas l’enregistrement', () => {
+  const round = parseMenuPlan(serializeMenuPlan(['J1', 'J2', '', '', '', '', '']))
+  assert.deepEqual(round?.jours, ['J1', 'J2'])
 })
 
 test('serializeMenuPlan: aucune journée → null', () => {

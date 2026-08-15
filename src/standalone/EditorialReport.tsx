@@ -45,6 +45,7 @@ import { bodyFatTargetWeights } from '../lib/body-fat-risk'
 import { BloodPressureBar } from '../components/BloodPressureBar'
 import { RestVsRecovery } from '../components/RestVsRecovery'
 import { isSectionVisible, parseHiddenSections } from '../lib/report-sections'
+import { libelleMoment, momentDeJournee } from '../lib/menu-prefs'
 import { classifyBloodPressure } from '../lib/norms/clinical'
 import { kgToLb, cmToFeetInches } from '../lib/units'
 import { ProgressionChart } from '../pages/client/dashboard/ProgressionChart'
@@ -929,22 +930,37 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
         (() => {
           // Journées structurées (nouveau modèle) : une carte crème par journée,
           // libellé « Journée N » implicite, étiquette de repas en gras.
-          const structured = menuPlan?.jours.filter((j) => j.trim()) ?? null
+          // On garde l'INDEX D'ORIGINE avant de filtrer : c'est lui qui dit si
+          // la journée relève de la semaine ou de la fin de semaine. Filtrer
+          // d'abord décalerait les suivantes, et une journée de weekend
+          // s'annoncerait comme une journée de semaine.
+          const structured =
+            menuPlan?.jours.map((texte, index) => ({ texte, index })).filter((x) => x.texte.trim()) ??
+            null
           if (structured && structured.length > 0) {
             return (
               <div className="nut-menu mt-10">
                 <p className="ed-eyebrow text-gold-dark">Idées de menu</p>
                 <div className="mt-4 space-y-6">
-                  {structured.map((jour, i) => (
+                  {structured.map(({ texte: jour, index }, i) => (
                     <div
-                      key={i}
+                      key={index}
                       className={`rounded-xl bg-cream p-8 sm:p-10${i > 0 ? ' nut-menu-day' : ''}`}
                     >
                       <div className="flex items-center gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold-dark">
                           <UtensilsCrossed size={20} />
                         </span>
-                        <p className="ed-display text-2xl text-marine">Journée {i + 1}</p>
+                        <p className="ed-display text-2xl text-marine">
+                          Journée {index + 1}
+                          {/* Le client doit savoir quelles journées sont prévues
+                              pour la fin de semaine : elles supposent du temps
+                              pour cuisiner que la semaine n'a pas. */}
+                          <span className="ed-prose text-base font-normal text-marine/45">
+                            {' '}
+                            · {libelleMoment(momentDeJournee(index))}
+                          </span>
+                        </p>
                       </div>
                       <div className="mt-5 space-y-3">
                         {jour
