@@ -641,7 +641,7 @@ interface Window {
       /** Génère un plan nutrition STRUCTURÉ (suppléments par moment / menu par journée). */
       generateNutrition(payload: {
         /** `menu` = la semaine · `menu-jour` = une journée · `menu-repas` = un repas. */
-        type: 'supplements' | 'menu' | 'menu-jour' | 'menu-repas' | 'menu-verif'
+        type: 'supplements' | 'menu' | 'menu-jour' | 'menu-repas'
         kcal?: number | null
         proteinG?: number | null
         fatG?: number | null

@@ -22,7 +22,7 @@ import {
 import { etiquetteMacro, type MacroMisEnAvant } from '../../../lib/food-macros'
 import { cleListe, elementsListe } from '../../../lib/nutrition-lists'
 import { importerMenu } from '../../../lib/menu-import'
-import { proteinesDeLigne } from '../../../lib/menu-macros'
+import { macrosDeJournee, macrosDeLigne } from '../../../lib/menu-macros'
 import { MACROS_PAR_100G, type TableMacros } from '../../../lib/food-macros'
 import {
   SUGGESTIONS_PROTEINES,
@@ -31,7 +31,7 @@ import {
   SUGGESTIONS_PREF_SEMAINE,
   SUGGESTIONS_PREF_WEEKEND
 } from '../../../lib/food-suggestions'
-import { aiAdviceService, AIAdviceError, type EstimationRepas } from '../../../services/aiAdvice'
+import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
 import { nutritionTemplatesService } from '../../../services/nutritionTemplates'
 import { SendBilanModal } from '../SendBilanModal'
 import {
@@ -222,47 +222,35 @@ function nomDuRepas(ligne: string): string {
  */
 export function ControleJournee({
   jour,
-  estimation,
   cibleProteinesJour,
-  table,
-  onEstimer,
-  estimationEnCours
+  table
 }: {
   jour: string
-  estimation?: { repas: EstimationRepas[] }
   cibleProteinesJour?: number
   /** Composition à utiliser — celle ajustée dans les Paramètres. */
   table?: TableMacros
-  /** Lance l'estimation IA des trois colonnes manquantes. */
-  onEstimer?: () => void
-  estimationEnCours?: boolean
 }) {
   const lignes = lignesDeJournee(jour)
   if (lignes.length === 0) return null
 
-  // `l => proteinesDeLigne(l, table)` et non `map(proteinesDeLigne)` : `map`
-  // passe l'index en second argument, qui atterrirait dans `table`.
-  const calculs = lignes.map(l => proteinesDeLigne(l, table))
-  const totalP = calculs.reduce((t, c) => t + c.totalG, 0)
-  const est = estimation?.repas ?? []
-  /** Vrai dès qu'une estimation existe pour cette journée. */
-  const estime = est.length > 0
-  const totalKcal = est.reduce((t, e) => t + e.kcal, 0)
-  const totalG = est.reduce((t, e) => t + e.glucidesG, 0)
-  const totalL = est.reduce((t, e) => t + e.lipidesG, 0)
+  // `l => macrosDeLigne(l, table)` et non `map(macrosDeLigne)` : `map` passe
+  // l'index en second argument, qui atterrirait dans `table`.
+  const calculs = lignes.map(l => macrosDeLigne(l, table))
+  const jourTotal = macrosDeJournee(lignes, table)
 
-  const inconnus = calculs.flatMap(c => c.inconnus)
-  const hypothese = calculs.some(c => c.hypothese)
+  const inconnus = jourTotal.inconnus
+  const hypothese = jourTotal.hypothese
   const ecart =
-    cibleProteinesJour != null && Math.abs(totalP - cibleProteinesJour) > cibleProteinesJour * 0.15
+    cibleProteinesJour != null &&
+    Math.abs(jourTotal.p - cibleProteinesJour) > cibleProteinesJour * 0.15
 
   return (
     <div className="mt-1.5 rounded-md border border-cream-dark bg-white/40 px-2 py-1.5">
-      {/* Les trois colonnes estimées n'apparaissent QUE lorsqu'elles ont une
-          valeur. Affichées vides, elles posaient une question à laquelle rien
-          ne répondait à l'écran — « pourquoi je ne vois pas les autres macros »,
-          signalé le 2026-08-14. Une colonne sans donnée ne s'affiche pas ; un
-          lien juste en dessous dit comment l'obtenir.
+      {/* Les quatre colonnes sont CALCULÉES — plus aucun « ≈ », plus aucune
+          estimation à demander. Chaque repas porte un poids sur ses trois
+          sources, ce qui rend la multiplication possible ; les calories en
+          découlent par les facteurs d'Atwater et ne peuvent donc pas les
+          contredire.
 
           `pl-2.5` sur chaque colonne chiffrée : sans écart, « Déjeuner » et
           « 54 g » se collaient en « Déjeuner54 g ». */}
@@ -271,13 +259,9 @@ export function ControleJournee({
           <tr className="text-marine/40">
             <th className="text-left font-normal pb-0.5">Repas</th>
             <th className="text-right font-medium pb-0.5 pl-2.5 text-marine/60">P</th>
-            {estime && (
-              <>
-                <th className="text-right font-normal pb-0.5 pl-2.5">≈ kcal</th>
-                <th className="text-right font-normal pb-0.5 pl-2.5">≈ G</th>
-                <th className="text-right font-normal pb-0.5 pl-2.5">≈ L</th>
-              </>
-            )}
+            <th className="text-right font-normal pb-0.5 pl-2.5">G</th>
+            <th className="text-right font-normal pb-0.5 pl-2.5">L</th>
+            <th className="text-right font-normal pb-0.5 pl-2.5">kcal</th>
           </tr>
         </thead>
         <tbody>
@@ -287,48 +271,29 @@ export function ControleJournee({
               {/* Un repas dont un aliment pesé est inconnu affiche « ? » : sans
                   ça, « 0 g » se lit comme un fait alors que c'est un trou. */}
               <td className="text-right font-medium pl-2.5 text-marine/80">
-                {calculs[r].totalG} g
+                {calculs[r].p} g
                 {calculs[r].inconnus.length > 0 && (
                   <span className="text-amber-700" title="Un aliment pesé est absent de la table">
                     {' '}?
                   </span>
                 )}
               </td>
-              {estime && (
-                <>
-                  <td className="text-right pl-2.5">{est[r] ? est[r].kcal : '—'}</td>
-                  <td className="text-right pl-2.5">{est[r] ? `${est[r].glucidesG} g` : '—'}</td>
-                  <td className="text-right pl-2.5">{est[r] ? `${est[r].lipidesG} g` : '—'}</td>
-                </>
-              )}
+              <td className="text-right pl-2.5">{calculs[r].g} g</td>
+              <td className="text-right pl-2.5">{calculs[r].l} g</td>
+              <td className="text-right pl-2.5">{calculs[r].kcal}</td>
             </tr>
           ))}
           <tr className="border-t border-cream-dark text-marine/70">
             <td className="text-left pt-0.5">Journée</td>
             <td className={`text-right font-semibold pt-0.5 pl-2.5 ${ecart ? 'text-amber-700' : ''}`}>
-              {totalP} g
+              {jourTotal.p} g
             </td>
-            {estime && (
-              <>
-                <td className="text-right pt-0.5 pl-2.5">{totalKcal}</td>
-                <td className="text-right pt-0.5 pl-2.5">{totalG} g</td>
-                <td className="text-right pt-0.5 pl-2.5">{totalL} g</td>
-              </>
-            )}
+            <td className="text-right pt-0.5 pl-2.5">{jourTotal.g} g</td>
+            <td className="text-right pt-0.5 pl-2.5">{jourTotal.l} g</td>
+            <td className="text-right font-medium pt-0.5 pl-2.5">{jourTotal.kcal}</td>
           </tr>
         </tbody>
       </table>
-
-      {!estime && onEstimer && (
-        <button
-          type="button"
-          onClick={onEstimer}
-          disabled={estimationEnCours}
-          className="mt-1 text-[11px] text-gold-dark/90 hover:text-gold-dark underline decoration-dotted underline-offset-2 transition-colors disabled:opacity-50 disabled:no-underline"
-        >
-          {estimationEnCours ? 'Estimation en cours…' : '+ estimer les calories, glucides et lipides'}
-        </button>
-      )}
 
       {cibleProteinesJour != null && (
         <p className="mt-1 text-marine/40 text-[11px]">
@@ -339,6 +304,16 @@ export function ControleJournee({
       {inconnus.length > 0 && (
         <p className="mt-1 text-marine/45 text-[11px]">
           Non compté, aliment absent de la table : {inconnus.join(' · ')}
+        </p>
+      )}
+      {/* Un menu écrit avant le passage aux trois poids nomme le quinoa et
+          l'huile sans quantité : ils sortent des totaux, qui s'effondrent sans
+          rien dire. Le signalement transforme un chiffre faux en chiffre
+          incomplet — et dit quoi faire pour le compléter. */}
+      {jourTotal.nonPeses.length > 0 && (
+        <p className="mt-1 text-amber-700/90 text-[11px]">
+          Sans quantité, donc non compté : {jourTotal.nonPeses.join(' · ')}. Ajoutez un poids, ou
+          refaites la journée pour que l’IA les chiffre.
         </p>
       )}
       {hypothese && (
@@ -546,13 +521,8 @@ export function NutritionTab() {
     return Array.from({ length: MENU_NB_JOURS }, (_, i) => (i === 0 ? client.nutritionMenu ?? '' : ''))
   })
   const setMenuJour = (i: number, v: string) => {
-    // Toute modification périme l'ESTIMATION : un chiffre à côté d'un texte
-    // qu'il ne décrit plus est pire que pas de chiffre. Les colonnes estimées
-    // repassent donc à « — » jusqu'à une nouvelle vérification.
-    //
-    // Le tableau, lui, reste affiché : les protéines sont recalculées à chaque
-    // frappe et suivent le texte sans jamais se périmer.
-    setEstimations(null)
+    // Rien à invalider : les quatre colonnes sont recalculées à chaque frappe
+    // et suivent le texte sans jamais se périmer.
     setMenuJours(js => js.map((j, k) => (k === i ? v : j)))
   }
 
@@ -613,12 +583,6 @@ export function NutritionTab() {
    * relève de la nutritionniste. Effacées dès qu'une journée change, pour ne
    * jamais afficher un chiffre à côté d'un texte qu'il ne décrit plus.
    */
-  /**
-   * Estimations de l'IA, par journée puis par repas — calories, glucides,
-   * lipides. Les protéines ne sont PAS ici : elles se calculent à la volée
-   * depuis le texte du menu, et n'ont donc rien à mémoriser.
-   */
-  const [estimations, setEstimations] = useState<{ repas: EstimationRepas[] }[] | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
 
   // Modèles de protocole réutilisables.
@@ -948,28 +912,6 @@ export function NutritionTab() {
         repas
       })
       if (plan.ligne.trim()) setMenuJour(i, remplacerRepas(menuJours[i] ?? '', repas, plan.ligne, structure))
-    } catch (err) {
-      setAiError(aiErrorMessage(err))
-    } finally {
-      setReprise(null)
-    }
-  }
-
-  /**
-   * IA : estime calories, glucides et lipides de chaque repas, pour contrôle.
-   *
-   * Les protéines ne passent pas par là — elles sont calculées depuis les poids
-   * écrits, ce qui donne un chiffre stable et recoupable.
-   *
-   * Le résultat reste en mémoire : il n'est ni enregistré ni transmis au
-   * document du client. Voir `estimations`.
-   */
-  async function verifierMacros() {
-    setAiError(null)
-    setReprise('verif')
-    try {
-      const r = await aiAdviceService.verifierMacros(menuJours)
-      setEstimations(r.journees)
     } catch (err) {
       setAiError(aiErrorMessage(err))
     } finally {
@@ -2018,18 +1960,9 @@ export function NutritionTab() {
               {confirmeEffacer ? 'Confirmer — tout effacer' : 'Effacer le menu'}
             </button>
           )}
-          {menuJours.some(j => j.trim()) && (
-            <button
-              type="button"
-              onClick={verifierMacros}
-              disabled={aiBusy !== null || reprise !== null}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-md border border-cream-dark text-marine/60 text-sm hover:border-marine/30 hover:text-marine transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              title="Protéines calculées et macros estimées, par repas — pour vérification, jamais dans le document du client"
-            >
-              <Check size={15} />
-              {reprise === 'verif' ? 'Estimation…' : 'Vérifier les macros'}
-            </button>
-          )}
+          {/* Le bouton « Vérifier les macros » a disparu : les quatre colonnes
+              sont calculées et affichées d'emblée sous chaque journée. Il n'y a
+              plus rien à demander. */}
           {liveMacros && (
             <span className="text-marine/40 text-xs">
               Basé sur ≈ {liveMacros.targetKcal.toLocaleString('fr-CA')} kcal · {liveMacros.proteinG} P / {liveMacros.fatG} L / {liveMacros.carbsG} G
@@ -2076,11 +2009,8 @@ export function NutritionTab() {
                 />
                 <ControleJournee
                     jour={jour}
-                    estimation={estimations?.[i]}
                   cibleProteinesJour={liveMacros?.proteinG}
                   table={tableMacros}
-                  onEstimer={verifierMacros}
-                  estimationEnCours={reprise === 'verif'}
                 />
                 {/* Refaire un seul repas : le reste de la journée, y compris ce
                     que Marie a retouché, n'est pas régénéré. */}

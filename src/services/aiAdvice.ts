@@ -72,13 +72,6 @@ export interface MenuContexte {
   cibleCollation?: string
 }
 
-/** Ce que l'IA estime pour un repas — jamais les protéines, qui sont calculées. */
-export interface EstimationRepas {
-  kcal: number
-  glucidesG: number
-  lipidesG: number
-}
-
 /** Les trois portées passent par le même canal et la même gestion d'erreur. */
 async function callMenu<T>(payload: Parameters<typeof window.api.ai.generateNutrition>[0]): Promise<T> {
   const res = await window.api.ai.generateNutrition(payload)
@@ -167,26 +160,6 @@ export const aiAdviceService = {
    */
   async regenerateMenuDay(payload: MenuContexte & { autresJournees: string[] }): Promise<{ lignes: string[] }> {
     return callMenu<{ lignes: string[] }>({ type: 'menu-jour', ...payload })
-  },
-
-  /**
-   * IA : ESTIME les calories, glucides et lipides de chaque REPAS.
-   *
-   * Les protéines ne sont pas demandées ici — l'app les calcule à partir des
-   * poids écrits (`src/lib/menu-macros.ts`). Deux chiffres pour la même chose
-   * laisseraient Marie sans moyen de savoir lequel croire.
-   *
-   * Rien n'est stocké et rien n'entre dans le document du client : un modèle
-   * estime mal la composition des aliments, et le calcul nutritionnel relève de
-   * la nutritionniste. C'est un outil de contrôle, pas un chiffre à publier.
-   */
-  async verifierMacros(
-    journees: string[]
-  ): Promise<{ journees: { repas: EstimationRepas[] }[] }> {
-    return callMenu<{ journees: { repas: EstimationRepas[] }[] }>({
-      type: 'menu-verif',
-      autresJournees: journees
-    })
   },
 
   /**

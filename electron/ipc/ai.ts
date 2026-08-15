@@ -79,7 +79,7 @@ Règles :
 const NutritionPayloadSchema = z.object({
   /** `menu` = la semaine · `menu-jour` = une journée · `menu-repas` = un repas.
    *  Les deux dernières évitent de tout refaire pour corriger une seule idée. */
-  type: z.enum(['supplements', 'menu', 'menu-jour', 'menu-repas', 'menu-verif']),
+  type: z.enum(['supplements', 'menu', 'menu-jour', 'menu-repas']),
   kcal: z.number().nullable().optional(),
   proteinG: z.number().nullable().optional(),
   fatG: z.number().nullable().optional(),
@@ -144,29 +144,6 @@ const MenuJourSchema = z.object({ lignes: z.array(z.string()).default([]) })
 /** Un seul repas refait — la ligne complète, « Déjeuner : ... ». */
 const MenuRepasSchema = z.object({ ligne: z.string().default('') })
 
-/**
- * Vérification des protéines — un total ESTIMÉ par journée.
- *
- * Sert uniquement à Marie, dans l'app, pour juger si le menu tient la cible.
- * Ces chiffres ne sont ni stockés ni écrits dans le document du client : un
- * modèle estime mal la composition des aliments, et le calcul nutritionnel
- * relève de la nutritionniste (voir ADR / mémoire « champ de pratique »).
- */
-/** Estimations PAR REPAS. Les protéines n'y sont pas : l'app les calcule. */
-const MenuVerifSchema = z.object({
-  journees: z
-    .array(
-      z.object({
-        repas: z
-          .array(z.object({ kcal: z.number(), glucidesG: z.number(), lipidesG: z.number() }))
-          .max(6)
-          .default([])
-      })
-    )
-    .max(7)
-    .default([])
-})
-
 const SUPPLEMENTS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
 On te donne la liste des suppléments qu'un client prévoit prendre. Répartis CHAQUE supplément dans le bon MOMENT de prise, et rédige de courtes consignes d'espacement / interactions.
@@ -214,17 +191,19 @@ const MENU_STYLE = `Style imposé — cuisine MÉDITERRANÉENNE et repas SIMPLES
 - Vocabulaire québécois : « déjeuner » le matin, « dîner » le midi, « souper » le soir.
 - RÉPÉTER un plat dans la semaine est normal et souhaitable. Ne force pas la nouveauté : sept déjeuners tous différents ne ressemblent à la vie de personne.
 - Les fibres viennent naturellement de cette cuisine (légumineuses, légumes, grains entiers, fruits). N'empile PAS graines, son ou poudres pour gonfler un total.
-- La SOURCE DE PROTÉINES de chaque repas porte TOUJOURS une quantité, et cette quantité est EN GRAMMES : « yogourt grec 0 % (300 g) », « saumon (150 g) », « fromage cottage (250 g) ». PAS de tasses ni de portions vagues sur la source de protéines — c'est elle qui décide si la cible est atteinte, et une tasse ne se pèse pas. Arrondis aux 10 g. SEULE EXCEPTION : ce qui se compte à l'unité garde son unité (« 3 œufs », « 1 mesure de whey »).
-- Pour tout le RESTE — légumes, fruits, féculents, noix, huile — portions concrètes et approximatives (« 1 tasse », « une poignée », « un filet »), jamais de grammes. Le gramme est réservé aux protéines.
+- CHAQUE repas porte un poids EN GRAMMES sur ses TROIS sources : la source de PROTÉINES, la source de GLUCIDES et la source de LIPIDES. Exemple complet : « Dîner : poulet grillé (150 g), quinoa (150 g), concombre, tomates et huile d'olive (15 ml) ». Arrondis aux 10 g. Ce sont ces poids qui permettent de vérifier que le repas atteint ses cibles — sans eux, la ligne ne se calcule pas.
+- Ce qui se compte à l'unité garde son unité (« 3 œufs », « 1 mesure de whey ») et l'huile se donne en millilitres (« 15 ml »).
+- Les LÉGUMES et les AROMATES ne portent aucune quantité — concombre, tomates, épinards, brocoli, ail, herbes, citron. Leur apport est marginal et les peser rendrait la ligne illisible.
+- Un repas peut n'avoir que deux sources sur trois (un déjeuner sans matière grasse ajoutée, par exemple). Ne force pas une source qui n'a pas lieu d'être.
 - Quand une contrainte rend la cible de protéines d'un repas hors d'atteinte — un déjeuner SANS CUISSON de 15 minutes n'atteindra pas 55 g avec une portion ordinaire — ne renonce PAS et ne triche pas non plus : prends la source la plus dense que les contraintes autorisent, sers-en une portion franchement généreuse, et ajoute-lui une deuxième source du même style (yogourt grec ET fromage cottage, œufs cuits durs la veille, supplément protéiné s'il en existe un). S'en approcher vaut mieux qu'une portion conventionnelle qui laisse la journée loin du compte.
 - SUPPLÉMENT PROTÉINÉ (whey, caséine, isolat) : s'il en est fourni un, le client le prend TOUS LES JOURS. Fais-le apparaître dans CHAQUE journée, jamais une seule fois dans la semaine, et toujours au MÊME repas. Écris-le entre parenthèses à la fin de la ligne : « Déjeuner : yogourt grec 0 % (300 g), petits fruits, amandes (+ 1 mesure de protéine whey) », et compte-le dans la cible de protéines de ce repas. Si son moment de prise ne correspond à aucune ligne de la structure — « après l'entraînement » alors que la journée n'a que trois repas — rattache-le au repas le plus proche de ce moment. N'en invente AUCUN, ne change pas la dose, et n'ajoute JAMAIS de vitamine, minéral ou autre supplément non protéiné à une ligne de repas : ils ont leur propre section.
 - Une ligne par repas, format « Repas : aliments ». SANS puce et SANS Markdown (pas de #, *, tableaux, émojis). Aucun total de calories, de macros ou de fibres.
 
-Exemple d'une journée bien faite — noter le gramme sur la protéine et la portion courante sur le reste :
-Déjeuner : yogourt grec 0 % (300 g), petits fruits, une poignée d'amandes, filet de miel
-Dîner : salade de pois chiches (200 g), concombre, tomates, feta (30 g) et huile d'olive, pain pita de blé entier
-Souper : filet de saumon au citron (150 g), riz brun, brocoli rôti à l'ail
-Collations : pomme et fromage (30 g), ou houmous avec bâtonnets de carotte`
+Exemple d'une journée bien faite — un poids sur chaque source, rien sur les légumes :
+Déjeuner : yogourt grec 0 % (300 g), petits fruits (100 g), amandes (20 g)
+Dîner : salade de pois chiches (200 g), concombre, tomates, feta (30 g), pain pita de blé entier (60 g) et huile d'olive (10 ml)
+Souper : filet de saumon au citron (150 g), riz brun (150 g), brocoli rôti à l'ail
+Collations : pomme (150 g) et fromage (30 g), ou houmous (60 g) avec bâtonnets de carotte`
 
 const MENU_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
@@ -264,37 +243,6 @@ Règles :
 - Une ligne par élément de la STRUCTURE EXACTE donnée dans le message, dans l'ordre, et rien d'autre.
 - On te donne les autres journées de la semaine. Propose autre chose qu'une copie de l'une d'elles, sans chercher l'originalité à tout prix : un aliment qui revient est normal.
 - PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter.`
-
-/**
- * Ce que l'IA estime — et surtout ce qu'elle N'estime PAS.
- *
- * Les protéines ne sont plus demandées : l'app les CALCULE à partir des poids
- * en grammes et de sa table de composition (`src/lib/menu-macros.ts`). Un
- * calcul se recoupe et ne bouge pas d'un appel à l'autre ; une estimation fait
- * ni l'un ni l'autre. Redemander les protéines donnerait deux chiffres pour la
- * même chose, et Marie n'aurait aucun moyen de savoir lequel croire.
- *
- * Restent les calories, glucides et lipides : eux n'ont pas de poids à
- * multiplier — le quinoa est « 1 tasse », le brocoli n'a pas de quantité — donc
- * seule une estimation est possible, et l'écran l'affiche comme telle.
- */
-const MENU_VERIF_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
-
-On te donne des journées de menu déjà écrites. Estime, pour CHAQUE REPAS de chaque journée, les calories, les glucides nets et les lipides.
-
-N'estime PAS les protéines : l'application les calcule elle-même à partir des poids écrits. Ne renvoie aucun champ de protéines.
-
-Réponds avec un objet JSON STRICT, sans aucun texte autour, SANS Markdown :
-
-{ "journees": [{ "repas": [{ "kcal": 620, "glucidesG": 48, "lipidesG": 26 }] }] }
-
-Règles :
-- UNE entrée par journée fournie, dans le MÊME ORDRE, aucune omise.
-- Dans « repas », UNE entrée par ligne de repas de cette journée, dans le MÊME ORDRE, aucune omise. Une journée de 3 repas donne 3 entrées.
-- Les trois valeurs sont des nombres entiers : « kcal » en calories, « glucidesG » et « lipidesG » en grammes.
-- Les glucides sont NETS, fibres exclues.
-- Quand une quantité manque, suppose une portion usuelle plutôt que d'ignorer l'aliment.
-- N'ajoute AUCUN commentaire, aucune autre valeur, aucun texte : seulement le JSON.`
 
 const MENU_REPAS_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
@@ -356,8 +304,7 @@ const NUTRITION_SYSTEMES = {
   supplements: SUPPLEMENTS_SYSTEM,
   menu: MENU_SYSTEM,
   'menu-jour': MENU_JOUR_SYSTEM,
-  'menu-repas': MENU_REPAS_SYSTEM,
-  'menu-verif': MENU_VERIF_SYSTEM
+  'menu-repas': MENU_REPAS_SYSTEM
 } as const
 
 // Sept journées ne tiennent pas dans le budget d'une seule : une réponse coupée
@@ -371,8 +318,7 @@ const NUTRITION_BUDGETS = {
   supplements: 1600,
   menu: 16000,
   'menu-jour': 6000,
-  'menu-repas': 3000,
-  'menu-verif': 4000
+  'menu-repas': 3000
 } as const
 
 /**
@@ -386,8 +332,7 @@ const NUTRITION_DELAIS = {
   supplements: 30_000,
   menu: 300_000,
   'menu-jour': 120_000,
-  'menu-repas': 90_000,
-  'menu-verif': 120_000
+  'menu-repas': 90_000
 } as const
 
 /** Le nom que doit porter le fichier déposé — repris tel quel par le bouton d'import. */
@@ -406,7 +351,7 @@ function nomFichierMenu(clientNom?: string): string {
  * Réservé aux menus : personne ne dépose un plan de suppléments dans un dossier.
  */
 function blocFichier(clientNom: string | undefined, type: string): string[] {
-  if (type === 'supplements' || type === 'menu-verif') return []
+  if (type === 'supplements') return []
   return [
     '===== OÙ ÉCRIRE LA RÉPONSE =====',
     `Si tu peux créer des fichiers, écris ta réponse dans un fichier nommé exactement : ${nomFichierMenu(clientNom)}`,
@@ -430,13 +375,6 @@ function buildNutritionMessage(p: z.infer<typeof NutritionPayloadSchema>): strin
     typeof p.fiberG === 'number'
       ? `Cible de fibres : environ ${Math.round(p.fiberG)} g/jour — construis des journées RICHES EN FIBRES pour t'en approcher (sans écrire de total de fibres).`
       : `Vise des journées riches en fibres (légumes, fruits, légumineuses, grains entiers).`
-  if (p.type === 'menu-verif') {
-    const jours = (p.autresJournees ?? []).map(
-      (j, i) => ['Journée ' + (i + 1) + ' :', j.trim() || '(vide)'].join('\n')
-    )
-    return ['Journées à évaluer :', '', jours.join('\n\n')].join('\n')
-  }
-
   const structure = p.structure ?? ['Déjeuner', 'Dîner', 'Souper', 'Collation']
   const lines = [
     `Structure EXACTE de chaque journée, dans cet ordre — ${structure.length} ligne(s), ni plus ni moins : ${structure.join(' · ')}.`,
@@ -713,7 +651,6 @@ export function registerAIHandlers(): void {
       if (payload.type === 'supplements') return { ok: true, plan: SuppPlanSchema.parse(parsed) }
       if (payload.type === 'menu-jour') return { ok: true, plan: MenuJourSchema.parse(parsed) }
       if (payload.type === 'menu-repas') return { ok: true, plan: MenuRepasSchema.parse(parsed) }
-      if (payload.type === 'menu-verif') return { ok: true, plan: MenuVerifSchema.parse(parsed) }
       return { ok: true, plan: MenuPlanSchema.parse(parsed) }
     } catch (err) {
       if (err instanceof AIError) return { ok: false, error: err.message, code: err.code }
