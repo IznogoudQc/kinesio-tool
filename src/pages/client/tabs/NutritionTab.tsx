@@ -224,13 +224,18 @@ export function ControleJournee({
   jour,
   estimation,
   cibleProteinesJour,
-  table
+  table,
+  onEstimer,
+  estimationEnCours
 }: {
   jour: string
   estimation?: { repas: EstimationRepas[] }
   cibleProteinesJour?: number
   /** Composition à utiliser — celle ajustée dans les Paramètres. */
   table?: TableMacros
+  /** Lance l'estimation IA des trois colonnes manquantes. */
+  onEstimer?: () => void
+  estimationEnCours?: boolean
 }) {
   const lignes = lignesDeJournee(jour)
   if (lignes.length === 0) return null
@@ -240,6 +245,8 @@ export function ControleJournee({
   const calculs = lignes.map(l => proteinesDeLigne(l, table))
   const totalP = calculs.reduce((t, c) => t + c.totalG, 0)
   const est = estimation?.repas ?? []
+  /** Vrai dès qu'une estimation existe pour cette journée. */
+  const estime = est.length > 0
   const totalKcal = est.reduce((t, e) => t + e.kcal, 0)
   const totalG = est.reduce((t, e) => t + e.glucidesG, 0)
   const totalL = est.reduce((t, e) => t + e.lipidesG, 0)
@@ -251,17 +258,26 @@ export function ControleJournee({
 
   return (
     <div className="mt-1.5 rounded-md border border-cream-dark bg-white/40 px-2 py-1.5">
-      {/* `pl-2.5` sur chaque colonne chiffrée : sans écart, « Déjeuner » et
-          « 54 g » se collaient en « Déjeuner54 g », et le total de la journée
-          devenait « 113 g1950 » — illisible. */}
+      {/* Les trois colonnes estimées n'apparaissent QUE lorsqu'elles ont une
+          valeur. Affichées vides, elles posaient une question à laquelle rien
+          ne répondait à l'écran — « pourquoi je ne vois pas les autres macros »,
+          signalé le 2026-08-14. Une colonne sans donnée ne s'affiche pas ; un
+          lien juste en dessous dit comment l'obtenir.
+
+          `pl-2.5` sur chaque colonne chiffrée : sans écart, « Déjeuner » et
+          « 54 g » se collaient en « Déjeuner54 g ». */}
       <table className="w-full text-xs tabular-nums">
         <thead>
           <tr className="text-marine/40">
             <th className="text-left font-normal pb-0.5">Repas</th>
             <th className="text-right font-medium pb-0.5 pl-2.5 text-marine/60">P</th>
-            <th className="text-right font-normal pb-0.5 pl-2.5">≈ kcal</th>
-            <th className="text-right font-normal pb-0.5 pl-2.5">≈ G</th>
-            <th className="text-right font-normal pb-0.5 pl-2.5">≈ L</th>
+            {estime && (
+              <>
+                <th className="text-right font-normal pb-0.5 pl-2.5">≈ kcal</th>
+                <th className="text-right font-normal pb-0.5 pl-2.5">≈ G</th>
+                <th className="text-right font-normal pb-0.5 pl-2.5">≈ L</th>
+              </>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -278,9 +294,13 @@ export function ControleJournee({
                   </span>
                 )}
               </td>
-              <td className="text-right pl-2.5">{est[r] ? est[r].kcal : '—'}</td>
-              <td className="text-right pl-2.5">{est[r] ? `${est[r].glucidesG} g` : '—'}</td>
-              <td className="text-right pl-2.5">{est[r] ? `${est[r].lipidesG} g` : '—'}</td>
+              {estime && (
+                <>
+                  <td className="text-right pl-2.5">{est[r] ? est[r].kcal : '—'}</td>
+                  <td className="text-right pl-2.5">{est[r] ? `${est[r].glucidesG} g` : '—'}</td>
+                  <td className="text-right pl-2.5">{est[r] ? `${est[r].lipidesG} g` : '—'}</td>
+                </>
+              )}
             </tr>
           ))}
           <tr className="border-t border-cream-dark text-marine/70">
@@ -288,12 +308,27 @@ export function ControleJournee({
             <td className={`text-right font-semibold pt-0.5 pl-2.5 ${ecart ? 'text-amber-700' : ''}`}>
               {totalP} g
             </td>
-            <td className="text-right pt-0.5 pl-2.5">{est.length ? totalKcal : '—'}</td>
-            <td className="text-right pt-0.5 pl-2.5">{est.length ? `${totalG} g` : '—'}</td>
-            <td className="text-right pt-0.5 pl-2.5">{est.length ? `${totalL} g` : '—'}</td>
+            {estime && (
+              <>
+                <td className="text-right pt-0.5 pl-2.5">{totalKcal}</td>
+                <td className="text-right pt-0.5 pl-2.5">{totalG} g</td>
+                <td className="text-right pt-0.5 pl-2.5">{totalL} g</td>
+              </>
+            )}
           </tr>
         </tbody>
       </table>
+
+      {!estime && onEstimer && (
+        <button
+          type="button"
+          onClick={onEstimer}
+          disabled={estimationEnCours}
+          className="mt-1 text-[11px] text-gold-dark/90 hover:text-gold-dark underline decoration-dotted underline-offset-2 transition-colors disabled:opacity-50 disabled:no-underline"
+        >
+          {estimationEnCours ? 'Estimation en cours…' : '+ estimer les calories, glucides et lipides'}
+        </button>
+      )}
 
       {cibleProteinesJour != null && (
         <p className="mt-1 text-marine/40 text-[11px]">
@@ -1995,14 +2030,6 @@ export function NutritionTab() {
               {reprise === 'verif' ? 'Estimation…' : 'Vérifier les macros'}
             </button>
           )}
-          {/* Trois colonnes du tableau restent à « — » tant que l'IA n'a pas
-              estimé. Sans ce mot, les tirets ressemblent à une panne alors
-              qu'ils attendent un clic. */}
-          {menuJours.some(j => j.trim()) && estimations === null && reprise !== 'verif' && (
-            <span className="text-marine/50 text-xs">
-              Protéines calculées ci-dessous ; « Vérifier les macros » remplit les colonnes estimées.
-            </span>
-          )}
           {liveMacros && (
             <span className="text-marine/40 text-xs">
               Basé sur ≈ {liveMacros.targetKcal.toLocaleString('fr-CA')} kcal · {liveMacros.proteinG} P / {liveMacros.fatG} L / {liveMacros.carbsG} G
@@ -2052,6 +2079,8 @@ export function NutritionTab() {
                     estimation={estimations?.[i]}
                   cibleProteinesJour={liveMacros?.proteinG}
                   table={tableMacros}
+                  onEstimer={verifierMacros}
+                  estimationEnCours={reprise === 'verif'}
                 />
                 {/* Refaire un seul repas : le reste de la journée, y compris ce
                     que Marie a retouché, n'est pas régénéré. */}
