@@ -526,6 +526,29 @@ export function NutritionTab() {
     setMenuJours(js => js.map((j, k) => (k === i ? v : j)))
   }
 
+  /**
+   * Les retouches manuelles s'enregistrent seules, après une pause de frappe.
+   *
+   * Sans ça, l'app aurait deux règles contradictoires : un menu généré se garde
+   * tout seul, un menu corrigé à la main se perd. Une seule règle est plus sûre
+   * qu'une exception à retenir.
+   *
+   * Une seconde et demie : assez pour ne pas écrire à chaque lettre, assez peu
+   * pour qu'un changement d'onglet juste après une correction la conserve.
+   */
+  useEffect(() => {
+    // Le premier passage ne fait qu'enregistrer l'état de départ : ouvrir
+    // l'onglet ne doit rien écrire en base.
+    if (premierRendu.current) {
+      premierRendu.current = false
+      dernierMenuEnregistre.current = serializeMenuPlan(menuJours)
+      return
+    }
+    const t = window.setTimeout(() => void sauvegarderMenu(menuJours), 1500)
+    return () => window.clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [menuJours])
+
   // Bibliothèques proposées (suppléments, aliments) — GLOBALES, chargées depuis
   // les réglages en lecture seule ici ; leur ÉDITION vit dans Paramètres → Nutrition.
   const [suppLibrary, setSuppLibrary] = useState<SupplementItem[]>(DEFAULT_SUPPLEMENTS)
@@ -570,6 +593,21 @@ export function NutritionTab() {
   const [confirmeEffacer, setConfirmeEffacer] = useState(false)
   /** Nom du fichier demandé dans le prompt copié — rappelé à l'écran un moment. */
   const [promptCopie, setPromptCopie] = useState<string | null>(null)
+  /** Témoin « Menu enregistré » après une sauvegarde automatique. */
+  const [menuSauve, setMenuSauve] = useState(false)
+  /**
+   * Le menu déjà en base, sous sa forme sérialisée.
+   *
+   * Sert à ne pas réécrire ce qui n'a pas changé : la génération enregistre
+   * tout de suite, et la sauvegarde différée des retouches passerait juste
+   * après avec le même contenu.
+   *
+   * Rempli au premier rendu plutôt qu'ici : la valeur stockée peut différer de
+   * sa forme normalisée (ancien format à une seule journée, espaces), et une
+   * comparaison ratée écrirait en base au simple affichage de l'onglet.
+   */
+  const dernierMenuEnregistre = useRef<string | null>(null)
+  const premierRendu = useRef(true)
   const [importOuvert, setImportOuvert] = useState(false)
   const [importTexte, setImportTexte] = useState('')
   const [importSource, setImportSource] = useState<string | null>(null)
@@ -786,6 +824,35 @@ export function NutritionTab() {
     }
   }
 
+  /**
+   * Enregistre LE MENU seul, immédiatement.
+   *
+   * Les journées arrivent en ARGUMENT et ne sont pas relues dans `menuJours` :
+   * l'état React n'est pas encore à jour quand on appelle cette fonction juste
+   * après un `setMenuJours`, et on enregistrerait le menu précédent — un bug
+   * silencieux qui ne se voit qu'au rechargement.
+   *
+   * Mise à jour PARTIELLE, volontairement. `persist()` réécrit tout le
+   * formulaire, y compris des champs que Marie est peut-être en train de
+   * modifier : une génération ne doit enregistrer que ce qu'elle vient de
+   * produire.
+   */
+  async function sauvegarderMenu(journees: string[]) {
+    const serialise = serializeMenuPlan(journees)
+    if (serialise === dernierMenuEnregistre.current) return
+    try {
+      const updated = await clientsService.update(client.id, { nutritionMenu: serialise })
+      dernierMenuEnregistre.current = serialise
+      onClientUpdated?.(updated)
+      setMenuSauve(true)
+      window.setTimeout(() => setMenuSauve(false), 2500)
+    } catch (err) {
+      setAiError(
+        err instanceof Error ? err.message : "Le menu n'a pas pu être enregistré automatiquement."
+      )
+    }
+  }
+
   async function handleSave() {
     setSaved(false)
     if (await persist()) {
@@ -891,7 +958,11 @@ export function NutritionTab() {
         moment: momentDeJournee(i),
         autresJournees: menuJours.filter((_, j) => j !== i)
       })
-      if (plan.lignes.length) setMenuJour(i, plan.lignes.join('\n\n'))
+      if (plan.lignes.length) {
+        const journees = menuJours.map((j, k) => (k === i ? plan.lignes.join('\n\n') : j))
+        setMenuJours(journees)
+        await sauvegarderMenu(journees)
+      }
     } catch (err) {
       setAiError(aiErrorMessage(err))
     } finally {
@@ -911,7 +982,12 @@ export function NutritionTab() {
         journee: menuJours[i] ?? '',
         repas
       })
-      if (plan.ligne.trim()) setMenuJour(i, remplacerRepas(menuJours[i] ?? '', repas, plan.ligne, structure))
+      if (plan.ligne.trim()) {
+        const remplacee = remplacerRepas(menuJours[i] ?? '', repas, plan.ligne, structure)
+        const journees = menuJours.map((j, k) => (k === i ? remplacee : j))
+        setMenuJours(journees)
+        await sauvegarderMenu(journees)
+      }
     } catch (err) {
       setAiError(aiErrorMessage(err))
     } finally {
@@ -970,6 +1046,7 @@ export function NutritionTab() {
     setMenuJours(res.menu.journees)
     setImportAvis(res.menu.avertissements)
     setImportOuvert(false)
+    void sauvegarderMenu(res.menu.journees)
   }
 
   /** IA : idées de menu (une semaine) selon les macros + aliments. */
@@ -981,7 +1058,9 @@ export function NutritionTab() {
       // Ligne vide entre chaque repas → séparation visuelle lisible dans le champ.
       // (Le document filtre les lignes vides : PDF inchangé.)
       const days = plan.journees.map(j => j.lignes.join('\n\n'))
-      setMenuJours(Array.from({ length: MENU_NB_JOURS }, (_, i) => days[i] ?? ''))
+      const journees = Array.from({ length: MENU_NB_JOURS }, (_, i) => days[i] ?? '')
+      setMenuJours(journees)
+      await sauvegarderMenu(journees)
     } catch (err) {
       setAiError(aiErrorMessage(err))
     } finally {
@@ -1963,6 +2042,14 @@ export function NutritionTab() {
           {/* Le bouton « Vérifier les macros » a disparu : les quatre colonnes
               sont calculées et affichées d'emblée sous chaque journée. Il n'y a
               plus rien à demander. */}
+          {/* Une sauvegarde silencieuse n'existe pas pour l'utilisatrice : sans
+              ce mot, Marie cliquerait « Enregistrer » par précaution, ou pire,
+              douterait que le menu ait été gardé. */}
+          {menuSauve && (
+            <span className="inline-flex items-center gap-1 text-green-700 text-xs">
+              <Check size={13} /> Menu enregistré
+            </span>
+          )}
           {liveMacros && (
             <span className="text-marine/40 text-xs">
               Basé sur ≈ {liveMacros.targetKcal.toLocaleString('fr-CA')} kcal · {liveMacros.proteinG} P / {liveMacros.fatG} L / {liveMacros.carbsG} G
