@@ -266,11 +266,21 @@ export function ProgressionChart({
                 y={populationAverage}
                 stroke="#94a3b8"
                 strokeDasharray="4 4"
+                /* `insideBottomLeft` et non `right`.
+                   · `right` plaçait l'étiquette HORS de la zone de tracé : elle
+                     se faisait couper par le bord et il n'en restait qu'un
+                     « M » que personne ne pouvait interpréter.
+                   · en bas plutôt qu'en haut, parce que « Bilan précédent »
+                     occupe déjà le haut de sa propre ligne : si les deux
+                     valeurs de référence se rapprochent, les étiquettes se
+                     croiseraient au même endroit. L'une au-dessus de son trait,
+                     l'autre en dessous, elles restent lisibles quoi qu'il
+                     arrive. */
                 label={{
                   value: `Moyenne ${profile.sex === 'M' ? 'H' : 'F'} ${Math.floor((profile.age ?? 0) / 10) * 10}-${Math.floor((profile.age ?? 0) / 10) * 10 + 9}`,
                   fill: '#64748b',
                   fontSize: 11,
-                  position: 'right'
+                  position: 'insideBottomLeft'
                 }}
               />
             )}
