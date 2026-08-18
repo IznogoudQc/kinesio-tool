@@ -29,6 +29,7 @@ import { ScoreDonut } from '../dashboard/ScoreDonut'
 import { StatCardXL } from '../dashboard/StatCardXL'
 import { CompositeMiniCard } from '../dashboard/CompositeMiniCard'
 import { ProgressionChart } from '../dashboard/ProgressionChart'
+import { SectionNotes } from '../dashboard/SectionNotes'
 import { MusculoRadar } from '../dashboard/MusculoRadar'
 import { CompositionCpaflaCard } from '../dashboard/CompositionCpaflaCard'
 import { CompositeCpaflaCard } from '../dashboard/CompositeCpaflaCard'
@@ -843,6 +844,7 @@ export function DashboardTab() {
           </div>
         )}
         {MesuresPanel}
+        {!printMode && <SectionNotes clientId={client.id} section="composition" />}
       </section>
 
       {/* ── Cœur et endurance ──────────────────────────────────────────────── */}
@@ -898,6 +900,7 @@ export function DashboardTab() {
                 }
           }
         />
+        {!printMode && <SectionNotes clientId={client.id} section="aerobie" />}
       </section>
 
       {/* ── Force et mobilité ──────────────────────────────────────────────── */}
@@ -948,12 +951,16 @@ export function DashboardTab() {
           figure="—"
           footnote="Chaque composante est ramenée à sa cote 0-4, puis toutes comptent également. Une composante non mesurée est simplement exclue."
         />
+        {!printMode && <SectionNotes clientId={client.id} section="musculo" />}
       </section>
 
-      {objectif !== null && (
+      {/* La section Objectif s'affiche même sans cible chiffrée : Marie doit
+          pouvoir y noter ce que le client veut, avant que ce soit un nombre. */}
+      {(objectif !== null || !printMode) && (
         <section className="dash-rise space-y-4">
           <SectionHead eyebrow="Objectif" title="Votre cible" />
-          <ObjectifCard objectif={objectif} unit={client.unitWeight ?? 'kg'} />
+          {objectif !== null && <ObjectifCard objectif={objectif} unit={client.unitWeight ?? 'kg'} />}
+          {!printMode && <SectionNotes clientId={client.id} section="objectif" />}
         </section>
       )}
 
@@ -981,6 +988,13 @@ export function DashboardTab() {
           bilan liste déjà chaque test avec sa cote, et la carte « À travailler »
           se réduisait souvent à « Aucun test… — bravo ! ». La section reste, car
           c'est elle qui porte le bouton d'analyse par l'IA. */}
+      {!printMode && (
+        <section className="dash-rise space-y-4" style={{ animationDelay: '220ms' }}>
+          <SectionHead eyebrow="Général" title="Tout le reste" />
+          <SectionNotes clientId={client.id} section="general" />
+        </section>
+      )}
+
       {!printMode && (
         <section className="dash-rise space-y-4" style={{ animationDelay: '240ms' }}>
           <SectionHead

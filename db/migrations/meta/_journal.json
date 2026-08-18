@@ -260,6 +260,13 @@
       "when": 1786280140058,
       "tag": "0036_yummy_squirrel_girl",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "6",
+      "when": 1787011436300,
+      "tag": "0037_worried_trish_tilby",
+      "breakpoints": true
     }
   ]
 }

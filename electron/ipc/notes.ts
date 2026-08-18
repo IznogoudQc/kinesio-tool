@@ -3,6 +3,10 @@ import { z } from 'zod'
 import { desc, eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import { clientNotes, clients } from '../../db/schema'
+import { NOTE_SECTION_KEYS } from '../../src/lib/note-sections'
+
+/** Zod veut un tuple non vide ; la liste reste écrite à un seul endroit. */
+const NOTE_SECTION_KEYS_TUPLE = NOTE_SECTION_KEYS as unknown as [string, ...string[]]
 
 /**
  * IPC des notes cliniques d'un client — journal daté, privé (jamais dans le
@@ -24,6 +28,8 @@ const IsoDate = z
 const NoteInput = z
   .object({
     date: IsoDate.optional(),
+    /** Section du tableau de bord. Absente = note du journal libre. */
+    section: z.enum(NOTE_SECTION_KEYS_TUPLE).nullish(),
     content: z.string().trim().min(1, 'La note est vide.').max(10000)
   })
   .strip()
@@ -55,6 +61,7 @@ export function registerNotesHandlers(): void {
         id: crypto.randomUUID(),
         clientId: validId,
         date: data.date ?? todayISO(),
+        section: data.section ?? null,
         content: data.content,
         createdAt: now,
         updatedAt: now
@@ -74,6 +81,10 @@ export function registerNotesHandlers(): void {
       .update(clientNotes)
       .set({
         date: data.date ?? existing.date,
+        // `undefined` = le client n'a pas parlé de section : on garde la
+        // sienne. `null` explicite = il la retire. Confondre les deux
+        // déclasserait une note à chaque simple correction de texte.
+        section: data.section === undefined ? existing.section : data.section,
         content: data.content,
         updatedAt: new Date().toISOString()
       })

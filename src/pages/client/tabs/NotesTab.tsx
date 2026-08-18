@@ -4,6 +4,7 @@ import { Loader2, Lock, PencilLine, Save, StickyNote, Trash2 } from 'lucide-reac
 import { useClient } from '../ClientDetailLayout'
 import { notesService } from '../../../services/notes'
 import { formatBilanDate } from '../bilanFields'
+import { libelleSection } from '../../../lib/note-sections'
 
 function todayISO(): string {
   const d = new Date()
@@ -157,7 +158,18 @@ export function NotesTab() {
             {list.map(n => (
               <li key={n.id} className="bg-white border border-cream-dark/40 rounded-xl p-5 shadow-sm">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="text-marine font-semibold text-sm">{formatBilanDate(n.date)}</p>
+                  {/* Le journal montre TOUTES les notes, y compris celles
+                      prises depuis une section du tableau de bord : sans cette
+                      étiquette, elles s'y mêleraient sans qu'on sache d'où
+                      elles viennent. */}
+                  <p className="text-marine font-semibold text-sm">
+                    {formatBilanDate(n.date)}
+                    {libelleSection(n.section) && (
+                      <span className="ml-2 font-normal text-marine/45 text-xs">
+                        {libelleSection(n.section)}
+                      </span>
+                    )}
+                  </p>
                   <div className="flex items-center gap-3 shrink-0">
                     <button
                       type="button"

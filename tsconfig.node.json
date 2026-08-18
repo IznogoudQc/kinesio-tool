@@ -23,6 +23,7 @@
     "src/lib/supplements.ts",
     "src/lib/food-suggestions.ts",
     "src/lib/food-macros.ts",
+    "src/lib/note-sections.ts",
     "src/lib/nutrition-lists.ts",
     "src/lib/pain-suggestions.ts",
     "src/lib/email-templates.ts",

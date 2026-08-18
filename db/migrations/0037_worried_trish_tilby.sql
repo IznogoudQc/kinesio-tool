@@ -1,0 +1,1 @@
+ALTER TABLE `client_notes` ADD `section` text;

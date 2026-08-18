@@ -230,6 +230,9 @@ export const clientNotes = sqliteTable('client_notes', {
   clientId: text('client_id').notNull().references(() => clients.id, { onDelete: 'cascade' }),
   // Date de la note (ISO AAAA-MM-JJ) — souvent la date de séance.
   date: text('date').notNull(),
+  /** Section du tableau de bord sous laquelle la note est classée.
+   *  `null` = note du journal libre, écrite avant l'existence des sections. */
+  section: text('section'),
   content: text('content').notNull(),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull()

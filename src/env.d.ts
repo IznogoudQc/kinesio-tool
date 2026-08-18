@@ -383,12 +383,16 @@ interface ClientNote {
   id: string
   clientId: string
   date: string
+  /** Section du tableau de bord ; `null` = note du journal libre. */
+  section: string | null
   content: string
   createdAt: string
   updatedAt: string
 }
 interface ClientNoteInput {
   date?: string
+  /** Omis = la section actuelle est conservée. `null` = la retirer. */
+  section?: string | null
   content: string
 }
 
