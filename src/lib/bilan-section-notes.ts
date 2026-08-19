@@ -43,6 +43,16 @@ export const SECTION_BILAN_VERS_DASHBOARD: Record<string, string> = {
   indices: 'general'
 }
 
+/**
+ * Toutes les clés de note, dans l'ordre des sections.
+ *
+ * Le schéma de validation des bilans s'en sert pour les autoriser. Il supprime
+ * en silence toute clé qu'il ne déclare pas : une note absente de cette liste
+ * disparaîtrait à l'enregistrement sans message d'erreur — c'est exactement ce
+ * qui est arrivé en v0.9.189.
+ */
+export const CLES_NOTES_SECTIONS: string[] = Object.keys(SECTION_BILAN_VERS_DASHBOARD).map(cleNoteSection)
+
 /** Une note de bilan prête à afficher. */
 export interface NoteDeBilan {
   /** Date du bilan (ISO) — c'est elle qui date la note. */

@@ -11,7 +11,8 @@ import { test } from 'node:test'
 import {
   cleNoteSection,
   notesDeBilansPour,
-  SECTION_BILAN_VERS_DASHBOARD
+  SECTION_BILAN_VERS_DASHBOARD,
+  CLES_NOTES_SECTIONS
 } from './bilan-section-notes.ts'
 
 const titre = (g: string) => ({ plis: 'Plis cutanés', anthropo: 'Anthropométrie', vitaux: 'Signes vitaux (repos)', aerobie: 'Aptitude aérobie', musculo: 'Force et mobilité', circonferences: 'Circonférences', indices: 'Indices' })[g] ?? g
@@ -70,4 +71,14 @@ test('une note ne déborde pas sur une autre section', () => {
   const bilans = [{ date: '2026-06-01', data: { note_plis: 'sur les plis' } }]
   assert.deepEqual(notesDeBilansPour(bilans, 'aerobie', titre), [])
   assert.equal(notesDeBilansPour(bilans, 'composition', titre).length, 1)
+})
+
+test('chaque section a sa clé dans la liste qu’autorise le schéma', () => {
+  // Le schéma de validation des bilans est construit à partir de cette liste.
+  // Une section absente verrait sa note supprimée en silence à
+  // l'enregistrement — le défaut de la v0.9.189, signalé par Nicholas.
+  const attendues = Object.keys(SECTION_BILAN_VERS_DASHBOARD).map(cleNoteSection)
+  assert.deepEqual(CLES_NOTES_SECTIONS, attendues)
+  assert.ok(CLES_NOTES_SECTIONS.includes('note_plis'))
+  assert.equal(CLES_NOTES_SECTIONS.length, 7)
 })

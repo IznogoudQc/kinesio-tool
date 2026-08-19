@@ -9,6 +9,7 @@ import { parseBilanDocx } from '../lib/bilan-parser'
 import { convertDocToDocx } from '../lib/doc-converter'
 import { BILAN_FIELD_BOUNDS } from '../../src/lib/bilan-bounds'
 import { mergeBilanData } from '../../src/lib/bilan-merge'
+import { CLES_NOTES_SECTIONS } from '../../src/lib/bilan-section-notes'
 import { syncBilanToMesures } from '../lib/measure-sync'
 
 // Champ numérique optionnel, contraint aux bornes DURES de plausibilité du
@@ -24,6 +25,11 @@ function bounded(key: string) {
 
 // Mirrors BilanData from electron/lib/bilan-parser.ts — kept here as the IPC
 // boundary validator so anything coming from the renderer is sanitized.
+/** Une entrée de schéma par section de bilan : `note_plis`, `note_aerobie`… */
+const NOTES_DE_SECTION = Object.fromEntries(
+  CLES_NOTES_SECTIONS.map(cle => [cle, z.string().max(5000).optional()])
+)
+
 const BilanDataSchema = z
   .object({
     taille_cm: bounded('taille_cm'),
@@ -83,7 +89,13 @@ const BilanDataSchema = z
     score_musculo_global: bounded('score_musculo_global'),
     score_global: bounded('score_global'),
     notes: z.string().max(5000).optional(),
-    objectif: z.string().max(2000).optional()
+    objectif: z.string().max(2000).optional(),
+    // Notes privées par section du formulaire. DÉRIVÉES de la liste des
+    // sections plutôt qu'énumérées : `.strip()` supprime en silence toute clé
+    // absente de ce schéma, et une note oubliée ici disparaîtrait à
+    // l'enregistrement sans le moindre message — c'est exactement ce qui s'est
+    // produit en v0.9.189.
+    ...NOTES_DE_SECTION
   })
   .strip()
 
