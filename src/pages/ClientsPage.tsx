@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
-import { ChevronRight, Download, Plus, Upload, User } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import { ChevronRight, Download, Plus, Search, Upload, User, X } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { clientsService } from '../services/clients'
 import { transferService } from '../services/transfer'
 import { ClientAvatar } from '../components/ClientAvatar'
+import { filtrerClients, trierClients } from '../lib/client-search'
 
 type View = 'list' | 'form'
 
@@ -29,6 +30,7 @@ const EMPTY_FORM: FormState = {
 export function ClientsPage() {
   const [view, setView] = useState<View>('list')
   const [clients, setClients] = useState<Client[]>([])
+  const [recherche, setRecherche] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(EMPTY_FORM)
@@ -66,13 +68,18 @@ export function ClientsPage() {
       setLoading(true)
       setLoadError(null)
       const data = await clientsService.list()
-      setClients(data)
+      // Trié ici plutôt qu'à l'affichage : la fenêtre d'export lit la même
+      // liste et doit être dans le même ordre.
+      setClients(trierClients(data))
     } catch {
       setLoadError('Impossible de charger les clients.')
     } finally {
       setLoading(false)
     }
   }
+
+  /** Ce que la liste montre : la liste triée, réduite par la recherche. */
+  const affiches = useMemo(() => filtrerClients(clients, recherche), [clients, recherche])
 
   function openForm() {
     setForm(EMPTY_FORM)
@@ -326,7 +333,10 @@ export function ClientsPage() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-6">
         <span className="text-marine/50 text-base">
-          {!loading && `${clients.length} client${clients.length !== 1 ? 's' : ''}`}
+          {!loading &&
+            (recherche.trim()
+              ? `${affiches.length} sur ${clients.length} client${clients.length !== 1 ? 's' : ''}`
+              : `${clients.length} client${clients.length !== 1 ? 's' : ''}`)}
         </span>
         <div className="flex items-center gap-2">
           <button
@@ -377,9 +387,50 @@ export function ClientsPage() {
         </div>
       )}
 
-      {!loading && !loadError && clients.length > 0 && (
+      {/* Champ de recherche — affiché seulement quand la liste est assez longue
+          pour qu'on ait besoin de chercher. En dessous, il n'ajoute que du
+          bruit au-dessus de trois lignes qu'on lit d'un coup d'œil. */}
+      {!loading && !loadError && clients.length > 5 && (
+        <div className="relative max-w-2xl mb-4">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-marine/30" />
+          <input
+            value={recherche}
+            onChange={e => setRecherche(e.target.value)}
+            placeholder="Rechercher un client par son nom…"
+            aria-label="Rechercher un client par son nom"
+            className="w-full pl-9 pr-9 py-2.5 border border-cream-dark rounded-lg bg-white text-marine text-base placeholder-marine/30 focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+          />
+          {recherche && (
+            <button
+              type="button"
+              onClick={() => setRecherche('')}
+              aria-label="Effacer la recherche"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-marine/30 hover:text-marine transition-colors"
+            >
+              <X size={15} />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Recherche sans résultat : le dire, plutôt que de laisser un vide qui
+          ressemble à un fichier client effacé. */}
+      {!loading && !loadError && clients.length > 0 && affiches.length === 0 && (
+        <div className="max-w-2xl rounded-lg border border-cream-dark bg-white px-4 py-6 text-center">
+          <p className="text-marine/60 text-base">Aucun client ne porte ce nom.</p>
+          <button
+            type="button"
+            onClick={() => setRecherche('')}
+            className="mt-2 text-gold-dark hover:text-marine text-sm underline decoration-dotted underline-offset-2 transition-colors"
+          >
+            Revoir les {clients.length} clients
+          </button>
+        </div>
+      )}
+
+      {!loading && !loadError && affiches.length > 0 && (
         <div className="space-y-2 max-w-2xl">
-          {clients.map(client => (
+          {affiches.map(client => (
             <Link
               key={client.id}
               to={`/clients/${client.id}/dashboard`}
