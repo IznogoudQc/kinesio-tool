@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Check, ChevronDown, ChevronRight, Lock } from 'lucide-react'
 import { BILAN_FIELD_GROUPS, type BilanFieldDef, type BilanFieldGroup } from './bilanFields'
+import { cleNoteSection, SECTION_BILAN_VERS_DASHBOARD } from '../../lib/bilan-section-notes'
 import { CategoryBadge } from '../../components/CategoryBadge'
 import { BilanSynthesisCards } from '../../components/BilanSynthesisCards'
 import { PercentileIndicator } from '../../components/PercentileIndicator'
@@ -357,6 +358,11 @@ export function BilanForm({
 
     const isNotes = group.id === 'notes'
     const isAerobic = group.id === 'aerobie'
+    // Note de section : seulement là où elle a un sens. Le groupe « notes »
+    // porte déjà deux champs de texte libre, et en ajouter un troisième
+    // brouillerait la distinction entre le mot AU CLIENT et la note pour soi.
+    const noteKey = SECTION_BILAN_VERS_DASHBOARD[group.id] ? cleNoteSection(group.id) : null
+    const noteValeur = noteKey ? ((derivedData as Record<string, unknown>)[noteKey] as string | undefined) ?? '' : ''
     return (
       <section key={group.id}>
         {heading}
@@ -377,6 +383,27 @@ export function BilanForm({
               {group.fields.map(renderField)}
             </div>
           )
+        )}
+        {/* Ce que Marie observe pendant la prise de mesures : conditions,
+            difficultés, ce qu'elle veut se rappeler. Datée par le bilan
+            lui-même, et privée — elle ne sort ni au PDF ni au document du
+            client. Hors de la grille des champs pour ne pas fausser le
+            compteur « x / y champs ». */}
+        {(!useCollapsible || isOpen) && noteKey && (
+          <div className="mt-3">
+            <label className={`block text-xs mb-1 ${isLight ? 'text-marine/50' : 'text-cream/50'}`}>
+              Ma note sur cette section
+              <span className={isLight ? 'text-marine/35' : 'text-cream/35'}> — privée</span>
+            </label>
+            <textarea
+              value={noteValeur}
+              readOnly={readOnly}
+              onChange={e => onDataChange?.(setField(data, noteKey as keyof BilanData, e.target.value))}
+              rows={2}
+              placeholder="Ce que vous voulez retenir de cette prise de mesures…"
+              className={inputClass}
+            />
+          </div>
         )}
       </section>
     )

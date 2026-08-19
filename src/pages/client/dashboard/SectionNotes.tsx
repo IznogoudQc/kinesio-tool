@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Loader2, Lock, Plus, Trash2 } from 'lucide-react'
 import { notesService } from '../../../services/notes'
 import { libelleSection, type NoteSectionKey } from '../../../lib/note-sections'
-import { formatBilanDate } from '../bilanFields'
+import { formatBilanDate, BILAN_FIELD_GROUPS } from '../bilanFields'
+import { notesDeBilansPour } from '../../../lib/bilan-section-notes'
 
 /**
  * Notes privées de Marie sous une section du tableau de bord.
@@ -20,10 +21,13 @@ import { formatBilanDate } from '../bilanFields'
  */
 export function SectionNotes({
   clientId,
-  section
+  section,
+  bilans
 }: {
   clientId: string
   section: NoteSectionKey
+  /** Bilans du client — porteurs des notes prises pendant les mesures. */
+  bilans?: readonly { date: string; data: object }[]
 }) {
   const [notes, setNotes] = useState<ClientNote[] | null>(null)
   const [brouillon, setBrouillon] = useState('')
@@ -76,7 +80,23 @@ export function SectionNotes({
     }
   }
 
-  const nb = notes?.length ?? 0
+  // Notes écrites PENDANT un bilan, rattachées à cette section du tableau de
+  // bord. En lecture seule ici : elles appartiennent à leur bilan, et se
+  // corrigent là où elles ont été prises.
+  const notesBilans = notesDeBilansPour(
+    bilans,
+    section,
+    g => BILAN_FIELD_GROUPS.find(x => x.id === g)?.title ?? g
+  )
+  // Ouvre aussi quand la seule chose à lire vient d'un bilan. Effet séparé et
+  // dépendant de la seule LONGUEUR : `notesBilans` est recalculé à chaque
+  // rendu, et le mettre dans les dépendances de l'effet de chargement
+  // relancerait la lecture en boucle.
+  useEffect(() => {
+    if (notesBilans.length > 0) setOuvert(true)
+  }, [notesBilans.length])
+
+  const nb = (notes?.length ?? 0) + notesBilans.length
 
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
@@ -125,6 +145,25 @@ export function SectionNotes({
           </div>
 
           {erreur && <p className="text-red-700 text-xs">{erreur}</p>}
+
+          {notesBilans.length > 0 && (
+            <div>
+              <p className="text-marine/40 text-[11px] mb-1">Prises pendant un bilan</p>
+              <ul className="space-y-2">
+                {notesBilans.map((n, i) => (
+                  <li
+                    key={`${n.date}-${n.section}-${i}`}
+                    className="rounded-md border border-cream-dark/60 bg-white px-3 py-2"
+                  >
+                    <p className="text-marine/45 text-[11px] tabular-nums">
+                      {formatBilanDate(n.date)} · {n.section}
+                    </p>
+                    <p className="text-marine/75 text-sm whitespace-pre-wrap mt-0.5">{n.texte}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {notes === null ? (
             <p className="text-marine/35 text-sm">Chargement…</p>

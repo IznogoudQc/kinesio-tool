@@ -844,7 +844,7 @@ export function DashboardTab() {
           </div>
         )}
         {MesuresPanel}
-        {!printMode && <SectionNotes clientId={client.id} section="composition" />}
+        {!printMode && <SectionNotes clientId={client.id} section="composition" bilans={bilans ?? undefined} />}
       </section>
 
       {/* ── Cœur et endurance ──────────────────────────────────────────────── */}
@@ -900,7 +900,7 @@ export function DashboardTab() {
                 }
           }
         />
-        {!printMode && <SectionNotes clientId={client.id} section="aerobie" />}
+        {!printMode && <SectionNotes clientId={client.id} section="aerobie" bilans={bilans ?? undefined} />}
       </section>
 
       {/* ── Force et mobilité ──────────────────────────────────────────────── */}
@@ -951,7 +951,7 @@ export function DashboardTab() {
           figure="—"
           footnote="Chaque composante est ramenée à sa cote 0-4, puis toutes comptent également. Une composante non mesurée est simplement exclue."
         />
-        {!printMode && <SectionNotes clientId={client.id} section="musculo" />}
+        {!printMode && <SectionNotes clientId={client.id} section="musculo" bilans={bilans ?? undefined} />}
       </section>
 
       {/* La section Objectif s'affiche même sans cible chiffrée : Marie doit
@@ -960,7 +960,7 @@ export function DashboardTab() {
         <section className="dash-rise space-y-4">
           <SectionHead eyebrow="Objectif" title="Votre cible" />
           {objectif !== null && <ObjectifCard objectif={objectif} unit={client.unitWeight ?? 'kg'} />}
-          {!printMode && <SectionNotes clientId={client.id} section="objectif" />}
+          {!printMode && <SectionNotes clientId={client.id} section="objectif" bilans={bilans ?? undefined} />}
         </section>
       )}
 
@@ -991,7 +991,7 @@ export function DashboardTab() {
       {!printMode && (
         <section className="dash-rise space-y-4" style={{ animationDelay: '220ms' }}>
           <SectionHead eyebrow="Général" title="Tout le reste" />
-          <SectionNotes clientId={client.id} section="general" />
+          <SectionNotes clientId={client.id} section="general" bilans={bilans ?? undefined} />
         </section>
       )}
 

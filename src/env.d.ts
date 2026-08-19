@@ -134,6 +134,17 @@ type MesureFieldKey =
   | 'molletD'
 
 interface BilanData {
+  /** Notes privées de Marie, une par section du formulaire de bilan.
+   *  Datées par le bilan lui-même. Voir `src/lib/bilan-section-notes.ts`.
+   *  Elles ne sortent NI au PDF NI au document du client : ces rendus lisent
+   *  `data` clé par clé, et aucune de ces clés n'est reprise. */
+  note_vitaux?: string
+  note_anthropo?: string
+  note_circonferences?: string
+  note_plis?: string
+  note_aerobie?: string
+  note_musculo?: string
+  note_indices?: string
   taille_cm?: number
   poids_kg?: number
   imc?: number
