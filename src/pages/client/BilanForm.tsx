@@ -89,9 +89,15 @@ export function BilanForm({
   // Unités de SAISIE (l'app stocke et calcule toujours en métrique : cm, kg).
   // Par défaut = unités du client ; le toggle les mémorise via onUnitsChange.
   const [lengthUnit, setLengthUnit] = useState<LengthUnit>(client?.unitLength ?? 'cm')
-  // La GRANDEUR a son propre sélecteur cm/pouce : on la note souvent en pouces même
-  // quand les circonférences restent en cm. Initialisée sur le réglage global.
-  const [heightUnit, setHeightUnit] = useState<LengthUnit>(client?.unitLength ?? 'cm')
+  // La GRANDEUR a son propre sélecteur cm/pouce : on la note en POUCES même quand
+  // les circonférences restent en cm — c'est ainsi qu'on donne sa grandeur au
+  // Québec, et Marie rebasculait le sélecteur à chaque bilan.
+  //
+  // Le pouce est donc le défaut, quel que soit le réglage global du client : ce
+  // réglage pilote les circonférences, et la grandeur ne le suit pas. La
+  // bascule reste locale au formulaire — elle n'écrit rien et ne touche à
+  // aucune autre mesure. La base, elle, stocke toujours des centimètres.
+  const [heightUnit, setHeightUnit] = useState<LengthUnit>('in')
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(client?.unitWeight ?? 'kg')
   const applyUnits = (nextLength: LengthUnit, nextWeight: WeightUnit) => {
     setLengthUnit(nextLength)
