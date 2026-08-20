@@ -120,7 +120,10 @@ export function ProgressionChart({
   compareLabel,
   weightLossGoal = true
 }: ProgressionChartProps) {
-  const [metric, setMetric] = useState<MetricKey>('vo2max')
+  // Le score global ouvre la courbe : il résume le bilan entier, là où le
+  // VO2max n'en montrait qu'un domaine. C'est aussi la seule mesure jamais
+  // filtrée par `available`, donc le même point de départ pour tout client.
+  const [metric, setMetric] = useState<MetricKey>('overall')
 
   // Ne proposer que ce qui a été mesuré chez ce client — sinon la liste offre
   // une dizaine de courbes vides.
