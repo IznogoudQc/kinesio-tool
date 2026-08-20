@@ -30,6 +30,7 @@ import { StatCardXL } from '../dashboard/StatCardXL'
 import { CompositeMiniCard } from '../dashboard/CompositeMiniCard'
 import { ProgressionChart } from '../dashboard/ProgressionChart'
 import { SectionNotes } from '../dashboard/SectionNotes'
+import { JournalNotes } from '../dashboard/JournalNotes'
 import { MusculoRadar } from '../dashboard/MusculoRadar'
 import { CompositionCpaflaCard } from '../dashboard/CompositionCpaflaCard'
 import { CompositeCpaflaCard } from '../dashboard/CompositeCpaflaCard'
@@ -999,9 +1000,13 @@ export function DashboardTab() {
         </section>
       )}
 
-      {hasMultiple ? (
-        <section className="dash-rise space-y-5">
-          <SectionHead eyebrow="Dans le temps" title="Votre progression" />
+      {/* « Dans le temps » regroupe désormais la courbe ET le journal des
+          notes. La section s'affiche même avec un seul bilan : les notes
+          racontent une progression avant que les courbes n'aient deux points à
+          relier. */}
+      <section className="dash-rise space-y-5">
+        <SectionHead eyebrow="Dans le temps" title="Votre progression" />
+        {hasMultiple ? (
           <ProgressionChart
             bilans={bilans!}
             profile={profile}
@@ -1012,12 +1017,13 @@ export function DashboardTab() {
             compareLabel={compareShortLabel}
             weightLossGoal={weightLossGoal}
           />
-        </section>
-      ) : (
-        <div className="bg-gold/10 border border-gold/30 rounded-xl px-5 py-4 text-marine/70 text-sm">
-          Importez ou créez un 2e bilan pour voir la progression dans le temps.
-        </div>
-      )}
+        ) : (
+          <div className="bg-gold/10 border border-gold/30 rounded-xl px-5 py-4 text-marine/70 text-sm">
+            Importez ou créez un 2e bilan pour voir la progression dans le temps.
+          </div>
+        )}
+        {!printMode && <JournalNotes clientId={client.id} />}
+      </section>
 
       {/* « Forces et axes de progrès » retiré (v0.9.82, décision de Nicholas) : le
           bilan liste déjà chaque test avec sa cote, et la carte « À travailler »

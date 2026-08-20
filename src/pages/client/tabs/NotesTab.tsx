@@ -165,9 +165,12 @@ export function NotesTab() {
                   <p className="text-marine font-semibold text-sm">
                     {formatBilanDate(n.date)}
                     {libelleSection(n.section) && (
-                      <span className="ml-2 font-normal text-marine/45 text-xs">
-                        {libelleSection(n.section)}
-                      </span>
+                      <>
+                        {' · '}
+                        <span className="font-normal text-marine/45 text-xs">
+                          {libelleSection(n.section)}
+                        </span>
+                      </>
                     )}
                   </p>
                   <div className="flex items-center gap-3 shrink-0">
