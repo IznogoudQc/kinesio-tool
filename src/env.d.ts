@@ -145,6 +145,7 @@ interface BilanData {
   note_aerobie?: string
   note_musculo?: string
   note_indices?: string
+  note_notes?: string
   taille_cm?: number
   poids_kg?: number
   imc?: number

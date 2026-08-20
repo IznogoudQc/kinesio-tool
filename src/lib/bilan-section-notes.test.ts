@@ -34,10 +34,10 @@ test('les signes vitaux se lisent avec le cardio', () => {
   assert.equal(SECTION_BILAN_VERS_DASHBOARD.vitaux, 'aerobie')
 })
 
-test('le groupe « notes » n’est PAS repris', () => {
-  // Il porte l'objectif du client et le mot qui lui est adressé — déjà
-  // affichés ailleurs et destinés au document.
-  assert.equal(SECTION_BILAN_VERS_DASHBOARD.notes, undefined)
+test('le groupe « notes » remonte sous « Objectif »', () => {
+  // Il porte l'objectif du client et le mot qui lui est adressé ; la note
+  // PRIVÉE que Marie y ajoute se lit au même endroit qu'eux.
+  assert.equal(SECTION_BILAN_VERS_DASHBOARD.notes, 'objectif')
 })
 
 test('une section du tableau de bord ramasse toutes ses sections de formulaire', () => {
@@ -80,5 +80,5 @@ test('chaque section a sa clé dans la liste qu’autorise le schéma', () => {
   const attendues = Object.keys(SECTION_BILAN_VERS_DASHBOARD).map(cleNoteSection)
   assert.deepEqual(CLES_NOTES_SECTIONS, attendues)
   assert.ok(CLES_NOTES_SECTIONS.includes('note_plis'))
-  assert.equal(CLES_NOTES_SECTIONS.length, 7)
+  assert.equal(CLES_NOTES_SECTIONS.length, 8)
 })

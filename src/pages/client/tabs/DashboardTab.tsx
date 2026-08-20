@@ -366,6 +366,11 @@ export function DashboardTab() {
       return typeof v === 'number' && !Number.isNaN(v) ? v : null
     })
 
+  // Les deux textes libres du bilan affiché — ils n'existaient que dans le
+  // document remis au client.
+  const objectifTexte = typeof activeData.objectif === 'string' ? activeData.objectif.trim() : ''
+  const motAuClient = typeof activeData.notes === 'string' ? activeData.notes.trim() : ''
+
   // Série datée du % de gras (du plus ancien au plus récent) → courbe de tendance.
   const bodyFatSeries = [...(bilans ?? [])]
     .reverse()
@@ -960,6 +965,36 @@ export function DashboardTab() {
         <section className="dash-rise space-y-4">
           <SectionHead eyebrow="Objectif" title="Votre cible" />
           {objectif !== null && <ObjectifCard objectif={objectif} unit={client.unitWeight ?? 'kg'} />}
+
+          {/* Les deux textes saisis dans le bilan. Ils n'apparaissaient QUE dans
+              le document du client : Marie les écrivait sans jamais les revoir
+              dans son propre outil. Le « mot au client » est signalé comme
+              sortant — c'est la seule chose ici qui n'est pas privée. */}
+          {(objectifTexte || motAuClient) && (
+            <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm space-y-4">
+              {objectifTexte && (
+                <div>
+                  <p className="dash-eyebrow text-gold-dark">Objectif du client</p>
+                  <p className="text-marine/80 text-base whitespace-pre-wrap mt-1">{objectifTexte}</p>
+                </div>
+              )}
+              {motAuClient && (
+                <div>
+                  <p className="dash-eyebrow text-gold-dark">
+                    Mot au client{' '}
+                    <span className="font-normal normal-case tracking-normal text-marine/40 text-xs">
+                      apparaît dans le rapport remis au client
+                    </span>
+                  </p>
+                  <p className="text-marine/80 text-base whitespace-pre-wrap mt-1">{motAuClient}</p>
+                </div>
+              )}
+              <p className="text-marine/35 text-[11px]">
+                Saisis dans le bilan du {formatBilanDate((activeBilan ?? latest)!.date)}.
+              </p>
+            </div>
+          )}
+
           {!printMode && <SectionNotes clientId={client.id} section="objectif" bilans={bilans ?? undefined} />}
         </section>
       )}

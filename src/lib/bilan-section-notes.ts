@@ -30,8 +30,10 @@ export function cleNoteSection(groupId: string): string {
  * circonférences et les plis composent tous la note de composition
  * corporelle, et les signes vitaux se lisent avec le cardio.
  *
- * `notes` en est absent : ce groupe porte l'objectif du client et le mot qui
- * lui est adressé, tous deux déjà affichés ailleurs et destinés au document.
+ * Le groupe `notes` en fait partie depuis la v0.9.191 : il porte l'objectif du
+ * client et le mot qui lui est adressé, mais Marie a aussi besoin d'y écrire
+ * pour elle — « chaque section » voulait dire chaque section. Sa note privée
+ * remonte sous « Objectif », à côté de ces deux textes.
  */
 export const SECTION_BILAN_VERS_DASHBOARD: Record<string, string> = {
   vitaux: 'aerobie',
@@ -40,7 +42,8 @@ export const SECTION_BILAN_VERS_DASHBOARD: Record<string, string> = {
   plis: 'composition',
   aerobie: 'aerobie',
   musculo: 'musculo',
-  indices: 'general'
+  indices: 'general',
+  notes: 'objectif'
 }
 
 /**
