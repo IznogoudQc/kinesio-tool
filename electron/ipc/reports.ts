@@ -65,7 +65,13 @@ const SendReportSchema = z.object({
    */
   kind: z.enum(['bilan', 'nutrition', 'questionnaire']).optional(),
   /** Requis pour `kind: 'questionnaire'` — le HTML construit par le renderer. */
-  html: z.string().min(1).max(2_000_000).optional()
+  html: z.string().min(1).max(2_000_000).optional(),
+  /**
+   * Destinataires. Absent = l'adresse du client, le comportement historique.
+   * Sert surtout à la coach pour s'envoyer une copie et ouvrir les documents
+   * sur un autre poste, devant le client.
+   */
+  to: z.array(z.string().email().max(200)).min(1).max(3).optional()
 })
 
 export function registerReportsHandlers(): void {
@@ -265,9 +271,16 @@ export function registerReportsHandlers(): void {
 
   // ── Envoi du rapport par courriel (génère + attache + nettoie) ──────────────
   ipcMain.handle('reports:send-email', async (_e, payload: unknown) => {
-    const { clientId, subject, body, kind, html } = SendReportSchema.parse(payload)
+    const { clientId, subject, body, kind, html, to } = SendReportSchema.parse(payload)
     const client = getDb().select().from(clients).where(eq(clients.id, clientId)).get()
     if (!client) throw new Error('Client introuvable.')
+
+    // Les doublons partiraient en double dans l'en-tête To ; l'ordre est celui
+    // choisi dans la fenêtre d'envoi.
+    const destinataires = [...new Set(to ?? [client.email])].filter(Boolean)
+    if (destinataires.length === 0) {
+      throw new Error('Aucun destinataire : ce client n’a pas d’adresse courriel.')
+    }
 
     const credentials = await getSmtpCredentials()
     if (!credentials) {
@@ -314,12 +327,12 @@ export function registerReportsHandlers(): void {
       })
       await transporter.sendMail({
         from: credentials.user,
-        to: client.email,
+        to: destinataires,
         subject,
         text: body,
         attachments
       })
-      return { sentTo: client.email }
+      return { sentTo: destinataires.join(', ') }
     } finally {
       for (const path of paths) {
         try {

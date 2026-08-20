@@ -74,8 +74,10 @@ export const reportsService = {
     body: string,
     kind: 'bilan' | 'nutrition' | 'questionnaire' = 'bilan',
     /** Requis pour `questionnaire` — le formulaire construit par le renderer. */
-    html?: string
+    html?: string,
+    /** Destinataires. Absent = l'adresse du client. */
+    to?: string[]
   ): Promise<void> {
-    await window.api.reports.sendEmail({ clientId, subject, body, kind, html })
+    await window.api.reports.sendEmail({ clientId, subject, body, kind, html, to })
   }
 }

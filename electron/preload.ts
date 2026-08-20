@@ -163,6 +163,7 @@ contextBridge.exposeInMainWorld('api', {
       body: string
       kind?: 'bilan' | 'nutrition' | 'questionnaire'
       html?: string
+      to?: string[]
     }) => ipcRenderer.invoke('reports:send-email', data)
   },
   bilans: {

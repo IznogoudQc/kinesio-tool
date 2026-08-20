@@ -622,6 +622,8 @@ interface Window {
         body: string
         kind?: 'bilan' | 'nutrition' | 'questionnaire'
         html?: string
+        /** Absent = l'adresse du client. */
+        to?: string[]
       }): Promise<{ sentTo: string }>
     }
     bilans: {

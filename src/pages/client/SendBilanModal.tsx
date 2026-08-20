@@ -23,6 +23,22 @@ function applyVariables(text: string, vars: Record<string, string>): string {
   return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key: string) => vars[key] ?? `{{${key}}}`)
 }
 
+/**
+ * Qui reçoit l'envoi. `moi` sert à la coach : les mêmes pièces jointes dans sa
+ * propre boîte, pour les rouvrir sur un autre poste devant le client.
+ */
+type Destination = 'client' | 'moi' | 'deux'
+
+const DESTINATIONS: { value: Destination; label: string }[] = [
+  { value: 'client', label: 'Au client' },
+  { value: 'moi', label: 'À moi' },
+  { value: 'deux', label: 'Les deux' }
+]
+
+function estCourriel(valeur: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valeur.trim())
+}
+
 export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: SendBilanModalProps) {
   const isNutrition = kind === 'nutrition'
   const [subject, setSubject] = useState('')
@@ -30,6 +46,12 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [destination, setDestination] = useState<Destination>('client')
+  // Pré-remplie depuis le SMTP déjà configuré plutôt que redemandée : un second
+  // endroit où saisir son adresse, c'est un second endroit qui se désynchronise.
+  // Reste modifiable — chez certains fournisseurs l'identifiant SMTP n'est pas
+  // une adresse.
+  const [monAdresse, setMonAdresse] = useState('')
 
   useEffect(() => {
     // Le document nutrition a son propre modèle de courriel (≠ celui du bilan),
@@ -38,7 +60,11 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
       kind === 'nutrition'
         ? settingsService.getNutritionEmailTemplate()
         : settingsService.getEmailTemplate()
-    Promise.all([tplPromise, settingsService.getProfile()]).then(([tpl, profile]) => {
+    Promise.all([
+      tplPromise,
+      settingsService.getProfile(),
+      settingsService.getSmtpConfig()
+    ]).then(([tpl, profile, smtp]) => {
       const vars = {
         client_name: client.name,
         date: formatDate(),
@@ -47,6 +73,7 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
       }
       setSubject(applyVariables(tpl.subject, vars))
       setBody(applyVariables(tpl.body, vars))
+      if (smtp && estCourriel(smtp.user)) setMonAdresse(smtp.user)
       setLoading(false)
     })
   }, [client, kind])
@@ -66,10 +93,24 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
       setError('Sujet et corps sont requis.')
       return
     }
+    if (destination !== 'moi' && !estCourriel(client.email ?? '')) {
+      setError('Ce client n’a pas d’adresse courriel valide.')
+      return
+    }
+    if (destination !== 'client' && !estCourriel(monAdresse)) {
+      setError('Entrez l’adresse à laquelle vous envoyer la copie.')
+      return
+    }
+    const destinataires =
+      destination === 'client'
+        ? [client.email]
+        : destination === 'moi'
+          ? [monAdresse.trim()]
+          : [client.email, monAdresse.trim()]
     try {
       setSending(true)
-      await reportsService.sendReportByEmail(client.id, subject, body, kind)
-      onSent(client.email)
+      await reportsService.sendReportByEmail(client.id, subject, body, kind, undefined, destinataires)
+      onSent(destinataires.join(' et '))
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur lors de l\'envoi.'
       setError(message)
@@ -85,7 +126,7 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
             {isNutrition ? 'Envoyer le document nutrition' : 'Envoyer le bilan'}
           </h2>
           <p className="text-marine/55 text-base mb-5">
-            Destinataire&nbsp;: <span className="text-marine font-medium">{client.email}</span>
+            {isNutrition ? 'Document nutrition et journal alimentaire' : 'Rapport PDF et version interactive'}
           </p>
 
           {loading ? (
@@ -97,6 +138,53 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
                   {error}
                 </div>
               )}
+
+              <div>
+                <label className="block text-base font-medium text-marine mb-1.5">Destinataire</label>
+                <div className="inline-flex rounded-md border border-cream-dark overflow-hidden bg-white">
+                  {DESTINATIONS.map(d => (
+                    <button
+                      key={d.value}
+                      type="button"
+                      onClick={() => setDestination(d.value)}
+                      aria-pressed={destination === d.value}
+                      className={`px-4 py-1.5 text-base transition-colors ${
+                        destination === d.value
+                          ? 'bg-gold text-marine font-semibold'
+                          : 'text-marine/55 hover:text-marine'
+                      }`}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+
+                {destination !== 'moi' && (
+                  <p className="text-marine/55 text-sm mt-2">
+                    Client&nbsp;:{' '}
+                    <span className="text-marine font-medium">
+                      {client.email || <span className="text-red-700">aucune adresse</span>}
+                    </span>
+                  </p>
+                )}
+
+                {destination !== 'client' && (
+                  <div className="mt-2">
+                    <label className="block text-sm text-marine/55 mb-1">Mon adresse</label>
+                    <input
+                      type="email"
+                      value={monAdresse}
+                      onChange={e => setMonAdresse(e.target.value)}
+                      placeholder="vous@exemple.com"
+                      className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+                    />
+                    <p className="text-marine/45 text-xs mt-1">
+                      Reprise de votre configuration SMTP. Le sujet et le message ne changent pas — seule la
+                      destination change.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <div>
                 <label className="block text-base font-medium text-marine mb-1.5">Sujet</label>
