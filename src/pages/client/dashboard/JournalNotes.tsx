@@ -9,11 +9,14 @@ import { formatBilanDate } from '../bilanFields'
 const MAX_AFFICHEES = 5
 
 /**
- * Le journal des notes, dans la section « Dans le temps ».
+ * Le journal des notes, en bas du tableau de bord.
  *
- * Ces notes SONT une progression : elles racontent ce que les courbes ne disent
- * pas — ce que le client a essayé, ce qui a coincé, ce qu'il a dit. Les lire à
- * côté des graphiques donne la version longue de la même histoire.
+ * Ces notes racontent ce que les courbes ne disent pas — ce que le client a
+ * essayé, ce qui a coincé, ce qu'il a dit.
+ *
+ * Replié par défaut, comme les notes de section : Marie consulte souvent cette
+ * page avec le client à côté d'elle. Le compteur dit qu'il y a quelque chose à
+ * lire ; l'ouvrir est un geste volontaire.
  *
  * ── Ajouter ici, modifier ailleurs ──────────────────────────────────────────
  *
@@ -35,6 +38,7 @@ export function JournalNotes({ clientId }: { clientId: string }) {
   const [brouillon, setBrouillon] = useState('')
   const [occupe, setOccupe] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
+  const [ouvert, setOuvert] = useState(false)
 
   useEffect(() => {
     notesService.list(clientId).then(setNotes).catch(() => setNotes([]))
@@ -61,18 +65,28 @@ export function JournalNotes({ clientId }: { clientId: string }) {
 
   return (
     <div className="bg-white border border-cream-dark/30 rounded-xl p-5 shadow-sm">
-      <div className="flex items-center justify-between gap-3 mb-3">
+      <button
+        type="button"
+        onClick={() => setOuvert(o => !o)}
+        className="flex w-full items-center justify-between gap-3 text-left"
+      >
         <span className="flex items-center gap-2">
           <Lock size={13} className="text-marine/35" />
           <span className="dash-eyebrow text-gold-dark">Journal des notes</span>
+          {(notes?.length ?? 0) > 0 && (
+            <span className="text-marine/45 text-xs tabular-nums">
+              {notes!.length} note{notes!.length > 1 ? 's' : ''}
+            </span>
+          )}
         </span>
-        <Link
-          to={`/clients/${clientId}/notes`}
-          className="text-marine/40 hover:text-marine text-xs transition-colors"
-        >
-          Tout voir
-        </Link>
-      </div>
+        <span className="text-marine/40 text-xs">{ouvert ? 'Masquer' : 'Ouvrir'}</span>
+      </button>
+
+      {ouvert && (
+      <>
+      <p className="text-marine/40 text-[11px] mt-3 mb-2">
+        Visible par vous seule. Ces notes n’entrent ni dans le document du client ni dans le PDF.
+      </p>
 
       <div className="flex gap-2 mb-3">
         <textarea
@@ -120,12 +134,14 @@ export function JournalNotes({ clientId }: { clientId: string }) {
         </ol>
       )}
 
-      {reste > 0 && (
-        <p className="text-marine/40 text-xs mt-2">
-          <Link to={`/clients/${clientId}/notes`} className="hover:text-marine transition-colors">
-            {reste} note{reste > 1 ? 's' : ''} de plus — avec la modification et la suppression
-          </Link>
-        </p>
+      <p className="text-marine/40 text-xs mt-2">
+        <Link to={`/clients/${clientId}/notes`} className="hover:text-marine transition-colors">
+          {reste > 0
+            ? `${reste} note${reste > 1 ? 's' : ''} de plus — avec la modification et la suppression`
+            : 'Tout voir — avec la modification et la suppression'}
+        </Link>
+      </p>
+      </>
       )}
     </div>
   )

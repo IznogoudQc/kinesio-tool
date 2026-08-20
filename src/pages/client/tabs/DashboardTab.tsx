@@ -732,10 +732,9 @@ export function DashboardTab() {
         </div>
       )}
 
-      {/* « Dans le temps » regroupe désormais la courbe ET le journal des
-          notes. La section s'affiche même avec un seul bilan : les notes
-          racontent une progression avant que les courbes n'aient deux points à
-          relier. */}
+      {/* La trajectoire d'abord : quatre notes isolées ne disent pas dans quel
+          sens elles vont. Le journal des notes, lui, reste en bas — il se lit
+          au calme, pas en ouvrant la fiche devant le client. */}
       <section className="dash-rise space-y-5" style={{ animationDelay: '140ms' }}>
         <SectionHead eyebrow="Dans le temps" title="Votre progression" />
         {hasMultiple ? (
@@ -754,7 +753,6 @@ export function DashboardTab() {
             Importez ou créez un 2e bilan pour voir la progression dans le temps.
           </div>
         )}
-        {!printMode && <JournalNotes clientId={client.id} />}
       </section>
 
       {/* ── Composition corporelle ─────────────────────────────────────────── */}
@@ -1025,6 +1023,12 @@ export function DashboardTab() {
         </section>
       )}
 
+
+      {!printMode && (
+        <section className="dash-rise space-y-4" style={{ animationDelay: '210ms' }}>
+          <JournalNotes clientId={client.id} />
+        </section>
+      )}
 
       {/* « Forces et axes de progrès » retiré (v0.9.82, décision de Nicholas) : le
           bilan liste déjà chaque test avec sa cote, et la carte « À travailler »

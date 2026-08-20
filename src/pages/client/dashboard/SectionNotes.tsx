@@ -34,23 +34,20 @@ export function SectionNotes({
   const [occupe, setOccupe] = useState(false)
   const [erreur, setErreur] = useState<string | null>(null)
   /**
-   * Replié tant qu'il n'y a rien à lire, déplié dès qu'une note existe.
+   * Toujours replié à l'ouverture de la fiche, même quand des notes existent.
    *
-   * Cinq panneaux ouverts et vides noieraient le tableau de bord ; mais une
-   * note qu'il faut aller chercher derrière un clic ne se relit jamais — et
-   * c'est exactement au moment de rouvrir la fiche, juste avant de revoir le
-   * client, qu'elle sert.
+   * Ce sont des notes cliniques : Marie consulte souvent son tableau de bord
+   * avec le client à côté d'elle, parfois sur un écran qu'il voit. Les afficher
+   * d'office reviendrait à les lui montrer. Le compteur à droite du cadenas dit
+   * qu'il y a quelque chose à lire — c'est un clic pour l'ouvrir, et ce clic est
+   * volontaire.
    */
   const [ouvert, setOuvert] = useState(false)
 
   useEffect(() => {
     notesService
       .list(clientId)
-      .then(tout => {
-        const propres = tout.filter(n => n.section === section)
-        setNotes(propres)
-        if (propres.length > 0) setOuvert(true)
-      })
+      .then(tout => setNotes(tout.filter(n => n.section === section)))
       .catch(() => setNotes([]))
   }, [clientId, section])
 
@@ -88,14 +85,6 @@ export function SectionNotes({
     section,
     g => BILAN_FIELD_GROUPS.find(x => x.id === g)?.title ?? g
   )
-  // Ouvre aussi quand la seule chose à lire vient d'un bilan. Effet séparé et
-  // dépendant de la seule LONGUEUR : `notesBilans` est recalculé à chaque
-  // rendu, et le mettre dans les dépendances de l'effet de chargement
-  // relancerait la lecture en boucle.
-  useEffect(() => {
-    if (notesBilans.length > 0) setOuvert(true)
-  }, [notesBilans.length])
-
   const nb = (notes?.length ?? 0) + notesBilans.length
 
   return (
