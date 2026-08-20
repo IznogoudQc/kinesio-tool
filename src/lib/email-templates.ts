@@ -23,6 +23,22 @@ export const DEFAULT_BILAN_EMAIL: EmailTemplate = {
     '{{signature}}'
 }
 
+/**
+ * Copie que la coach s'envoie à elle-même. Court par construction : elle sait
+ * déjà ce qu'elle s'envoie et pourquoi. Ce qui compte, c'est de retrouver le
+ * courriel dans sa boîte — d'où le nom du client et la date dans le sujet.
+ */
+export const DEFAULT_COPIE_BILAN_EMAIL: EmailTemplate = {
+  subject: 'Bilan - {{client_name}} - {{date}}',
+  body: 'Bilan de {{client_name}} du {{date}}.\n\nRapport PDF et document interactif ci-joints.'
+}
+
+/** Copie à soi-même du document nutrition. */
+export const DEFAULT_COPIE_NUTRITION_EMAIL: EmailTemplate = {
+  subject: 'Nutrition - {{client_name}} - {{date}}',
+  body: 'Plan nutrition de {{client_name}} du {{date}}.\n\nDocument nutrition et journal alimentaire ci-joints.'
+}
+
 /** Courriel d'envoi du DOCUMENT NUTRITION (plan + journal alimentaire). */
 export const DEFAULT_NUTRITION_EMAIL: EmailTemplate = {
   subject: 'Votre plan nutrition - {{client_name}}',

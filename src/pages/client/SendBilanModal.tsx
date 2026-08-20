@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Loader2, Paperclip } from 'lucide-react'
+import { DEFAULT_COPIE_BILAN_EMAIL, DEFAULT_COPIE_NUTRITION_EMAIL } from '../../lib/email-templates'
 import { settingsService } from '../../services/settings'
 import { reportsService } from '../../services/reports'
 
@@ -43,6 +44,10 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
   const isNutrition = kind === 'nutrition'
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
+  // La copie à soi a son propre couple sujet/message : basculer d'un public à
+  // l'autre ne doit pas écraser ce qui a déjà été écrit pour le premier.
+  const [subjectMoi, setSubjectMoi] = useState('')
+  const [bodyMoi, setBodyMoi] = useState('')
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -73,6 +78,9 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
       }
       setSubject(applyVariables(tpl.subject, vars))
       setBody(applyVariables(tpl.body, vars))
+      const copie = kind === 'nutrition' ? DEFAULT_COPIE_NUTRITION_EMAIL : DEFAULT_COPIE_BILAN_EMAIL
+      setSubjectMoi(applyVariables(copie.subject, vars))
+      setBodyMoi(applyVariables(copie.body, vars))
       if (smtp && estCourriel(smtp.user)) setMonAdresse(smtp.user)
       setLoading(false)
     })
@@ -86,10 +94,16 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
     return () => window.removeEventListener('keydown', onKey)
   }, [onCancel, sending])
 
+  // Seul l'envoi à soi seule utilise le message court : dès que le client est
+  // dans les destinataires, c'est à lui que le courriel s'adresse.
+  const enCopie = destination === 'moi'
+  const sujetActif = enCopie ? subjectMoi : subject
+  const messageActif = enCopie ? bodyMoi : body
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    if (!subject.trim() || !body.trim()) {
+    if (!sujetActif.trim() || !messageActif.trim()) {
       setError('Sujet et corps sont requis.')
       return
     }
@@ -109,7 +123,7 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
           : [client.email, monAdresse.trim()]
     try {
       setSending(true)
-      await reportsService.sendReportByEmail(client.id, subject, body, kind, undefined, destinataires)
+      await reportsService.sendReportByEmail(client.id, sujetActif, messageActif, kind, undefined, destinataires)
       onSent(destinataires.join(' et '))
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erreur lors de l\'envoi.'
@@ -179,8 +193,10 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
                       className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
                     />
                     <p className="text-marine/45 text-xs mt-1">
-                      Reprise de votre configuration SMTP. Le sujet et le message ne changent pas — seule la
-                      destination change.
+                      Reprise de votre configuration SMTP.{' '}
+                      {enCopie
+                        ? 'Message court : ce courriel ne part qu’à vous.'
+                        : 'Le client reçoit le message ci-dessous ; vous en recevez une copie.'}
                     </p>
                   </div>
                 )}
@@ -190,8 +206,8 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
                 <label className="block text-base font-medium text-marine mb-1.5">Sujet</label>
                 <input
                   type="text"
-                  value={subject}
-                  onChange={e => setSubject(e.target.value)}
+                  value={sujetActif}
+                  onChange={e => (enCopie ? setSubjectMoi : setSubject)(e.target.value)}
                   className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
                 />
               </div>
@@ -199,8 +215,8 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
               <div>
                 <label className="block text-base font-medium text-marine mb-1.5">Message</label>
                 <textarea
-                  value={body}
-                  onChange={e => setBody(e.target.value)}
+                  value={messageActif}
+                  onChange={e => (enCopie ? setBodyMoi : setBody)(e.target.value)}
                   rows={10}
                   className="w-full px-3 py-2 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors leading-relaxed"
                 />
