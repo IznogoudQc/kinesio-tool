@@ -732,8 +732,33 @@ export function DashboardTab() {
         </div>
       )}
 
+      {/* « Dans le temps » regroupe désormais la courbe ET le journal des
+          notes. La section s'affiche même avec un seul bilan : les notes
+          racontent une progression avant que les courbes n'aient deux points à
+          relier. */}
+      <section className="dash-rise space-y-5" style={{ animationDelay: '140ms' }}>
+        <SectionHead eyebrow="Dans le temps" title="Votre progression" />
+        {hasMultiple ? (
+          <ProgressionChart
+            bilans={bilans!}
+            profile={profile}
+            activeBilanId={activeBilan!.id}
+            bodyFatTarget={objectif && !objectif.atGoal ? objectif.target : null}
+            bodyFatGoalLabel={objectif?.goalDate ?? null}
+            compareBilan={compareBilan}
+            compareLabel={compareShortLabel}
+            weightLossGoal={weightLossGoal}
+          />
+        ) : (
+          <div className="bg-gold/10 border border-gold/30 rounded-xl px-5 py-4 text-marine/70 text-sm">
+            Importez ou créez un 2e bilan pour voir la progression dans le temps.
+          </div>
+        )}
+        {!printMode && <JournalNotes clientId={client.id} />}
+      </section>
+
       {/* ── Composition corporelle ─────────────────────────────────────────── */}
-      <section id="dash-composition" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '140ms' }}>
+      <section id="dash-composition" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '160ms' }}>
         <SectionHead eyebrow="Composition corporelle" title="Votre silhouette" />
         {/* Taille, poids, IMC, tour de taille : info simple (pas de cote ni de barre) —
             Marie ne veut pas leur donner beaucoup d'importance, le % de gras reste la mesure clé. */}
@@ -854,7 +879,7 @@ export function DashboardTab() {
       </section>
 
       {/* ── Cœur et endurance ──────────────────────────────────────────────── */}
-      <section id="dash-cardio" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '160ms' }}>
+      <section id="dash-cardio" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '180ms' }}>
         <SectionHead eyebrow="Aptitude aérobie" title="Votre cœur et votre souffle" />
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Vo2Card}
@@ -910,7 +935,7 @@ export function DashboardTab() {
       </section>
 
       {/* ── Force et mobilité ──────────────────────────────────────────────── */}
-      <section id="dash-musculo" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '180ms' }}>
+      <section id="dash-musculo" className="dash-anchor dash-rise space-y-4" style={{ animationDelay: '200ms' }}>
         <SectionHead eyebrow="Force et mobilité" title="Six tests, six angles" />
         <MusculoRadar
           current={activeData}
@@ -1000,30 +1025,6 @@ export function DashboardTab() {
         </section>
       )}
 
-      {/* « Dans le temps » regroupe désormais la courbe ET le journal des
-          notes. La section s'affiche même avec un seul bilan : les notes
-          racontent une progression avant que les courbes n'aient deux points à
-          relier. */}
-      <section className="dash-rise space-y-5">
-        <SectionHead eyebrow="Dans le temps" title="Votre progression" />
-        {hasMultiple ? (
-          <ProgressionChart
-            bilans={bilans!}
-            profile={profile}
-            activeBilanId={activeBilan!.id}
-            bodyFatTarget={objectif && !objectif.atGoal ? objectif.target : null}
-            bodyFatGoalLabel={objectif?.goalDate ?? null}
-            compareBilan={compareBilan}
-            compareLabel={compareShortLabel}
-            weightLossGoal={weightLossGoal}
-          />
-        ) : (
-          <div className="bg-gold/10 border border-gold/30 rounded-xl px-5 py-4 text-marine/70 text-sm">
-            Importez ou créez un 2e bilan pour voir la progression dans le temps.
-          </div>
-        )}
-        {!printMode && <JournalNotes clientId={client.id} />}
-      </section>
 
       {/* « Forces et axes de progrès » retiré (v0.9.82, décision de Nicholas) : le
           bilan liste déjà chaque test avec sa cote, et la carte « À travailler »

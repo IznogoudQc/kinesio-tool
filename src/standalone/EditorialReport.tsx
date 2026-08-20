@@ -1735,6 +1735,31 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         )}
       </Section>
 
+      {bilans.length >= 2 && (
+        <Section
+          eyebrow="Dans le temps"
+          title="Le chemin parcouru"
+          lead="Choisissez la mesure qui vous intéresse. La ligne grise, quand elle apparaît, est la moyenne des personnes de votre âge et de votre sexe."
+          tone="white"
+          backTop
+        >
+          <ProgressionChart
+            bilans={bilans}
+            profile={profile}
+            activeBilanId={activeBilan.id}
+            compareBilan={compareBilan}
+            compareLabel={compareShortLabel}
+            /* Même formule que le dashboard : sans ça, le tour de hanche et le
+               poids seraient jugés dans un sens ici et dans l'autre à l'écran. */
+            weightLossGoal={
+              client.nutritionTargetWeightKg != null && typeof activeData.poids_kg === 'number'
+                ? activeData.poids_kg >= client.nutritionTargetWeightKg
+                : (objectif?.goal.toLoseKg ?? 0) >= 0
+            }
+          />
+        </Section>
+      )}
+
       <Section
         id="composition"
         hidden={cache('composition')}
@@ -1861,31 +1886,6 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
       </Section>
 
       <GlobalScoreBody computed={computed} />
-
-      {bilans.length >= 2 && (
-        <Section
-          eyebrow="Dans le temps"
-          title="Le chemin parcouru"
-          lead="Choisissez la mesure qui vous intéresse. La ligne grise, quand elle apparaît, est la moyenne des personnes de votre âge et de votre sexe."
-          tone="white"
-          backTop
-        >
-          <ProgressionChart
-            bilans={bilans}
-            profile={profile}
-            activeBilanId={activeBilan.id}
-            compareBilan={compareBilan}
-            compareLabel={compareShortLabel}
-            /* Même formule que le dashboard : sans ça, le tour de hanche et le
-               poids seraient jugés dans un sens ici et dans l'autre à l'écran. */
-            weightLossGoal={
-              client.nutritionTargetWeightKg != null && typeof activeData.poids_kg === 'number'
-                ? activeData.poids_kg >= client.nutritionTargetWeightKg
-                : (objectif?.goal.toLoseKg ?? 0) >= 0
-            }
-          />
-        </Section>
-      )}
 
       {(objectifText !== '' || objectif) && (
         <Section eyebrow="Votre objectif" backTop {...objectifHeading(objectif)}>
