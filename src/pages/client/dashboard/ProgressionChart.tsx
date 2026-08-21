@@ -13,12 +13,31 @@ import { TrendingUp } from 'lucide-react'
 import { formatBilanMonth } from '../bilanFields'
 import { isLowerBetter } from '../../../lib/norms/bilan-keys'
 import { getPopulationAverage, type TestKey } from '../../../lib/norms'
-import { computeBilan, type BilanProfile } from '../../../lib/bilan-computed'
+import { computeBilan, SHOW_BACK_HEALTH, type BilanProfile } from '../../../lib/bilan-computed'
 import { DeltaIndicator } from '../../../components/DeltaIndicator'
 import { ReportEye } from '../../../components/ReportEye'
 
-/** `'overall'` est recalculé ; les autres clés sont lues telles quelles dans BilanData. */
-type MetricKey = 'overall' | keyof BilanData
+/**
+ * Les cinq scores composites, RECALCULÉS à chaque bilan — ils ne sont stockés
+ * nulle part. Un score dépend de l'âge et du sexe au moment du test : le figer
+ * en base le rendrait faux le jour d'un anniversaire.
+ */
+const SCORES_COMPOSITES = {
+  overall: 'Score global',
+  composition: 'Composition corporelle',
+  aerobic: 'Aptitude aérobie',
+  backHealth: 'Indice de santé du dos',
+  musculoGlobal: 'Aptitude musculosquelettique globale'
+} as const
+
+type ScoreKey = keyof typeof SCORES_COMPOSITES
+
+function estScore(key: MetricKey): key is ScoreKey {
+  return key in SCORES_COMPOSITES
+}
+
+/** Un score composite, ou une mesure lue telle quelle dans BilanData. */
+type MetricKey = ScoreKey | keyof BilanData
 
 type MetricGroup = 'Vue d’ensemble' | 'Composition' | 'Circonférences' | 'Plis cutanés' | 'Cardio' | 'Musculosquelettique'
 
@@ -32,7 +51,15 @@ interface Metric {
 }
 
 const METRICS: Metric[] = [
-  { key: 'overall', label: 'Score global', unit: '/ 4', group: 'Vue d’ensemble' },
+  { key: 'overall', label: SCORES_COMPOSITES.overall, unit: '/ 4', group: 'Vue d’ensemble' },
+  // Les quatre domaines des cartes de synthèse, suivis dans le temps. Sans eux,
+  // on voyait la moyenne bouger sans savoir lequel l'avait fait bouger.
+  { key: 'composition', label: SCORES_COMPOSITES.composition, unit: '/ 4', group: 'Vue d’ensemble' },
+  { key: 'aerobic', label: SCORES_COMPOSITES.aerobic, unit: '/ 4', group: 'Vue d’ensemble' },
+  ...(SHOW_BACK_HEALTH
+    ? [{ key: 'backHealth' as const, label: SCORES_COMPOSITES.backHealth, unit: '/ 4', group: 'Vue d’ensemble' as const }]
+    : []),
+  { key: 'musculoGlobal', label: SCORES_COMPOSITES.musculoGlobal, unit: '/ 4', group: 'Vue d’ensemble' },
 
   { key: 'poids_kg', label: 'Poids', unit: 'kg', group: 'Composition' },
   // IMC et tour de taille : mentionnés, jamais évalués → pas de `testKey` (pas de zones).
@@ -87,7 +114,7 @@ const fmt = (v: number): string => v.toLocaleString('fr-CA', { maximumFractionDi
 
 /** Valeur d'un bilan pour la métrique affichée (le score global se recalcule). */
 function metricValue(bilan: Bilan, metric: MetricKey, profile: BilanProfile): number | null {
-  if (metric === 'overall') return computeBilan(bilan.data, profile).overall.score
+  if (estScore(metric)) return computeBilan(bilan.data, profile)[metric].score
   const raw = bilan.data[metric]
   return typeof raw === 'number' && !Number.isNaN(raw) ? raw : null
 }
@@ -129,10 +156,16 @@ export function ProgressionChart({
   // une dizaine de courbes vides.
   const available = useMemo(
     () =>
-      METRICS.filter(
-        m => m.key === 'overall' || bilans.some(b => typeof b.data[m.key as keyof BilanData] === 'number')
-      ),
-    [bilans]
+      METRICS.filter(m => {
+        // Le score global reste proposé même sans aucune mesure : c'est le point
+        // de départ commun à tous les clients.
+        if (m.key === 'overall') return true
+        // Un score de domaine n'a de sens que si ses tests ont été faits — sinon
+        // la liste offrirait quatre courbes vides.
+        if (estScore(m.key)) return bilans.some(b => metricValue(b, m.key, profile) !== null)
+        return bilans.some(b => typeof b.data[m.key as keyof BilanData] === 'number')
+      }),
+    [bilans, profile]
   )
   // La métrique choisie peut disparaître (changement de client) → repli sur la 1re.
   const current = available.find(m => m.key === metric) ?? available[0] ?? METRICS[0]
@@ -233,7 +266,7 @@ export function ProgressionChart({
                 previous={compareValue}
                 unit={current.unit}
                 lowerIsBetter={
-                  current.key === 'overall'
+                  estScore(current.key)
                     ? false
                     : isLowerBetter(current.key as keyof BilanData, weightLossGoal)
                 }
