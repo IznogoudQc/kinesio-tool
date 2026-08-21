@@ -164,10 +164,11 @@ export const aiAdviceService = {
 
   /**
    * IA : refait UN repas. `journee` donne le contexte des autres repas du jour,
-   * pour ne pas répéter un aliment déjà présent.
+   * pour ne pas répéter un aliment déjà présent. `consigne` est la demande que
+   * Marie vient d'écrire — vide la plupart du temps.
    */
   async regenerateMenuMeal(
-    payload: MenuContexte & { journee: string; repas: string }
+    payload: MenuContexte & { journee: string; repas: string; consigne?: string }
   ): Promise<{ ligne: string }> {
     return callMenu<{ ligne: string }>({ type: 'menu-repas', ...payload })
   },

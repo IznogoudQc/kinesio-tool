@@ -690,6 +690,8 @@ interface Window {
         journee?: string
         /** `menu-repas` : quel repas refaire. */
         repas?: string
+        /** Demande ponctuelle de la kinésiologue pour cette reprise. */
+        consigne?: string
       }): Promise<{ ok: boolean; plan?: unknown; error?: string; code?: string }>
       /**
        * Copie au presse-papiers le prompt EXACT qu'enverrait `generateNutrition`.

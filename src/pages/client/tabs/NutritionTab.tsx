@@ -587,6 +587,16 @@ export function NutritionTab() {
    *  repas. Un seul identifiant plutôt que deux états — il ne peut y en avoir
    *  qu'une à la fois, et le bouton concerné doit être le seul à réagir. */
   const [reprise, setReprise] = useState<string | null>(null)
+  /**
+   * Repas dont Marie est en train d'écrire la consigne, s'il y en a un.
+   *
+   * Le clic sur « Déjeuner » n'appelle plus l'IA directement : il ouvre un
+   * champ. Refaire un repas sans pouvoir dire POURQUOI revenait à retirer les
+   * dés et à espérer — alors qu'elle sait très bien ce qui cloche.
+   */
+  const [consigneRepas, setConsigneRepas] = useState<
+    { jour: number; repas: string; texte: string } | null
+  >(null)
   /** Deuxième clic pour effacer les sept journées. Une confirmation en place du
    *  bouton plutôt qu'une fenêtre système : sept journées, dont les retouches de
    *  Marie, ne se perdent pas sur un clic mal placé. */
@@ -972,15 +982,17 @@ export function NutritionTab() {
 
   /** IA : refait UN repas. Le reste de la journée est conservé tel quel — y
    *  compris ce que Marie y a écrit à la main. */
-  async function regenerateMeal(i: number, repas: string) {
+  async function regenerateMeal(i: number, repas: string, consigne?: string) {
     setAiError(null)
+    setConsigneRepas(null)
     setReprise(`${i}:${repas}`)
     try {
       const plan = await aiAdviceService.regenerateMenuMeal({
         ...contexteMenu(),
         moment: momentDeJournee(i),
         journee: menuJours[i] ?? '',
-        repas
+        repas,
+        consigne: consigne?.trim() || undefined
       })
       if (plan.ligne.trim()) {
         const remplacee = remplacerRepas(menuJours[i] ?? '', repas, plan.ligne, structure)
@@ -2107,14 +2119,72 @@ export function NutritionTab() {
                     <button
                       key={r}
                       type="button"
-                      onClick={() => regenerateMeal(i, r)}
+                      onClick={() =>
+                        setConsigneRepas(c =>
+                          c && c.jour === i && c.repas === r ? null : { jour: i, repas: r, texte: '' }
+                        )
+                      }
                       disabled={occupe}
-                      className="text-xs text-marine/45 hover:text-gold-dark underline decoration-dotted underline-offset-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline"
+                      className={`text-xs underline decoration-dotted underline-offset-2 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:no-underline ${
+                        consigneRepas?.jour === i && consigneRepas.repas === r
+                          ? 'text-gold-dark'
+                          : 'text-marine/45 hover:text-gold-dark'
+                      }`}
                     >
                       {reprise === `${i}:${r}` ? `${r}…` : r}
                     </button>
                   ))}
                 </div>
+
+                {/* Consigne ponctuelle : elle ne concerne que cette reprise et
+                    n'est enregistrée nulle part. Les préférences durables du
+                    client vivent plus haut, dans « Aliments aimés / à éviter ». */}
+                {consigneRepas?.jour === i && (
+                  <div className="mt-1.5 rounded-md border border-gold/40 bg-gold/5 px-2.5 py-2">
+                    <label className="block text-marine/60 text-xs mb-1">
+                      Refaire <span className="font-medium text-marine/80">{consigneRepas.repas}</span> — une
+                      consigne pour l’IA (facultatif)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={consigneRepas.texte}
+                        onChange={e =>
+                          setConsigneRepas(c => (c ? { ...c, texte: e.target.value } : c))
+                        }
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            regenerateMeal(i, consigneRepas.repas, consigneRepas.texte)
+                          }
+                          if (e.key === 'Escape') setConsigneRepas(null)
+                        }}
+                        placeholder="Ex. sans poisson · quelque chose qui se transporte · plus rapide à préparer"
+                        className="flex-1 min-w-0 px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine placeholder-marine/30 text-sm focus:outline-none focus:ring-2 focus:ring-gold/60 focus:border-gold transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => regenerateMeal(i, consigneRepas.repas, consigneRepas.texte)}
+                        disabled={occupe}
+                        className="shrink-0 inline-flex items-center gap-1 px-3 py-1.5 rounded-md border border-gold/50 text-marine/75 text-sm hover:border-gold hover:bg-gold/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      >
+                        <RefreshCw size={12} />
+                        Refaire
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setConsigneRepas(null)}
+                        className="shrink-0 text-marine/45 hover:text-marine text-sm transition-colors"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                    <p className="text-marine/40 text-[11px] mt-1">
+                      Laissez vide pour refaire sans consigne. Vaut pour cette reprise seulement.
+                    </p>
+                  </div>
+                )}
               </div>
             )
           })}

@@ -116,7 +116,11 @@ const NutritionPayloadSchema = z.object({
   /** Cibles d'UN repas et d'UNE collation, déjà réparties. Sans elles, le modèle
    *  proposait des collations aussi copieuses qu'un souper. */
   cibleRepas: z.string().max(200).optional(),
-  cibleCollation: z.string().max(200).optional()
+  cibleCollation: z.string().max(200).optional(),
+  /** Demande écrite par la kinésiologue au moment de refaire — « sans poisson »,
+   *  « quelque chose qui se transporte ». Le reste du contexte décrit le client
+   *  en général ; celle-ci ne vaut que pour cette reprise-ci. */
+  consigne: z.string().max(500).optional()
 })
 
 /** Plan de suppléments structuré : une liste de lignes par moment de prise. */
@@ -258,7 +262,8 @@ Règles :
 - UNE seule ligne, commençant par le nom du repas demandé suivi de « : ».
 - Reste COHÉRENT avec le reste de la journée : ne répète pas un aliment déjà présent aux autres repas de cette même journée.
 - Propose autre chose que la version actuelle du repas.
-- PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter.`
+- PRIORISE les aliments aimés, EXCLUS ceux non aimés / à éviter.
+- Si une CONSIGNE de la kinésiologue est donnée, elle PRIME sur les préférences alimentaires — mais jamais sur les cibles de macros ni sur le format de la ligne.`
 
 const SUPPLEMENT_TIMING_SYSTEM = `Tu es un assistant pour un(e) kinésiologue au Québec.
 
@@ -434,6 +439,13 @@ ${p.supplements.trim()}`)
   if (p.type === 'menu-repas') {
     lines.push(`\nRepas à refaire : ${p.repas ?? 'Déjeuner'}.`)
     lines.push(`Journée actuelle :\n${(p.journee ?? '').trim() || '(vide)'}`)
+  }
+
+  // En DERNIER, donc juste avant la génération : ce que la kinésiologue vient
+  // d'écrire pour cette reprise-ci. Le reste du message décrit le client en
+  // général ; cette phrase-là répond à ce qu'elle voit à l'écran.
+  if (p.consigne?.trim()) {
+    lines.push(`\nCONSIGNE de la kinésiologue pour CETTE reprise :\n${p.consigne.trim()}`)
   }
 
   return lines.join('\n')
