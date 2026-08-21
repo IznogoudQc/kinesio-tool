@@ -1,5 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Check, ChevronDown, ChevronRight, Lock } from 'lucide-react'
+
+/**
+ * La synthèse est-elle dépliée ? Mémorisé par poste, comme le repli de la
+ * barre latérale : sur un petit écran elle mange la moitié de la hauteur, et
+ * la refermer à chaque bilan serait un geste de trop.
+ */
+const CLE_SYNTHESE = 'bilan.synthese.ouverte'
 import { BILAN_FIELD_GROUPS, type BilanFieldDef, type BilanFieldGroup } from './bilanFields'
 import { cleNoteSection, SECTION_BILAN_VERS_DASHBOARD } from '../../lib/bilan-section-notes'
 import { CategoryBadge } from '../../components/CategoryBadge'
@@ -98,6 +105,16 @@ export function BilanForm({
   // bascule reste locale au formulaire — elle n'écrit rien et ne touche à
   // aucune autre mesure. La base, elle, stocke toujours des centimètres.
   const [heightUnit, setHeightUnit] = useState<LengthUnit>('in')
+  // Dépliée tant que rien n'a été choisi : c'est ainsi que la synthèse a
+  // toujours fonctionné, et elle n'a d'intérêt que visible pendant la saisie.
+  const [syntheseOuverte, setSyntheseOuverte] = useState(
+    () => typeof window === 'undefined' || window.localStorage.getItem(CLE_SYNTHESE) !== '0'
+  )
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(CLE_SYNTHESE, syntheseOuverte ? '1' : '0')
+    }
+  }, [syntheseOuverte])
   const [weightUnit, setWeightUnit] = useState<WeightUnit>(client?.unitWeight ?? 'kg')
   const applyUnits = (nextLength: LengthUnit, nextWeight: WeightUnit) => {
     setLengthUnit(nextLength)
@@ -417,17 +434,32 @@ export function BilanForm({
 
   return (
     <div className="space-y-5">
+      {/* Plus épinglée : sur un écran peu haut, une bande figée en haut du
+          défilement laissait trois lignes de formulaire visibles. */}
       {showSynthesis && (
-        <section
-          className={
-            isLight
-              ? 'sticky top-0 z-10 bg-cream/95 backdrop-blur-sm py-3 -mx-6 px-6 border-b border-marine/10 mb-2'
-              : ''
-          }
-        >
-          <h3 className={`text-sm font-semibold uppercase tracking-wide mb-2.5 ${sectionTitleClass}`}>
-            Synthèse — mise à jour en temps réel
-          </h3>
+        <section className={isLight ? 'py-3 -mx-6 px-6 border-b border-marine/10 mb-2' : ''}>
+          <button
+            type="button"
+            onClick={() => setSyntheseOuverte(o => !o)}
+            className="flex w-full items-center justify-between gap-3 text-left mb-2.5"
+          >
+            <span className="flex items-baseline gap-2.5">
+              <h3 className={`text-sm font-semibold uppercase tracking-wide ${sectionTitleClass}`}>
+                Synthèse — mise à jour en temps réel
+              </h3>
+              {/* Repliée, la synthèse garde son chiffre : c'est celui qu'on
+                  regarde en saisissant, les quatre cartes le détaillent. */}
+              {!syntheseOuverte && typeof computed.overall.score === 'number' && (
+                <span className={`text-sm font-semibold ${valueClass}`}>
+                  {computed.overall.score.toFixed(1)} / 4
+                </span>
+              )}
+            </span>
+            <span className={`shrink-0 text-xs ${labelClass}`}>
+              {syntheseOuverte ? 'Masquer' : 'Ouvrir'}
+            </span>
+          </button>
+          {syntheseOuverte && (
           <BilanSynthesisCards
             computed={computed}
             previous={previousComputed}
@@ -437,6 +469,7 @@ export function BilanForm({
             }
             emptyHint="Saisissez la grandeur + le poids + le VO2max pour voir la synthèse se calculer."
           />
+          )}
         </section>
       )}
 
