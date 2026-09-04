@@ -52,8 +52,10 @@ demandera plus qu'une entrée.
 ### Où le trouver
 
 **Dashboard → Mesures**, sous l'en-tête : *Générer PDF* · *Générer HTML* ·
-*Envoyer* — la même barre que le bilan, au même endroit dans son propre écran.
-Le document part aussi dans « Bilan et mesure » avec « Exporter les documents ».
+*Envoyer* · *Télécharger tous les documents* · *Ouvrir le dossier* — la barre du
+bilan, à l'identique, dans son propre écran. Les deux dernières visent le
+dossier du CLIENT : même geste que depuis le bilan, et l'export emporte le
+suivi des mesures depuis la v0.9.206.
 
 Il avait d'abord été posé dans l'onglet **Mesures**, sous le formulaire de
 saisie : personne ne l'y a trouvé. Un document se consulte et s'envoie depuis

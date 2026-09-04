@@ -13,7 +13,9 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardEdit,
+  Download,
   FileText,
+  FolderOpen,
   Globe,
   Loader2,
   Mail,
@@ -148,6 +150,7 @@ export function MesuresOverview() {
    * bas d'un formulaire de saisie, personne ne l'a trouvé.
    */
   const [docEnCours, setDocEnCours] = useState<'pdf' | 'html' | null>(null)
+  const [exportEnCours, setExportEnCours] = useState(false)
   const [envoiOuvert, setEnvoiOuvert] = useState(false)
   const [docErreur, setDocErreur] = useState<string | null>(null)
   const [docToast, setDocToast] = useState<string | null>(null)
@@ -482,6 +485,33 @@ export function MesuresOverview() {
     }
   }
 
+  /** Tous les documents du client dans le dossier configuré — le même geste que
+   *  depuis le bilan : c'est le dossier du CLIENT, pas celui d'un document. */
+  async function exporterTout() {
+    if (!client) return
+    setDocErreur(null)
+    setExportEnCours(true)
+    try {
+      const { count: n } = await reportsService.exportClientDocuments(client.id)
+      setDocToast(`${n} document${n > 1 ? 's' : ''} enregistré${n > 1 ? 's' : ''} dans le dossier.`)
+      window.setTimeout(() => setDocToast(null), 4000)
+    } catch (err) {
+      setDocErreur(err instanceof Error ? err.message : "Erreur lors de l'export.")
+    } finally {
+      setExportEnCours(false)
+    }
+  }
+
+  async function ouvrirDossier() {
+    if (!client) return
+    setDocErreur(null)
+    try {
+      await reportsService.openClientFolder(client.id)
+    } catch (err) {
+      setDocErreur(err instanceof Error ? err.message : "Impossible d'ouvrir le dossier.")
+    }
+  }
+
   if (!client) {
     return <div className="p-8 text-marine/60 text-base">Chargement du client…</div>
   }
@@ -661,6 +691,25 @@ export function MesuresOverview() {
         >
           <Mail size={15} />
           Envoyer
+        </button>
+        <button
+          type="button"
+          onClick={exporterTout}
+          disabled={exportEnCours}
+          title="Enregistre tous les documents du client (bilan, suivi des mesures, nutrition) dans le dossier configuré"
+          className="inline-flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {exportEnCours ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
+          {exportEnCours ? 'Export…' : 'Télécharger tous les documents'}
+        </button>
+        <button
+          type="button"
+          onClick={ouvrirDossier}
+          title="Ouvre le dossier du client dans l'explorateur"
+          className="inline-flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors"
+        >
+          <FolderOpen size={15} />
+          Ouvrir le dossier
         </button>
       </div>
       {docErreur && (
