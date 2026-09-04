@@ -101,6 +101,12 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('settings:templateNutrition:set', data),
     getDefaultNutritionEmailTemplate: () =>
       ipcRenderer.invoke('settings:templateNutrition:default'),
+    getMesuresEmailTemplate: () =>
+      ipcRenderer.invoke('settings:templateMesures:get'),
+    setMesuresEmailTemplate: (data: { subject: string; body: string }) =>
+      ipcRenderer.invoke('settings:templateMesures:set', data),
+    getDefaultMesuresEmailTemplate: () =>
+      ipcRenderer.invoke('settings:templateMesures:default'),
     getMesureFields: () =>
       ipcRenderer.invoke('settings:mesureFields:get'),
     setMesureFields: (value: string[]) =>

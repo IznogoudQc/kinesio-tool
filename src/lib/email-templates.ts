@@ -42,9 +42,9 @@ export const DEFAULT_COPIE_NUTRITION_EMAIL: EmailTemplate = {
 /**
  * Courriel d'envoi du SUIVI DES MESURES (PDF + document HTML).
  *
- * Pas encore éditable dans les Paramètres, contrairement au bilan et à la
- * nutrition : le document vient d'apparaître, et une case de réglage de plus
- * sans besoin exprimé se règle une fois puis s'oublie.
+ * Texte par défaut : Marie-Eve le modifie dans Paramètres → Courriel, comme
+ * ceux du bilan et de la nutrition. C'est aussi celui que rend le bouton
+ * « Rétablir le texte par défaut ».
  */
 export const DEFAULT_MESURES_EMAIL: EmailTemplate = {
   subject: 'Vos mesures - {{client_name}}',

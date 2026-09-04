@@ -55,6 +55,17 @@ export const settingsService = {
     return window.api.settings.getDefaultNutritionEmailTemplate()
   },
 
+  /** Modèle de courriel du suivi des mesures (distinct des deux autres). */
+  async getMesuresEmailTemplate(): Promise<EmailTemplate> {
+    return window.api.settings.getMesuresEmailTemplate()
+  },
+  async setMesuresEmailTemplate(data: EmailTemplate): Promise<void> {
+    return window.api.settings.setMesuresEmailTemplate(data)
+  },
+  async getDefaultMesuresEmailTemplate(): Promise<EmailTemplate> {
+    return window.api.settings.getDefaultMesuresEmailTemplate()
+  },
+
   /** `null` : Marie-Eve n'a jamais choisi → toutes les circonférences sont saisies. */
   async getMesureFields(): Promise<MesureFieldKey[] | null> {
     return window.api.settings.getMesureFields()

@@ -90,6 +90,7 @@ export function SettingsPage() {
               <SmtpCard />
               <TemplateCard kind="bilan" />
               <TemplateCard kind="nutrition" />
+              <TemplateCard kind="mesures" />
             </>
           )}
           {tab === 'ia' && <AIProviderCard />}
@@ -624,31 +625,63 @@ function ExportBaremes() {
   )
 }
 
-function TemplateCard({ kind }: { kind: 'bilan' | 'nutrition' }) {
+/**
+ * Un modèle de courriel par document.
+ *
+ * Table plutôt que suite de `if` : à deux modèles, un booléen suffisait ; au
+ * troisième, chaque ternaire aurait dû être rouvert, et il s'en trouve un pour
+ * le titre, un pour la description, un pour lire, un pour écrire et un pour le
+ * défaut. Ajouter un quatrième document ne demande maintenant qu'une entrée.
+ */
+const MODELES_COURRIEL = {
+  bilan: {
+    titre: "Template d'email — Bilan",
+    description: "Modèle utilisé pour l'envoi du bilan. Les variables sont remplacées automatiquement.",
+    lire: () => settingsService.getEmailTemplate(),
+    ecrire: (t: EmailTemplate) => settingsService.setEmailTemplate(t),
+    defaut: () => settingsService.getDefaultEmailTemplate()
+  },
+  nutrition: {
+    titre: "Template d'email — Nutrition",
+    description:
+      "Modèle utilisé pour l'envoi du document nutrition. Les variables sont remplacées automatiquement.",
+    lire: () => settingsService.getNutritionEmailTemplate(),
+    ecrire: (t: EmailTemplate) => settingsService.setNutritionEmailTemplate(t),
+    defaut: () => settingsService.getDefaultNutritionEmailTemplate()
+  },
+  mesures: {
+    titre: "Template d'email — Suivi des mesures",
+    description:
+      "Modèle utilisé pour l'envoi du suivi des mesures. Les variables sont remplacées automatiquement.",
+    lire: () => settingsService.getMesuresEmailTemplate(),
+    ecrire: (t: EmailTemplate) => settingsService.setMesuresEmailTemplate(t),
+    defaut: () => settingsService.getDefaultMesuresEmailTemplate()
+  }
+} as const
+
+function TemplateCard({ kind }: { kind: keyof typeof MODELES_COURRIEL }) {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState<SaveStatus>('idle')
   const [error, setError] = useState<string | null>(null)
 
-  const isNutrition = kind === 'nutrition'
+  const modele = MODELES_COURRIEL[kind]
 
   useEffect(() => {
-    const p = isNutrition ? settingsService.getNutritionEmailTemplate() : settingsService.getEmailTemplate()
-    p.then(t => {
+    MODELES_COURRIEL[kind].lire().then(t => {
       setSubject(t.subject)
       setBody(t.body)
       setLoading(false)
     })
-  }, [isNutrition])
+  }, [kind])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setStatus('saving')
     setError(null)
     try {
-      if (isNutrition) await settingsService.setNutritionEmailTemplate({ subject, body })
-      else await settingsService.setEmailTemplate({ subject, body })
+      await modele.ecrire({ subject, body })
       setStatus('saved')
       setTimeout(() => setStatus(s => (s === 'saved' ? 'idle' : s)), 2500)
     } catch (err) {
@@ -658,15 +691,7 @@ function TemplateCard({ kind }: { kind: 'bilan' | 'nutrition' }) {
   }
 
   return (
-    <Card
-      title={isNutrition ? "Template d'email — Nutrition" : "Template d'email — Bilan"}
-      icon={Mail}
-      description={
-        isNutrition
-          ? "Modèle utilisé pour l'envoi du document nutrition. Les variables sont remplacées automatiquement."
-          : "Modèle utilisé pour l'envoi du bilan. Les variables sont remplacées automatiquement."
-      }
-    >
+    <Card title={modele.titre} icon={Mail} description={modele.description}>
       {loading ? (
         <p className="text-marine/45 text-base">Chargement…</p>
       ) : (
@@ -707,9 +732,7 @@ function TemplateCard({ kind }: { kind: 'bilan' | 'nutrition' }) {
             <button
               type="button"
               onClick={async () => {
-                const d = isNutrition
-                  ? await settingsService.getDefaultNutritionEmailTemplate()
-                  : await settingsService.getDefaultEmailTemplate()
+                const d = await modele.defaut()
                 setSubject(d.subject)
                 setBody(d.body)
               }}

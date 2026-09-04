@@ -38,6 +38,17 @@ côté de celle des quatre, à partir de la première prise qui le contient. Ell
 vient de `s5pcForScoring` — le point d'entrée unique de la cotation CPAFLA —
 plutôt que d'une addition écrite une deuxième fois.
 
+### Le courriel se modifie comme les autres
+
+Paramètres → Courriel a maintenant trois cartes : **Bilan**, **Nutrition** et
+**Suivi des mesures**, chacune avec son sujet, son corps et son bouton
+« Rétablir le texte par défaut ».
+
+Les trois passaient par des ternaires (`isNutrition ? … : …`) — un pour le
+titre, un pour la description, un pour lire, un pour écrire, un pour le défaut.
+Ils cèdent la place à une table `MODELES_COURRIEL` : un quatrième document ne
+demandera plus qu'une entrée.
+
 ### Où le trouver
 
 Onglet **Mesures** : *PDF*, *Version interactive*, *Envoyer*. Le document part

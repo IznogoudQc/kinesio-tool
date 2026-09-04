@@ -17,7 +17,7 @@ import {
 } from '../../src/lib/food-suggestions'
 import { MACROS_PAR_100G } from '../../src/lib/food-macros'
 import { DEFAULT_PAIN_SUGGESTIONS } from '../../src/lib/pain-suggestions'
-import { DEFAULT_BILAN_EMAIL, DEFAULT_NUTRITION_EMAIL } from '../../src/lib/email-templates'
+import { DEFAULT_BILAN_EMAIL, DEFAULT_MESURES_EMAIL, DEFAULT_NUTRITION_EMAIL } from '../../src/lib/email-templates'
 
 const KEYTAR_SERVICE = 'kinesio-outils'
 const KEYTAR_ACCOUNT = 'smtp-password'
@@ -28,6 +28,7 @@ const KEYS = {
   smtp: 'smtp.config',
   emailTemplate: 'email.template',
   emailTemplateNutrition: 'email.template_nutrition',
+  emailTemplateMesures: 'email.template_mesures',
   // `categorization_norms` retiré (v0.9.31) : l'app suit uniquement le CPAFLA.
   // Une éventuelle ligne résiduelle en base est simplement ignorée.
   mesureFields: 'mesures.fields',
@@ -226,6 +227,22 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:templateNutrition:set', async (_e, data: unknown) => {
     const validated = EmailTemplateSchema.parse(data)
     await writeKey(KEYS.emailTemplateNutrition, JSON.stringify(validated))
+  })
+
+  // ── Modèle de courriel du SUIVI DES MESURES (distinct des deux autres) ──────
+  ipcMain.handle('settings:templateMesures:get', async () => {
+    const raw = await readKey(KEYS.emailTemplateMesures)
+    if (!raw) return DEFAULT_MESURES_EMAIL
+    try {
+      return EmailTemplateSchema.parse(JSON.parse(raw))
+    } catch {
+      return DEFAULT_MESURES_EMAIL
+    }
+  })
+  ipcMain.handle('settings:templateMesures:default', () => DEFAULT_MESURES_EMAIL)
+  ipcMain.handle('settings:templateMesures:set', async (_e, data: unknown) => {
+    const validated = EmailTemplateSchema.parse(data)
+    await writeKey(KEYS.emailTemplateMesures, JSON.stringify(validated))
   })
 
   ipcMain.handle('settings:mesureFields:get', async () => {

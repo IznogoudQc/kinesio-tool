@@ -3,8 +3,7 @@ import { Loader2, Paperclip } from 'lucide-react'
 import {
   DEFAULT_COPIE_BILAN_EMAIL,
   DEFAULT_COPIE_MESURES_EMAIL,
-  DEFAULT_COPIE_NUTRITION_EMAIL,
-  DEFAULT_MESURES_EMAIL
+  DEFAULT_COPIE_NUTRITION_EMAIL
 } from '../../lib/email-templates'
 import { settingsService } from '../../services/settings'
 import { reportsService } from '../../services/reports'
@@ -66,13 +65,11 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
   const [monAdresse, setMonAdresse] = useState('')
 
   useEffect(() => {
-    // Le document nutrition a son propre modèle de courriel (≠ celui du bilan),
-    // tous deux éditables dans Paramètres → Courriel. Le suivi des mesures, lui,
-    // part d'un modèle intégré : il vient d'apparaître, et un réglage de plus
-    // sans besoin exprimé se remplit une fois puis s'oublie.
+    // Chaque document a son propre modèle de courriel — bilan, nutrition et
+    // suivi des mesures — tous trois éditables dans Paramètres → Courriel.
     const tplPromise =
       kind === 'mesures'
-        ? Promise.resolve(DEFAULT_MESURES_EMAIL)
+        ? settingsService.getMesuresEmailTemplate()
         : kind === 'nutrition'
           ? settingsService.getNutritionEmailTemplate()
           : settingsService.getEmailTemplate()

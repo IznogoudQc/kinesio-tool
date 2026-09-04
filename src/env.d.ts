@@ -558,6 +558,9 @@ interface Window {
       getNutritionEmailTemplate(): Promise<EmailTemplate>
       setNutritionEmailTemplate(data: EmailTemplate): Promise<void>
       getDefaultNutritionEmailTemplate(): Promise<EmailTemplate>
+      getMesuresEmailTemplate(): Promise<EmailTemplate>
+      setMesuresEmailTemplate(data: EmailTemplate): Promise<void>
+      getDefaultMesuresEmailTemplate(): Promise<EmailTemplate>
       /** `null` = réglage jamais enregistré → afficher toutes les circonférences. */
       getMesureFields(): Promise<MesureFieldKey[] | null>
       setMesureFields(value: MesureFieldKey[]): Promise<void>
