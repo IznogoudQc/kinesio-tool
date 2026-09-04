@@ -186,13 +186,21 @@ function MeasureField({
         onChange={e => onChange(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)}
         className="w-full px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors"
       />
-      <MeasureDelta
-        current={value}
-        previous={previousValue}
-        previousDate={previousDate}
-        unit={unit}
-        lowerIsBetter={lowerIsBetter}
-      />
+      {/* La valeur précédente reste affichée PENDANT la saisie, et ne cède pas
+          la place au delta : c'est le chiffre qu'on relit en mesurant — « il
+          était à combien, ce biceps ? ». La faire disparaître au premier chiffre
+          tapé enlèverait le repère juste au moment où il sert. */}
+      {typeof previousValue === 'number' && (
+        <p className="text-marine/40 text-xs mt-1">
+          Précédent&nbsp;:{' '}
+          <span className="text-marine/60 font-medium tabular-nums">
+            {nf1(previousValue)} {unit}
+          </span>
+          {previousDate && <span className="text-marine/35"> · {formatBilanDate(previousDate)}</span>}
+        </p>
+      )}
+      {/* La date n'est pas repassée au delta : elle est déjà sur la ligne au-dessus. */}
+      <MeasureDelta current={value} previous={previousValue} unit={unit} lowerIsBetter={lowerIsBetter} />
       {extra}
     </div>
   )
@@ -408,10 +416,33 @@ function MeasureEntryPanel({
     return [...byDate.values()].sort((a, b) => (a.date < b.date ? 1 : -1))
   }, [circList, plisList])
 
-  // Prise précédente (date strictement antérieure) — pour les deltas.
+  // Prise précédente (date strictement antérieure) — pour le ratio taille/hanche,
+  // qui doit venir d'une SEULE prise : un ratio calculé sur deux dates ne veut
+  // rien dire.
   const previous = useMemo<PriseEntry | null>(() => history.find(h => h.date < date) ?? null, [history, date])
   const previousCircRow = previous?.circ ?? null
-  const previousPlisRow = previous?.plis ?? null
+
+  /**
+   * Dernière valeur CONNUE d'un champ, avant la date du formulaire.
+   *
+   * Champ par champ, et non « la prise précédente » : Marie choisit les
+   * circonférences qu'elle prend, donc les prises ont des trous. Chercher dans
+   * la seule ligne d'avant affichait « Première mesure » pour un biceps mesuré
+   * deux prises plus tôt — une affirmation fausse. Chaque champ porte donc sa
+   * propre date.
+   */
+  const derniereValeur = useCallback(
+    (lire: (e: PriseEntry) => number | null | undefined): { valeur: number; date: string } | null => {
+      // `history` est trié du plus récent au plus ancien : la 1re trouvée est la bonne.
+      for (const e of history) {
+        if (e.date >= date) continue
+        const v = lire(e)
+        if (typeof v === 'number' && !Number.isNaN(v)) return { valeur: v, date: e.date }
+      }
+      return null
+    },
+    [history, date]
+  )
 
   function setCircField(key: CircKey, v: number | undefined) {
     setCircForm(f => {
@@ -430,13 +461,20 @@ function MeasureEntryPanel({
     })
   }
 
-  const previousCirc = (key: CircKey): number | undefined => {
-    const v = previousCircRow?.[key]
-    return typeof v === 'number' ? cmToLengthInput(v, unitLength) : undefined
+  const precCirc = (key: CircKey) => {
+    const d = derniereValeur(e => e.circ?.[key])
+    return d ? { valeur: cmToLengthInput(d.valeur, unitLength), date: d.date } : null
   }
-  const previousPoids = previousCircRow?.poidsKg != null ? kgToWeightInput(previousCircRow.poidsKg, unitWeight) : undefined
-  const previousGrandeur =
-    previousCircRow?.grandeurCm != null ? cmToLengthInput(previousCircRow.grandeurCm, heightUnit) : undefined
+  const precPoids = (() => {
+    const d = derniereValeur(e => e.circ?.poidsKg)
+    return d ? { valeur: kgToWeightInput(d.valeur, unitWeight), date: d.date } : null
+  })()
+  const precGrandeur = (() => {
+    const d = derniereValeur(e => e.circ?.grandeurCm)
+    return d ? { valeur: cmToLengthInput(d.valeur, heightUnit), date: d.date } : null
+  })()
+  // Les plis restent en mm : rien à convertir.
+  const precPli = (key: PlisKey) => derniereValeur(e => e.plis?.[key])
 
   const LOWER_IS_BETTER_CIRC: Partial<Record<CircKey, boolean>> = { taille: true, hanche: true, abdomen: true }
 
@@ -452,8 +490,8 @@ function MeasureEntryPanel({
         unit={lenLabel}
         value={circForm[key]}
         onChange={v => setCircField(key, v)}
-        previousValue={previousCirc(key)}
-        previousDate={previousCircRow?.date}
+        previousValue={precCirc(key)?.valeur}
+        previousDate={precCirc(key)?.date}
         lowerIsBetter={LOWER_IS_BETTER_CIRC[key] ?? false}
         extra={riskBar}
       />
@@ -647,8 +685,8 @@ function MeasureEntryPanel({
             unit={wLabel}
             value={poids}
             onChange={setPoids}
-            previousValue={previousPoids}
-            previousDate={previousCircRow?.date}
+            previousValue={precPoids?.valeur}
+            previousDate={precPoids?.date}
             lowerIsBetter
           />
           <MeasureField
@@ -672,8 +710,8 @@ function MeasureEntryPanel({
             }
             value={grandeur}
             onChange={setGrandeur}
-            previousValue={previousGrandeur}
-            previousDate={previousCircRow?.date}
+            previousValue={precGrandeur?.valeur}
+            previousDate={precGrandeur?.date}
             extra={
               grandeur !== undefined ? (
                 heightUnit === 'in' ? (
@@ -723,8 +761,8 @@ function MeasureEntryPanel({
                   unit="mm"
                   value={plisForm[f.key]}
                   onChange={v => setPlisField(f.key, v)}
-                  previousValue={previousPlisRow?.[f.key] ?? undefined}
-                  previousDate={previousPlisRow?.date}
+                  previousValue={precPli(f.key)?.valeur}
+                  previousDate={precPli(f.key)?.date}
                   lowerIsBetter
                 />
               ))}
