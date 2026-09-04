@@ -13,6 +13,10 @@ import {
   ChevronDown,
   ChevronRight,
   ClipboardEdit,
+  FileText,
+  Globe,
+  Loader2,
+  Mail,
   Plus,
   Ruler,
   Sparkles,
@@ -21,6 +25,8 @@ import {
 import { useClient } from '../ClientDetailLayout'
 import { bilansService } from '../../../services/bilans'
 import { mesuresService } from '../../../services/mesures'
+import { reportsService } from '../../../services/reports'
+import { SendBilanModal } from '../SendBilanModal'
 import { formatBilanDate, formatBilanMonth } from '../bilanFields'
 import { MesureSelectorPills } from './MesureSelectorPills'
 import {
@@ -134,6 +140,17 @@ export function MesuresOverview() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedMetric, setSelectedMetric] = useState<MetricKey>(loadSelectedMetric)
+  /**
+   * Document « Suivi des mesures ».
+   *
+   * Ici et non dans l'onglet de saisie : un document se consulte et s'envoie
+   * depuis l'écran où on REGARDE les mesures, comme le bilan depuis le sien. En
+   * bas d'un formulaire de saisie, personne ne l'a trouvé.
+   */
+  const [docEnCours, setDocEnCours] = useState<'pdf' | 'html' | null>(null)
+  const [envoiOuvert, setEnvoiOuvert] = useState(false)
+  const [docErreur, setDocErreur] = useState<string | null>(null)
+  const [docToast, setDocToast] = useState<string | null>(null)
   const [period, setPeriod] = useState<PeriodFilter>('all')
   const [showDetails, setShowDetails] = useState(false)
 
@@ -448,6 +465,23 @@ export function MesuresOverview() {
 
   // ─── Tous les hooks ont été appelés — early returns autorisés à partir d'ici.
 
+  async function ouvrirDocument(format: 'pdf' | 'html') {
+    if (!client) return
+    setDocErreur(null)
+    setDocEnCours(format)
+    try {
+      const chemin =
+        format === 'pdf'
+          ? await reportsService.generateMesuresPdf(client.id)
+          : await reportsService.generateMesuresHtml(client.id)
+      await reportsService.openPdf(chemin)
+    } catch (err) {
+      setDocErreur(err instanceof Error ? err.message : 'Le document n’a pas pu être généré.')
+    } finally {
+      setDocEnCours(null)
+    }
+  }
+
   if (!client) {
     return <div className="p-8 text-marine/60 text-base">Chargement du client…</div>
   }
@@ -591,6 +625,47 @@ export function MesuresOverview() {
           Nouvelle prise
         </button>
       </header>
+
+      {/* Même barre que le bilan : deux aperçus, puis l'envoi. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={() => ouvrirDocument('pdf')}
+          disabled={docEnCours !== null || unifiedDates.length === 0}
+          title="Ouvre le suivi des mesures en PDF"
+          className="inline-flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {docEnCours === 'pdf' ? <Loader2 size={15} className="animate-spin" /> : <FileText size={15} />}
+          {docEnCours === 'pdf' ? 'Génération…' : 'Générer PDF'}
+        </button>
+        <button
+          type="button"
+          onClick={() => ouvrirDocument('html')}
+          disabled={docEnCours !== null || unifiedDates.length === 0}
+          title="Ouvre le document interactif dans votre navigateur — le même que celui joint au courriel"
+          className="inline-flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {docEnCours === 'html' ? <Loader2 size={15} className="animate-spin" /> : <Globe size={15} />}
+          {docEnCours === 'html' ? 'Génération…' : 'Générer HTML'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setEnvoiOuvert(true)}
+          disabled={docEnCours !== null || unifiedDates.length === 0}
+          title={
+            unifiedDates.length === 0
+              ? 'Aucune prise enregistrée pour ce client'
+              : 'Envoie le suivi des mesures par courriel'
+          }
+          className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-sm hover:bg-gold-dark transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Mail size={15} />
+          Envoyer
+        </button>
+      </div>
+      {docErreur && (
+        <p className="text-red-700 text-sm bg-red-50 border border-red-200 rounded-md px-4 py-2">{docErreur}</p>
+      )}
 
       {/* ── Sélecteur de prise (Synthèse + une pill par date) + référence ── */}
       {unifiedDates.length > 0 && (
@@ -756,6 +831,24 @@ export function MesuresOverview() {
         referenceLabel={referenceLabel}
       />
 
+      {envoiOuvert && (
+        <SendBilanModal
+          client={client}
+          kind="mesures"
+          onCancel={() => setEnvoiOuvert(false)}
+          onSent={destinataire => {
+            setEnvoiOuvert(false)
+            setDocToast(`Suivi des mesures envoyé à ${destinataire}`)
+            window.setTimeout(() => setDocToast(null), 4000)
+          }}
+        />
+      )}
+
+      {docToast && (
+        <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-marine text-cream text-base font-medium px-5 py-3 rounded-lg shadow-2xl border border-marine-light/40">
+          {docToast}
+        </div>
+      )}
     </div>
   )
 }

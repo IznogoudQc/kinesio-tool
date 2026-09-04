@@ -51,8 +51,13 @@ demandera plus qu'une entrée.
 
 ### Où le trouver
 
-Onglet **Mesures** : *PDF*, *Version interactive*, *Envoyer*. Le document part
-aussi dans « Bilan et mesure » avec « Exporter les documents ».
+**Dashboard → Mesures**, sous l'en-tête : *Générer PDF* · *Générer HTML* ·
+*Envoyer* — la même barre que le bilan, au même endroit dans son propre écran.
+Le document part aussi dans « Bilan et mesure » avec « Exporter les documents ».
+
+Il avait d'abord été posé dans l'onglet **Mesures**, sous le formulaire de
+saisie : personne ne l'y a trouvé. Un document se consulte et s'envoie depuis
+l'écran où on REGARDE les mesures, pas depuis celui où on les saisit.
 
 ## ✅ Fait (v0.9.118 — Le PDF des barèmes : checklist de validation + mise à jour)
 

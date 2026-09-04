@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useBlocker } from 'react-router-dom'
-import { Calculator, FileText, Loader2, Mail, PencilLine, Save, SlidersHorizontal, Trash2 } from 'lucide-react'
+import { Calculator, Loader2, PencilLine, Save, SlidersHorizontal, Trash2 } from 'lucide-react'
 import { useClient } from '../ClientDetailLayout'
 import { mesuresService } from '../../../services/mesures'
 import { settingsService } from '../../../services/settings'
@@ -27,8 +27,6 @@ import {
 import { clientsService } from '../../../services/clients'
 import { formatBilanDate } from '../bilanFields'
 import { lireSaisiePlis, type SaisiePlis } from '../../../lib/plis-moyenne'
-import { reportsService } from '../../../services/reports'
-import { SendBilanModal } from '../SendBilanModal'
 import { MeasureDelta } from '../../../components/MeasureDelta'
 import { WaistRiskBar } from '../../../components/WaistRiskBar'
 
@@ -509,26 +507,6 @@ function MeasureEntryPanel({
    * saisie, sinon le champ s'effacerait à chaque frappe de barre oblique.
    */
   const [plisTexte, setPlisTexte] = useState<Partial<Record<PlisKey, string>>>({})
-  /** Document « Suivi des mesures » : ouverture d'un aperçu, ou envoi au client. */
-  const [docEnCours, setDocEnCours] = useState<'pdf' | 'html' | null>(null)
-  const [envoiOuvert, setEnvoiOuvert] = useState(false)
-  const [docMsg, setDocMsg] = useState<string | null>(null)
-
-  async function ouvrirDocument(format: 'pdf' | 'html') {
-    setDocMsg(null)
-    setDocEnCours(format)
-    try {
-      const chemin =
-        format === 'pdf'
-          ? await reportsService.generateMesuresPdf(client.id)
-          : await reportsService.generateMesuresHtml(client.id)
-      await reportsService.openPdf(chemin)
-    } catch (err) {
-      setDocMsg(err instanceof Error ? err.message : 'Le document n’a pas pu être généré.')
-    } finally {
-      setDocEnCours(null)
-    }
-  }
 
   function setPliTexte(key: PlisKey, texte: string) {
     setPlisTexte(t => ({ ...t, [key]: texte }))
@@ -936,52 +914,6 @@ function MeasureEntryPanel({
         </div>
       </div>
 
-      {/* Le document remis au client — les prises n'atteignaient personne
-          jusqu'ici : la synchronisation ne va que du bilan vers les mesures. */}
-      <section className="bg-white border border-cream-dark rounded-xl px-5 py-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h3 className="text-marine font-semibold text-base">Suivi des mesures</h3>
-            <p className="text-marine/50 text-sm mt-0.5">
-              Toutes les prises, avec la courbe de chaque mesure. Vos notes n’y figurent pas.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => ouvrirDocument('pdf')}
-              disabled={docEnCours !== null || history.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-cream-dark text-marine/70 text-sm hover:border-gold hover:text-marine transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {docEnCours === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
-              PDF
-            </button>
-            <button
-              type="button"
-              onClick={() => ouvrirDocument('html')}
-              disabled={docEnCours !== null || history.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-cream-dark text-marine/70 text-sm hover:border-gold hover:text-marine transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {docEnCours === 'html' ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />}
-              Version interactive
-            </button>
-            <button
-              type="button"
-              onClick={() => setEnvoiOuvert(true)}
-              disabled={docEnCours !== null || history.length === 0}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gold text-marine font-semibold text-sm hover:bg-gold-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Mail size={14} />
-              Envoyer
-            </button>
-          </div>
-        </div>
-        {history.length === 0 && (
-          <p className="text-marine/40 text-xs mt-2">Le document sera disponible dès la première prise enregistrée.</p>
-        )}
-        {docMsg && <p className="text-red-700 text-sm mt-2">{docMsg}</p>}
-      </section>
-
       {/* Historique combiné (une ligne par prise/date) */}
       <section>
         <h3 className="text-marine font-semibold text-lg mb-3">Prises précédentes</h3>
@@ -1072,17 +1004,6 @@ function MeasureEntryPanel({
         />
       )}
 
-      {envoiOuvert && (
-        <SendBilanModal
-          client={client}
-          kind="mesures"
-          onCancel={() => setEnvoiOuvert(false)}
-          onSent={destinataire => {
-            setEnvoiOuvert(false)
-            notify(`Suivi des mesures envoyé à ${destinataire}`)
-          }}
-        />
-      )}
     </div>
   )
 }
