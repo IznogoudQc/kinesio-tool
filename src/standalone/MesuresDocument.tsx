@@ -1,7 +1,18 @@
+import { useMemo, useState } from 'react'
+import {
+  CartesianGrid,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts'
 import { FOREST_BG, Section, type StandaloneData } from './EditorialReport'
 import logoConseil from '../assets/logo-conseil.png'
-import { formatBilanDate } from '../pages/client/bilanFields'
-import { evolution, groupesDeMesures, type SerieMesure } from '../lib/mesures-doc'
+import { formatBilanDate, formatBilanMonth } from '../pages/client/bilanFields'
+import { evolution, groupesDeMesures, type GroupeMesures, type SerieMesure } from '../lib/mesures-doc'
 
 /**
  * Document « Suivi des mesures » — les prises de l'onglet Mesures, remises au
@@ -175,6 +186,193 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
   )
 }
 
+/** Fenêtres proposées sous le graphique, comptées depuis la DERNIÈRE prise. */
+const FENETRES = [
+  { cle: 'tout', label: 'Tout', mois: null },
+  { cle: '1an', label: '12 derniers mois', mois: 12 },
+  { cle: '6mois', label: '6 derniers mois', mois: 6 }
+] as const
+
+type CleFenetre = (typeof FENETRES)[number]['cle']
+
+/**
+ * Retire les points antérieurs à la fenêtre choisie.
+ *
+ * Comptée depuis la dernière prise et non depuis aujourd'hui : ce document est
+ * un fichier, relu des mois plus tard. « 6 derniers mois » à partir du jour de
+ * lecture finirait par ne plus rien montrer.
+ */
+function filtrer(points: SerieMesure['points'], mois: number | null): SerieMesure['points'] {
+  if (mois === null || points.length === 0) return points
+  const fin = new Date(points[points.length - 1].date)
+  const debut = new Date(fin)
+  debut.setMonth(debut.getMonth() - mois)
+  const limite = debut.toISOString().slice(0, 10)
+  return points.filter(p => p.date >= limite)
+}
+
+function InfoBulle({
+  active,
+  payload,
+  unite
+}: {
+  active?: boolean
+  payload?: { payload: { date: string; valeur: number } }[]
+  unite: string
+}) {
+  if (!active || !payload?.length) return null
+  const p = payload[0].payload
+  return (
+    <div className="rounded-md border border-cream-dark bg-white px-3 py-2 shadow-lg">
+      <p className="text-xs text-marine/50">{formatBilanDate(p.date)}</p>
+      <p className="text-base font-semibold text-marine tabular-nums">
+        {nf1(p.valeur)} <span className="text-sm font-medium text-marine/50">{unite}</span>
+      </p>
+    </div>
+  )
+}
+
+/**
+ * Le pendant interactif des encadrés : on choisit une mesure, on la lit dans le
+ * temps, on survole un point pour sa date exacte.
+ *
+ * Hors impression (`ed-no-print`). Le PDF est l'impression de cette même page :
+ * un menu de sélection et une courbe survolable n'y auraient aucun sens, et les
+ * encadrés statiques racontent déjà la même chose sur papier.
+ */
+function ExplorateurMesures({ groupes }: { groupes: GroupeMesures[] }) {
+  const toutes = useMemo(() => groupes.flatMap(g => g.series), [groupes])
+  const [cle, setCle] = useState(toutes[0]?.cle ?? '')
+  const [fenetre, setFenetre] = useState<CleFenetre>('tout')
+
+  const serie = toutes.find(s => s.cle === cle) ?? toutes[0]
+  if (!serie) return null
+
+  const mois = FENETRES.find(f => f.cle === fenetre)?.mois ?? null
+  const points = filtrer(serie.points, mois)
+  const donnees = points.map(p => ({ ...p, mois: formatBilanMonth(p.date) }))
+  const premier = points[0]
+  const dernier = points[points.length - 1]
+
+  return (
+    <section className="ed-no-print ed-anchor bg-white">
+      <div className="mx-auto max-w-5xl px-6 py-16 sm:px-8 sm:py-24">
+        <p className="ed-eyebrow text-gold-dark">Explorer</p>
+        <h2 className="ed-display ed-section-title mt-3 text-marine">Choisissez une mesure</h2>
+        <p className="ed-prose mt-4 max-w-2xl text-base text-marine/60">
+          Chaque mesure prise se trace ici. Survolez un point pour retrouver sa date exacte.
+        </p>
+
+        <div className="mt-8 space-y-4">
+          {groupes.map(g => (
+            <div key={g.titre}>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-marine/55">{g.titre}</p>
+              <div className="flex flex-wrap gap-2">
+                {g.series.map(s => (
+                  <button
+                    key={s.cle}
+                    type="button"
+                    onClick={() => setCle(s.cle)}
+                    aria-pressed={s.cle === serie.cle}
+                    className={`rounded-md border px-2.5 py-1 text-xs font-medium transition-colors ${
+                      s.cle === serie.cle
+                        ? 'border-marine bg-marine text-cream'
+                        : 'border-cream-dark bg-cream-dark/30 text-marine hover:bg-cream-dark/50'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {serie.points.length > 2 && (
+          <div className="mt-6 flex flex-wrap items-center gap-1.5 border-t border-cream-dark/50 pt-4">
+            <p className="mr-1 text-xs font-medium uppercase tracking-wide text-marine/55">Période</p>
+            {FENETRES.map(f => (
+              <button
+                key={f.cle}
+                type="button"
+                onClick={() => setFenetre(f.cle)}
+                aria-pressed={f.cle === fenetre}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  f.cle === fenetre
+                    ? 'bg-marine text-cream'
+                    : 'border border-cream-dark text-marine/65 hover:border-gold/60 hover:text-marine'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <p className="mt-5 text-sm text-marine/60">
+          <span className="font-medium text-marine">{serie.label}</span>
+          {premier && dernier && points.length > 1 ? (
+            <>
+              {' '}— de {nf1(premier.valeur)} à {nf1(dernier.valeur)} {serie.unite}, soit{' '}
+              <span className="font-medium text-marine tabular-nums">
+                {signe(Math.round((dernier.valeur - premier.valeur) * 10) / 10)} {serie.unite}
+              </span>
+            </>
+          ) : (
+            ' — une seule prise sur cette période.'
+          )}
+        </p>
+
+        <div className="mt-4 h-72 w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={donnees} margin={{ top: 12, right: 16, bottom: 0, left: -12 }}>
+              <CartesianGrid stroke="rgba(10, 28, 94, 0.08)" vertical={false} />
+              <XAxis
+                dataKey="mois"
+                tick={{ fill: 'rgba(10, 28, 94, 0.55)', fontSize: 11 }}
+                stroke="rgba(10, 28, 94, 0.15)"
+              />
+              <YAxis
+                tick={{ fill: 'rgba(10, 28, 94, 0.55)', fontSize: 11 }}
+                stroke="rgba(10, 28, 94, 0.15)"
+                width={48}
+                domain={['auto', 'auto']}
+              />
+              <Tooltip content={<InfoBulle unite={serie.unite} />} />
+              {/* La première valeur de la fenêtre, en repère : c'est d'elle que
+                  se compte l'écart annoncé juste au-dessus. Sur « 6 derniers
+                  mois », ce n'est PAS la première prise du suivi — l'étiquette
+                  le dit, sinon le repère mentirait. */}
+              {premier && points.length > 1 && (
+                <ReferenceLine
+                  y={premier.valeur}
+                  stroke="rgba(10, 28, 94, 0.35)"
+                  strokeDasharray="4 4"
+                  label={{
+                    value: mois === null ? 'Première prise' : 'Début de la période',
+                    position: 'insideBottomLeft',
+                    fill: 'rgba(10, 28, 94, 0.55)',
+                    fontSize: 11
+                  }}
+                />
+              )}
+              <Line
+                type="monotone"
+                dataKey="valeur"
+                stroke="#b8874a"
+                strokeWidth={2.5}
+                dot={{ r: 3.5, fill: '#b8874a' }}
+                activeDot={{ r: 5.5 }}
+                connectNulls
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 const TITRES: Record<string, string> = {
   'Poids et composition': 'Ce que la balance et les plis racontent',
   Circonférences: 'Le ruban, centimètre par centimètre',
@@ -232,6 +430,8 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
         </div>
         <div aria-hidden="true" />
       </header>
+
+      {groupes.length > 0 && <ExplorateurMesures groupes={groupes} />}
 
       {groupes.length === 0 ? (
         <Section eyebrow="Suivi des mesures" title="Aucune mesure pour l’instant" tone="white">

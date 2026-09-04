@@ -15,6 +15,20 @@ Un quatrième document s'ajoute : **PDF + version interactive**, même coquille
 éditoriale que le bilan. Une carte par mesure (dernière valeur, écart depuis la
 première prise, courbe), puis le tableau complet prise par prise.
 
+### La version HTML explore, le PDF résume
+
+Le document s'ouvre sur un **explorateur** : les mesures en pastilles, un
+graphique survolable, et trois fenêtres (« Tout », « 12 derniers mois »,
+« 6 derniers mois »). Les fenêtres se comptent depuis la **dernière prise** et
+non depuis aujourd'hui — le document est un fichier, relu des mois plus tard, et
+« 6 derniers mois » à partir du jour de lecture finirait par ne rien montrer.
+
+Ce bloc est `ed-no-print` : il n'existe pas sur papier. Un menu de sélection et
+une courbe survolable n'ont aucun sens dans un PDF, et les encadrés statiques
+racontent déjà la même chose. La ligne de repère change de nom selon la fenêtre
+(« Première prise » / « Début de la période ») : sur six mois, ce n'est pas la
+première prise du suivi, et l'étiquette mentirait.
+
 ### Un seul rendu pour les deux formats
 
 Le PDF est **l'impression du HTML** (`htmlFileToPdf`, le chemin déjà utilisé par
