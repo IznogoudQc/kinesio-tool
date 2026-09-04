@@ -31,6 +31,25 @@ import { WaistRiskBar } from '../../../components/WaistRiskBar'
 
 // ── Helpers de formatage (fr-CA, virgule décimale) ──────────────────────────────
 const nf1 = (n: number): string => n.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
+
+/**
+ * Saisir chaque pli trois fois plutôt qu'une ? Mémorisé par poste : c'est une
+ * façon de travailler, pas un réglage qu'on change d'un client à l'autre.
+ */
+const CLE_TRIPLE_PLIS = 'mesures.plis.triple'
+
+/**
+ * Moyenne des prises réellement entrées, arrondie au dixième de millimètre.
+ *
+ * On ne force pas les trois : une deuxième prise identique à la première suffit
+ * souvent, et exiger la troisième bloquerait l'enregistrement. Ce qui est vide
+ * ne compte pas — le zéro, lui, resterait une valeur.
+ */
+function moyennePlis(valeurs: (number | undefined)[]): number | undefined {
+  const prises = valeurs.filter((v): v is number => typeof v === 'number' && !Number.isNaN(v))
+  if (prises.length === 0) return undefined
+  return Math.round((prises.reduce((a, b) => a + b, 0) / prises.length) * 10) / 10
+}
 const nf4 = (n: number): string =>
   n.toLocaleString('fr-CA', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
 
@@ -152,7 +171,8 @@ function MeasureField({
   previousValue,
   previousDate,
   lowerIsBetter,
-  extra
+  extra,
+  inputSlot
 }: {
   label: string
   unit: string
@@ -168,6 +188,8 @@ function MeasureField({
   lowerIsBetter?: boolean
   /** Slot pour une visualisation supplémentaire (ex: <WaistRiskBar>). */
   extra?: React.ReactNode
+  /** Remplace le champ unique (plis en triple prise). `value` reste la valeur retenue. */
+  inputSlot?: React.ReactNode
 }) {
   return (
     <div className="min-w-0">
@@ -177,15 +199,17 @@ function MeasureField({
         </span>
         {unitToggle}
       </label>
-      <input
-        type="number"
-        step="any"
-        min="0"
-        inputMode="decimal"
-        value={value === undefined ? '' : value}
-        onChange={e => onChange(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)}
-        className="w-full px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors"
-      />
+      {inputSlot ?? (
+        <input
+          type="number"
+          step="any"
+          min="0"
+          inputMode="decimal"
+          value={value === undefined ? '' : value}
+          onChange={e => onChange(Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)}
+          className="w-full px-2.5 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-base focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors"
+        />
+      )}
       {/* La valeur précédente reste affichée PENDANT la saisie, et ne cède pas
           la place au delta : c'est le chiffre qu'on relit en mesurant — « il
           était à combien, ce biceps ? ». La faire disparaître au premier chiffre
@@ -202,6 +226,57 @@ function MeasureField({
       {/* La date n'est pas repassée au delta : elle est déjà sur la ligne au-dessus. */}
       <MeasureDelta current={value} previous={previousValue} unit={unit} lowerIsBetter={lowerIsBetter} />
       {extra}
+    </div>
+  )
+}
+
+/**
+ * Trois prises d'un même pli, dont on retient la moyenne.
+ *
+ * La mesure d'un pli varie d'un essai à l'autre — pincement, vitesse de
+ * lecture. Répéter et moyenner est la pratique normale ; jusqu'ici il fallait
+ * faire ce calcul de tête avant d'écrire un seul chiffre.
+ *
+ * Seule la MOYENNE est enregistrée : la base a une colonne par pli, et les
+ * trois prises intermédiaires n'ont pas d'usage une fois la moyenne faite.
+ */
+function TriplePliInput({
+  prises,
+  onPrise,
+  moyenne
+}: {
+  prises: (number | undefined)[]
+  onPrise: (index: number, v: number | undefined) => void
+  moyenne: number | undefined
+}) {
+  return (
+    <div>
+      <div className="flex gap-1.5">
+        {[0, 1, 2].map(i => (
+          <input
+            key={i}
+            type="number"
+            step="any"
+            min="0"
+            inputMode="decimal"
+            aria-label={`Prise ${i + 1}`}
+            placeholder={`${i + 1}`}
+            value={prises[i] === undefined ? '' : prises[i]}
+            onChange={e => onPrise(i, Number.isNaN(e.target.valueAsNumber) ? undefined : e.target.valueAsNumber)}
+            className="w-full min-w-0 px-2 py-1.5 border border-cream-dark rounded-md bg-white text-marine text-base placeholder-marine/25 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold transition-colors"
+          />
+        ))}
+      </div>
+      <p className="text-marine/45 text-xs mt-1">
+        {moyenne === undefined ? (
+          'Une à trois prises — la moyenne sera retenue.'
+        ) : (
+          <>
+            Moyenne retenue&nbsp;:{' '}
+            <span className="text-marine/75 font-medium tabular-nums">{nf1(moyenne)} mm</span>
+          </>
+        )}
+      </p>
     </div>
   )
 }
@@ -452,6 +527,42 @@ function MeasureEntryPanel({
       return next
     })
   }
+  /** Mode « trois prises par pli », mémorisé par poste. */
+  const [triplePlis, setTriplePlis] = useState(
+    () => typeof window !== 'undefined' && window.localStorage.getItem(CLE_TRIPLE_PLIS) === '1'
+  )
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(CLE_TRIPLE_PLIS, triplePlis ? '1' : '0')
+    }
+  }, [triplePlis])
+  // Les prises intermédiaires ne vivent que le temps de la saisie : la base ne
+  // garde que la moyenne.
+  const [plisPrises, setPlisPrises] = useState<Partial<Record<PlisKey, (number | undefined)[]>>>({})
+
+  function setPliPrise(key: PlisKey, index: number, v: number | undefined) {
+    const prises = [...(plisPrises[key] ?? [undefined, undefined, undefined])]
+    prises[index] = v
+    setPlisPrises(p => ({ ...p, [key]: prises }))
+    setPlisField(key, moyennePlis(prises))
+  }
+
+  /**
+   * En passant en triple, la valeur déjà écrite devient la 1re prise : basculer
+   * le mode ne doit pas effacer ce qui est saisi. En repassant en simple, la
+   * moyenne reste dans le champ — c'est elle qu'on enregistre de toute façon.
+   */
+  function basculerTriple(actif: boolean) {
+    setTriplePlis(actif)
+    if (actif) {
+      setPlisPrises(() => {
+        const init: Partial<Record<PlisKey, (number | undefined)[]>> = {}
+        for (const f of PLIS_FIELDS) init[f.key] = [plisForm[f.key], undefined, undefined]
+        return init
+      })
+    }
+  }
+
   function setPlisField(key: PlisKey, v: number | undefined) {
     setPlisForm(f => {
       const next = { ...f }
@@ -547,6 +658,7 @@ function MeasureEntryPanel({
     setGrandeur(undefined)
     setCircForm({})
     setPlisForm({})
+    setPlisPrises({})
     setNotes('')
     setEditCircId(null)
     setEditPlisId(null)
@@ -747,7 +859,18 @@ function MeasureEntryPanel({
         {/* Plis cutanés (mêmes prise/date) + composition estimée */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-5 items-start">
           <div>
-            <p className="text-marine/60 text-sm font-medium uppercase tracking-wide mb-2">Plis cutanés (mm)</p>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <p className="text-marine/60 text-sm font-medium uppercase tracking-wide">Plis cutanés (mm)</p>
+              <label className="inline-flex items-center gap-2 text-marine/55 text-xs cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={triplePlis}
+                  onChange={e => basculerTriple(e.target.checked)}
+                  className="accent-gold-dark"
+                />
+                Trois prises par pli (moyenne)
+              </label>
+            </div>
             {!profileComplete && (
               <p className="text-marine/45 text-sm mb-2">
                 Complétez le profil (date de naissance + sexe) pour calculer le % de gras.
@@ -764,6 +887,15 @@ function MeasureEntryPanel({
                   previousValue={precPli(f.key)?.valeur}
                   previousDate={precPli(f.key)?.date}
                   lowerIsBetter
+                  inputSlot={
+                    triplePlis ? (
+                      <TriplePliInput
+                        prises={plisPrises[f.key] ?? [undefined, undefined, undefined]}
+                        onPrise={(i, v) => setPliPrise(f.key, i, v)}
+                        moyenne={plisForm[f.key]}
+                      />
+                    ) : undefined
+                  }
                 />
               ))}
             </div>
