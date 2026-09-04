@@ -68,8 +68,8 @@ import logoConseil from '../assets/logo-conseil.png'
 export interface StandaloneData {
   /** Type de document rendu par le gabarit autonome. `'report'` (défaut) = bilan
    *  interactif ; `'nutrition'` = document nutrition & jeûne ; `'foodlog'` = journal
-   *  alimentaire vierge imprimable. */
-  docType?: 'report' | 'nutrition' | 'foodlog'
+   *  alimentaire vierge imprimable ; `'mesures'` = suivi des prises de mesures. */
+  docType?: 'report' | 'nutrition' | 'foodlog' | 'mesures'
   client: {
     name: string
     sex: 'F' | 'M' | null
@@ -111,6 +111,26 @@ export interface StandaloneData {
   /** Photo du client en data URI, ou `null` — le fichier reste autonome. */
   avatarDataUrl: string | null
   bilans: Bilan[]
+  /**
+   * Prises de l'onglet Mesures — présentes uniquement pour `docType: 'mesures'`.
+   *
+   * Les colonnes brutes des deux tables, moins les notes : celles-ci sont
+   * écrites pendant la mesure, pour la kinésiologue, et n'ont pas à voyager
+   * dans un document remis au client.
+   */
+  mesures?: {
+    circonferences: { date: string; [colonne: string]: number | string | null | undefined }[]
+    plis: {
+      date: string
+      triceps?: number | null
+      biceps?: number | null
+      sousscapulaire?: number | null
+      iliaque?: number | null
+      mollet?: number | null
+      somme4Plis?: number | null
+      pourcentageGrasSiri?: number | null
+    }[]
+  }
   /** Bilan a ouvrir par defaut. `null`/absent = bilan de synthese. */
   selectedBilanId?: string | null
   kinesiologist: string
@@ -239,7 +259,7 @@ function ScoreBadge({ items }: { items: { label?: string; score: CompositeScore 
   )
 }
 
-function Section({
+export function Section({
   eyebrow,
   title,
   lead,
@@ -541,7 +561,7 @@ function CompositeRow({
 // Vite l'inline en data URI au build (`assetsInlineLimit` très élevé dans
 // vite.standalone.config.ts), donc le document reste autonome et hors ligne.
 // Le cadrage (`cover`, position) est géré par `.ed-hero-forest` dans editorial.css.
-const FOREST_BG = `url(${forestUrl})`
+export const FOREST_BG = `url(${forestUrl})`
 
 
 function Hero({

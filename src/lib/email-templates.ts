@@ -39,6 +39,31 @@ export const DEFAULT_COPIE_NUTRITION_EMAIL: EmailTemplate = {
   body: 'Plan nutrition de {{client_name}} du {{date}}.\n\nDocument nutrition et journal alimentaire ci-joints.'
 }
 
+/**
+ * Courriel d'envoi du SUIVI DES MESURES (PDF + document HTML).
+ *
+ * Pas encore éditable dans les Paramètres, contrairement au bilan et à la
+ * nutrition : le document vient d'apparaître, et une case de réglage de plus
+ * sans besoin exprimé se règle une fois puis s'oublie.
+ */
+export const DEFAULT_MESURES_EMAIL: EmailTemplate = {
+  subject: 'Vos mesures - {{client_name}}',
+  body:
+    'Bonjour {{client_name}},\n\n' +
+    'Vous trouverez ci-joint le suivi de vos mesures, sous deux formes.\n\n' +
+    '1. Le PDF — à consulter, imprimer ou conserver.\n\n' +
+    '2. Le document interactif (fichier .html) — ouvrez-le dans votre navigateur en double-cliquant dessus. ' +
+    "Il montre chaque mesure et son évolution depuis la première prise, fonctionne sans connexion Internet, et aucune de vos données n'est transmise : tout est contenu dans le fichier." + '\n\n' +
+    "N'hésitez pas à me contacter pour toute question." + '\n\n' +
+    '{{signature}}'
+}
+
+/** Copie à soi-même du suivi des mesures. */
+export const DEFAULT_COPIE_MESURES_EMAIL: EmailTemplate = {
+  subject: 'Mesures - {{client_name}} - {{date}}',
+  body: 'Suivi des mesures de {{client_name}} du {{date}}.\n\nPDF et document interactif ci-joints.'
+}
+
 /** Courriel d'envoi du DOCUMENT NUTRITION (plan + journal alimentaire). */
 export const DEFAULT_NUTRITION_EMAIL: EmailTemplate = {
   subject: 'Votre plan nutrition - {{client_name}}',

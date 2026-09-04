@@ -151,6 +151,10 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('reports:write-fantastic-form', data),
     generateFoodlogHtml: (clientId: string) =>
       ipcRenderer.invoke('reports:generate-foodlog-html', clientId),
+    generateMesuresHtml: (clientId: string) =>
+      ipcRenderer.invoke('reports:generate-mesures-html', clientId),
+    generateMesuresPdf: (clientId: string) =>
+      ipcRenderer.invoke('reports:generate-mesures-pdf', clientId),
     openPath: (filePath: string) =>
       ipcRenderer.invoke('reports:open-path', filePath),
     exportClientDocuments: (clientId: string) =>
@@ -161,7 +165,7 @@ contextBridge.exposeInMainWorld('api', {
       clientId: string
       subject: string
       body: string
-      kind?: 'bilan' | 'nutrition' | 'questionnaire'
+      kind?: 'bilan' | 'nutrition' | 'questionnaire' | 'mesures'
       html?: string
       to?: string[]
     }) => ipcRenderer.invoke('reports:send-email', data)

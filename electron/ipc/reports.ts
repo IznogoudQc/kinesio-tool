@@ -1,6 +1,7 @@
 import { ipcMain, shell } from 'electron'
 import { promises as fs } from 'fs'
 import { join } from 'path'
+import { tmpdir } from 'os'
 import nodemailer from 'nodemailer'
 import { z } from 'zod'
 import { eq } from 'drizzle-orm'
@@ -18,6 +19,7 @@ import {
   writeFantasticFormHtml,
   generateFoodJournalHtml,
   generateInteractiveReportHtml,
+  generateMesuresDocumentHtml,
   generateNutritionDocumentHtml
 } from '../lib/standalone-report'
 import { getDocumentsFolder, getSmtpCredentials } from './settings'
@@ -63,7 +65,7 @@ const SendReportSchema = z.object({
    * `bilan` (défaut) = PDF + document interactif ; `nutrition` = document
    * nutrition seul ; `questionnaire` = formulaire d'habitudes de vie à remplir.
    */
-  kind: z.enum(['bilan', 'nutrition', 'questionnaire']).optional(),
+  kind: z.enum(['bilan', 'nutrition', 'questionnaire', 'mesures']).optional(),
   /** Requis pour `kind: 'questionnaire'` — le HTML construit par le renderer. */
   html: z.string().min(1).max(2_000_000).optional(),
   /**
@@ -106,6 +108,33 @@ export function registerReportsHandlers(): void {
   ipcMain.handle('reports:write-fantastic-form', async (_e, payload: unknown) => {
     const { clientId, html } = FantasticFormSchema.parse(payload)
     return writeFantasticFormHtml(clientId, html)
+  })
+
+  // Suivi des mesures — document autonome, distinct du bilan.
+  ipcMain.handle('reports:generate-mesures-html', async (_e, clientId: unknown) => {
+    const id = ClientIdSchema.parse(clientId)
+    return generateMesuresDocumentHtml(id)
+  })
+
+  // Le PDF du suivi des mesures est l'IMPRESSION du HTML ci-dessus : un seul
+  // rendu, donc les deux formats ne peuvent pas diverger.
+  ipcMain.handle('reports:generate-mesures-pdf', async (_e, clientId: unknown) => {
+    const id = ClientIdSchema.parse(clientId)
+    const client = getDb().select().from(clients).where(eq(clients.id, id)).get()
+    if (!client) throw new Error('Client introuvable.')
+    const htmlPath = await generateMesuresDocumentHtml(id)
+    try {
+      const buf = await htmlFileToPdf(htmlPath)
+      const out = join(tmpdir(), `Suivi-mesures-${safeClientFileName(client.name)}-${todayISODate()}.pdf`)
+      await fs.writeFile(out, buf)
+      return out
+    } finally {
+      try {
+        await fs.unlink(htmlPath)
+      } catch {
+        // best effort
+      }
+    }
   })
 
   // Journal alimentaire vierge imprimable.
@@ -166,6 +195,23 @@ export function registerReportsHandlers(): void {
       const p = await generateInteractiveReportHtml(id)
       temps.push(p)
       await fs.copyFile(p, join(dirBilans, `Bilan-interactif-${stem}.html`))
+      written++
+    })
+
+    // Suivi des mesures — dans « Bilan et mesure », avec les bilans : c'est le
+    // même sujet, et Marie les cherche au même endroit.
+    let mesuresHtml: string | null = null
+    await step(async () => {
+      const p = await generateMesuresDocumentHtml(id)
+      temps.push(p)
+      mesuresHtml = p
+      await fs.copyFile(p, join(dirBilans, `Suivi-mesures-${stem}.html`))
+      written++
+    })
+    await step(async () => {
+      if (!mesuresHtml) return
+      const buf = await htmlFileToPdf(mesuresHtml)
+      await fs.writeFile(join(dirBilans, `Suivi-mesures-${stem}.pdf`), buf)
       written++
     })
 
@@ -299,6 +345,19 @@ export function registerReportsHandlers(): void {
         const formPath = await writeFantasticFormHtml(clientId, html)
         paths.push(formPath)
         attachments = [{ filename: `Questionnaire-habitudes-de-vie-${stem}.html`, path: formPath }]
+      } else if (kind === 'mesures') {
+        // Les deux formats du même rendu : le PDF s'imprime, le HTML se lit à
+        // l'écran avec ses courbes.
+        const htmlPath = await generateMesuresDocumentHtml(clientId)
+        paths.push(htmlPath)
+        const pdfBuf = await htmlFileToPdf(htmlPath)
+        const pdfPath = join(tmpdir(), `Suivi-mesures-${stem}.pdf`)
+        await fs.writeFile(pdfPath, pdfBuf)
+        paths.push(pdfPath)
+        attachments = [
+          { filename: `Suivi-mesures-${stem}.pdf`, path: pdfPath },
+          { filename: `Suivi-mesures-${stem}.html`, path: htmlPath }
+        ]
       } else if (kind === 'nutrition') {
         const nutriPath = await generateNutritionDocumentHtml(clientId)
         const foodlogPath = await generateFoodJournalHtml(clientId)

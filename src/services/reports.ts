@@ -39,6 +39,16 @@ export const reportsService = {
     return window.api.reports.generateFoodlogHtml(clientId)
   },
 
+  /** Génère le document « Suivi des mesures » (HTML autonome). */
+  async generateMesuresHtml(clientId: string): Promise<string> {
+    return window.api.reports.generateMesuresHtml(clientId)
+  },
+
+  /** Génère le PDF du suivi des mesures — l'impression du même document. */
+  async generateMesuresPdf(clientId: string): Promise<string> {
+    return window.api.reports.generateMesuresPdf(clientId)
+  },
+
   /**
    * Écrit le formulaire d'habitudes de vie et retourne son chemin.
    *
@@ -72,7 +82,7 @@ export const reportsService = {
     clientId: string,
     subject: string,
     body: string,
-    kind: 'bilan' | 'nutrition' | 'questionnaire' = 'bilan',
+    kind: 'bilan' | 'nutrition' | 'questionnaire' | 'mesures' = 'bilan',
     /** Requis pour `questionnaire` — le formulaire construit par le renderer. */
     html?: string,
     /** Destinataires. Absent = l'adresse du client. */

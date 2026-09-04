@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Loader2, Paperclip } from 'lucide-react'
-import { DEFAULT_COPIE_BILAN_EMAIL, DEFAULT_COPIE_NUTRITION_EMAIL } from '../../lib/email-templates'
+import {
+  DEFAULT_COPIE_BILAN_EMAIL,
+  DEFAULT_COPIE_MESURES_EMAIL,
+  DEFAULT_COPIE_NUTRITION_EMAIL,
+  DEFAULT_MESURES_EMAIL
+} from '../../lib/email-templates'
 import { settingsService } from '../../services/settings'
 import { reportsService } from '../../services/reports'
 
@@ -8,8 +13,9 @@ interface SendBilanModalProps {
   client: Client
   onCancel: () => void
   onSent: (recipientEmail: string) => void
-  /** `bilan` (défaut) = PDF + document interactif ; `nutrition` = document nutrition seul. */
-  kind?: 'bilan' | 'nutrition'
+  /** `bilan` (défaut) = PDF + document interactif ; `nutrition` = document nutrition ;
+   *  `mesures` = suivi des prises de mesures. */
+  kind?: 'bilan' | 'nutrition' | 'mesures'
 }
 
 function formatDate(): string {
@@ -42,6 +48,7 @@ function estCourriel(valeur: string): boolean {
 
 export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: SendBilanModalProps) {
   const isNutrition = kind === 'nutrition'
+  const isMesures = kind === 'mesures'
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   // La copie à soi a son propre couple sujet/message : basculer d'un public à
@@ -60,11 +67,15 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
 
   useEffect(() => {
     // Le document nutrition a son propre modèle de courriel (≠ celui du bilan),
-    // tous deux éditables dans Paramètres → Courriel.
+    // tous deux éditables dans Paramètres → Courriel. Le suivi des mesures, lui,
+    // part d'un modèle intégré : il vient d'apparaître, et un réglage de plus
+    // sans besoin exprimé se remplit une fois puis s'oublie.
     const tplPromise =
-      kind === 'nutrition'
-        ? settingsService.getNutritionEmailTemplate()
-        : settingsService.getEmailTemplate()
+      kind === 'mesures'
+        ? Promise.resolve(DEFAULT_MESURES_EMAIL)
+        : kind === 'nutrition'
+          ? settingsService.getNutritionEmailTemplate()
+          : settingsService.getEmailTemplate()
     Promise.all([
       tplPromise,
       settingsService.getProfile(),
@@ -78,7 +89,12 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
       }
       setSubject(applyVariables(tpl.subject, vars))
       setBody(applyVariables(tpl.body, vars))
-      const copie = kind === 'nutrition' ? DEFAULT_COPIE_NUTRITION_EMAIL : DEFAULT_COPIE_BILAN_EMAIL
+      const copie =
+        kind === 'mesures'
+          ? DEFAULT_COPIE_MESURES_EMAIL
+          : kind === 'nutrition'
+            ? DEFAULT_COPIE_NUTRITION_EMAIL
+            : DEFAULT_COPIE_BILAN_EMAIL
       setSubjectMoi(applyVariables(copie.subject, vars))
       setBodyMoi(applyVariables(copie.body, vars))
       if (smtp && estCourriel(smtp.user)) setMonAdresse(smtp.user)
@@ -137,10 +153,18 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
       <div className="bg-cream rounded-lg shadow-2xl w-full max-w-2xl border border-cream-dark max-h-[90vh] flex flex-col">
         <form onSubmit={handleSend} className="p-6 flex flex-col min-h-0 flex-1">
           <h2 className="text-marine font-semibold text-xl mb-1">
-            {isNutrition ? 'Envoyer le document nutrition' : 'Envoyer le bilan'}
+            {isMesures
+              ? 'Envoyer le suivi des mesures'
+              : isNutrition
+                ? 'Envoyer le document nutrition'
+                : 'Envoyer le bilan'}
           </h2>
           <p className="text-marine/55 text-base mb-5">
-            {isNutrition ? 'Document nutrition et journal alimentaire' : 'Rapport PDF et version interactive'}
+            {isMesures
+              ? 'Suivi des mesures — PDF et version interactive'
+              : isNutrition
+                ? 'Document nutrition et journal alimentaire'
+                : 'Rapport PDF et version interactive'}
           </p>
 
           {loading ? (
@@ -224,7 +248,16 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
 
               <div className="flex items-start gap-2 text-marine/65 text-sm bg-cream/70 border border-cream-dark rounded-md px-3 py-2">
                 <Paperclip size={15} className="text-gold shrink-0 mt-0.5" />
-                {isNutrition ? (
+                {isMesures ? (
+                  <span>
+                    Deux pièces jointes : le <span className="font-medium text-marine">suivi des mesures (PDF)</span> et sa{' '}
+                    <span className="font-medium text-marine">version interactive (.html)</span>, avec la courbe de chaque
+                    mesure.
+                    <span className="block text-marine/45 text-xs mt-0.5">
+                      Vos notes de prise n’y figurent pas — le document ne contient que les mesures.
+                    </span>
+                  </span>
+                ) : isNutrition ? (
                   <span>
                     Deux pièces jointes : le <span className="font-medium text-marine">document nutrition (.html)</span> et le{' '}
                     <span className="font-medium text-marine">journal alimentaire (.html)</span> à imprimer.

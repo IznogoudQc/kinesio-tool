@@ -5,7 +5,7 @@ import { join } from 'path'
 import { tmpdir } from 'os'
 import { asc, eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
-import { bilans, clients, settings } from '../../db/schema'
+import { bilans, clients, mesuresCirconferences, mesuresPlisCutanes, settings } from '../../db/schema'
 import { getAvatarPath } from './avatars'
 import { safeClientFileName, todayISODate } from './report-generator'
 import { scopeBilansTo } from '../../src/lib/report-scope'
@@ -60,6 +60,17 @@ export async function generateNutritionDocumentHtml(clientId: string): Promise<s
   return buildStandaloneHtml(clientId, 'nutrition', 'Nutrition-jeune')
 }
 
+/**
+ * Écrit le document « Suivi des mesures » : les prises de l'onglet Mesures.
+ *
+ * Les bilans n'en parlent pas — la synchronisation ne va que du bilan vers les
+ * mesures, donc une prise faite entre deux bilans n'apparaissait dans aucun
+ * document remis au client.
+ */
+export async function generateMesuresDocumentHtml(clientId: string): Promise<string> {
+  return buildStandaloneHtml(clientId, 'mesures', 'Suivi-mesures')
+}
+
 /** Journal alimentaire vierge imprimable (grille 7 jours). */
 export async function generateFoodJournalHtml(clientId: string): Promise<string> {
   return buildStandaloneHtml(clientId, 'foodlog', 'Journal-alimentaire')
@@ -91,9 +102,41 @@ export async function writeFantasticFormHtml(clientId: string, html: string): Pr
   return outPath
 }
 
+/**
+ * Prises de mesures d'un client, colonnes brutes, ordre chronologique.
+ *
+ * Les `notes` sont retirées : écrites pendant la mesure, pour la kinésiologue,
+ * elles n'ont pas à voyager dans un document remis au client. Le retrait se
+ * fait ICI, à la source, plutôt que dans le rendu — une colonne oubliée dans un
+ * composant se retrouverait dans le fichier.
+ */
+function chargerMesures(clientId: string) {
+  const db = getDb()
+  const sansNotes = <T extends { notes?: string | null }>(lignes: T[]) =>
+    lignes.map(({ notes: _notes, ...reste }) => reste)
+  return {
+    circonferences: sansNotes(
+      db
+        .select()
+        .from(mesuresCirconferences)
+        .where(eq(mesuresCirconferences.clientId, clientId))
+        .orderBy(asc(mesuresCirconferences.date))
+        .all()
+    ),
+    plis: sansNotes(
+      db
+        .select()
+        .from(mesuresPlisCutanes)
+        .where(eq(mesuresPlisCutanes.clientId, clientId))
+        .orderBy(asc(mesuresPlisCutanes.date))
+        .all()
+    )
+  }
+}
+
 async function buildStandaloneHtml(
   clientId: string,
-  docType: 'report' | 'nutrition' | 'foodlog',
+  docType: 'report' | 'nutrition' | 'foodlog' | 'mesures',
   filePrefix: string,
   /** Bilan a ouvrir par defaut. Absent = bilan de synthese. */
   bilanId?: string
@@ -173,6 +216,9 @@ async function buildStandaloneHtml(
     },
     avatarDataUrl: await avatarDataUrl(client.avatarFilename),
     bilans: list,
+    // Chargées seulement pour le document qui les affiche : les inclure partout
+    // gonflerait chaque bilan interactif de données qu'il n'utilise pas.
+    ...(docType === 'mesures' ? { mesures: chargerMesures(clientId) } : {}),
     /** Bilan ouvert par défaut. `null` = bilan de synthèse (toutes dernières valeurs). */
     selectedBilanId: cible?.id ?? null,
     // Pas de `norms` dans le payload : le renderer suit `DEFAULT_NORMS`, comme le

@@ -2,6 +2,47 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.206 — Le document « Suivi des mesures »)
+
+### Les prises n'atteignaient personne
+
+Trois documents partaient au client — bilan, nutrition, questionnaire — et
+aucun ne parlait des prises de l'onglet Mesures. La synchronisation ne va que
+du **bilan vers les mesures** : un tour de bras pris entre deux bilans restait
+donc invisible pour le client.
+
+Un quatrième document s'ajoute : **PDF + version interactive**, même coquille
+éditoriale que le bilan. Une carte par mesure (dernière valeur, écart depuis la
+première prise, courbe), puis le tableau complet prise par prise.
+
+### Un seul rendu pour les deux formats
+
+Le PDF est **l'impression du HTML** (`htmlFileToPdf`, le chemin déjà utilisé par
+la nutrition). Les deux formats ne peuvent donc pas diverger — c'est le piège
+des trois surfaces, évité en n'en créant qu'une.
+
+### Ce que le document ne dit pas
+
+Les **notes de prise** sont retirées à la source (`chargerMesures`), pas dans le
+rendu : une colonne oubliée dans un composant se serait retrouvée dans le
+fichier remis au client.
+
+Les variations sont affichées **sans couleur**. Un tour de bras qui monte n'est
+ni un progrès ni un recul en soi, et le document ne peut pas trancher à la place
+de la kinésiologue.
+
+### Somme des 5 plis
+
+Marie-Eve a commencé à prendre le mollet : la somme des cinq plis apparaît à
+côté de celle des quatre, à partir de la première prise qui le contient. Elle
+vient de `s5pcForScoring` — le point d'entrée unique de la cotation CPAFLA —
+plutôt que d'une addition écrite une deuxième fois.
+
+### Où le trouver
+
+Onglet **Mesures** : *PDF*, *Version interactive*, *Envoyer*. Le document part
+aussi dans « Bilan et mesure » avec « Exporter les documents ».
+
 ## ✅ Fait (v0.9.118 — Le PDF des barèmes : checklist de validation + mise à jour)
 
 ### Une checklist en tête du document

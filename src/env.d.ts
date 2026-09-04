@@ -607,6 +607,10 @@ interface Window {
       generateNutritionHtml(clientId: string): Promise<string>
       /** Génère le journal alimentaire vierge imprimable — retourne le chemin du fichier. */
       generateFoodlogHtml(clientId: string): Promise<string>
+      /** Document « Suivi des mesures » (HTML autonome) — retourne son chemin. */
+      generateMesuresHtml(clientId: string): Promise<string>
+      /** PDF du suivi des mesures : l'impression du HTML ci-dessus. */
+      generateMesuresPdf(clientId: string): Promise<string>
       /** Écrit le formulaire d'habitudes de vie (construit par le renderer) — retourne le chemin du fichier. */
       writeFantasticForm(data: { clientId: string; html: string }): Promise<string>
       /** Ouvre un fichier local avec l'application par défaut du système. */
@@ -620,7 +624,7 @@ interface Window {
         clientId: string
         subject: string
         body: string
-        kind?: 'bilan' | 'nutrition' | 'questionnaire'
+        kind?: 'bilan' | 'nutrition' | 'questionnaire' | 'mesures'
         html?: string
         /** Absent = l'adresse du client. */
         to?: string[]
