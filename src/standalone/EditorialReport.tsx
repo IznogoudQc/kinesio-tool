@@ -1419,7 +1419,7 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
         )
       )}
 
-      <footer className="border-t border-marine/10 bg-cream px-6 pb-16 pt-14 text-marine sm:px-8">
+      <footer className="ed-footer border-t border-marine/10 bg-cream px-6 pb-16 pt-14 text-marine sm:px-8">
         <div className="mx-auto max-w-5xl">
           <p className="ed-eyebrow text-gold-dark">Préparé pour vous par</p>
           <p className="ed-display mt-3 text-3xl text-marine">{data.kinesiologist}</p>
@@ -1970,7 +1970,7 @@ export function EditorialReport({ data }: { data: StandaloneData }) {
         </div>
       </section>
 
-      <footer className="bg-marine px-6 pb-16 pt-8 text-cream sm:px-8">
+      <footer className="ed-footer bg-marine px-6 pb-16 pt-8 text-cream sm:px-8">
         <div className="mx-auto max-w-5xl">
           <p className="ed-eyebrow text-gold">Préparé pour vous par</p>
           <p className="ed-display mt-3 text-3xl">{data.kinesiologist}</p>

@@ -175,4 +175,10 @@
     opacity: 1;
     transform: none;
   }
+  /* Le pied de page reste d'un seul tenant : coupé entre deux pages, la
+     signature restait seule au bas d'une feuille et la mention de génération
+     ouvrait la suivante. */
+  .ed-footer {
+    break-inside: avoid;
+  }
 }
