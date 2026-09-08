@@ -39,9 +39,9 @@ export const reportsService = {
     return window.api.reports.generateNutritionPdf(clientId)
   },
 
-  /** Génère le journal alimentaire vierge imprimable du client. */
-  async generateFoodlogHtml(clientId: string): Promise<string> {
-    return window.api.reports.generateFoodlogHtml(clientId)
+  /** Génère le journal alimentaire vierge du client, en PDF (grille à imprimer). */
+  async generateFoodlogPdf(clientId: string): Promise<string> {
+    return window.api.reports.generateFoodlogPdf(clientId)
   },
 
   /** Génère le document « Suivi des mesures » (HTML autonome). */

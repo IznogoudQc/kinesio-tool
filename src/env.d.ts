@@ -609,7 +609,8 @@ interface Window {
       /** Génère le document HTML nutrition & jeûne du client — retourne le chemin du fichier. */
       generateNutritionHtml(clientId: string): Promise<string>
       /** Génère le journal alimentaire vierge imprimable — retourne le chemin du fichier. */
-      generateFoodlogHtml(clientId: string): Promise<string>
+      /** Journal alimentaire vierge, en PDF — une grille à imprimer. */
+      generateFoodlogPdf(clientId: string): Promise<string>
       /** PDF du document nutrition : l'impression du HTML nutrition. */
       generateNutritionPdf(clientId: string): Promise<string>
       /** Document « Suivi des mesures » (HTML autonome) — retourne son chemin. */

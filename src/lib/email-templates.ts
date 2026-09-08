@@ -116,7 +116,7 @@ Vous trouverez ci-joint votre plan nutrition, en trois fichiers :
 
 2. Le document interactif (.html) — le même contenu, à lire à l'écran : enregistrez-le, puis faites un clic droit dessus et choisissez « Ouvrir avec » → Chrome, Edge ou Firefox. Il rassemble votre objectif, vos macros, votre planning de jeûne, l'hydratation, les aliments à privilégier et vos idées de menu, et fonctionne sans connexion.
 
-3. Le journal alimentaire (.html) — à imprimer et à remplir au fil de la semaine pour noter ce que vous mangez, puis à rapporter à votre prochaine rencontre.
+3. Le journal alimentaire (PDF) — à imprimer et à remplir au fil de la semaine pour noter ce que vous mangez, puis à rapporter à votre prochaine rencontre.
 
 Au plaisir de suivre vos progrès,
 

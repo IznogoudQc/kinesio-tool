@@ -904,7 +904,7 @@ export function NutritionTab() {
     setOpeningFoodlog(true)
     try {
       if (!(await persist())) return
-      const path = await reportsService.generateFoodlogHtml(client.id)
+      const path = await reportsService.generateFoodlogPdf(client.id)
       await reportsService.openPdf(path)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de générer le journal alimentaire.')
@@ -1206,7 +1206,7 @@ export function NutritionTab() {
             type="button"
             onClick={handleOpenFoodlog}
             disabled={openingFoodlog}
-            title="Journal alimentaire vierge à imprimer (le client note ce qu'il mange)"
+            title="Journal alimentaire vierge, en PDF — à imprimer et à remplir au crayon"
             className="inline-flex items-center gap-2 px-3.5 py-2 text-marine/70 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ClipboardList size={15} />

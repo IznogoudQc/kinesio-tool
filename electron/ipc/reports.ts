@@ -158,10 +158,26 @@ export function registerReportsHandlers(): void {
     }
   })
 
-  // Journal alimentaire vierge imprimable.
-  ipcMain.handle('reports:generate-foodlog-html', async (_e, clientId: unknown) => {
+  // Journal alimentaire vierge — en PDF : c'est une grille à IMPRIMER et à
+  // remplir au crayon, pas un document à lire à l'écran. Le HTML reste l'étape
+  // intermédiaire, jamais le fichier remis.
+  ipcMain.handle('reports:generate-foodlog-pdf', async (_e, clientId: unknown) => {
     const id = ClientIdSchema.parse(clientId)
-    return generateFoodJournalHtml(id)
+    const client = getDb().select().from(clients).where(eq(clients.id, id)).get()
+    if (!client) throw new Error('Client introuvable.')
+    const htmlPath = await generateFoodJournalHtml(id)
+    try {
+      const buf = await htmlFileToPdf(htmlPath)
+      const out = join(tmpdir(), `Journal-alimentaire-${safeClientFileName(client.name)}-${todayISODate()}.pdf`)
+      await fs.writeFile(out, buf)
+      return out
+    } finally {
+      try {
+        await fs.unlink(htmlPath)
+      } catch {
+        // best effort
+      }
+    }
   })
 
   ipcMain.handle('reports:generate-baremes', async () => {
@@ -254,7 +270,8 @@ export function registerReportsHandlers(): void {
     await step(async () => {
       const p = await generateFoodJournalHtml(id)
       temps.push(p)
-      await fs.copyFile(p, join(dirNutrition, `Journal-alimentaire-${stem}.html`))
+      const buf = await htmlFileToPdf(p)
+      await fs.writeFile(join(dirNutrition, `Journal-alimentaire-${stem}.pdf`), buf)
       written++
     })
 
@@ -381,8 +398,15 @@ export function registerReportsHandlers(): void {
         ]
       } else if (kind === 'nutrition') {
         const nutriPath = await generateNutritionDocumentHtml(clientId)
-        const foodlogPath = await generateFoodJournalHtml(clientId)
-        paths.push(nutriPath, foodlogPath)
+        const foodlogHtml = await generateFoodJournalHtml(clientId)
+        paths.push(nutriPath, foodlogHtml)
+        // Le journal part en PDF : une grille à imprimer n'a rien à gagner à
+        // voyager en .html, et tout à perdre chez un client dont le navigateur
+        // n'est pas associé à ce format.
+        const foodlogBuf = await htmlFileToPdf(foodlogHtml)
+        const foodlogPath = join(tmpdir(), `Journal-alimentaire-${stem}.pdf`)
+        await fs.writeFile(foodlogPath, foodlogBuf)
+        paths.push(foodlogPath)
         // Le PDF d'abord, comme pour le bilan : c'est la pièce jointe qui
         // s'ouvre chez tout le monde, quelle que soit la machine du client.
         const nutriPdfBuf = await htmlFileToPdf(nutriPath)
@@ -392,7 +416,7 @@ export function registerReportsHandlers(): void {
         attachments = [
           { filename: `Nutrition-${stem}.pdf`, path: nutriPdfPath },
           { filename: `Nutrition-${stem}.html`, path: nutriPath },
-          { filename: `Journal-alimentaire-${stem}.html`, path: foodlogPath }
+          { filename: `Journal-alimentaire-${stem}.pdf`, path: foodlogPath }
         ]
       } else {
         const pdfPath = await generateClientReportPdf(clientId)
