@@ -484,13 +484,6 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
             fonctionne hors ligne et aucune de vos données n’est transmise à qui que ce soit — tout est contenu dans ce
             fichier.
           </p>
-          {/* Sur papier seulement : le lecteur du HTML l'a déjà ouvert. La
-              consigne évite « double-cliquez » — c'est exactement le geste qui
-              échoue quand Windows a associé les .html à un éditeur de texte. */}
-          <p className="ed-print-only mt-4 max-w-xl text-sm leading-relaxed text-marine/60">
-            Le fichier .html joint au même courriel s’ouvre dans votre navigateur : enregistrez-le, puis
-            clic droit → <span className="italic">Ouvrir avec</span> → Chrome, Edge ou Firefox.
-          </p>
         </div>
       </footer>
     </div>

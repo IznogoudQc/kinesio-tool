@@ -2220,16 +2220,7 @@ function ForcesEtPlanSection({ latest, coachName, signature, customPrincipe, sho
       </div>
       )}
 
-      {/* Comment ouvrir le fichier .html joint au même courriel.
-          La consigne vit ICI parce que le PDF, lui, s'ouvre toujours : un client
-          dont le .html s'ouvre dans un éditeur de texte a perdu le courriel bien
-          avant de chercher pourquoi. Et surtout, PAS « double-cliquez » — c'est
-          exactement le geste qui échoue quand Windows a associé les .html à un
-          éditeur. */}
-      <p style={{ marginTop: 'auto', paddingTop: '10mm', fontSize: '8pt', color: AXIS, textAlign: 'center', lineHeight: 1.5 }}>
-        Le fichier .html joint au même courriel s’ouvre dans votre navigateur : enregistrez-le, puis
-        clic droit → Ouvrir avec → Chrome, Edge ou Firefox.
-        <br />
+      <p style={{ marginTop: 'auto', paddingTop: '10mm', fontSize: '8pt', color: AXIS, textAlign: 'center' }}>
         Kinésio Conseil — {reportDateLabel()}
       </p>
     </ReportSection>

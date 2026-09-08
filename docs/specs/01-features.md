@@ -35,12 +35,13 @@ par défaut réintroduisant « double-cliquez ».
 Vérifiée sur une **copie** de la vraie base : un modèle corrigé, deuxième
 passage sans effet.
 
-### La consigne suit le document
+### La consigne dans les PDF : essayée, puis retirée (v0.9.215)
 
-Le courriel finit par se perdre ; le PDF, lui, reste. La même consigne apparaît
-donc en pied de **tous les PDF** — bilan, nutrition, suivi des mesures — dans
-une classe `.ed-print-only`, symétrique de `.ed-no-print` : invisible à l'écran,
-où le lecteur a de toute façon déjà ouvert le fichier.
+Elle avait aussi été posée en pied de tous les PDF, en se disant que le courriel
+finit par se perdre alors que le PDF reste. À l'usage, elle ferme le document
+sur une consigne technique — et la classe `.ed-print-only` qui la portait a été
+retirée avec elle. La consigne vit donc uniquement dans le courriel, là où le
+fichier .html se trouve juste à côté.
 
 ### La nutrition passe en PDF + HTML
 
