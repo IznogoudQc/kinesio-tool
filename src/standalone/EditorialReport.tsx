@@ -968,7 +968,7 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
                   {structured.map(({ texte: jour, index }, i) => (
                     <div
                       key={index}
-                      className={`rounded-xl bg-cream p-8 sm:p-10${i > 0 ? ' nut-menu-day' : ''}`}
+                      className="nut-menu-day rounded-xl bg-cream p-8 sm:p-10"
                     >
                       <div className="flex items-center gap-3">
                         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gold/15 text-gold-dark">
@@ -1022,7 +1022,7 @@ function NutritionBody({ client, generatedAt }: { client: StandaloneData['client
                 {days.map((day, i) => (
                   <div
                     key={i}
-                    className={`rounded-xl bg-cream p-8 sm:p-10${i > 0 ? ' nut-menu-day' : ''}`}
+                    className="nut-menu-day rounded-xl bg-cream p-8 sm:p-10"
                   >
                     {day.header && <p className="ed-display text-xl text-marine">{day.header}</p>}
                     <div className={day.header ? 'mt-3 space-y-2' : 'space-y-2'}>
@@ -1358,8 +1358,16 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
           /* La section « Idées de menu » démarre sur une nouvelle page (évite le
              titre orphelin en bas de page, séparé de la première journée). */
           .nut-menu { break-before: page; }
-          /* Chaque journée de menu (sauf la première) démarre sur une nouvelle page. */
-          .nut-menu-day { break-before: page; }
+          /* Les journées s'enchaînent et remplissent la page — deux, parfois
+             trois selon leur longueur. Chacune démarrait sur une page neuve :
+             une journée occupe un quart de feuille, et le menu d'une semaine
+             sortait sur sept pages aux trois quarts blanches.
+
+             La règle break-inside: avoid suffit : une journée n'est jamais
+             coupée en deux, mais rien ne l'empêche de suivre la précédente.
+             (Pas d'accent grave ici : ce bloc vit dans un littéral gabarit,
+             et un accent grave le fermerait.) */
+          .nut-menu-day { break-inside: avoid; }
         }
       `}</style>
       <header className="ed-hero relative flex min-h-[65svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
