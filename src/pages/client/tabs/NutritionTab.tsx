@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardCopy, ClipboardList, Droplet, ExternalLink, FileInput, Heart, Mail, MessageSquareQuote, Pill, RefreshCw, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
+import { Apple, Ban, BookMarked, CalendarClock, Check, ClipboardCopy, ClipboardList, Droplet, ExternalLink, FileInput, FileText, Heart, Mail, MessageSquareQuote, Pill, RefreshCw, Save, Sparkles, Target, ThumbsDown, Trash2, Utensils } from 'lucide-react'
 import { useClientContext } from '../ClientDetailLayout'
 import { clientsService } from '../../../services/clients'
 import { reportsService } from '../../../services/reports'
@@ -642,7 +642,8 @@ export function NutritionTab() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
-  const [opening, setOpening] = useState(false)
+  /** Format en cours de génération, `null` si rien ne tourne. */
+  const [opening, setOpening] = useState<'pdf' | 'html' | null>(null)
   const [openingFoodlog, setOpeningFoodlog] = useState(false)
   const [showSendEmail, setShowSendEmail] = useState(false)
   const [sentMsg, setSentMsg] = useState<string | null>(null)
@@ -871,17 +872,25 @@ export function NutritionTab() {
     }
   }
 
-  /** Enregistre d'abord (le document lit la base), puis ouvre le HTML nutrition. */
-  async function handleOpenDoc() {
-    setOpening(true)
+  /**
+   * Enregistre d'abord (le document lit la base), puis ouvre le format demandé.
+   *
+   * Les deux formats sortent du MÊME rendu : le PDF est l'impression du
+   * document HTML. Ils ne peuvent donc pas raconter deux choses différentes.
+   */
+  async function handleOpenDoc(format: 'pdf' | 'html' = 'html') {
+    setOpening(format)
     try {
       if (!(await persist())) return
-      const path = await reportsService.generateNutritionHtml(client.id)
+      const path =
+        format === 'pdf'
+          ? await reportsService.generateNutritionPdf(client.id)
+          : await reportsService.generateNutritionHtml(client.id)
       await reportsService.openPdf(path)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Impossible de générer le document nutrition.')
     } finally {
-      setOpening(false)
+      setOpening(null)
     }
   }
 
@@ -1205,12 +1214,23 @@ export function NutritionTab() {
           </button>
           <button
             type="button"
-            onClick={handleOpenDoc}
-            disabled={opening}
+            onClick={() => handleOpenDoc('pdf')}
+            disabled={opening !== null}
+            title="Le document nutrition en PDF — la pièce jointe qui s'ouvre sur toutes les machines"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-marine/70 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <FileText size={15} />
+            {opening === 'pdf' ? 'Génération…' : 'Générer PDF'}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleOpenDoc('html')}
+            disabled={opening !== null}
+            title="Le même document, en version interactive dans le navigateur"
             className="inline-flex items-center gap-2 px-3.5 py-2 text-marine/70 hover:text-marine border border-cream-dark hover:border-gold/60 rounded-md text-base transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ExternalLink size={15} />
-            {opening ? 'Ouverture…' : 'Voir le document'}
+            {opening === 'html' ? 'Ouverture…' : 'Générer HTML'}
           </button>
           <button
             type="button"

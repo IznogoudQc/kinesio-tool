@@ -157,6 +157,8 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('reports:write-fantastic-form', data),
     generateFoodlogHtml: (clientId: string) =>
       ipcRenderer.invoke('reports:generate-foodlog-html', clientId),
+    generateNutritionPdf: (clientId: string) =>
+      ipcRenderer.invoke('reports:generate-nutrition-pdf', clientId),
     generateMesuresHtml: (clientId: string) =>
       ipcRenderer.invoke('reports:generate-mesures-html', clientId),
     generateMesuresPdf: (clientId: string) =>

@@ -4,6 +4,19 @@
  * remplacées à l'envoi : {{client_name}}, {{date}}, {{coach_name}}, {{signature}}.
  */
 
+/**
+ * ── Pourquoi jamais « double-cliquez » ─────────────────────────────────────
+ *
+ * Sur Windows, un .html s'ouvre avec l'application ASSOCIÉE à ce type de
+ * fichier. Dès qu'un éditeur (VS Code, Bloc-notes, Notepad++) a pris
+ * l'association — souvent sans que la personne l'ait voulu — le double-clic
+ * affiche le code source. Des clientes et clients de Marie-Eve s'y sont
+ * heurtés.
+ *
+ * Le clic droit → « Ouvrir avec » fonctionne quelle que soit l'association.
+ * C'est la seule consigne à donner dans ces modèles.
+ */
+
 export interface EmailTemplate {
   subject: string
   body: string
@@ -16,7 +29,7 @@ export const DEFAULT_BILAN_EMAIL: EmailTemplate = {
     'Bonjour {{client_name}},\n\n' +
     'Vous trouverez ci-joint votre bilan de forme physique daté du {{date}}, sous deux formes.\n\n' +
     '1. Le rapport PDF — la version complète, à consulter, imprimer ou conserver.\n\n' +
-    '2. Le document interactif (fichier .html) — ouvrez-le dans votre navigateur en double-cliquant dessus. ' +
+    '2. Le document interactif (fichier .html) — enregistrez-le, puis faites un clic droit dessus et choisissez « Ouvrir avec » → Chrome, Edge ou Firefox. ' +
     "Vous pourrez y explorer vos résultats, passer d'un bilan à l'autre et suivre votre progression dans le temps. " +
     "Il fonctionne sans connexion Internet, et aucune de vos données n'est transmise : tout est contenu dans le fichier.\n\n" +
     "N'hésitez pas à me contacter pour toute question.\n\n" +
@@ -52,7 +65,7 @@ export const DEFAULT_MESURES_EMAIL: EmailTemplate = {
     'Bonjour {{client_name}},\n\n' +
     'Vous trouverez ci-joint le suivi de vos mesures, sous deux formes.\n\n' +
     '1. Le PDF — à consulter, imprimer ou conserver.\n\n' +
-    '2. Le document interactif (fichier .html) — ouvrez-le dans votre navigateur en double-cliquant dessus. ' +
+    '2. Le document interactif (fichier .html) — enregistrez-le, puis faites un clic droit dessus et choisissez « Ouvrir avec » → Chrome, Edge ou Firefox. ' +
     "Il montre chaque mesure et son évolution depuis la première prise, fonctionne sans connexion Internet, et aucune de vos données n'est transmise : tout est contenu dans le fichier." + '\n\n' +
     "N'hésitez pas à me contacter pour toute question." + '\n\n' +
     '{{signature}}'
@@ -69,11 +82,13 @@ export const DEFAULT_NUTRITION_EMAIL: EmailTemplate = {
   subject: 'Votre plan nutrition - {{client_name}}',
   body: `Bonjour {{client_name}},
 
-Vous trouverez ci-joint votre plan nutrition, en deux fichiers :
+Vous trouverez ci-joint votre plan nutrition, en trois fichiers :
 
-1. Le document nutrition (.html) — ouvrez-le dans votre navigateur en double-cliquant dessus. Il rassemble votre objectif, vos macros, votre planning de jeûne, l'hydratation, les aliments à privilégier et vos idées de menu. Il fonctionne sans connexion.
+1. Le PDF — la version complète, à consulter, imprimer ou conserver.
 
-2. Le journal alimentaire (.html) — à imprimer et à remplir au fil de la semaine pour noter ce que vous mangez, puis à rapporter à votre prochaine rencontre.
+2. Le document interactif (.html) — le même contenu, à lire à l'écran : enregistrez-le, puis faites un clic droit dessus et choisissez « Ouvrir avec » → Chrome, Edge ou Firefox. Il rassemble votre objectif, vos macros, votre planning de jeûne, l'hydratation, les aliments à privilégier et vos idées de menu, et fonctionne sans connexion.
+
+3. Le journal alimentaire (.html) — à imprimer et à remplir au fil de la semaine pour noter ce que vous mangez, puis à rapporter à votre prochaine rencontre.
 
 Au plaisir de suivre vos progrès,
 

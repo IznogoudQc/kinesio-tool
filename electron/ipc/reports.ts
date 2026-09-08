@@ -110,6 +110,27 @@ export function registerReportsHandlers(): void {
     return writeFantasticFormHtml(clientId, html)
   })
 
+  // Le PDF nutrition est l'IMPRESSION du document HTML — même rendu, deux
+  // formats, comme pour le bilan et le suivi des mesures.
+  ipcMain.handle('reports:generate-nutrition-pdf', async (_e, clientId: unknown) => {
+    const id = ClientIdSchema.parse(clientId)
+    const client = getDb().select().from(clients).where(eq(clients.id, id)).get()
+    if (!client) throw new Error('Client introuvable.')
+    const htmlPath = await generateNutritionDocumentHtml(id)
+    try {
+      const buf = await htmlFileToPdf(htmlPath)
+      const out = join(tmpdir(), `Nutrition-${safeClientFileName(client.name)}-${todayISODate()}.pdf`)
+      await fs.writeFile(out, buf)
+      return out
+    } finally {
+      try {
+        await fs.unlink(htmlPath)
+      } catch {
+        // best effort
+      }
+    }
+  })
+
   // Suivi des mesures — document autonome, distinct du bilan.
   ipcMain.handle('reports:generate-mesures-html', async (_e, clientId: unknown) => {
     const id = ClientIdSchema.parse(clientId)
@@ -362,7 +383,14 @@ export function registerReportsHandlers(): void {
         const nutriPath = await generateNutritionDocumentHtml(clientId)
         const foodlogPath = await generateFoodJournalHtml(clientId)
         paths.push(nutriPath, foodlogPath)
+        // Le PDF d'abord, comme pour le bilan : c'est la pièce jointe qui
+        // s'ouvre chez tout le monde, quelle que soit la machine du client.
+        const nutriPdfBuf = await htmlFileToPdf(nutriPath)
+        const nutriPdfPath = join(tmpdir(), `Nutrition-${stem}.pdf`)
+        await fs.writeFile(nutriPdfPath, nutriPdfBuf)
+        paths.push(nutriPdfPath)
         attachments = [
+          { filename: `Nutrition-${stem}.pdf`, path: nutriPdfPath },
           { filename: `Nutrition-${stem}.html`, path: nutriPath },
           { filename: `Journal-alimentaire-${stem}.html`, path: foodlogPath }
         ]

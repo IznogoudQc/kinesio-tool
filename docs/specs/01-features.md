@@ -2,6 +2,37 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.211 — Le .html qui s'ouvrait en code, et la nutrition en PDF)
+
+### « Ouvrez-le en double-cliquant dessus »
+
+C'est ce que disaient nos trois modèles de courriel. Et c'est exactement le
+geste qui échoue : sur Windows, un `.html` s'ouvre avec l'application ASSOCIÉE à
+ce type de fichier, et dès qu'un éditeur (VS Code, Bloc-notes, Notepad++) a pris
+l'association, le double-clic affiche le code source. Des clients de Marie-Eve
+s'y sont heurtés.
+
+Les modèles disent maintenant **« enregistrez-le, puis clic droit → Ouvrir avec
+→ Chrome, Edge ou Firefox »** — un geste qui fonctionne quelle que soit
+l'association.
+
+### La consigne suit le document
+
+Le courriel finit par se perdre ; le PDF, lui, reste. La même consigne apparaît
+donc en pied de **tous les PDF** — bilan, nutrition, suivi des mesures — dans
+une classe `.ed-print-only`, symétrique de `.ed-no-print` : invisible à l'écran,
+où le lecteur a de toute façon déjà ouvert le fichier.
+
+### La nutrition passe en PDF + HTML
+
+Le document nutrition n'existait qu'en `.html` — précisément le format qui
+bloque certains clients. Il suit maintenant le bilan : **Générer PDF** et
+**Générer HTML** dans l'onglet, et le courriel emporte les deux, PDF en tête,
+plus le journal alimentaire.
+
+Le PDF est l'impression du document HTML, comme pour le suivi des mesures : un
+seul rendu, deux formats qui ne peuvent pas diverger.
+
 ## ✅ Fait (v0.9.206 — Le document « Suivi des mesures »)
 
 ### Les prises n'atteignaient personne

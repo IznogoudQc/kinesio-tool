@@ -256,11 +256,12 @@ export function SendBilanModal({ client, onCancel, onSent, kind = 'bilan' }: Sen
                   </span>
                 ) : isNutrition ? (
                   <span>
-                    Deux pièces jointes : le <span className="font-medium text-marine">document nutrition (.html)</span> et le{' '}
+                    Trois pièces jointes : le <span className="font-medium text-marine">document nutrition</span> en{' '}
+                    <span className="font-medium text-marine">PDF</span> et en{' '}
+                    <span className="font-medium text-marine">version interactive (.html)</span>, plus le{' '}
                     <span className="font-medium text-marine">journal alimentaire (.html)</span> à imprimer.
                     <span className="block text-marine/45 text-xs mt-0.5">
-                      Certains services de courriel bloquent les pièces jointes .html ; le client peut aussi les enregistrer
-                      en PDF depuis son navigateur.
+                      Certains services de courriel bloquent les pièces jointes .html — le PDF, lui, passe toujours.
                     </span>
                   </span>
                 ) : (

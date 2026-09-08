@@ -157,6 +157,11 @@
   }
 }
 
+/* Consigne réservée au papier — voir `.ed-print-only` dans le bloc @media print. */
+.ed-print-only {
+  display: none;
+}
+
 /* Le client imprimera peut-être le document : on évite le hero pleine hauteur
    et les fonds sombres qui vident une cartouche d'encre. */
 @media print {
@@ -170,6 +175,11 @@
   }
   .ed-no-print {
     display: none !important;
+  }
+  /* Symétrique : visible uniquement sur papier. Sert à la consigne d'ouverture
+     du fichier .html joint — sur écran, le lecteur l'a déjà ouvert. */
+  .ed-print-only {
+    display: block !important;
   }
   .ed-reveal {
     opacity: 1;
