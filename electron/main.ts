@@ -13,6 +13,7 @@ import { registerQuestionnairesHandlers } from './ipc/questionnaires'
 import { initDb } from '../db/client'
 import { backfillBilansToMesuresOnce } from './lib/measure-sync'
 import { cleanupCircPliDuplicatesOnce } from './lib/cleanup-circ-pli-dup'
+import { fixEmailOpenHintOnce } from './lib/fix-email-open-hint'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
 
@@ -116,6 +117,14 @@ app.whenReady().then(() => {
   // (pli recopié comme circonférence du même nom).
   try {
     cleanupCircPliDuplicatesOnce()
+  } catch {
+    // ne jamais empêcher le démarrage de l'app
+  }
+  // Reprise unique : la consigne « double-cliquez » des modèles de courriel
+  // enregistrés — le geste qui échoue quand Windows a associé les .html à un
+  // éditeur de texte.
+  try {
+    fixEmailOpenHintOnce()
   } catch {
     // ne jamais empêcher le démarrage de l'app
   }

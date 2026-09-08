@@ -22,6 +22,34 @@ export interface EmailTemplate {
   body: string
 }
 
+/**
+ * La consigne d'ouverture qui échouait, et celle qui la remplace.
+ *
+ * Un modèle enregistré une seule fois ne repasse plus jamais par le texte par
+ * défaut : corriger les constantes ci-dessous ne suffisait donc pas. Une reprise
+ * au démarrage (`electron/lib/fix-email-open-hint.ts`) applique la même règle
+ * aux modèles déjà en base.
+ *
+ * Elle vit ICI, avec les textes, pour qu'une future reformulation ne laisse pas
+ * la reprise pointer sur une phrase qui n'existe plus.
+ */
+const ANCIENNE_CONSIGNE = 'ouvrez-le dans votre navigateur en double-cliquant dessus'
+
+const NOUVELLE_CONSIGNE =
+  'enregistrez-le, puis faites un clic droit dessus et choisissez « Ouvrir avec » → Chrome, Edge ou Firefox'
+
+/**
+ * Corrige un corps de courriel enregistré, ou rend `null` s'il n'y a rien à
+ * corriger.
+ *
+ * UNE phrase, remplacée là où elle apparaît : un modèle réécrit dans les mots de
+ * Marie-Eve ne la contient pas et n'est donc pas modifié.
+ */
+export function corrigerConsigneOuverture(body: string): string | null {
+  if (!body.includes(ANCIENNE_CONSIGNE)) return null
+  return body.split(ANCIENNE_CONSIGNE).join(NOUVELLE_CONSIGNE)
+}
+
 /** Courriel d'envoi du BILAN (rapport PDF + document interactif). */
 export const DEFAULT_BILAN_EMAIL: EmailTemplate = {
   subject: 'Bilan de forme physique - {{client_name}}',

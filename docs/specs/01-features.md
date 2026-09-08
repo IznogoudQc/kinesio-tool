@@ -16,6 +16,25 @@ Les modèles disent maintenant **« enregistrez-le, puis clic droit → Ouvrir a
 → Chrome, Edge ou Firefox »** — un geste qui fonctionne quelle que soit
 l'association.
 
+### Les modèles déjà enregistrés
+
+Corriger le texte par défaut ne suffisait pas : un modèle **enregistré une seule
+fois** — même sans avoir été réécrit — ne repasse plus jamais par le défaut. Sur
+la base d'essai, celui du bilan l'était, et gardait donc la consigne qui échoue.
+
+Une reprise unique au démarrage (`fix-email-open-hint.ts`, drapeau `settings`,
+même patron que `cleanup-circ-pli-dup`) remplace **la phrase, et rien d'autre**,
+dans les modèles en base. Un modèle réécrit dans les mots de Marie-Eve ne la
+contient pas : il n'est pas touché. Le sujet ne l'est jamais.
+
+La règle vit avec les textes (`src/lib/email-templates.ts`), pas dans le module
+Electron : une future reformulation ne peut donc pas laisser la reprise pointer
+sur une phrase disparue. Sept tests, dont un garde-fou qui refuse tout modèle
+par défaut réintroduisant « double-cliquez ».
+
+Vérifiée sur une **copie** de la vraie base : un modèle corrigé, deuxième
+passage sans effet.
+
 ### La consigne suit le document
 
 Le courriel finit par se perdre ; le PDF, lui, reste. La même consigne apparaît
