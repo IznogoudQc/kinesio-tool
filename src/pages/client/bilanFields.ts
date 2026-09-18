@@ -204,6 +204,46 @@ export function formatBilanMonth(iso: string): string {
   return `${MONTHS_FR_SHORT[month - 1] ?? m[2]} ${m[1]}`
 }
 
+/**
+ * Jour + mois court, ex. `3 sept` — pour lever une ambiguïté d'axe.
+ *
+ * Sans l'année : elle n'a d'intérêt que quand deux prises du MÊME mois doivent
+ * se distinguer, et c'est alors le jour qui les sépare. L'année reste sur les
+ * étiquettes voisines, non ambiguës, et dans l'infobulle.
+ */
+export function formatDayMonth(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso)
+  if (!m) return iso
+  const day = parseInt(m[3], 10)
+  const month = parseInt(m[2], 10)
+  return `${day} ${MONTHS_FR_SHORT[month - 1] ?? m[2]}`
+}
+
+/**
+ * Étiquettes d'axe pour une suite de dates : le mois, sauf quand il ne suffit
+ * plus.
+ *
+ * Deux prises d'un même mois donnaient deux fois « sept 2026 » : impossible de
+ * savoir laquelle on regarde, et le point le plus récent passait pour un
+ * doublon. Ces mois-là passent au jour (« 3 sept », « 17 sept ») ; les autres
+ * gardent le mois, plus court et plus lisible sur un axe chargé.
+ *
+ * L'année disparaît des étiquettes dédoublées — c'est le jour qui distingue
+ * deux prises du même mois, et l'infobulle porte la date complète de toute
+ * façon.
+ */
+export function makeDateTickFormatter(dates: readonly string[]): (iso: string) => string {
+  const parMois = new Map<string, number>()
+  for (const d of dates) {
+    const mois = formatBilanMonth(d)
+    parMois.set(mois, (parMois.get(mois) ?? 0) + 1)
+  }
+  return (iso: string) => {
+    const mois = formatBilanMonth(iso)
+    return (parMois.get(mois) ?? 0) > 1 ? formatDayMonth(iso) : mois
+  }
+}
+
 /** Compte le nombre de mesures non vides dans un bilan. */
 export function countFilledFields(data: BilanData): number {
   return Object.values(data).filter(v => v !== undefined && v !== null && v !== '').length

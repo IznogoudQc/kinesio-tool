@@ -11,7 +11,7 @@ import {
 } from 'recharts'
 import { FOREST_BG, Section, type StandaloneData } from './EditorialReport'
 import logoConseil from '../assets/logo-conseil.png'
-import { formatBilanDate, formatBilanMonth } from '../pages/client/bilanFields'
+import { formatBilanDate, makeDateTickFormatter } from '../pages/client/bilanFields'
 import { evolution, groupesDeMesures, type GroupeMesures, type SerieMesure } from '../lib/mesures-doc'
 
 /**
@@ -257,6 +257,16 @@ function GrilleCartes({ groupe }: { groupe: GroupeMesures }) {
   )
 }
 
+/**
+ * En dessous de ce nombre de valeurs, une mesure est rangée derrière le bouton.
+ *
+ * Deux, donc : une mesure prise une seule fois n'a rien à raconter dans un
+ * tableau d'évolution — sa valeur est déjà sur son encadré, à côté de « Première
+ * prise ». Le libellé du bouton dit « prises une seule fois » et suppose donc ce
+ * seuil-ci : le relever demanderait de le réécrire.
+ */
+const MIN_VALEURS_POUR_AFFICHER = 2
+
 /** Le tableau complet, pour qui veut relire un chiffre précis. */
 function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string[] }) {
   const valeur = (s: SerieMesure, date: string): string => {
@@ -266,8 +276,19 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
   // Une mesure absente de toute la tranche ne mérite pas une ligne de tirets.
   const seriesDe = (bloc: string[]) => series.filter(s => bloc.some(d => s.points.some(p => p.date === d)))
 
+  /**
+   * Une mesure prise une seule fois : une ligne quasi vide au milieu de celles
+   * qui, elles, racontent une évolution. Repliée par défaut.
+   *
+   * Masquée par le CSS et non retirée du rendu : sur papier rien ne se déplie,
+   * et le tableau doit y rester complet.
+   */
+  const creuses = series.filter(s => s.points.length < MIN_VALEURS_POUR_AFFICHER)
+  const [toutMontrer, setToutMontrer] = useState(false)
+  const pluriel = creuses.length > 1 ? 's' : ''
+
   return (
-    <div className="space-y-8">
+    <div className={`space-y-8${toutMontrer ? '' : ' mes-creuses-masquees'}`}>
       {repartir(dates, DATES_PAR_TABLEAU).map(bloc => (
         <div key={bloc[0]} className="mes-table overflow-x-auto">
           <table className="w-full border-collapse text-sm">
@@ -283,7 +304,12 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
             </thead>
             <tbody>
               {seriesDe(bloc).map(s => (
-                <tr key={s.cle} className="border-b border-cream-dark/50">
+                <tr
+                  key={s.cle}
+                  className={`border-b border-cream-dark/50${
+                    s.points.length < MIN_VALEURS_POUR_AFFICHER ? ' mes-ligne-creuse' : ''
+                  }`}
+                >
                   <td className="py-2 pr-4 text-marine/80">
                     {s.label} <span className="text-marine/40">({s.unite})</span>
                   </td>
@@ -298,6 +324,19 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
           </table>
         </div>
       ))}
+
+      {creuses.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setToutMontrer(v => !v)}
+          aria-expanded={toutMontrer}
+          className="ed-no-print text-xs font-medium text-marine/55 underline decoration-cream-dark decoration-2 underline-offset-4 transition-colors hover:text-marine hover:decoration-gold"
+        >
+          {toutMontrer
+            ? `Masquer les ${creuses.length} mesure${pluriel} prise${pluriel} une seule fois`
+            : `Afficher ${creuses.length} mesure${pluriel} prise${pluriel} une seule fois`}
+        </button>
+      )}
     </div>
   )
 }
@@ -366,7 +405,10 @@ function ExplorateurMesures({ groupes }: { groupes: GroupeMesures[] }) {
 
   const mois = FENETRES.find(f => f.cle === fenetre)?.mois ?? null
   const points = filtrer(serie.points, mois)
-  const donnees = points.map(p => ({ ...p, mois: formatBilanMonth(p.date) }))
+  // L'axe porte la DATE et non un mois pré-calculé : deux prises d'un même mois
+  // donnaient deux fois « sept 2026 », impossible de savoir laquelle on regarde.
+  // Le formateur ne descend au jour que sur les mois effectivement dédoublés.
+  const formatTick = makeDateTickFormatter(points.map(p => p.date))
   const premier = points[0]
   const dernier = points[points.length - 1]
 
@@ -441,10 +483,11 @@ function ExplorateurMesures({ groupes }: { groupes: GroupeMesures[] }) {
 
         <div className="mt-4 h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={donnees} margin={{ top: 12, right: 16, bottom: 0, left: -12 }}>
+            <LineChart data={points} margin={{ top: 12, right: 16, bottom: 0, left: -12 }}>
               <CartesianGrid stroke="rgba(10, 28, 94, 0.08)" vertical={false} />
               <XAxis
-                dataKey="mois"
+                dataKey="date"
+                tickFormatter={formatTick}
                 tick={{ fill: 'rgba(10, 28, 94, 0.55)', fontSize: 11 }}
                 stroke="rgba(10, 28, 94, 0.15)"
               />
@@ -516,6 +559,8 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
           le suit — il faut lui donner le haut d'une page. */}
       <style>{`
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        /* Mesure prise une seule fois : repliée derrière le bouton. */
+        .mes-creuses-masquees .mes-ligne-creuse { display: none; }
         @media print {
           @page { margin: 12mm; }
           .ed-hero { min-height: 0 !important; }
@@ -544,6 +589,10 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
           .mes-table + .mes-table { break-before: page; }
           .mes-table thead { display: table-header-group; }
           .mes-table tr { break-inside: avoid; }
+
+          /* Sur papier, aucun bouton ne se clique : le tableau y est complet,
+             quel que soit l'état du repli à l'écran. */
+          .mes-creuses-masquees .mes-ligne-creuse { display: table-row; }
         }
       `}</style>
 

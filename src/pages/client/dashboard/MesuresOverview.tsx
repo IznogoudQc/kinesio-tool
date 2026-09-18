@@ -29,7 +29,7 @@ import { bilansService } from '../../../services/bilans'
 import { mesuresService } from '../../../services/mesures'
 import { reportsService } from '../../../services/reports'
 import { SendBilanModal } from '../SendBilanModal'
-import { formatBilanDate, formatBilanMonth } from '../bilanFields'
+import { formatBilanDate, makeDateTickFormatter } from '../bilanFields'
 import { MesureSelectorPills } from './MesureSelectorPills'
 import {
   buildPreviousSynthesisCirc,
@@ -400,7 +400,7 @@ export function MesuresOverview() {
           ? activeMetric.accessor(r as MesureCirconferences, null)
           : activeMetric.accessor(null, r as MesurePlisCutanes)
       const value = raw === null ? null : activeMetric.convert ? activeMetric.convert(raw) : raw
-      return { label: formatBilanMonth(r.date), date: r.date, value }
+      return { date: r.date, value }
     })
     // Précédent = point juste avant dans l'ordre chronologique, avec valeur.
     return points.map((p, i) => {
@@ -1049,7 +1049,6 @@ function RatioTHCard({ value, previousValue, previousDate, sex }: RatioTHCardPro
 }
 
 interface ChartPoint {
-  label: string
   date: string
   value: number | null
   previousValue: number | null
@@ -1083,6 +1082,7 @@ function EvolutionChart({
   referenceLabel = 'Mesure précédente'
 }: EvolutionChartProps) {
   const chartEnabled = chartData.filter(p => p.value !== null).length >= 2
+  const formatTick = useMemo(() => makeDateTickFormatter(chartData.map(p => p.date)), [chartData])
 
   // Groupage par section. L'ordre dans `allMetrics` fait foi pour l'ordre d'affichage.
   const groups: Record<MetricGroup, MetricDef[]> = { circ: [], weights: [], composition: [] }
@@ -1189,7 +1189,8 @@ function EvolutionChart({
                 />
               )}
               <XAxis
-                dataKey="label"
+                dataKey="date"
+                tickFormatter={formatTick}
                 tick={{ fill: 'rgba(10, 28, 94, 0.55)', fontSize: 11 }}
                 stroke="rgba(10, 28, 94, 0.15)"
               />
