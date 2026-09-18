@@ -130,15 +130,131 @@ function CarteMesure({ serie }: { serie: SerieMesure }) {
  *
  * Un client suivi tous les mois pendant trois ans a trente-six prises. Sur une
  * seule grille, elles débordent de la page — et à l'impression, ce qui déborde
- * est coupé, pas mis en défilement. On découpe donc en tranches de huit
- * colonnes, chacune reprenant le nom des mesures.
+ * est coupé, pas mis en défilement. On découpe donc en tranches, chacune
+ * reprenant le nom des mesures.
+ *
+ * CINQ et pas plus : une A4 portrait imprime 638 px de large une fois les
+ * marges et le retrait de section retirés, la colonne des noms en prend 120 et
+ * une date en toutes lettres environ 95. À huit, les trois dernières colonnes
+ * — donc les prises les plus récentes — sortaient du papier sans laisser de
+ * trace : ni troncature visible, ni défilement, juste des chiffres absents.
  */
-const DATES_PAR_TABLEAU = 8
+const DATES_PAR_TABLEAU = 5
 
 function tranches<T>(liste: T[], taille: number): T[][] {
   const out: T[][] = []
   for (let i = 0; i < liste.length; i += taille) out.push(liste.slice(i, i + taille))
   return out
+}
+
+/**
+ * Combien d'encadrés tiennent sous le titre d'une section, sur une page A4.
+ *
+ * Deux colonnes, un encadré d'environ 235 px de haut : trois rangées remplissent
+ * la page. Au-delà, la section continue sur la suivante — et cette page-là
+ * reprend un titre, sinon le lecteur tombe sur des encadrés sans en-tête.
+ */
+const CARTES_PAR_PAGE = 6
+
+/** Deux rangées d'encadrés : le plus petit paquet qu'on refuse de couper. */
+const CARTES_PAR_GRAPPE = 4
+
+/**
+ * Découpe en parts aussi égales que possible, sans dépasser `max` par part.
+ *
+ * Huit encadrés donnent 4 + 4, pas 6 + 2 ; trente-six dates donnent quatre
+ * tranches de 5 puis quatre de 4, pas sept de 5 et une de 1. Chaque part
+ * remplissant une page imprimée, une part presque vide à la fin se lit comme un
+ * oubli — des parts égales se lisent comme une mise en page.
+ */
+function repartir<T>(liste: T[], max: number): T[][] {
+  const parts = Math.max(1, Math.ceil(liste.length / max))
+  const base = Math.floor(liste.length / parts)
+  const reste = liste.length % parts
+  const out: T[][] = []
+  let i = 0
+  for (let k = 0; k < parts; k++) {
+    const taille = base + (k < reste ? 1 : 0)
+    out.push(liste.slice(i, i + taille))
+    i += taille
+  }
+  return out
+}
+
+/** Un paquet d'encadrés qu'on refuse de couper, et le sous-titre qui le nomme. */
+interface BlocCartes {
+  titre?: string
+  /** Reste d'une région trop longue pour une page : démarre la sienne. */
+  suite?: boolean
+  series: SerieMesure[]
+}
+
+/**
+ * Découpe un groupe en paquets insécables.
+ *
+ * Un groupe qui tient sur une page reste d'un seul tenant : il n'a pas besoin
+ * d'être sous-titré, et l'ordre des mesures y est celui du formulaire (les cinq
+ * que Marie-Eve prend d'habitude en premier).
+ *
+ * Au-delà, la coupure se fait par région du corps. « Bas du corps » en tête de
+ * page dit au lecteur ce qu'il regarde ; un « (suite) » ne lui dirait que la
+ * mécanique de la pagination. Ce dernier ne subsiste qu'en repli, pour le jour
+ * où une région à elle seule dépasserait la page.
+ *
+ * Les blocs ne forcent PAS de saut de page : deux petites régions partagent
+ * volontiers une feuille. C'est `break-inside: avoid` qui garantit qu'un
+ * sous-titre ne quitte jamais ses encadrés.
+ */
+function blocsImprimables(groupe: GroupeMesures): BlocCartes[] {
+  if (groupe.series.length <= CARTES_PAR_PAGE) return [{ series: groupe.series }]
+
+  const familles = new Map<string, SerieMesure[]>()
+  for (const s of groupe.series) {
+    // Un groupe sans régions (les plis, la composition) reste une seule famille.
+    const nom = s.famille ?? groupe.titre
+    const deja = familles.get(nom)
+    if (deja) deja.push(s)
+    else familles.set(nom, [s])
+  }
+
+  const blocs: BlocCartes[] = []
+  for (const [nom, series] of familles) {
+    // Le titre de section est juste au-dessus : le répéter n'apprendrait rien.
+    const premier = nom === groupe.titre ? undefined : nom
+    repartir(series, CARTES_PAR_PAGE).forEach((part, i) => {
+      blocs.push({ titre: i === 0 ? premier : `${nom} (suite)`, suite: i > 0, series: part })
+    })
+  }
+  return blocs
+}
+
+/**
+ * Les encadrés d'un groupe, découpés pour l'impression.
+ *
+ * Chromium n'applique pas `break-before: avoid` : on ne peut pas lui demander
+ * de garder un titre avec ce qui le suit. Un sous-titre n'existe donc qu'À
+ * L'INTÉRIEUR du bloc qu'il nomme, et c'est le bloc entier qui refuse d'être
+ * coupé — à l'intérieur, les grappes de deux rangées servent de filet.
+ */
+function GrilleCartes({ groupe }: { groupe: GroupeMesures }) {
+  const blocs = blocsImprimables(groupe)
+
+  return (
+    <div className="space-y-4">
+      {blocs.map(bloc => (
+        <div key={bloc.series[0].cle} className={`mes-bloc space-y-4${bloc.suite ? ' mes-page-neuve' : ''}`}>
+          {bloc.titre && <p className="ed-eyebrow text-marine/45">{bloc.titre}</p>}
+          {tranches(bloc.series, CARTES_PAR_GRAPPE).map(grappe => (
+            <div key={grappe[0].cle} className="mes-grappe grid gap-4 sm:grid-cols-2">
+              {grappe.map(s => (
+                <CarteMesure key={s.cle} serie={s} />
+              ))}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 /** Le tableau complet, pour qui veut relire un chiffre précis. */
@@ -152,14 +268,14 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
 
   return (
     <div className="space-y-8">
-      {tranches(dates, DATES_PAR_TABLEAU).map(bloc => (
+      {repartir(dates, DATES_PAR_TABLEAU).map(bloc => (
         <div key={bloc[0]} className="mes-table overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-marine/15">
                 <th className="py-2 pr-4 text-left font-medium text-marine/60">Mesure</th>
                 {bloc.map(d => (
-                  <th key={d} className="whitespace-nowrap px-2 py-2 text-right font-medium text-marine/60">
+                  <th key={d} className="px-2 py-2 text-right font-medium text-marine/60">
                     {formatBilanDate(d)}
                   </th>
                 ))}
@@ -168,7 +284,7 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
             <tbody>
               {seriesDe(bloc).map(s => (
                 <tr key={s.cle} className="border-b border-cream-dark/50">
-                  <td className="whitespace-nowrap py-2 pr-4 text-marine/80">
+                  <td className="py-2 pr-4 text-marine/80">
                     {s.label} <span className="text-marine/40">({s.unite})</span>
                   </td>
                   {bloc.map(d => (
@@ -390,19 +506,42 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
   const dates = [...new Set(toutes.flatMap(s => s.points.map(p => p.date)))].sort()
 
   return (
-    <div className="overflow-x-hidden bg-cream text-marine">
+    <div className="mes-doc overflow-x-hidden bg-cream text-marine">
       {/* Impression / PDF : mêmes règles que les autres documents — fonds rendus,
-          cartes jamais coupées entre deux pages, couverture raccourcie. */}
+          cartes jamais coupées entre deux pages, couverture raccourcie.
+
+          Tout passe par `break-inside` et `break-before: page` : Chromium
+          (qui produit le PDF) ignore `break-before: avoid` et
+          `break-after: avoid`. Un titre ne se garde donc pas « collé » à ce qui
+          le suit — il faut lui donner le haut d'une page. */}
       <style>{`
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         @media print {
           @page { margin: 12mm; }
           .ed-hero { min-height: 0 !important; }
           .ed-anchor { padding-top: 16px !important; padding-bottom: 16px !important; }
+
+          /* Chaque section démarre en haut d'une page. C'est ce qui empêche un
+             titre de rester seul au bas de la précédente — sans dépendre d'un
+             break-after: avoid que le moteur n'implémente pas. */
+          .mes-doc > section.ed-anchor { break-before: page; }
+
+          /* Repli en escalier : le bloc d'une page d'abord, puis deux rangées,
+             puis l'encadré seul. Chromium ignore un break-inside: avoid plus
+             haut qu'une page, donc chaque niveau rattrape le précédent. */
+          .mes-bloc { break-inside: avoid; }
+          .mes-grappe { break-inside: avoid; }
           .mes-carte { break-inside: avoid; }
-          /* Chaque tranche du tableau démarre sur sa propre page : coupée après
-             son en-tête, elle devient une suite de chiffres sans nom de colonne. */
-          .mes-table { break-before: page; }
+
+          /* Région si longue qu'elle ne tient pas sur une page : son reste part
+             en haut de la suivante, sous son nom suivi de « (suite) ». */
+          .mes-page-neuve { break-before: page; }
+
+          /* La PREMIÈRE tranche du tableau reste avec le titre de sa section —
+             sinon ce titre occupe une page à lui seul. Les suivantes démarrent
+             leur propre page : coupée après son en-tête, une tranche devient
+             une suite de chiffres sans nom de colonne. */
+          .mes-table + .mes-table { break-before: page; }
           .mes-table thead { display: table-header-group; }
           .mes-table tr { break-inside: avoid; }
         }
@@ -453,11 +592,7 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
               }
               tone={i % 2 === 0 ? 'paper' : 'white'}
             >
-              <div className="grid gap-4 sm:grid-cols-2">
-                {g.series.map(s => (
-                  <CarteMesure key={s.cle} serie={s} />
-                ))}
-              </div>
+              <GrilleCartes groupe={g} />
             </Section>
           ))}
 

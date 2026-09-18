@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { datesDesPrises, evolution, groupesDeMesures } from './mesures-doc.ts'
+import { datesDesPrises, evolution, groupesDeMesures, isPlausibleMesure } from './mesures-doc.ts'
 
 const CIRC = [
   // Volontairement dans le désordre : l'ordre d'arrivée des lignes ne l'est pas.
@@ -86,4 +86,44 @@ test('sans aucun mollet, la somme des 5 plis ne crée aucune série', () => {
   const sansMollet = [{ date: '2026-06-25', triceps: 6, biceps: 5.5, sousscapulaire: 18.5, iliaque: 15, somme4Plis: 45 }]
   const [composition] = groupesDeMesures([], sansMollet)
   assert.equal(composition.series.some(s => s.cle === 'somme5'), false)
+})
+
+test('une circonférence impossible ne produit aucun point', () => {
+  // Le cas réel : un .doc de 2011 mal relu donne un tour de hanche de 5 cm. En
+  // tête de série, il transforme l'écart annoncé au client en aberration.
+  const avecAberrante = [
+    { date: '2011-08-17', hanche: 5, taille: 99 },
+    { date: '2026-06-25', hanche: 107, taille: 93 }
+  ]
+  const circonferences = groupesDeMesures(avecAberrante, []).find(g => g.titre === 'Circonférences')!
+  const hanche = circonferences.series.find(s => s.cle === 'hanche')!
+  assert.deepEqual(hanche.points, [{ date: '2026-06-25', valeur: 107 }])
+  // Une seule prise reste : la carte dira « première prise », pas « +102 cm ».
+  assert.equal(evolution(hanche), null)
+  // La mesure voisine de la MÊME prise, elle, est plausible et reste.
+  const taille = circonferences.series.find(s => s.cle === 'taille')!
+  assert.deepEqual(taille.points.map(p => p.valeur), [99, 93])
+})
+
+test('les bornes de plausibilité laissent passer les vraies mesures', () => {
+  assert.equal(isPlausibleMesure('hanche', 5), false)
+  assert.equal(isPlausibleMesure('hanche', 104), true)
+  assert.equal(isPlausibleMesure('hanche', 180), true)
+  assert.equal(isPlausibleMesure('taille', 201), false)
+  // Une mesure sans borne connue n'est jamais écartée.
+  assert.equal(isPlausibleMesure('grandeurCm', 3), true)
+})
+
+test('chaque circonférence porte sa région du corps', () => {
+  const toutes = [{ date: '2026-06-25', taille: 93, epaule: 130, cuisseG: 52 }]
+  const circonferences = groupesDeMesures(toutes, []).find(g => g.titre === 'Circonférences')!
+  const famille = (cle: string) => circonferences.series.find(s => s.cle === cle)!.famille
+  assert.equal(famille('taille'), 'Tronc')
+  assert.equal(famille('epaule'), 'Haut du corps')
+  assert.equal(famille('cuisseG'), 'Bas du corps')
+  // Les autres groupes n'ont pas de région : le document ne les sous-titre pas.
+  const composition = groupesDeMesures([{ date: '2026-06-25', poidsKg: 90 }], []).find(
+    g => g.titre === 'Poids et composition'
+  )!
+  assert.equal(composition.series[0].famille, undefined)
 })

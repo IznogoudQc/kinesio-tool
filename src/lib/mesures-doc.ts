@@ -44,6 +44,14 @@ export interface SerieMesure {
   cle: string
   label: string
   unite: string
+  /**
+   * Région du corps mesurée, pour les groupes qui en ont une.
+   *
+   * Sert au document à couper une section trop longue là où la coupure veut
+   * dire quelque chose : « Bas du corps » en tête de page renseigne le lecteur,
+   * « Circonférences (suite) » ne lui raconte que la pagination.
+   */
+  famille?: string
   /** De la plus ANCIENNE à la plus récente — c'est le sens de lecture d'une courbe. */
   points: PointMesure[]
 }
@@ -64,19 +72,19 @@ export interface GroupeMesures {
  * peut les contenir, et un document qui les tairait perdrait des mesures que le
  * client a bel et bien passées.
  */
-const LIBELLES_CIRC: { cle: string; label: string }[] = [
-  { cle: 'taille', label: 'Tour de taille' },
-  { cle: 'hanche', label: 'Tour de hanche' },
-  { cle: 'bicepsG', label: 'Biceps fléchi' },
-  { cle: 'cuisseG', label: 'Cuisse' },
-  { cle: 'epaule', label: 'Épaules et pec' },
-  { cle: 'poitrine', label: 'Poitrine' },
-  { cle: 'abdomen', label: 'Abdomen' },
-  { cle: 'cou', label: 'Cou' },
-  { cle: 'bicepsD', label: 'Biceps fléchi (droit)' },
-  { cle: 'cuisseD', label: 'Cuisse (droite)' },
-  { cle: 'molletG', label: 'Mollet' },
-  { cle: 'molletD', label: 'Mollet (droit)' }
+const LIBELLES_CIRC: { cle: string; label: string; famille: string }[] = [
+  { cle: 'taille', label: 'Tour de taille', famille: 'Tronc' },
+  { cle: 'hanche', label: 'Tour de hanche', famille: 'Tronc' },
+  { cle: 'bicepsG', label: 'Biceps fléchi', famille: 'Haut du corps' },
+  { cle: 'cuisseG', label: 'Cuisse', famille: 'Bas du corps' },
+  { cle: 'epaule', label: 'Épaules et pec', famille: 'Haut du corps' },
+  { cle: 'poitrine', label: 'Poitrine', famille: 'Haut du corps' },
+  { cle: 'abdomen', label: 'Abdomen', famille: 'Tronc' },
+  { cle: 'cou', label: 'Cou', famille: 'Haut du corps' },
+  { cle: 'bicepsD', label: 'Biceps fléchi (droit)', famille: 'Haut du corps' },
+  { cle: 'cuisseD', label: 'Cuisse (droite)', famille: 'Bas du corps' },
+  { cle: 'molletG', label: 'Mollet', famille: 'Bas du corps' },
+  { cle: 'molletD', label: 'Mollet (droit)', famille: 'Bas du corps' }
 ]
 
 const LIBELLES_PLIS: { cle: keyof PrisePlis; label: string }[] = [
@@ -86,6 +94,45 @@ const LIBELLES_PLIS: { cle: keyof PrisePlis; label: string }[] = [
   { cle: 'iliaque', label: 'Crête iliaque' },
   { cle: 'mollet', label: 'Mollet' }
 ]
+
+/**
+ * Plages plausibles d'une circonférence chez un adulte, en centimètres.
+ *
+ * Elles ne servent PAS à juger un client : les bornes sont larges à dessein.
+ * Elles attrapent les valeurs qui ne peuvent pas venir d'un ruban — un tour de
+ * hanche à 5 cm, une taille à 900 — et qui arrivent par l'import des anciens
+ * bilans .doc, où un champ mal lu devient un nombre quelconque. Une seule de
+ * ces valeurs en tête de série et l'écart annoncé au client devient une
+ * aberration (« +99 cm depuis 2011 »).
+ *
+ * Une mesure sans plage ici n'est jamais écartée.
+ */
+const PLAUSIBLE_RANGES: Record<string, [number, number]> = {
+  cou: [25, 60],
+  epaule: [80, 160],
+  bicepsG: [20, 60],
+  bicepsD: [20, 60],
+  poitrine: [70, 160],
+  taille: [50, 200],
+  abdomen: [50, 200],
+  hanche: [70, 180],
+  cuisseG: [30, 100],
+  cuisseD: [30, 100],
+  molletG: [20, 60],
+  molletD: [20, 60]
+}
+
+/**
+ * La valeur peut-elle sortir d'un ruban ?
+ *
+ * Exporté pour que l'onglet Mesures puisse signaler la prise fautive à
+ * Marie-Eve : le document, lui, se contente de l'ignorer — il part au client et
+ * n'a pas à lui expliquer qu'une donnée de 2011 est incohérente.
+ */
+export function isPlausibleMesure(cle: string, valeur: number): boolean {
+  const plage = PLAUSIBLE_RANGES[cle]
+  return !plage || (valeur >= plage[0] && valeur <= plage[1])
+}
 
 const KG_PAR_LB = 0.45359237
 
@@ -155,9 +202,16 @@ export function groupesDeMesures(
     )
   ]
 
-  const circ = LIBELLES_CIRC.map(({ cle, label }) =>
-    serie(cle, label, 'cm', circonferences, (l: PriseCirconferences) => l[cle])
-  )
+  // Les valeurs hors plage ne produisent pas de point : ni dans la courbe, ni
+  // dans le tableau, ni dans l'écart. Les écarter au seul calcul de l'écart
+  // ferait dire trois choses différentes à la même carte.
+  const circ = LIBELLES_CIRC.map(({ cle, label, famille }): SerieMesure | null => {
+    const s = serie(cle, label, 'cm', circonferences, (l: PriseCirconferences) => {
+      const v = l[cle]
+      return estNombre(v) && !isPlausibleMesure(cle, v) ? null : v
+    })
+    return s && { ...s, famille }
+  })
 
   const plisSeries = LIBELLES_PLIS.map(({ cle, label }) =>
     serie(String(cle), label, 'mm', plis, (l: PrisePlis) => l[cle])
