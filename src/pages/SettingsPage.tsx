@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder } from 'lucide-react'
+import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder, CloudUpload, FolderOpen, LifeBuoy, ChevronDown, ChevronRight } from 'lucide-react'
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
@@ -11,6 +11,7 @@ import { DosBaremes } from './settings/DosBaremes'
 import { MusculoBaremes } from './settings/MusculoBaremes'
 import { PaBaremes } from './settings/PaBaremes'
 import { settingsService } from '../services/settings'
+import { backupService } from '../services/backup'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
 
@@ -65,6 +66,8 @@ export function SettingsPage() {
             <>
               <ProfileCard />
               <DocumentsFolderCard />
+              <BackupCard />
+              <RestoreProcedure />
               <DummyJeanSeedButton />
             </>
           )}
@@ -178,6 +181,253 @@ function DocumentsFolderCard() {
       </div>
     </Card>
   )
+}
+
+/**
+ * Sauvegarde quotidienne vers OneDrive (ADR 0012).
+ *
+ * La date de la dernière sauvegarde est l'information qui compte : c'est elle qui
+ * dit si le filet est réellement tendu. Elle est donc affichée même quand tout va
+ * bien, et pas seulement en cas d'erreur.
+ */
+function BackupCard() {
+  const [status, setStatus] = useState<BackupStatus | null>(null)
+  const [busy, setBusy] = useState(false)
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [error, setError] = useState<string | null>(null)
+  const [done, setDone] = useState<string | null>(null)
+
+  useEffect(() => {
+    backupService
+      .getStatus()
+      .then(setStatus)
+      .catch(() => setError("Impossible de lire l'état de la sauvegarde."))
+  }, [])
+
+  async function toggle(enabled: boolean) {
+    setError(null)
+    setSaveStatus('saving')
+    try {
+      await backupService.setEnabled(enabled)
+      setStatus(await backupService.getStatus())
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('error')
+      setError("Le réglage n'a pas pu être enregistré.")
+    }
+  }
+
+  async function runNow() {
+    setBusy(true)
+    setError(null)
+    setDone(null)
+    try {
+      const r = await backupService.runNow()
+      setStatus(await backupService.getStatus())
+      setDone(`${r.clientCount} client${r.clientCount > 1 ? 's' : ''} sauvegardé${r.clientCount > 1 ? 's' : ''}.`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Card
+      title="Sauvegarde automatique"
+      icon={CloudUpload}
+      description="Une fois par jour, tous vos dossiers clients sont écrits dans OneDrive. Si vous perdez cet ordinateur, vous pouvez les réimporter sur un autre depuis vos fichiers OneDrive."
+    >
+      {status === null ? (
+        <p className="text-marine/40 text-base">Chargement…</p>
+      ) : !status.oneDriveDetected ? (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-amber-900 text-sm">
+          <AlertCircle size={16} className="mt-0.5 shrink-0" />
+          <span>
+            OneDrive n’a pas été trouvé sur ce PC. La sauvegarde automatique est donc inactive. Installez OneDrive,
+            connectez-vous, puis redémarrez l’application.
+          </span>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <label className="flex items-center gap-2.5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={status.enabled}
+              onChange={e => toggle(e.target.checked)}
+              className="h-4 w-4 accent-gold"
+            />
+            <span className="text-marine text-base">Sauvegarder automatiquement chaque jour</span>
+            <StatusInline status={saveStatus} error={null} />
+          </label>
+
+          <div>
+            <p className="text-marine/55 text-sm mb-1.5">Dossier de sauvegarde</p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex-1 min-w-0 px-3 py-2 rounded-md border border-cream-dark bg-cream/40 text-marine text-sm truncate">
+                {status.backupFolder}
+              </div>
+              <button
+                type="button"
+                onClick={() => backupService.openFolder().catch(() => setError("Le dossier n'a pas pu être ouvert."))}
+                className="inline-flex items-center gap-2 px-4 py-2 text-marine/80 hover:text-marine font-medium border border-cream-dark hover:border-gold/60 rounded-md text-sm transition-colors"
+              >
+                <FolderOpen size={15} />
+                Ouvrir
+              </button>
+            </div>
+          </div>
+
+          <p className="text-marine/65 text-base">
+            {status.lastRunAt ? (
+              <>
+                Dernière sauvegarde : <strong className="text-marine">{formatBackupDate(status.lastRunAt)}</strong>
+                {' · '}
+                {status.lastClientCount} client{status.lastClientCount > 1 ? 's' : ''}
+              </>
+            ) : (
+              <span className="text-marine/45">Aucune sauvegarde pour l’instant — elle se fera au prochain démarrage.</span>
+            )}
+          </p>
+
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={runNow}
+              disabled={busy}
+              className="inline-flex items-center gap-2 px-5 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {busy ? <Loader2 size={16} className="animate-spin" /> : <CloudUpload size={16} />}
+              {busy ? 'Sauvegarde…' : 'Sauvegarder maintenant'}
+            </button>
+            {done && (
+              <span className="inline-flex items-center gap-1.5 text-green-700 text-sm">
+                <Check size={15} /> {done}
+              </span>
+            )}
+          </div>
+
+          <p className="text-marine/45 text-xs leading-relaxed">
+            Les fichiers sont enregistrés en clair, puis synchronisés par OneDrive — donc copiés sur les serveurs de
+            Microsoft, hors Québec. Sont conservées : les 7 dernières journées, plus une sauvegarde par semaine sur 8
+            semaines.
+          </p>
+        </div>
+      )}
+      {error && (
+        <p className="mt-4 inline-flex items-start gap-1.5 text-red-700 text-sm">
+          <AlertCircle size={15} className="mt-0.5 shrink-0" /> {error}
+        </p>
+      )}
+    </Card>
+  )
+}
+
+/**
+ * La procédure de restauration, dépliable.
+ *
+ * Repliée par défaut : c'est une page qu'on lit une fois dans sa vie, et
+ * déployée elle noierait les réglages qu'on ouvre vraiment. Elle reprend mot pour
+ * mot le `COMMENT-RESTAURER.txt` déposé dans OneDrive — l'écran sert à ce que
+ * Marie sache que ce fichier existe AVANT d'en avoir besoin, le fichier sert le
+ * jour où l'app n'est plus installée.
+ */
+function RestoreProcedure() {
+  const [open, setOpen] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  return (
+    <section className="bg-white border border-cream-dark rounded-xl shadow-sm">
+      <button
+        type="button"
+        onClick={() => setOpen(v => !v)}
+        aria-expanded={open}
+        className="w-full p-5 flex items-center gap-2.5 text-marine font-medium text-left hover:bg-cream/30 rounded-xl transition-colors"
+      >
+        {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        <LifeBuoy size={18} className="text-gold" />
+        <span className="flex-1">En cas d’urgence — comment restaurer mes clients ?</span>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 space-y-4 text-marine text-base">
+          <p className="text-marine/65">
+            Si votre ordinateur est perdu, volé ou en panne, vos clients sont dans OneDrive. Voici comment les
+            récupérer sur un nouveau PC.
+          </p>
+
+          <ol className="space-y-3 pl-5 list-decimal">
+            <li>
+              <strong>Installez Kinésio Outils</strong> sur le nouveau PC depuis{' '}
+              <a
+                href="https://github.com/IznogoudQc/kinesio-tool/releases"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold-dark underline decoration-cream-dark underline-offset-2 hover:decoration-gold"
+              >
+                github.com/IznogoudQc/kinesio-tool/releases
+              </a>
+              . Windows affichera « Éditeur inconnu » : cliquez sur « Informations complémentaires » puis
+              « Exécuter quand même ».
+            </li>
+            <li>
+              <strong>Connectez OneDrive</strong> avec le même compte Microsoft, et attendez que la synchronisation
+              soit finie — l’icône OneDrive, près de l’horloge, ne doit plus tourner.
+            </li>
+            <li>
+              <strong>Ouvrez le dossier</strong>{' '}
+              <code className="bg-cream/60 px-1.5 py-0.5 rounded text-sm">OneDrive\Kinesio-Outilsackups\</code>{' '}
+              et repérez le fichier <code className="bg-cream/60 px-1.5 py-0.5 rounded text-sm">.kinesio</code> dont
+              la date est la plus récente.
+            </li>
+            <li>
+              <strong>Dans Kinésio Outils</strong>, page Clients, cliquez « Importer » en haut à droite, choisissez ce
+              fichier, puis « Fusionner ». Vos clients réapparaissent avec leurs photos, bilans, mesures, notes et
+              questionnaires signés.
+            </li>
+          </ol>
+
+          <div className="bg-cream/40 border border-cream-dark/60 rounded-md p-3.5 text-sm text-marine/70">
+            Cette même procédure est écrite dans un fichier{' '}
+            <code className="bg-white px-1.5 py-0.5 rounded text-xs">COMMENT-RESTAURER.txt</code>, déposé à côté des
+            sauvegardes et réécrit à chaque fois. Il s’ouvre dans le Bloc-notes, sans avoir installé quoi que ce soit —
+            c’est lui qui sert le jour où l’application n’est plus là pour afficher cet écran.
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setError(null)
+              backupService.openFolder().catch(() => setError("Le dossier n'a pas pu être ouvert."))
+            }}
+            className="inline-flex items-center gap-2 text-sm font-medium text-marine/70 hover:text-marine underline decoration-cream-dark decoration-2 underline-offset-4 hover:decoration-gold transition-colors"
+          >
+            <FolderOpen size={15} />
+            Ouvrir le dossier de sauvegarde maintenant
+          </button>
+          {error && (
+            <p className="inline-flex items-start gap-1.5 text-red-700 text-sm">
+              <AlertCircle size={15} className="mt-0.5 shrink-0" /> {error}
+            </p>
+          )}
+        </div>
+      )}
+    </section>
+  )
+}
+
+/** « 18 septembre 2026 à 09:12 » — la date ET l'heure : c'est l'heure qui dit si
+ *  la sauvegarde du matin est bien passée. */
+function formatBackupDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso
+  return d.toLocaleString('fr-CA', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 }
 
 function Field({

@@ -307,6 +307,19 @@ interface ImportResult {
   summary: BundleSummary
 }
 
+// ── Sauvegarde quotidienne vers OneDrive ──────────────────────────────────────
+interface BackupStatus {
+  /** OneDrive trouvé sur ce PC. Faux = la sauvegarde ne peut rien faire. */
+  oneDriveDetected: boolean
+  /** Dossier où les fichiers sont écrits, `null` si OneDrive est absent. */
+  backupFolder: string | null
+  enabled: boolean
+  /** ISO de la dernière sauvegarde réussie, `null` si aucune. */
+  lastRunAt: string | null
+  lastRunPath: string | null
+  lastClientCount: number
+}
+
 // ── Mesures : circonférences corporelles ──────────────────────────────────────
 interface MesureCirconferences {
   id: string
@@ -586,6 +599,13 @@ interface Window {
       getPainSuggestions(): Promise<Record<string, string[]>>
       setPainSuggestions(value: Record<string, string[]>): Promise<void>
       getDefaultPainSuggestions(): Promise<Record<string, string[]>>
+    }
+    backup: {
+      getStatus(): Promise<BackupStatus>
+      setEnabled(enabled: boolean): Promise<void>
+      runNow(): Promise<{ filePath: string; clientCount: number }>
+      /** Ouvre le dossier de sauvegarde dans l'explorateur Windows. */
+      openFolder(): Promise<void>
     }
     transfer: {
       /** Ouvre « Enregistrer sous ». `null` si Marie-Eve annule. */

@@ -5,8 +5,9 @@ import { join } from 'path'
 import { tmpdir } from 'os'
 import { asc, eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
-import { bilans, clients, mesuresCirconferences, mesuresPlisCutanes, settings } from '../../db/schema'
+import { bilans, clients, mesuresCirconferences, mesuresPlisCutanes } from '../../db/schema'
 import { getAvatarPath } from './avatars'
+import { readSetting } from './settings-store'
 import { safeClientFileName, todayISODate } from './report-generator'
 import { scopeBilansTo } from '../../src/lib/report-scope'
 
@@ -15,10 +16,6 @@ function templatePath(): string {
   const packaged = join(app.getAppPath(), 'out', 'standalone', 'template.html')
   if (existsSync(packaged)) return packaged
   return join(process.cwd(), 'out', 'standalone', 'template.html')
-}
-
-function readSetting(key: string): string | null {
-  return getDb().select().from(settings).where(eq(settings.key, key)).get()?.value ?? null
 }
 
 /** Parse la chaîne JSON du planning de jeûne en tableau (ou `null` si vide/invalide). */

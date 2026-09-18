@@ -21,6 +21,7 @@
     "src/lib/bilan-merge.ts",
     "src/lib/bilan-section-notes.ts",
     "src/lib/client-bundle.ts",
+    "src/lib/backup-retention.ts",
     "src/lib/supplements.ts",
     "src/lib/food-suggestions.ts",
     "src/lib/food-macros.ts",

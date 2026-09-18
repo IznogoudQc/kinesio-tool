@@ -10,6 +10,8 @@ import { registerAIHandlers } from './ipc/ai'
 import { registerTransferHandlers } from './ipc/transfer'
 import { registerNutritionTemplatesHandlers } from './ipc/nutritionTemplates'
 import { registerQuestionnairesHandlers } from './ipc/questionnaires'
+import { registerBackupHandlers } from './ipc/backup'
+import { maybeRunDailyBackup } from './lib/backup-service'
 import { initDb } from '../db/client'
 import { backfillBilansToMesuresOnce } from './lib/measure-sync'
 import { cleanupCircPliDuplicatesOnce } from './lib/cleanup-circ-pli-dup'
@@ -107,6 +109,7 @@ app.whenReady().then(() => {
   registerAIHandlers()
   registerNutritionTemplatesHandlers()
   registerQuestionnairesHandlers()
+  registerBackupHandlers()
   // Report unique des bilans existants vers l'onglet Mesures (sens Bilan → Mesures).
   try {
     backfillBilansToMesuresOnce()
@@ -129,6 +132,11 @@ app.whenReady().then(() => {
     // ne jamais empêcher le démarrage de l'app
   }
   createWindow()
+
+  // Sauvegarde quotidienne vers OneDrive. Après la fenêtre et non avant : lire
+  // toute la base et l'écrire prend un instant, et l'app doit s'ouvrir d'abord.
+  // Le service ne lève jamais et ne fait rien si la dernière est récente.
+  setTimeout(() => void maybeRunDailyBackup(), 5000)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

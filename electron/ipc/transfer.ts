@@ -1,9 +1,9 @@
-import { app, dialog, ipcMain } from 'electron'
+import { dialog, ipcMain } from 'electron'
 import { readFile, writeFile } from 'fs/promises'
 import { existsSync } from 'fs'
 import { basename } from 'path'
 import { z } from 'zod'
-import { eq, inArray } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { getDb } from '../../db/client'
 import {
   bilans,
@@ -14,6 +14,7 @@ import {
   questionnaires
 } from '../../db/schema'
 import { ensureAvatarsDir, getAvatarPath } from '../lib/avatars'
+import { buildClientBundle } from '../lib/client-bundle-builder'
 import {
   BUNDLE_FORMAT,
   BUNDLE_VERSION,
@@ -142,21 +143,6 @@ async function readBundle(filePath: string): Promise<ClientBundle> {
   throw new Error("Ce fichier n'est pas un export de clients Kinésio.")
 }
 
-/** Photos d'un client en base64. Un fichier manquant est simplement ignoré. */
-async function collectAvatars(row: {
-  avatarFilename: string | null
-  avatarFullbodyFilename: string | null
-}): Promise<Record<string, string>> {
-  const out: Record<string, string> = {}
-  for (const filename of [row.avatarFilename, row.avatarFullbodyFilename]) {
-    if (!filename) continue
-    const path = getAvatarPath(filename)
-    if (!existsSync(path)) continue
-    out[filename] = (await readFile(path)).toString('base64')
-  }
-  return out
-}
-
 function existingClients(): ExistingClient[] {
   return getDb().select({ id: clients.id, email: clients.email }).from(clients).all()
 }
@@ -164,46 +150,10 @@ function existingClients(): ExistingClient[] {
 export function registerTransferHandlers(): void {
   ipcMain.handle('transfer:export', async (_e, payload: unknown) => {
     const clientIds = z.array(z.string().uuid()).min(1).parse(payload)
-    const db = getDb()
 
-    const rows = db.select().from(clients).where(inArray(clients.id, clientIds)).all()
+    const bundle = await buildClientBundle(clientIds)
+    const rows = bundle.clients.map(c => c.client as { name: string })
     if (rows.length === 0) throw new Error('Aucun client à exporter.')
-
-    const exported: ExportedClient[] = []
-    for (const row of rows) {
-      exported.push({
-        client: row as unknown as Record<string, unknown>,
-        bilans: db.select().from(bilans).where(eq(bilans.clientId, row.id)).all() as unknown as Record<string, unknown>[],
-        circonferences: db
-          .select()
-          .from(mesuresCirconferences)
-          .where(eq(mesuresCirconferences.clientId, row.id))
-          .all() as unknown as Record<string, unknown>[],
-        plis: db
-          .select()
-          .from(mesuresPlisCutanes)
-          .where(eq(mesuresPlisCutanes.clientId, row.id))
-          .all() as unknown as Record<string, unknown>[],
-        notes: db.select().from(clientNotes).where(eq(clientNotes.clientId, row.id)).all() as unknown as Record<
-          string,
-          unknown
-        >[],
-        questionnaires: db
-          .select()
-          .from(questionnaires)
-          .where(eq(questionnaires.clientId, row.id))
-          .all() as unknown as Record<string, unknown>[],
-        avatars: await collectAvatars(row)
-      })
-    }
-
-    const bundle: ClientBundle = {
-      format: BUNDLE_FORMAT,
-      version: BUNDLE_VERSION,
-      exportedAt: new Date().toISOString(),
-      appVersion: app.getVersion(),
-      clients: exported
-    }
 
     const today = new Date().toISOString().slice(0, 10)
     const slug = (s: string): string => s.replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '').toLowerCase()

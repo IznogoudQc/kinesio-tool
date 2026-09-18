@@ -5,6 +5,8 @@ L'app manipule des **données personnelles potentiellement sensibles** (coordonn
 ## Principes généraux
 
 1. **100 % local** — aucun appel réseau pour partager des données client. Le seul appel sortant autorisé est SMTP vers le compte pro de Marie-Eve.
+   - **Exception assumée depuis la v0.9.219** : la sauvegarde quotidienne écrit un `.kinesio` complet, en clair, dans le dossier OneDrive de Marie. L'app elle-même ne fait toujours aucun appel réseau — c'est le client OneDrive de Windows qui téléverse — mais le résultat est que des renseignements de santé aboutissent chez Microsoft, hors Québec. Décision, alternatives rejetées et conséquences Loi 25 : [[../decisions/0041-backup-onedrive-quotidien]]. Désactivable dans les Paramètres.
+   - Ne pas généraliser cette exception : elle couvre UNIQUEMENT l'écriture d'un fichier de sauvegarde dans un dossier local que l'utilisatrice a elle-même choisi de synchroniser. Elle n'autorise pas un appel d'API vers un service tiers.
 2. **Pas de télémétrie** — pas de Sentry, pas d'analytics, pas de logs envoyés ailleurs que sur la machine.
 3. **Pas de logs verbeux des données client** — un log "client créé" est OK, un log qui dump l'objet client complet n'est pas OK.
 

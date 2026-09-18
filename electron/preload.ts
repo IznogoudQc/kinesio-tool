@@ -132,6 +132,12 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('settings:painSuggestions:set', value),
     getDefaultPainSuggestions: () => ipcRenderer.invoke('settings:painSuggestions:default')
   },
+  backup: {
+    getStatus: () => ipcRenderer.invoke('backup:status'),
+    setEnabled: (enabled: boolean) => ipcRenderer.invoke('backup:setEnabled', enabled),
+    runNow: () => ipcRenderer.invoke('backup:runNow'),
+    openFolder: () => ipcRenderer.invoke('backup:openFolder')
+  },
   transfer: {
     exportClients: (clientIds: string[]) =>
       ipcRenderer.invoke('transfer:export', clientIds),

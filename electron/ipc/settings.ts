@@ -2,9 +2,7 @@ import { dialog, ipcMain } from 'electron'
 import keytar from 'keytar'
 import nodemailer from 'nodemailer'
 import { z } from 'zod'
-import { eq } from 'drizzle-orm'
-import { getDb } from '../../db/client'
-import { settings } from '../../db/schema'
+import { readSetting, writeSetting } from '../lib/settings-store'
 import { DEFAULT_SUPPLEMENTS } from '../../src/lib/supplements'
 import {
   DEFAULT_FOODS_GOOD,
@@ -115,20 +113,14 @@ const DEFAULT_PROFILE = {
 // Textes par défaut partagés avec le renderer (src/lib/email-templates.ts).
 const DEFAULT_TEMPLATE = DEFAULT_BILAN_EMAIL
 
+// Façades `async` sur le magasin partagé : les dizaines d'appels `await
+// readKey(...)` de ce fichier restent inchangés.
 async function readKey(key: string): Promise<string | null> {
-  const row = getDb().select().from(settings).where(eq(settings.key, key)).get()
-  return row?.value ?? null
+  return readSetting(key)
 }
 
 async function writeKey(key: string, value: string): Promise<void> {
-  const db = getDb()
-  const now = new Date().toISOString()
-  const existing = db.select().from(settings).where(eq(settings.key, key)).get()
-  if (existing) {
-    db.update(settings).set({ value, updatedAt: now }).where(eq(settings.key, key)).run()
-  } else {
-    db.insert(settings).values({ key, value, updatedAt: now }).run()
-  }
+  writeSetting(key, value)
 }
 
 export function registerSettingsHandlers(): void {
