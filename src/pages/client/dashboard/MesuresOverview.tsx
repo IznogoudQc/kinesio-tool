@@ -847,7 +847,7 @@ export function MesuresOverview() {
             className="w-full px-5 py-3 flex items-center gap-2 text-marine font-medium text-sm hover:bg-cream/30 transition-colors rounded-xl"
           >
             {showDetails ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-            Voir toutes les mesures détaillées (12 circonférences + plis)
+            Voir toutes les mesures détaillées (circonférences + plis)
           </button>
           {showDetails && (
             <div className="px-5 pb-5">

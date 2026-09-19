@@ -2,6 +2,41 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.220 — Le tableau « Toutes vos prises » cohérent + mesures obsolètes retirées)
+
+### Une ligne qui apparaissait sur la page 2 mais pas sur la page 1
+
+Le tableau des prises est trop large pour une A4 portrait, donc il se découpe en
+tranches de dates. Le filtre « cette mesure a-t-elle une valeur ici ? » était
+appliqué à CHAQUE tranche séparément : « Biceps fléchi », mesuré seulement en
+2026, apparaissait sur la deuxième page et pas sur la première. La ligne avait
+l'air oubliée.
+
+Les lignes sont maintenant les mêmes partout — toutes les mesures suivies, à
+chaque tranche, avec un tiret là où il n'y a rien. Un tiret se lit tout seul ;
+une ligne absente ne se lit pas.
+
+Et chaque tranche au-delà de la première **reprend son titre** en haut de sa
+page : « Le détail — Toutes vos prises (suite) », avec la plage de dates
+couverte. Avant, on tombait sur une grille de chiffres sans savoir ce qu'on
+lisait.
+
+### Trois mesures qui ne bougeaient plus
+
+Le formulaire ne propose plus `bicepsD`, `cuisseD` ni `poitrine`. Leurs valeurs
+d'anciens imports s'affichaient quand même, figées, à côté de mesures vivantes —
+et « Biceps fléchi » juste au-dessus de « Biceps fléchi (droit) » laissait croire
+à une paire gauche/droite alors que la première n'a pas de côté.
+
+Elles sont écartées par une liste unique, `src/lib/mesures-legacy-fields.ts`, lue
+à la construction des séries : encadrés, courbes, explorateur et tableau d'un
+seul coup. **Aucune migration** — les colonnes restent, les données restent, et
+l'export `.kinesio` continue de les transporter. Voir
+[[../decisions/0042-champs-mesures-legacy]].
+
+Effet de bord agréable : chez Nicholas, les circonférences tiennent maintenant
+sur une seule page au lieu de deux, et le document passe de 7 à 6 pages.
+
 ## ✅ Fait (v0.9.211 — Le .html qui s'ouvrait en code, et la nutrition en PDF)
 
 ### « Ouvrez-le en double-cliquant dessus »

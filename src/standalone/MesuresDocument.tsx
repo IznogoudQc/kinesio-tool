@@ -273,9 +273,6 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
     const p = s.points.find(x => x.date === date)
     return p ? nf1(p.valeur) : '—'
   }
-  // Une mesure absente de toute la tranche ne mérite pas une ligne de tirets.
-  const seriesDe = (bloc: string[]) => series.filter(s => bloc.some(d => s.points.some(p => p.date === d)))
-
   /**
    * Une mesure prise une seule fois : une ligne quasi vide au milieu de celles
    * qui, elles, racontent une évolution. Repliée par défaut.
@@ -289,8 +286,21 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
 
   return (
     <div className={`space-y-8${toutMontrer ? '' : ' mes-creuses-masquees'}`}>
-      {repartir(dates, DATES_PAR_TABLEAU).map(bloc => (
-        <div key={bloc[0]} className="mes-table overflow-x-auto">
+      {repartir(dates, DATES_PAR_TABLEAU).map((bloc, i) => (
+        <div key={bloc[0]} className={i > 0 ? 'mes-page-neuve' : undefined}>
+          {/* Le titre de la section ne couvre que la première tranche. Les
+              suivantes démarrent leur propre page et le reprennent : sans ça on
+              tombe sur une grille de chiffres sans savoir ce qu'on lit. */}
+          {i > 0 && (
+            <div className="mb-8">
+              <p className="ed-eyebrow text-gold-dark">Le détail</p>
+              <h3 className="ed-display ed-section-title mt-3 text-marine">Toutes vos prises (suite)</h3>
+              <p className="ed-prose mt-3 text-base text-marine/60">
+                Du {formatBilanDate(bloc[0])} au {formatBilanDate(bloc[bloc.length - 1])}.
+              </p>
+            </div>
+          )}
+          <div className="mes-table overflow-x-auto">
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-marine/15">
@@ -302,8 +312,13 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
                 ))}
               </tr>
             </thead>
+            {/* TOUTES les mesures, à chaque tranche — et pas seulement celles
+                présentes dans celle-ci. Le filtre par tranche faisait apparaître
+                « Biceps fléchi » sur la deuxième page et pas sur la première,
+                comme si la ligne avait été oubliée. Une cellule sans valeur porte
+                un tiret, ce qui se lit tout seul. */}
             <tbody>
-              {seriesDe(bloc).map(s => (
+              {series.map(s => (
                 <tr
                   key={s.cle}
                   className={`border-b border-cream-dark/50${
@@ -322,6 +337,7 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       ))}
 
@@ -583,10 +599,9 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
           .mes-page-neuve { break-before: page; }
 
           /* La PREMIÈRE tranche du tableau reste avec le titre de sa section —
-             sinon ce titre occupe une page à lui seul. Les suivantes démarrent
-             leur propre page : coupée après son en-tête, une tranche devient
-             une suite de chiffres sans nom de colonne. */
-          .mes-table + .mes-table { break-before: page; }
+             sinon ce titre occupe une page à lui seul. Les suivantes portent la
+             classe mes-page-neuve (ci-dessus) et reprennent le titre en haut de
+             leur page. */
           .mes-table thead { display: table-header-group; }
           .mes-table tr { break-inside: avoid; }
 

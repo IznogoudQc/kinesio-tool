@@ -7,13 +7,16 @@
  * cette mise en forme n'existe qu'ici — il n'y a pas deux versions à accorder.
  *
  * Ce qui n'a JAMAIS été mesuré ne produit pas de série : un client à qui on n'a
- * jamais pris le mollet ne doit pas voir une ligne vide portant son nom.
+ * jamais pris le mollet ne doit pas voir une ligne vide portant son nom. Et ce
+ * que le formulaire ne propose plus n'en produit pas non plus, même s'il reste
+ * des valeurs en base — voir `mesures-legacy-fields.ts`.
  *
  * Les notes des prises ne sortent pas d'ici. Elles sont écrites pendant la
  * mesure, pour la kinésiologue, et n'ont pas à se retrouver dans un document
  * remis au client.
  */
 import { s5pcForScoring } from './norms/cpafla-composition.ts'
+import { LEGACY_CIRC_FIELDS, LEGACY_PLIS_FIELDS } from './mesures-legacy-fields.ts'
 
 /** Une ligne de `mesures_circonferences`, telle qu'elle sort de la base. */
 export interface PriseCirconferences {
@@ -68,9 +71,15 @@ export interface GroupeMesures {
  * Les cinq que Marie-Eve saisit portent les mêmes libellés qu'au formulaire
  * (`MESURE_FIELDS`) — recopiés ici plutôt qu'importés parce que ce module doit
  * rester autonome, comme les autres modules partagés avec le processus
- * principal. Les autres colonnes existent encore en base : une prise ancienne
- * peut les contenir, et un document qui les tairait perdrait des mesures que le
- * client a bel et bien passées.
+ * principal.
+ *
+ * Les autres colonnes existent encore en base et une prise ancienne peut les
+ * contenir. Celles qui ont une jumelle ACTIVE sont écartées à la construction
+ * (`LEGACY_CIRC_FIELDS`) : « Biceps fléchi » à côté de « Biceps fléchi (droit) »
+ * laissait croire à une paire gauche/droite alors que la première n'a pas de côté
+ * et que la seconde n'est plus reprise. Les autres — cou, abdomen, mollets — sont
+ * gardées : elles ne prêtent pas à confusion, et un document qui les tairait
+ * perdrait des mesures que le client a bel et bien passées.
  */
 const LIBELLES_CIRC: { cle: string; label: string; famille: string }[] = [
   { cle: 'taille', label: 'Tour de taille', famille: 'Tronc' },
@@ -205,7 +214,7 @@ export function groupesDeMesures(
   // Les valeurs hors plage ne produisent pas de point : ni dans la courbe, ni
   // dans le tableau, ni dans l'écart. Les écarter au seul calcul de l'écart
   // ferait dire trois choses différentes à la même carte.
-  const circ = LIBELLES_CIRC.map(({ cle, label, famille }): SerieMesure | null => {
+  const circ = LIBELLES_CIRC.filter(({ cle }) => !LEGACY_CIRC_FIELDS.has(cle)).map(({ cle, label, famille }): SerieMesure | null => {
     const s = serie(cle, label, 'cm', circonferences, (l: PriseCirconferences) => {
       const v = l[cle]
       return estNombre(v) && !isPlausibleMesure(cle, v) ? null : v
@@ -213,7 +222,7 @@ export function groupesDeMesures(
     return s && { ...s, famille }
   })
 
-  const plisSeries = LIBELLES_PLIS.map(({ cle, label }) =>
+  const plisSeries = LIBELLES_PLIS.filter(({ cle }) => !LEGACY_PLIS_FIELDS.has(String(cle))).map(({ cle, label }) =>
     serie(String(cle), label, 'mm', plis, (l: PrisePlis) => l[cle])
   )
 
