@@ -2,6 +2,40 @@
 
 État des features du projet. Mis à jour au fur et à mesure.
 
+## ✅ Fait (v0.9.221 — Le tableau des prises défile à l'écran, se découpe sur papier)
+
+### Le découpage servait le papier et gênait l'écran
+
+Découper le tableau en tranches de cinq dates est une contrainte de l'A4
+portrait : ce qui déborde du papier est coupé, pas mis en défilement. À l'écran,
+cette contrainte n'existe pas — et chercher dans quelle tranche se trouve
+février 2026 pour le comparer à août 2011 n'a aucun intérêt.
+
+À l'écran, le tableau est donc **une seule table qui défile**, avec la colonne
+des noms et la ligne des dates **collées** (`sticky`) : on garde sous les yeux ce
+qu'on lit, même à la trente-sixième colonne. Un dégradé sur le bord droit dit
+qu'il y a plus à voir, et seulement au-delà de quatre dates — sinon il
+annoncerait un défilement qui n'existe pas.
+
+À l'impression, rien ne change : les tranches de la v0.9.220, avec leur titre
+repris et les mêmes lignes partout.
+
+### Les deux rendus vivent dans le même fichier
+
+Le PDF est l'impression de ce HTML-là (`htmlFileToPdf`), et le client qui reçoit
+le `.html` peut l'imprimer lui aussi. Les deux rendus sont donc dans le DOM,
+basculés en CSS — comme l'explorateur interactif, déjà en `ed-no-print`, avec les
+encadrés statiques pour pendant sur papier.
+
+Choisir par un drapeau dans les données aurait produit un HTML **sans** le rendu
+imprimable : la version envoyée au client se serait réimprimée avec ses dernières
+colonnes coupées, exactement le défaut corrigé en v0.9.219.
+
+Effet de bord : le repli « mesures prises une seule fois » se fait maintenant en
+React et non par une règle CSS qui le défaisait à l'impression. Le papier porte
+toutes les lignes parce que le rendu imprimable n'a pas de bouton, pas parce
+qu'une seconde règle vient annuler la première.
+
 ## ✅ Fait (v0.9.220 — Le tableau « Toutes vos prises » cohérent + mesures obsolètes retirées)
 
 ### Une ligne qui apparaissait sur la page 2 mais pas sur la page 1

@@ -267,25 +267,133 @@ function GrilleCartes({ groupe }: { groupe: GroupeMesures }) {
  */
 const MIN_VALEURS_POUR_AFFICHER = 2
 
-/** Le tableau complet, pour qui veut relire un chiffre précis. */
+/** Une valeur du tableau, ou un tiret quand la mesure n'a pas été prise ce jour-là. */
+function valeurDe(s: SerieMesure, date: string): string {
+  const p = s.points.find(x => x.date === date)
+  return p ? nf1(p.valeur) : '—'
+}
+
+/**
+ * Le tableau complet, en DEUX rendus.
+ *
+ * Le document est un seul fichier : le PDF est l'impression de ce même HTML
+ * (`htmlFileToPdf`), et le client qui reçoit le `.html` peut l'imprimer lui
+ * aussi. Les deux rendus vivent donc côte à côte dans le DOM, basculés en CSS —
+ * comme l'explorateur interactif, déjà en `ed-no-print`, avec les encadrés
+ * statiques pour pendant sur papier.
+ *
+ * Choisir par un drapeau dans les données aurait produit un HTML SANS le rendu
+ * imprimable : la version envoyée au client se serait réimprimée avec ses
+ * dernières colonnes coupées, exactement le défaut corrigé en v0.9.219.
+ *
+ *  - à l'écran : UNE table qui défile. On compare 2011 à 2026 d'un geste, sans
+ *    chercher dans quelle tranche se trouve la date.
+ *  - à l'impression : des tranches, parce qu'une A4 portrait ne tient que cinq
+ *    colonnes et que ce qui déborde du papier est coupé, pas mis en défilement.
+ */
 function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string[] }) {
-  const valeur = (s: SerieMesure, date: string): string => {
-    const p = s.points.find(x => x.date === date)
-    return p ? nf1(p.valeur) : '—'
-  }
   /**
    * Une mesure prise une seule fois : une ligne quasi vide au milieu de celles
-   * qui, elles, racontent une évolution. Repliée par défaut.
-   *
-   * Masquée par le CSS et non retirée du rendu : sur papier rien ne se déplie,
-   * et le tableau doit y rester complet.
+   * qui, elles, racontent une évolution. Repliée derrière un bouton à l'écran ;
+   * toujours présente sur papier, où rien ne se déplie.
    */
   const creuses = series.filter(s => s.points.length < MIN_VALEURS_POUR_AFFICHER)
   const [toutMontrer, setToutMontrer] = useState(false)
   const pluriel = creuses.length > 1 ? 's' : ''
+  const visibles = toutMontrer ? series : series.filter(s => s.points.length >= MIN_VALEURS_POUR_AFFICHER)
 
   return (
-    <div className={`space-y-8${toutMontrer ? '' : ' mes-creuses-masquees'}`}>
+    <>
+      <div className="ed-no-print">
+        <TableauDefilant series={visibles} dates={dates} />
+        {creuses.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setToutMontrer(v => !v)}
+            aria-expanded={toutMontrer}
+            className="mt-4 text-xs font-medium text-marine/55 underline decoration-cream-dark decoration-2 underline-offset-4 transition-colors hover:text-marine hover:decoration-gold"
+          >
+            {toutMontrer
+              ? `Masquer les ${creuses.length} mesure${pluriel} prise${pluriel} une seule fois`
+              : `Afficher ${creuses.length} mesure${pluriel} prise${pluriel} une seule fois`}
+          </button>
+        )}
+      </div>
+      <div className="mes-impression">
+        <TableauEnTranches series={series} dates={dates} />
+      </div>
+    </>
+  )
+}
+
+/**
+ * À l'écran : une seule table qui défile.
+ *
+ * La colonne des noms et la ligne des dates restent collées (`sticky`) : sans
+ * elles on perd de vue quelle mesure on lit dès la quatrième colonne, c'est-à-dire
+ * précisément au moment où le tableau devient utile.
+ */
+function TableauDefilant({ series, dates }: { series: SerieMesure[]; dates: string[] }) {
+  return (
+    <div className="relative">
+      <div className="mes-defilant max-h-[70vh] overflow-auto rounded-lg border border-cream-dark/60">
+        <table className="min-w-full border-collapse text-sm">
+          <thead>
+            <tr>
+              <th className="sticky left-0 top-0 z-20 whitespace-nowrap border-b border-marine/15 bg-cream px-3 py-2.5 text-left font-medium text-marine/60">
+                Mesure
+              </th>
+              {dates.map(d => (
+                <th
+                  key={d}
+                  className="sticky top-0 z-10 whitespace-nowrap border-b border-marine/15 bg-cream px-4 py-2.5 text-right font-medium text-marine/60"
+                >
+                  {formatBilanDate(d)}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {series.map(s => (
+              <tr key={s.cle} className="group">
+                <td className="sticky left-0 z-10 whitespace-nowrap border-b border-cream-dark/50 bg-white px-3 py-2 text-marine/80 group-hover:bg-cream/40">
+                  {s.label} <span className="text-marine/40">({s.unite})</span>
+                </td>
+                {dates.map(d => {
+                  const p = s.points.find(x => x.date === d)
+                  return (
+                    <td
+                      key={d}
+                      className={`whitespace-nowrap border-b border-cream-dark/50 px-4 py-2 text-right tabular-nums group-hover:bg-cream/40 ${
+                        p ? 'text-marine' : 'text-marine/25'
+                      }`}
+                    >
+                      {p ? nf1(p.valeur) : '—'}
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {/* Il y a plus à droite : un dégradé le dit sans occuper de place. Au-delà
+          de quatre dates seulement — en dessous la table tient dans sa largeur,
+          et le dégradé annoncerait un défilement qui n'existe pas. */}
+      {dates.length > 4 && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-0 right-0 top-0 w-10 rounded-r-lg bg-gradient-to-l from-cream to-transparent"
+        />
+      )}
+    </div>
+  )
+}
+
+/** À l'impression : des tranches de dates, chacune sur sa page, toutes avec les mêmes lignes. */
+function TableauEnTranches({ series, dates }: { series: SerieMesure[]; dates: string[] }) {
+  return (
+    <div className="space-y-8">
       {repartir(dates, DATES_PAR_TABLEAU).map((bloc, i) => (
         <div key={bloc[0]} className={i > 0 ? 'mes-page-neuve' : undefined}>
           {/* Le titre de la section ne couvre que la première tranche. Les
@@ -301,58 +409,40 @@ function TableauDetail({ series, dates }: { series: SerieMesure[]; dates: string
             </div>
           )}
           <div className="mes-table overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-marine/15">
-                <th className="py-2 pr-4 text-left font-medium text-marine/60">Mesure</th>
-                {bloc.map(d => (
-                  <th key={d} className="px-2 py-2 text-right font-medium text-marine/60">
-                    {formatBilanDate(d)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            {/* TOUTES les mesures, à chaque tranche — et pas seulement celles
-                présentes dans celle-ci. Le filtre par tranche faisait apparaître
-                « Biceps fléchi » sur la deuxième page et pas sur la première,
-                comme si la ligne avait été oubliée. Une cellule sans valeur porte
-                un tiret, ce qui se lit tout seul. */}
-            <tbody>
-              {series.map(s => (
-                <tr
-                  key={s.cle}
-                  className={`border-b border-cream-dark/50${
-                    s.points.length < MIN_VALEURS_POUR_AFFICHER ? ' mes-ligne-creuse' : ''
-                  }`}
-                >
-                  <td className="py-2 pr-4 text-marine/80">
-                    {s.label} <span className="text-marine/40">({s.unite})</span>
-                  </td>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-marine/15">
+                  <th className="py-2 pr-4 text-left font-medium text-marine/60">Mesure</th>
                   {bloc.map(d => (
-                    <td key={d} className="px-2 py-2 text-right tabular-nums text-marine">
-                      {valeur(s, d)}
-                    </td>
+                    <th key={d} className="px-2 py-2 text-right font-medium text-marine/60">
+                      {formatBilanDate(d)}
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              {/* TOUTES les mesures, à chaque tranche — et pas seulement celles
+                  présentes dans celle-ci. Le filtre par tranche faisait
+                  apparaître « Biceps fléchi » sur la deuxième page et pas sur la
+                  première, comme si la ligne avait été oubliée. Une cellule sans
+                  valeur porte un tiret, ce qui se lit tout seul. */}
+              <tbody>
+                {series.map(s => (
+                  <tr key={s.cle} className="border-b border-cream-dark/50">
+                    <td className="py-2 pr-4 text-marine/80">
+                      {s.label} <span className="text-marine/40">({s.unite})</span>
+                    </td>
+                    {bloc.map(d => (
+                      <td key={d} className="px-2 py-2 text-right tabular-nums text-marine">
+                        {valeurDe(s, d)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       ))}
-
-      {creuses.length > 0 && (
-        <button
-          type="button"
-          onClick={() => setToutMontrer(v => !v)}
-          aria-expanded={toutMontrer}
-          className="ed-no-print text-xs font-medium text-marine/55 underline decoration-cream-dark decoration-2 underline-offset-4 transition-colors hover:text-marine hover:decoration-gold"
-        >
-          {toutMontrer
-            ? `Masquer les ${creuses.length} mesure${pluriel} prise${pluriel} une seule fois`
-            : `Afficher ${creuses.length} mesure${pluriel} prise${pluriel} une seule fois`}
-        </button>
-      )}
     </div>
   )
 }
@@ -575,8 +665,9 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
           le suit — il faut lui donner le haut d'une page. */}
       <style>{`
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        /* Mesure prise une seule fois : repliée derrière le bouton. */
-        .mes-creuses-masquees .mes-ligne-creuse { display: none; }
+        /* Le rendu imprimable du tableau n'existe que sur papier. Son pendant
+           a l'ecran porte ed-no-print, defini dans editorial.css. */
+        .mes-impression { display: none; }
         @media print {
           @page { margin: 12mm; }
           .ed-hero { min-height: 0 !important; }
@@ -605,9 +696,9 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
           .mes-table thead { display: table-header-group; }
           .mes-table tr { break-inside: avoid; }
 
-          /* Sur papier, aucun bouton ne se clique : le tableau y est complet,
-             quel que soit l'état du repli à l'écran. */
-          .mes-creuses-masquees .mes-ligne-creuse { display: table-row; }
+          /* Sur papier, aucun bouton ne se clique : le rendu en tranches porte
+             donc TOUTES les lignes, quel que soit l'etat du repli a l'ecran. */
+          .mes-impression { display: block; }
         }
       `}</style>
 
