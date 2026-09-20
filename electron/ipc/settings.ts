@@ -137,7 +137,7 @@ export const DEFAULT_PULSE_URL = 'https://kinesio-pulse.fly.dev'
  * Mettre '' pour désactiver la valeur livrée (la barre latérale n'affiche alors
  * plus rien tant que rien n'est saisi dans Paramètres).
  */
-const DEFAULT_PULSE_PASSWORD = 'wm9segaxun85'
+export const DEFAULT_PULSE_PASSWORD = 'wm9segaxun85'
 
 /** Les seuls hôtes vers lesquels `pulse:open` acceptera d'ouvrir le navigateur.
  *  `shell.openExternal` sur une URL non contrôlée est une porte ouverte connue :
@@ -420,8 +420,20 @@ export async function getPulseUrl(): Promise<string> {
  * avec elle.
  */
 export async function getPulsePassword(): Promise<string | null> {
-  const saisi = (await readKey(KEYS.pulsePassword))?.trim()
-  return saisi || DEFAULT_PULSE_PASSWORD || null
+  return (await getSavedPulsePassword()) || DEFAULT_PULSE_PASSWORD || null
+}
+
+/**
+ * Le remplacement enregistré SEUL, sans repli sur la valeur livrée — `null`
+ * quand il n'y en a pas.
+ *
+ * C'est ce que la carte de Paramètres doit montrer : un champ prérempli avec la
+ * valeur livrée se fait réenregistrer telle quelle au premier clic sur
+ * « Enregistrer », et ce remplacement figé gagnerait ensuite sur toute nouvelle
+ * valeur livrée par une mise à jour, sans que rien ne le signale.
+ */
+export async function getSavedPulsePassword(): Promise<string | null> {
+  return (await readKey(KEYS.pulsePassword))?.trim() || null
 }
 
 /** Chaîne vide = on oublie la saisie et on revient au mot de passe livré avec

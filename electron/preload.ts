@@ -141,6 +141,7 @@ contextBridge.exposeInMainWorld('api', {
   pulse: {
     open: () => ipcRenderer.invoke('pulse:open'),
     getPassword: () => ipcRenderer.invoke('pulse:getPassword'),
+    getPasswordSettings: () => ipcRenderer.invoke('pulse:getPasswordSettings'),
     setPassword: (value: string) => ipcRenderer.invoke('pulse:setPassword', value),
     copyPassword: () => ipcRenderer.invoke('pulse:copyPassword')
   },

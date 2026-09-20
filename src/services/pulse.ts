@@ -14,9 +14,16 @@ export const pulseService = {
     return window.api.pulse.open()
   },
 
-  /** Mot de passe de connexion, ou `null` s'il n'est pas renseigné. */
+  /** Mot de passe en vigueur : le remplacement enregistré, sinon celui livré
+   *  avec l'app. `null` si les deux sont vides. */
   async getPassword(): Promise<string | null> {
     return window.api.pulse.getPassword()
+  },
+
+  /** Les deux séparément — le champ de Paramètres ne montre que `saisi`, sans
+   *  quoi un « Enregistrer » sans modification figerait la valeur livrée. */
+  async getPasswordSettings(): Promise<{ saisi: string | null; livre: string | null }> {
+    return window.api.pulse.getPasswordSettings()
   },
 
   /** Chaîne vide = efface le mot de passe. */

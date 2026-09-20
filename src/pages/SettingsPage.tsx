@@ -150,13 +150,21 @@ function Card({ title, icon: Icon, children, description }: CardProps) {
  */
 function PulseCard() {
   const [value, setValue] = useState('')
+  const [livre, setLivre] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saved, setSaved] = useState(false)
 
+  // Le champ ne montre QUE le remplacement enregistré. S'il arrivait prérempli
+  // avec la valeur livrée, un « Enregistrer » sans modification la figerait dans
+  // la base, et ce remplacement gagnerait ensuite sur toute valeur livrée par
+  // une mise à jour — sans que rien ne le signale.
   useEffect(() => {
     pulseService
-      .getPassword()
-      .then(p => setValue(p ?? ''))
+      .getPasswordSettings()
+      .then(({ saisi, livre: l }) => {
+        setValue(saisi ?? '')
+        setLivre(l)
+      })
       .catch(() => undefined)
       .finally(() => setLoading(false))
   }, [])
@@ -167,11 +175,13 @@ function PulseCard() {
     return () => clearTimeout(t)
   }, [saved])
 
+  const remplace = value.trim().length > 0
+
   return (
     <Card
       title="Mot de passe de Kinésio Pulse"
       icon={Activity}
-      description="Affiché en clair sous le bouton « Pulse » de la barre latérale, avec un bouton pour le copier. L'application en livre un par défaut : ce champ sert à le remplacer si le mot de passe de Pulse change, sans attendre une mise à jour. Vider le champ revient au mot de passe livré. Gardé tel quel dans la base locale — qui part chaque jour dans la sauvegarde OneDrive."
+      description="Affiché en clair sous le bouton « Pulse » de la barre latérale, avec un bouton pour le copier. L'application en livre un : ce champ ne sert qu'à le remplacer, le jour où le mot de passe de Pulse change avant qu'une mise à jour ne suive. Gardé tel quel dans la base locale — qui part chaque jour dans la sauvegarde OneDrive."
     >
       <div className="flex items-center gap-3 flex-wrap">
         <input
@@ -179,7 +189,7 @@ function PulseCard() {
           value={loading ? '' : value}
           onChange={e => setValue(e.target.value)}
           disabled={loading}
-          placeholder={loading ? 'Chargement…' : 'Aucun mot de passe'}
+          placeholder={loading ? 'Chargement…' : (livre ?? 'Aucun mot de passe')}
           spellCheck={false}
           className="flex-1 min-w-0 px-3 py-2 rounded-md border border-cream-dark bg-white text-marine text-base font-mono focus:outline-none focus:border-gold"
         />
@@ -195,6 +205,15 @@ function PulseCard() {
           {saved ? 'Enregistré' : 'Enregistrer'}
         </button>
       </div>
+      {!loading && (
+        <p className="text-marine/55 text-sm mt-3">
+          {remplace
+            ? 'Ce mot de passe remplace celui livré avec l’application. Videz le champ et enregistrez pour revenir à celui-ci.'
+            : livre
+              ? 'Champ vide : c’est le mot de passe livré avec l’application qui est utilisé, celui affiché en gris ci-dessus. Les mises à jour le remplaceront au besoin.'
+              : 'Aucun mot de passe : rien ne s’affiche sous le bouton « Pulse ».'}
+        </p>
+      )}
     </Card>
   )
 }

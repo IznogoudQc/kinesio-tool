@@ -1,9 +1,11 @@
 import { clipboard, ipcMain, shell } from 'electron'
 import { z } from 'zod'
 import {
+  DEFAULT_PULSE_PASSWORD,
   PULSE_ALLOWED_HOSTS,
   getPulsePassword,
   getPulseUrl,
+  getSavedPulsePassword,
   setPulsePassword
 } from './settings'
 
@@ -39,6 +41,13 @@ export function registerPulseHandlers(): void {
   // navigateur. Dépannage temporaire, en attendant que Pulse garde la session.
 
   ipcMain.handle('pulse:getPassword', async () => getPulsePassword())
+
+  /** Ce que la carte de Paramètres doit afficher : le remplacement enregistré
+   *  dans le champ, la valeur livrée seulement en indication. */
+  ipcMain.handle('pulse:getPasswordSettings', async () => ({
+    saisi: await getSavedPulsePassword(),
+    livre: DEFAULT_PULSE_PASSWORD || null
+  }))
 
   ipcMain.handle('pulse:setPassword', async (_e, payload: unknown) => {
     await setPulsePassword(z.string().max(200).parse(payload))
