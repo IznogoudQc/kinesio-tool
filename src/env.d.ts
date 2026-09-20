@@ -611,6 +611,12 @@ interface Window {
       /** Ouvre Kinésio Pulse dans le navigateur par défaut. Lève si l'adresse
        *  configurée n'est pas une https vers un hôte attendu. */
       open(): Promise<void>
+      /** Mot de passe de connexion à Pulse, ou `null` s'il n'est pas renseigné. */
+      getPassword(): Promise<string | null>
+      /** Chaîne vide = efface le mot de passe. */
+      setPassword(value: string): Promise<void>
+      /** Copie le mot de passe dans le presse-papiers. `false` s'il n'y en a pas. */
+      copyPassword(): Promise<boolean>
     }
     transfer: {
       /** Ouvre « Enregistrer sous ». `null` si Marie-Eve annule. */

@@ -45,7 +45,9 @@ const KEYS = {
   /** Composition des aliments ajustée par Marie (grammes pour 100 g). */
   foodMacros: 'nutrition.food_macros',
   /** Adresse de Kinésio Pulse — l'app web des programmes d'entraînement. */
-  pulseUrl: 'pulse.url'
+  pulseUrl: 'pulse.url',
+  /** Mot de passe de connexion à Pulse, en clair. Voir `getPulsePassword`. */
+  pulsePassword: 'pulse.password'
 } as const
 
 /** Listes d'aliments proposés (à privilégier / à éviter), globales et éditables. */
@@ -385,6 +387,25 @@ export function registerSettingsHandlers(): void {
  *  L'appelant valide toujours l'URL avant de l'ouvrir — voir `ipc/pulse.ts`. */
 export async function getPulseUrl(): Promise<string> {
   return (await readKey(KEYS.pulseUrl))?.trim() || DEFAULT_PULSE_URL
+}
+
+/**
+ * Mot de passe de connexion à Pulse, ou `null` s'il n'est pas renseigné.
+ *
+ * En clair dans `kinesio.db`, contrairement au mot de passe SMTP qui passe par
+ * keytar : dépannage temporaire assumé, le temps que Pulse ait sa propre façon
+ * de garder Marie connectée. Conséquence à connaître — la sauvegarde
+ * quotidienne emporte la base entière, donc ce mot de passe part dans OneDrive
+ * avec elle.
+ */
+export async function getPulsePassword(): Promise<string | null> {
+  return (await readKey(KEYS.pulsePassword))?.trim() || null
+}
+
+/** Chaîne vide = on efface le mot de passe (la barre latérale cesse alors de
+ *  l'afficher). L'espace de bord est retiré : c'est le prix d'un copier-coller. */
+export async function setPulsePassword(value: string): Promise<void> {
+  await writeKey(KEYS.pulsePassword, value.trim())
 }
 
 /** Dossier configuré pour l'export des documents clients (ou `null`). Le dossier

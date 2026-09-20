@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Activity, Menu, Settings, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Activity, Check, Copy, Menu, Settings, Users } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { useUpdate } from '../contexts/UpdateContext'
 import { pulseService } from '../services/pulse'
@@ -49,6 +49,27 @@ interface SidebarProps {
  */
 function PulseButton({ collapsed }: { collapsed: boolean }) {
   const [error, setError] = useState<string | null>(null)
+  const [password, setPassword] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  // Relu à chaque changement depuis Paramètres, sinon la barre afficherait
+  // l'ancien mot de passe tant que Marie ne change pas de page.
+  useEffect(() => {
+    const lire = () => {
+      pulseService
+        .getPassword()
+        .then(setPassword)
+        .catch(() => setPassword(null))
+    }
+    lire()
+    return pulseService.onPasswordChanged(lire)
+  }, [])
+
+  useEffect(() => {
+    if (!copied) return
+    const t = setTimeout(() => setCopied(false), 2000)
+    return () => clearTimeout(t)
+  }, [copied])
 
   return (
     <>
@@ -65,6 +86,32 @@ function PulseButton({ collapsed }: { collapsed: boolean }) {
         <Activity size={20} />
         {!collapsed && <span>Pulse</span>}
       </button>
+
+      {/* Le mot de passe de connexion, en clair, pour le recopier dans le
+          navigateur. Rien en mode replié : seize pixels de large ne montrent
+          pas un mot de passe, et un bouton Copier seul serait indevinable. */}
+      {!collapsed && password && (
+        <div className="px-4 pb-3 -mt-1 flex items-center gap-2">
+          <span className="flex-1 min-w-0 truncate font-mono text-xs text-cream/70 select-text">
+            {password}
+          </span>
+          <button
+            type="button"
+            onClick={() => {
+              pulseService
+                .copyPassword()
+                .then(ok => setCopied(ok))
+                .catch(() => setCopied(false))
+            }}
+            title="Copier le mot de passe"
+            aria-label="Copier le mot de passe"
+            className="shrink-0 text-cream/50 hover:text-cream hover:bg-marine-light/60 rounded p-1 transition-colors"
+          >
+            {copied ? <Check size={14} className="text-gold" /> : <Copy size={14} />}
+          </button>
+        </div>
+      )}
+
       {!collapsed && error && <p className="px-4 pb-2 text-xs text-red-400/80">{error}</p>}
     </>
   )

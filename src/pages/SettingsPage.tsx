@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder, CloudUpload, FolderOpen, LifeBuoy, ChevronDown, ChevronRight } from 'lucide-react'
+import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder, CloudUpload, FolderOpen, LifeBuoy, ChevronDown, ChevronRight, Activity } from 'lucide-react'
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
@@ -12,6 +12,7 @@ import { MusculoBaremes } from './settings/MusculoBaremes'
 import { PaBaremes } from './settings/PaBaremes'
 import { settingsService } from '../services/settings'
 import { backupService } from '../services/backup'
+import { pulseService } from '../services/pulse'
 import { reportsService } from '../services/reports'
 import mEvePhoto from '../assets/mEve.png'
 
@@ -68,6 +69,7 @@ export function SettingsPage() {
               <DocumentsFolderCard />
               <BackupCard />
               <RestoreProcedure />
+              <PulseCard />
               <DummyJeanSeedButton />
             </>
           )}
@@ -133,6 +135,63 @@ function Card({ title, icon: Icon, children, description }: CardProps) {
       )}
       <div className={description ? '' : 'mt-5'}>{children}</div>
     </section>
+  )
+}
+
+/**
+ * Mot de passe de connexion à Kinésio Pulse.
+ *
+ * Dépannage temporaire, le temps que Pulse garde Marie connectée : le mot de
+ * passe est gardé EN CLAIR dans `kinesio.db`, pas dans keytar comme celui du
+ * SMTP. La carte le dit, parce que la base part chaque jour dans OneDrive.
+ */
+function PulseCard() {
+  const [value, setValue] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    pulseService
+      .getPassword()
+      .then(p => setValue(p ?? ''))
+      .catch(() => undefined)
+      .finally(() => setLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (!saved) return
+    const t = setTimeout(() => setSaved(false), 2000)
+    return () => clearTimeout(t)
+  }, [saved])
+
+  return (
+    <Card
+      title="Mot de passe de Kinésio Pulse"
+      icon={Activity}
+      description="Affiché en clair sous le bouton « Pulse » de la barre latérale, avec un bouton pour le copier. Gardé tel quel dans la base locale — qui part chaque jour dans la sauvegarde OneDrive. Laisser vide pour ne rien afficher."
+    >
+      <div className="flex items-center gap-3 flex-wrap">
+        <input
+          type="text"
+          value={loading ? '' : value}
+          onChange={e => setValue(e.target.value)}
+          disabled={loading}
+          placeholder={loading ? 'Chargement…' : 'Aucun mot de passe'}
+          className="flex-1 min-w-0 px-3 py-2 rounded-md border border-cream-dark bg-white text-marine text-base font-mono focus:outline-none focus:border-gold"
+        />
+        <button
+          type="button"
+          onClick={() => {
+            void pulseService.setPassword(value).then(() => setSaved(true))
+          }}
+          disabled={loading}
+          className="inline-flex items-center gap-2 px-4 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {saved ? <Check size={15} /> : null}
+          {saved ? 'Enregistré' : 'Enregistrer'}
+        </button>
+      </div>
+    </Card>
   )
 }
 

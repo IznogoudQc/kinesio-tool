@@ -139,7 +139,10 @@ contextBridge.exposeInMainWorld('api', {
     openFolder: () => ipcRenderer.invoke('backup:openFolder')
   },
   pulse: {
-    open: () => ipcRenderer.invoke('pulse:open')
+    open: () => ipcRenderer.invoke('pulse:open'),
+    getPassword: () => ipcRenderer.invoke('pulse:getPassword'),
+    setPassword: (value: string) => ipcRenderer.invoke('pulse:setPassword', value),
+    copyPassword: () => ipcRenderer.invoke('pulse:copyPassword')
   },
   transfer: {
     exportClients: (clientIds: string[]) =>
