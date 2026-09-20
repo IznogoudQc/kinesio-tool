@@ -144,6 +144,9 @@ function Card({ title, icon: Icon, children, description }: CardProps) {
  * Dépannage temporaire, le temps que Pulse garde Marie connectée : le mot de
  * passe est gardé EN CLAIR dans `kinesio.db`, pas dans keytar comme celui du
  * SMTP. La carte le dit, parce que la base part chaque jour dans OneDrive.
+ *
+ * Le champ arrive prérempli avec le mot de passe livré par l'app
+ * (`DEFAULT_PULSE_PASSWORD`) : il sert à le remplacer, pas à l'inventer.
  */
 function PulseCard() {
   const [value, setValue] = useState('')
@@ -168,7 +171,7 @@ function PulseCard() {
     <Card
       title="Mot de passe de Kinésio Pulse"
       icon={Activity}
-      description="Affiché en clair sous le bouton « Pulse » de la barre latérale, avec un bouton pour le copier. Gardé tel quel dans la base locale — qui part chaque jour dans la sauvegarde OneDrive. Laisser vide pour ne rien afficher."
+      description="Affiché en clair sous le bouton « Pulse » de la barre latérale, avec un bouton pour le copier. L'application en livre un par défaut : ce champ sert à le remplacer si le mot de passe de Pulse change, sans attendre une mise à jour. Vider le champ revient au mot de passe livré. Gardé tel quel dans la base locale — qui part chaque jour dans la sauvegarde OneDrive."
     >
       <div className="flex items-center gap-3 flex-wrap">
         <input
@@ -177,6 +180,7 @@ function PulseCard() {
           onChange={e => setValue(e.target.value)}
           disabled={loading}
           placeholder={loading ? 'Chargement…' : 'Aucun mot de passe'}
+          spellCheck={false}
           className="flex-1 min-w-0 px-3 py-2 rounded-md border border-cream-dark bg-white text-marine text-base font-mono focus:outline-none focus:border-gold"
         />
         <button

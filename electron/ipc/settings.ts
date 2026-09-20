@@ -122,6 +122,23 @@ const DEFAULT_TEMPLATE = DEFAULT_BILAN_EMAIL
  *  le composant. Tout nouvel hôte doit AUSSI entrer dans `PULSE_ALLOWED_HOSTS`. */
 export const DEFAULT_PULSE_URL = 'https://kinesio-pulse.fly.dev'
 
+/**
+ * TEMPORAIRE — À RETIRER AU LANCEMENT OFFICIEL.
+ *
+ * Mot de passe de Pulse livré avec l'application, pour que Marie n'ait pas à le
+ * chercher ni à le saisir. Le réglage `pulse.password` le remplace quand il est
+ * renseigné ; c'est seulement la valeur de repli.
+ *
+ * Le dépôt est public : cette chaîne est donc publiée sur GitHub et reste dans
+ * l'historique et dans les installateurs déjà diffusés, y compris après son
+ * retrait d'ici. La retirer ne la dépublie pas — il faudra CHANGER le mot de
+ * passe dans Pulse, pas seulement effacer cette ligne.
+ *
+ * Mettre '' pour désactiver la valeur livrée (la barre latérale n'affiche alors
+ * plus rien tant que rien n'est saisi dans Paramètres).
+ */
+const DEFAULT_PULSE_PASSWORD = 'wm9segaxun85'
+
 /** Les seuls hôtes vers lesquels `pulse:open` acceptera d'ouvrir le navigateur.
  *  `shell.openExternal` sur une URL non contrôlée est une porte ouverte connue :
  *  on la referme ici, même si l'URL vient aujourd'hui de nos propres réglages. */
@@ -390,7 +407,11 @@ export async function getPulseUrl(): Promise<string> {
 }
 
 /**
- * Mot de passe de connexion à Pulse, ou `null` s'il n'est pas renseigné.
+ * Mot de passe de connexion à Pulse.
+ *
+ * Ce qui est saisi dans Paramètres l'emporte ; sinon on sert
+ * `DEFAULT_PULSE_PASSWORD`, livré avec l'app. `null` seulement si les deux sont
+ * vides — la barre latérale n'affiche alors rien.
  *
  * En clair dans `kinesio.db`, contrairement au mot de passe SMTP qui passe par
  * keytar : dépannage temporaire assumé, le temps que Pulse ait sa propre façon
@@ -399,11 +420,12 @@ export async function getPulseUrl(): Promise<string> {
  * avec elle.
  */
 export async function getPulsePassword(): Promise<string | null> {
-  return (await readKey(KEYS.pulsePassword))?.trim() || null
+  const saisi = (await readKey(KEYS.pulsePassword))?.trim()
+  return saisi || DEFAULT_PULSE_PASSWORD || null
 }
 
-/** Chaîne vide = on efface le mot de passe (la barre latérale cesse alors de
- *  l'afficher). L'espace de bord est retiré : c'est le prix d'un copier-coller. */
+/** Chaîne vide = on oublie la saisie et on revient au mot de passe livré avec
+ *  l'app. L'espace de bord est retiré : c'est le prix d'un copier-coller. */
 export async function setPulsePassword(value: string): Promise<void> {
   await writeKey(KEYS.pulsePassword, value.trim())
 }
