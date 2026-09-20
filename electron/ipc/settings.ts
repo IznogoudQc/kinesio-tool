@@ -43,7 +43,9 @@ const KEYS = {
   /** Dernier dossier d'où un menu a été importé — pour y rouvrir directement. */
   menuImportFolder: 'nutrition.menu_import_folder',
   /** Composition des aliments ajustée par Marie (grammes pour 100 g). */
-  foodMacros: 'nutrition.food_macros'
+  foodMacros: 'nutrition.food_macros',
+  /** Adresse de Kinésio Pulse — l'app web des programmes d'entraînement. */
+  pulseUrl: 'pulse.url'
 } as const
 
 /** Listes d'aliments proposés (à privilégier / à éviter), globales et éditables. */
@@ -112,6 +114,16 @@ const DEFAULT_PROFILE = {
 
 // Textes par défaut partagés avec le renderer (src/lib/email-templates.ts).
 const DEFAULT_TEMPLATE = DEFAULT_BILAN_EMAIL
+
+/** Adresse de Pulse tant que rien n'est écrit en base. Elle changera le jour où
+ *  l'app aura un nom de domaine — d'où le réglage plutôt qu'une constante dans
+ *  le composant. Tout nouvel hôte doit AUSSI entrer dans `PULSE_ALLOWED_HOSTS`. */
+export const DEFAULT_PULSE_URL = 'https://kinesio-pulse.fly.dev'
+
+/** Les seuls hôtes vers lesquels `pulse:open` acceptera d'ouvrir le navigateur.
+ *  `shell.openExternal` sur une URL non contrôlée est une porte ouverte connue :
+ *  on la referme ici, même si l'URL vient aujourd'hui de nos propres réglages. */
+export const PULSE_ALLOWED_HOSTS: readonly string[] = ['kinesio-pulse.fly.dev']
 
 // Façades `async` sur le magasin partagé : les dizaines d'appels `await
 // readKey(...)` de ce fichier restent inchangés.
@@ -367,6 +379,12 @@ export function registerSettingsHandlers(): void {
     await writeKey(KEYS.documentsFolder, folder)
     return folder
   })
+}
+
+/** Adresse de Kinésio Pulse, telle que configurée (ou la valeur par défaut).
+ *  L'appelant valide toujours l'URL avant de l'ouvrir — voir `ipc/pulse.ts`. */
+export async function getPulseUrl(): Promise<string> {
+  return (await readKey(KEYS.pulseUrl))?.trim() || DEFAULT_PULSE_URL
 }
 
 /** Dossier configuré pour l'export des documents clients (ou `null`). Le dossier

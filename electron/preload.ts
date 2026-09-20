@@ -138,6 +138,9 @@ contextBridge.exposeInMainWorld('api', {
     runNow: () => ipcRenderer.invoke('backup:runNow'),
     openFolder: () => ipcRenderer.invoke('backup:openFolder')
   },
+  pulse: {
+    open: () => ipcRenderer.invoke('pulse:open')
+  },
   transfer: {
     exportClients: (clientIds: string[]) =>
       ipcRenderer.invoke('transfer:export', clientIds),

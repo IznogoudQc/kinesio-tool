@@ -607,6 +607,11 @@ interface Window {
       /** Ouvre le dossier de sauvegarde dans l'explorateur Windows. */
       openFolder(): Promise<void>
     }
+    pulse: {
+      /** Ouvre Kinésio Pulse dans le navigateur par défaut. Lève si l'adresse
+       *  configurée n'est pas une https vers un hôte attendu. */
+      open(): Promise<void>
+    }
     transfer: {
       /** Ouvre « Enregistrer sous ». `null` si Marie-Eve annule. */
       exportClients(clientIds: string[]): Promise<{ filePath: string; summary: BundleSummary } | null>

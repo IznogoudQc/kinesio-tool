@@ -11,6 +11,7 @@ import { registerTransferHandlers } from './ipc/transfer'
 import { registerNutritionTemplatesHandlers } from './ipc/nutritionTemplates'
 import { registerQuestionnairesHandlers } from './ipc/questionnaires'
 import { registerBackupHandlers } from './ipc/backup'
+import { registerPulseHandlers } from './ipc/pulse'
 import { maybeRunDailyBackup } from './lib/backup-service'
 import { initDb } from '../db/client'
 import { backfillBilansToMesuresOnce } from './lib/measure-sync'
@@ -110,6 +111,7 @@ app.whenReady().then(() => {
   registerNutritionTemplatesHandlers()
   registerQuestionnairesHandlers()
   registerBackupHandlers()
+  registerPulseHandlers()
   // Report unique des bilans existants vers l'onglet Mesures (sens Bilan → Mesures).
   try {
     backfillBilansToMesuresOnce()
