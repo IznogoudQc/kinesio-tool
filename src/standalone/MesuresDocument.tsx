@@ -160,6 +160,17 @@ const CARTES_PAR_PAGE = 6
 const CARTES_PAR_GRAPPE = 4
 
 /**
+ * Combien de RANGÉES d'encadrés tiennent sous un titre, sur une page A4.
+ *
+ * On compte en rangées et non en encadrés parce qu'une région de trois mesures
+ * en occupe deux, dont une à moitié vide : à six encadrés par page, « Tronc »
+ * et « Haut du corps » réclamaient quatre rangées pour une page qui n'en tient
+ * que trois, et Chromium reportait la seconde région sur une feuille sans
+ * titre — exactement ce que la reprise « (suite) » doit éviter.
+ */
+const RANGEES_PAR_PAGE = 3
+
+/**
  * Découpe en parts aussi égales que possible, sans dépasser `max` par part.
  *
  * Huit encadrés donnent 4 + 4, pas 6 + 2 ; trente-six dates donnent quatre
@@ -184,29 +195,33 @@ function repartir<T>(liste: T[], max: number): T[][] {
 /** Un paquet d'encadrés qu'on refuse de couper, et le sous-titre qui le nomme. */
 interface BlocCartes {
   titre?: string
-  /** Reste d'une région trop longue pour une page : démarre la sienne. */
-  suite?: boolean
   series: SerieMesure[]
 }
 
+/** Ce qui tient sur UNE feuille : une ou plusieurs régions, dans l'ordre. */
+interface PageCartes {
+  blocs: BlocCartes[]
+}
+
 /**
- * Découpe un groupe en paquets insécables.
+ * Découpe un groupe en pages imprimées.
  *
  * Un groupe qui tient sur une page reste d'un seul tenant : il n'a pas besoin
  * d'être sous-titré, et l'ordre des mesures y est celui du formulaire (les cinq
  * que Marie-Eve prend d'habitude en premier).
  *
- * Au-delà, la coupure se fait par région du corps. « Bas du corps » en tête de
- * page dit au lecteur ce qu'il regarde ; un « (suite) » ne lui dirait que la
- * mécanique de la pagination. Ce dernier ne subsiste qu'en repli, pour le jour
- * où une région à elle seule dépasserait la page.
+ * Au-delà, la coupure se fait par région du corps — « Bas du corps » en tête de
+ * paquet dit au lecteur ce qu'il regarde. Les régions sont ensuite REMPLIES
+ * dans des pages jusqu'à `RANGEES_PAR_PAGE`, au lieu de laisser Chromium
+ * décider où couper : il reportait la région suivante, insécable, sur une
+ * feuille qui ne portait alors aucun titre.
  *
- * Les blocs ne forcent PAS de saut de page : deux petites régions partagent
- * volontiers une feuille. C'est `break-inside: avoid` qui garantit qu'un
- * sous-titre ne quitte jamais ses encadrés.
+ * Chaque page au-delà de la première démarre la sienne et reprend le titre de
+ * la section (voir `GrilleCartes`) : une grille d'encadrés sans en-tête ne dit
+ * pas ce qu'elle mesure.
  */
-function blocsImprimables(groupe: GroupeMesures): BlocCartes[] {
-  if (groupe.series.length <= CARTES_PAR_PAGE) return [{ series: groupe.series }]
+function pagesImprimables(groupe: GroupeMesures): PageCartes[] {
+  if (groupe.series.length <= CARTES_PAR_PAGE) return [{ blocs: [{ series: groupe.series }] }]
 
   const familles = new Map<string, SerieMesure[]>()
   for (const s of groupe.series) {
@@ -222,10 +237,22 @@ function blocsImprimables(groupe: GroupeMesures): BlocCartes[] {
     // Le titre de section est juste au-dessus : le répéter n'apprendrait rien.
     const premier = nom === groupe.titre ? undefined : nom
     repartir(series, CARTES_PAR_PAGE).forEach((part, i) => {
-      blocs.push({ titre: i === 0 ? premier : `${nom} (suite)`, suite: i > 0, series: part })
+      blocs.push({ titre: i === 0 ? premier : `${nom} (suite)`, series: part })
     })
   }
-  return blocs
+
+  // Deux encadrés par rangée : une région impaire en laisse une à moitié vide,
+  // et c'est la place occupée — pas le nombre de mesures — qui décide.
+  const rangees = (b: BlocCartes): number => Math.ceil(b.series.length / 2)
+
+  const pages: PageCartes[] = []
+  for (const bloc of blocs) {
+    const courante = pages[pages.length - 1]
+    const occupe = courante?.blocs.reduce((n, b) => n + rangees(b), 0) ?? 0
+    if (courante && occupe + rangees(bloc) <= RANGEES_PAR_PAGE) courante.blocs.push(bloc)
+    else pages.push({ blocs: [bloc] })
+  }
+  return pages
 }
 
 /**
@@ -236,18 +263,33 @@ function blocsImprimables(groupe: GroupeMesures): BlocCartes[] {
  * L'INTÉRIEUR du bloc qu'il nomme, et c'est le bloc entier qui refuse d'être
  * coupé — à l'intérieur, les grappes de deux rangées servent de filet.
  */
-function GrilleCartes({ groupe }: { groupe: GroupeMesures }) {
-  const blocs = blocsImprimables(groupe)
+function GrilleCartes({ groupe, eyebrow, titre }: { groupe: GroupeMesures; eyebrow: string; titre: string }) {
+  const pages = pagesImprimables(groupe)
 
   return (
     <div className="space-y-4">
-      {blocs.map(bloc => (
-        <div key={bloc.series[0].cle} className={`mes-bloc space-y-4${bloc.suite ? ' mes-page-neuve' : ''}`}>
-          {bloc.titre && <p className="ed-eyebrow text-marine/45">{bloc.titre}</p>}
-          {tranches(bloc.series, CARTES_PAR_GRAPPE).map(grappe => (
-            <div key={grappe[0].cle} className="mes-grappe grid gap-4 sm:grid-cols-2">
-              {grappe.map(s => (
-                <CarteMesure key={s.cle} serie={s} />
+      {pages.map((page, i) => (
+        <div key={page.blocs[0].series[0].cle} className={`space-y-4${i > 0 ? ' mes-page-neuve' : ''}`}>
+          {/* Le titre de la section ne couvre que la première page. Les suivantes
+              le reprennent suivi de « (suite) », comme les tranches du tableau :
+              sans lui, la feuille s'ouvre sur des encadrés sans en-tête.
+              À l'écran la section est d'un seul tenant — ce rappel n'existe donc
+              que sur papier. */}
+          {i > 0 && (
+            <div className="mes-impression mb-8">
+              <p className="ed-eyebrow text-gold-dark">{eyebrow}</p>
+              <h3 className="ed-display ed-section-title mt-3 text-marine">{titre} (suite)</h3>
+            </div>
+          )}
+          {page.blocs.map(bloc => (
+            <div key={bloc.series[0].cle} className="mes-bloc space-y-4">
+              {bloc.titre && <p className="ed-eyebrow text-marine/45">{bloc.titre}</p>}
+              {tranches(bloc.series, CARTES_PAR_GRAPPE).map(grappe => (
+                <div key={grappe[0].cle} className="mes-grappe grid gap-4 sm:grid-cols-2">
+                  {grappe.map(s => (
+                    <CarteMesure key={s.cle} serie={s} />
+                  ))}
+                </div>
               ))}
             </div>
           ))}
@@ -671,7 +713,14 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
         @media print {
           @page { margin: 12mm; }
           .ed-hero { min-height: 0 !important; }
-          .ed-anchor { padding-top: 16px !important; padding-bottom: 16px !important; }
+
+          /* Le retrait vertical d'une section vit sur le div INTÉRIEUR
+             (py-16 sm:py-24), pas sur le <section> qui porte .ed-anchor. Viser
+             le seul .ed-anchor ne retirait donc rien : les 96 px de retrait bas
+             de la dernière section débordaient sur la feuille suivante, qui
+             partait à l'impression comme une page blanche. */
+          .ed-anchor,
+          .ed-anchor > div { padding-top: 16px !important; padding-bottom: 16px !important; }
 
           /* Chaque section démarre en haut d'une page. C'est ce qui empêche un
              titre de rester seul au bas de la précédente — sans dépendre d'un
@@ -747,7 +796,7 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
               }
               tone={i % 2 === 0 ? 'paper' : 'white'}
             >
-              <GrilleCartes groupe={g} />
+              <GrilleCartes groupe={g} eyebrow={g.titre} titre={TITRES[g.titre] ?? g.titre} />
             </Section>
           ))}
 
