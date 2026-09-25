@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder, CloudUpload, FolderOpen, LifeBuoy, ChevronDown, ChevronRight, Activity } from 'lucide-react'
+import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder, CloudUpload, FolderOpen, LifeBuoy, ChevronDown, ChevronRight } from 'lucide-react'
+import { EffetIcon } from '../components/EffetIcon'
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
@@ -180,7 +181,7 @@ function PulseCard() {
   return (
     <Card
       title="Mot de passe d'Effet"
-      icon={Activity}
+      icon={EffetIcon}
       description="Affiché en clair sous le bouton « Effet » de la barre latérale, avec un bouton pour le copier. L'application en livre un : ce champ ne sert qu'à le remplacer, le jour où le mot de passe d'Effet change avant qu'une mise à jour ne suive. Gardé tel quel dans la base locale — qui part chaque jour dans la sauvegarde OneDrive."
     >
       <div className="flex items-center gap-3 flex-wrap">
