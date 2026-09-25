@@ -139,9 +139,9 @@ function Card({ title, icon: Icon, children, description }: CardProps) {
 }
 
 /**
- * Mot de passe de connexion à Kinésio Pulse.
+ * Mot de passe de connexion à Effet.
  *
- * Dépannage temporaire, le temps que Pulse garde Marie connectée : le mot de
+ * Dépannage temporaire, le temps qu'Effet garde Marie connectée : le mot de
  * passe est gardé EN CLAIR dans `kinesio.db`, pas dans keytar comme celui du
  * SMTP. La carte le dit, parce que la base part chaque jour dans OneDrive.
  *
@@ -179,9 +179,9 @@ function PulseCard() {
 
   return (
     <Card
-      title="Mot de passe de Kinésio Pulse"
+      title="Mot de passe d'Effet"
       icon={Activity}
-      description="Affiché en clair sous le bouton « Pulse » de la barre latérale, avec un bouton pour le copier. L'application en livre un : ce champ ne sert qu'à le remplacer, le jour où le mot de passe de Pulse change avant qu'une mise à jour ne suive. Gardé tel quel dans la base locale — qui part chaque jour dans la sauvegarde OneDrive."
+      description="Affiché en clair sous le bouton « Effet » de la barre latérale, avec un bouton pour le copier. L'application en livre un : ce champ ne sert qu'à le remplacer, le jour où le mot de passe d'Effet change avant qu'une mise à jour ne suive. Gardé tel quel dans la base locale — qui part chaque jour dans la sauvegarde OneDrive."
     >
       <div className="flex items-center gap-3 flex-wrap">
         <input
@@ -211,7 +211,7 @@ function PulseCard() {
             ? 'Ce mot de passe remplace celui livré avec l’application. Videz le champ et enregistrez pour revenir à celui-ci.'
             : livre
               ? 'Champ vide : c’est le mot de passe livré avec l’application qui est utilisé, celui affiché en gris ci-dessus. Les mises à jour le remplaceront au besoin.'
-              : 'Aucun mot de passe : rien ne s’affiche sous le bouton « Pulse ».'}
+              : 'Aucun mot de passe : rien ne s’affiche sous le bouton « Effet ».'}
         </p>
       )}
     </Card>

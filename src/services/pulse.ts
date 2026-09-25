@@ -1,4 +1,4 @@
-/** Kinésio Pulse — l'app web des programmes d'entraînement, séparée de Outils.
+/** Effet — l'app web des programmes d'entraînement, séparée de Outils.
  *  Comme partout, le renderer passe par un service : jamais d'appel IPC depuis
  *  un composant. L'adresse et sa validation vivent côté processus principal. */
 

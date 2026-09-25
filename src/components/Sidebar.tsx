@@ -43,8 +43,8 @@ interface SidebarProps {
 }
 
 /**
- * Kinésio Pulse — l'app web des programmes d'entraînement. Application séparée,
- * donc pas une route react-router : un `<button>` qui ouvre le navigateur par
+ * Effet — l'app web des programmes d'entraînement. Application séparée, donc
+ * pas une route react-router : un `<button>` qui ouvre le navigateur par
  * défaut, habillé comme ses voisins mais sans état actif, jamais « courant ».
  */
 function PulseButton({ collapsed }: { collapsed: boolean }) {
@@ -78,13 +78,13 @@ function PulseButton({ collapsed }: { collapsed: boolean }) {
           setError(null)
           // N'échoue que si l'adresse configurée n'est plus une https vers un
           // hôte connu — le handler refuse alors d'ouvrir quoi que ce soit.
-          pulseService.open().catch(() => setError("Pulse n'a pas pu être ouvert."))
+          pulseService.open().catch(() => setError("Effet n'a pas pu être ouvert."))
         }}
-        title={collapsed ? (error ?? 'Pulse') : undefined}
+        title={collapsed ? (error ?? 'Effet') : undefined}
         className={navItemClass(collapsed, false)}
       >
         <Activity size={20} />
-        {!collapsed && <span>Pulse</span>}
+        {!collapsed && <span>Effet</span>}
       </button>
 
       {/* Le mot de passe de connexion, en clair, pour le recopier dans le

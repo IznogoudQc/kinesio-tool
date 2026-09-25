@@ -44,9 +44,11 @@ const KEYS = {
   menuImportFolder: 'nutrition.menu_import_folder',
   /** Composition des aliments ajustée par Marie (grammes pour 100 g). */
   foodMacros: 'nutrition.food_macros',
-  /** Adresse de Kinésio Pulse — l'app web des programmes d'entraînement. */
+  /** Adresse d'Effet — l'app web des programmes d'entraînement. (Clé nommée
+   *  `pulse.*` : l'app s'appelait Kinésio Pulse. Ne pas renommer, les réglages
+   *  déjà enregistrés chez Marie seraient perdus.) */
   pulseUrl: 'pulse.url',
-  /** Mot de passe de connexion à Pulse, en clair. Voir `getPulsePassword`. */
+  /** Mot de passe de connexion à Effet, en clair. Voir `getPulsePassword`. */
   pulsePassword: 'pulse.password'
 } as const
 
@@ -117,22 +119,22 @@ const DEFAULT_PROFILE = {
 // Textes par défaut partagés avec le renderer (src/lib/email-templates.ts).
 const DEFAULT_TEMPLATE = DEFAULT_BILAN_EMAIL
 
-/** Adresse de Pulse tant que rien n'est écrit en base. Elle changera le jour où
+/** Adresse d'Effet tant que rien n'est écrit en base. Elle changera le jour où
  *  l'app aura un nom de domaine — d'où le réglage plutôt qu'une constante dans
  *  le composant. Tout nouvel hôte doit AUSSI entrer dans `PULSE_ALLOWED_HOSTS`. */
-export const DEFAULT_PULSE_URL = 'https://kinesio-pulse.fly.dev'
+export const DEFAULT_PULSE_URL = 'https://kinesio-effet.fly.dev'
 
 /**
  * TEMPORAIRE — À RETIRER AU LANCEMENT OFFICIEL.
  *
- * Mot de passe de Pulse livré avec l'application, pour que Marie n'ait pas à le
+ * Mot de passe d'Effet livré avec l'application, pour que Marie n'ait pas à le
  * chercher ni à le saisir. Le réglage `pulse.password` le remplace quand il est
  * renseigné ; c'est seulement la valeur de repli.
  *
  * Le dépôt est public : cette chaîne est donc publiée sur GitHub et reste dans
  * l'historique et dans les installateurs déjà diffusés, y compris après son
  * retrait d'ici. La retirer ne la dépublie pas — il faudra CHANGER le mot de
- * passe dans Pulse, pas seulement effacer cette ligne.
+ * passe dans Effet, pas seulement effacer cette ligne.
  *
  * Mettre '' pour désactiver la valeur livrée (la barre latérale n'affiche alors
  * plus rien tant que rien n'est saisi dans Paramètres).
@@ -141,8 +143,16 @@ export const DEFAULT_PULSE_PASSWORD = 'wm9segaxun85'
 
 /** Les seuls hôtes vers lesquels `pulse:open` acceptera d'ouvrir le navigateur.
  *  `shell.openExternal` sur une URL non contrôlée est une porte ouverte connue :
- *  on la referme ici, même si l'URL vient aujourd'hui de nos propres réglages. */
-export const PULSE_ALLOWED_HOSTS: readonly string[] = ['kinesio-pulse.fly.dev']
+ *  on la referme ici, même si l'URL vient aujourd'hui de nos propres réglages.
+ *
+ *  `kinesio-pulse.fly.dev` reste toléré : l'app s'appelait Pulse avant Effet, et
+ *  une installation qui a l'ancienne adresse écrite dans ses réglages primerait
+ *  sur `DEFAULT_PULSE_URL`. Sans elle ici, le bouton casserait au lieu de suivre.
+ *  À retirer une fois qu'on a vérifié qu'aucun poste ne pointe plus dessus. */
+export const PULSE_ALLOWED_HOSTS: readonly string[] = [
+  'kinesio-effet.fly.dev',
+  'kinesio-pulse.fly.dev'
+]
 
 // Façades `async` sur le magasin partagé : les dizaines d'appels `await
 // readKey(...)` de ce fichier restent inchangés.
@@ -400,21 +410,21 @@ export function registerSettingsHandlers(): void {
   })
 }
 
-/** Adresse de Kinésio Pulse, telle que configurée (ou la valeur par défaut).
+/** Adresse d'Effet, telle que configurée (ou la valeur par défaut).
  *  L'appelant valide toujours l'URL avant de l'ouvrir — voir `ipc/pulse.ts`. */
 export async function getPulseUrl(): Promise<string> {
   return (await readKey(KEYS.pulseUrl))?.trim() || DEFAULT_PULSE_URL
 }
 
 /**
- * Mot de passe de connexion à Pulse.
+ * Mot de passe de connexion à Effet.
  *
  * Ce qui est saisi dans Paramètres l'emporte ; sinon on sert
  * `DEFAULT_PULSE_PASSWORD`, livré avec l'app. `null` seulement si les deux sont
  * vides — la barre latérale n'affiche alors rien.
  *
  * En clair dans `kinesio.db`, contrairement au mot de passe SMTP qui passe par
- * keytar : dépannage temporaire assumé, le temps que Pulse ait sa propre façon
+ * keytar : dépannage temporaire assumé, le temps qu'Effet ait sa propre façon
  * de garder Marie connectée. Conséquence à connaître — la sauvegarde
  * quotidienne emporte la base entière, donc ce mot de passe part dans OneDrive
  * avec elle.

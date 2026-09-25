@@ -608,7 +608,7 @@ interface Window {
       openFolder(): Promise<void>
     }
     pulse: {
-      /** Ouvre Kinésio Pulse dans le navigateur par défaut. Lève si l'adresse
+      /** Ouvre Effet dans le navigateur par défaut. Lève si l'adresse
        *  configurée n'est pas une https vers un hôte attendu. */
       open(): Promise<void>
       /** Mot de passe en vigueur : le remplacement enregistré, sinon celui livré

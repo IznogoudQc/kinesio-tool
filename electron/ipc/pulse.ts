@@ -10,9 +10,13 @@ import {
 } from './settings'
 
 /**
- * Kinésio Pulse — l'app web où Marie prescrit les programmes d'entraînement.
+ * Effet — l'app web où Marie prescrit les programmes d'entraînement.
  * Application séparée : on l'ouvre dans le navigateur par défaut, jamais dans
  * une fenêtre Electron ni depuis le renderer.
+ *
+ * Les canaux IPC et les clés de réglages gardent le préfixe `pulse` : l'app
+ * s'appelait Kinésio Pulse avant d'être renommée Effet. Les renommer casserait
+ * les réglages déjà enregistrés sur le poste de Marie.
  */
 export function registerPulseHandlers(): void {
   ipcMain.handle('pulse:open', async () => {
@@ -25,20 +29,20 @@ export function registerPulseHandlers(): void {
     try {
       url = new URL(raw)
     } catch {
-      throw new Error(`L'adresse de Kinésio Pulse est illisible : ${raw}`)
+      throw new Error(`L'adresse d'Effet est illisible : ${raw}`)
     }
 
     if (url.protocol !== 'https:' || !PULSE_ALLOWED_HOSTS.includes(url.hostname)) {
-      throw new Error(`L'adresse de Kinésio Pulse n'est pas autorisée : ${raw}`)
+      throw new Error(`L'adresse d'Effet n'est pas autorisée : ${raw}`)
     }
 
     // `url.href` et non `raw` : c'est la forme normalisée qu'on vient de valider.
     await shell.openExternal(url.href)
   })
 
-  // ── Mot de passe de connexion à Pulse ──────────────────────────────────────
+  // ── Mot de passe de connexion à Effet ──────────────────────────────────────
   // Affiché en clair sous le bouton pour que Marie le recopie dans le
-  // navigateur. Dépannage temporaire, en attendant que Pulse garde la session.
+  // navigateur. Dépannage temporaire, en attendant qu'Effet garde la session.
 
   ipcMain.handle('pulse:getPassword', async () => getPulsePassword())
 
