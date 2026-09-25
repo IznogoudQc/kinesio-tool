@@ -1,0 +1,23 @@
+# Fins de ligne — LF dans le dépôt, natif au checkout.
+#
+# Sans ce fichier, chaque outil qui réécrit un fichier sous Windows le convertit
+# en CRLF et git voit TOUT le fichier comme modifié. Un renommage de six lignes
+# se présentait ainsi comme 57 fichiers et 10 000 lignes changées.
+* text=auto eol=lf
+
+# Binaires — git ne doit jamais y toucher.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.pdf binary
+*.docx binary
+*.doc binary
+*.xlsx binary
+*.exe binary
+*.db binary
+*.sqlite binary
