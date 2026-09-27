@@ -541,7 +541,12 @@ function MeasureEntryPanel({
 
   const circCard = (key: CircKey, label: string) => {
     let riskBar: React.ReactNode = null
-    if ((key === 'taille' || key === 'hanche') && client.sex && typeof circForm[key] === 'number') {
+    // Le tour de TAILLE seulement. La hanche recevait la même barre, donc les
+    // seuils de la taille (94 / 102 cm chez l'homme) : un tour de hanche de
+    // 104 cm, parfaitement banal, s'affichait « risque considérable ».
+    // L'OMS ne donne pas de seuil pour la hanche prise isolément — elle
+    // n'intervient que dans le ratio taille/hanche, qui a sa propre barre.
+    if (key === 'taille' && client.sex && typeof circForm[key] === 'number') {
       const valueCm = lengthInputToCm(circForm[key] as number, unitLength)
       riskBar = <WaistRiskBar value={valueCm} sex={client.sex} type="waist" />
     }
