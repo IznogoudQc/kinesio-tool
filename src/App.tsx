@@ -19,8 +19,31 @@ import { NotesTab } from './pages/client/tabs/NotesTab'
 import { QuestionnairesTab } from './pages/client/tabs/QuestionnairesTab'
 import { UpdateProvider } from './contexts/UpdateContext'
 import { UpdateToast } from './components/UpdateToast'
+import foret from './assets/foret.webp'
 
 const SIDEBAR_STORAGE_KEY = 'sidebar.collapsed'
+
+/**
+ * Fond de forêt du volet principal.
+ *
+ * Trois couches empilées, la première étant la plus haute : un voile crème qui
+ * va d'opaque à gauche (28 %) à translucide à droite (77 %), un second voile qui
+ * ferme le haut, puis la photo. La lecture se fait à gauche, donc c'est là que
+ * le fond s'efface complètement ; la forêt ne respire que dans la marge droite.
+ *
+ * Posé sur le conteneur qui NE défile PAS (le parent de `<main>`), et non sur
+ * `<main>` lui-même : la photo reste ainsi immobile quand le contenu défile,
+ * sans recourir à `background-attachment: fixed`, capricieux dans Chromium.
+ */
+const VOILE_CREME = 'linear-gradient(to right, #f5f1e8 0%, #f5f1e8 28%, rgba(245,241,232,.98) 38%, rgba(245,241,232,.88) 58%, rgba(245,241,232,.77) 100%)'
+const VOILE_HAUT = 'linear-gradient(to bottom, #f5f1e8 0%, rgba(245,241,232,0) 25%)'
+
+const fondForet: React.CSSProperties = {
+  backgroundImage: `${VOILE_CREME}, ${VOILE_HAUT}, url(${foret})`,
+  backgroundSize: 'cover',
+  backgroundPosition: 'center, right top, right center',
+  backgroundRepeat: 'no-repeat'
+}
 
 function readInitialCollapsed(): boolean {
   try {
@@ -58,10 +81,11 @@ function AppShell() {
   return (
     <div className="flex h-screen bg-cream overflow-hidden">
       <Sidebar collapsed={collapsed} onToggle={toggle} />
-      <div className="flex flex-col flex-1 min-w-0">
+      <div className="flex flex-col flex-1 min-w-0" style={fondForet}>
         {isClientsList && <Header title="Clients" />}
         {isSettings && <Header title="Paramètres" />}
-        <main className="flex-1 overflow-auto bg-cream">
+        {/* Plus de `bg-cream` ici : `<main>` doit laisser voir le fond du parent. */}
+        <main className="flex-1 overflow-auto">
           <Outlet context={{ printMode: false }} />
         </main>
       </div>
