@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Check, Copy, Menu, Settings, Users } from 'lucide-react'
-import { EffetIcon } from './EffetIcon'
+import { EffetMotionIcon } from './EffetMotionIcon'
 import { NavLink } from 'react-router-dom'
 import { useUpdate } from '../contexts/UpdateContext'
 import { pulseService } from '../services/pulse'
@@ -84,7 +84,7 @@ function PulseButton({ collapsed }: { collapsed: boolean }) {
         title={collapsed ? (error ?? 'Effet') : undefined}
         className={navItemClass(collapsed, false)}
       >
-        <EffetIcon size={20} />
+        <EffetMotionIcon size={20} />
         {!collapsed && <span>Effet</span>}
       </button>
 

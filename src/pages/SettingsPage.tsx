@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder, CloudUpload, FolderOpen, LifeBuoy, ChevronDown, ChevronRight } from 'lucide-react'
-import { EffetIcon } from '../components/EffetIcon'
+import { EffetMotionIcon } from '../components/EffetMotionIcon'
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
@@ -139,6 +139,12 @@ function Card({ title, icon: Icon, children, description }: CardProps) {
   )
 }
 
+/** Les icônes de carte sont dorées (`text-gold`) : la traînée d'accent passe
+ * en marine pour ne pas disparaître dans le coureur. */
+function EffetCardIcon(props: { size?: number; className?: string }) {
+  return <EffetMotionIcon {...props} accent="var(--color-marine, #0a1c5e)" />
+}
+
 /**
  * Mot de passe de connexion à Effet.
  *
@@ -181,7 +187,7 @@ function PulseCard() {
   return (
     <Card
       title="Mot de passe d'Effet"
-      icon={EffetIcon}
+      icon={EffetCardIcon}
       description="Affiché en clair sous le bouton « Effet » de la barre latérale, avec un bouton pour le copier. L'application en livre un : ce champ ne sert qu'à le remplacer, le jour où le mot de passe d'Effet change avant qu'une mise à jour ne suive. Gardé tel quel dans la base locale — qui part chaque jour dans la sauvegarde OneDrive."
     >
       <div className="flex items-center gap-3 flex-wrap">
