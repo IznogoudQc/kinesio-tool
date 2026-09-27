@@ -11,6 +11,7 @@ import {
   generateBaremesPdf,
   generateQaapPdf,
   generateClientReportPdf,
+  dateLongueFr,
   htmlFileToPdf,
   type BandeauxDocument,
   safeClientFileName,
@@ -29,11 +30,6 @@ import { asQaapData, qaapIsSigned } from '../../src/lib/qaap'
 import { questionnaires } from '../../db/schema'
 
 const ClientIdSchema = z.string().uuid()
-
-/** « 27 septembre 2026 » — pour la mention datée des bandeaux de page. */
-function dateLongueFr(): string {
-  return new Date().toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })
-}
 
 /**
  * Bandeaux de page d'un document autonome. Un seul endroit pour le titre et la

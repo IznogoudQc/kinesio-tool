@@ -1,7 +1,8 @@
 import { app, BrowserWindow } from 'electron'
 import { promises as fs } from 'fs'
 import { join } from 'path'
-import { asc, eq } from 'drizzle-orm'
+import { asc, desc, eq } from 'drizzle-orm'
+import { PDFDocument } from 'pdf-lib'
 import { getDb } from '../../db/client'
 import { bilans, clients, mesuresCirconferences, mesuresPlisCutanes } from '../../db/schema'
 
@@ -13,6 +14,13 @@ export function todayISODate(): string {
   const m = String(d.getMonth() + 1).padStart(2, '0')
   const day = String(d.getDate()).padStart(2, '0')
   return `${d.getFullYear()}-${m}-${day}`
+}
+
+/** « 25 juin 2026 » — une date `AAAA-MM-JJ`, ou aujourd'hui sans argument. */
+export function dateLongueFr(iso?: string): string {
+  // Midi, pas minuit : une date sans heure lue en UTC reculerait d'un jour ici.
+  const d = iso ? new Date(`${iso}T12:00:00`) : new Date()
+  return d.toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
 /** Normalise un nom de client pour servir de nom de fichier (ASCII, tirets). */
@@ -220,9 +228,46 @@ export async function htmlFileToPdf(htmlPath: string, bandeaux?: BandeauxDocumen
 }
 
 /**
+ * Mention datée du pied de page du bilan : la date de l'ÉVALUATION imprimée
+ * (le plus récent bilan pour le bilan de synthèse), comme sur la couverture —
+ * pas la date d'impression. Un bilan de 2011 réimprimé reste « du 17 août 2011 ».
+ */
+function mentionBilan(clientId: string, bilanId?: string): string {
+  const rows = getDb()
+    .select({ id: bilans.id, date: bilans.date })
+    .from(bilans)
+    .where(eq(bilans.clientId, clientId))
+    .orderBy(desc(bilans.date))
+    .all()
+  const bilan = bilanId ? rows.find(r => r.id === bilanId) : rows[0]
+  return bilan ? `Évaluation du ${dateLongueFr(bilan.date)}` : `Document du ${dateLongueFr()}`
+}
+
+/**
+ * Remplace la page 1 de `complet` par la page 1 de `couverture`.
+ *
+ * Les gabarits d'en-tête et de pied ignorent sur quelle page ils sont : ils ne
+ * peuvent pas se taire sur la couverture. On imprime donc deux fois — le
+ * document entier avec bandeaux, puis la couverture seule sans — et on
+ * substitue la page. La pagination « n / N » vient de la première passe et
+ * reste juste. Voir docs/decisions/0043-couverture-bilan-deux-passes.md.
+ */
+async function remplacerCouverture(complet: Buffer, couverture: Buffer): Promise<Buffer> {
+  const doc = await PDFDocument.load(complet)
+  const source = await PDFDocument.load(couverture)
+  const [page] = await doc.copyPages(source, [0])
+  doc.removePage(0)
+  doc.insertPage(0, page)
+  return Buffer.from(await doc.save())
+}
+
+/**
  * Génère le rapport PDF d'un client en chargeant la route React dédiée
  * `/report/:id` dans une fenêtre cachée, puis `webContents.printToPDF()`.
  * Retourne le chemin du PDF écrit dans le dossier temporaire.
+ *
+ * Chemin distinct des trois documents autonomes (`htmlFileToPdf`) : le bilan
+ * est une route de l'app, avec ses propres marges (`src/print.css`).
  */
 export async function generateClientReportPdf(clientId: string, bilanId?: string): Promise<string> {
   const client = getClientOrThrow(clientId)
@@ -251,16 +296,39 @@ export async function generateClientReportPdf(clientId: string, bilanId?: string
 
     await waitForReportReady(win)
 
-    // Marges haut/bas au niveau de la PAGE PDF (~12 mm) → identiques sur chaque
-    // page, y compris les pages de continuation d'une section (le padding CSS
-    // d'une section ne s'applique qu'à sa 1re page). Gauche/droite = 0 ici : géré
-    // par le padding horizontal des sections (qui, lui, s'applique à toutes les
-    // pages). Valeurs en pouces (0.47" ≈ 12 mm).
-    const pdfData = await win.webContents.printToPDF({
+    // Marges haut/bas au niveau de la PAGE PDF → identiques sur chaque page, y
+    // compris les pages de continuation d'une section (le padding CSS d'une
+    // section ne s'applique qu'à sa 1re page). Gauche/droite = 0 ici : géré par
+    // le padding horizontal des sections (qui, lui, s'applique à toutes les
+    // pages). En pratique c'est `@page { margin: 20mm 0 }` de `src/print.css`
+    // qui s'applique : Chromium fait passer le `@page` du document avant ces
+    // valeurs. 20 mm suffisent aux bandeaux (≈ 8 mm entre filet et contenu).
+    const bandeaux: BandeauxDocument = {
+      client: client.name,
+      mention: mentionBilan(clientId, bilanId),
+      titre: 'Bilan de forme physique'
+    }
+    const complet = await win.webContents.printToPDF({
       printBackground: true,
       pageSize: 'A4',
-      margins: { top: 0.79, bottom: 0.79, left: 0, right: 0 } // pouces ≈ 20 mm
+      margins: { top: 0.79, bottom: 0.79, left: 0, right: 0 },
+      displayHeaderFooter: true,
+      headerTemplate: gabaritEntete(bandeaux),
+      footerTemplate: gabaritPied(bandeaux)
     })
+
+    // Seconde passe : la couverture seule, sans bandeaux et à fond perdu. Sa
+    // hauteur passe à la page entière (`.report-cover`, voir ReportPage).
+    await win.webContents.insertCSS(
+      '@page :first { margin: 0 !important; } .report-cover { height: 297mm !important; min-height: 297mm !important; }'
+    )
+    const couverture = await win.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'A4',
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      pageRanges: '1'
+    })
+    const pdfData = await remplacerCouverture(complet, couverture)
 
     const fileName = `Bilan-${safeClientFileName(client.name)}-${todayISODate()}.pdf`
     const outPath = join(app.getPath('temp'), fileName)
