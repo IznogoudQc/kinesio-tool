@@ -12,6 +12,7 @@ import {
   generateQaapPdf,
   generateClientReportPdf,
   htmlFileToPdf,
+  type BandeauxDocument,
   safeClientFileName,
   todayISODate
 } from '../lib/report-generator'
@@ -28,6 +29,28 @@ import { asQaapData, qaapIsSigned } from '../../src/lib/qaap'
 import { questionnaires } from '../../db/schema'
 
 const ClientIdSchema = z.string().uuid()
+
+/** « 27 septembre 2026 » — pour la mention datée des bandeaux de page. */
+function dateLongueFr(): string {
+  return new Date().toLocaleDateString('fr-CA', { day: 'numeric', month: 'long', year: 'numeric' })
+}
+
+/**
+ * Bandeaux de page d'un document autonome. Un seul endroit pour le titre et la
+ * mention : le même document sort par trois chemins (téléchargement, dossier
+ * du client, courriel) et doit porter la même tête partout.
+ */
+function bandeaux(doc: 'nutrition' | 'mesures' | 'journal', client: string): BandeauxDocument {
+  const date = dateLongueFr()
+  switch (doc) {
+    case 'nutrition':
+      return { client, mention: `Document du ${date}`, titre: 'Plan nutrition' }
+    case 'mesures':
+      return { client, mention: `Suivi du ${date}`, titre: 'Suivi des mesures' }
+    case 'journal':
+      return { client, mention: `Journal du ${date}`, titre: 'Journal alimentaire' }
+  }
+}
 
 /** Crée le dossier du client et ses trois sous-dossiers. Idempotent. */
 async function ensureClientFolders(clientDir: string): Promise<void> {
@@ -118,7 +141,7 @@ export function registerReportsHandlers(): void {
     if (!client) throw new Error('Client introuvable.')
     const htmlPath = await generateNutritionDocumentHtml(id)
     try {
-      const buf = await htmlFileToPdf(htmlPath)
+      const buf = await htmlFileToPdf(htmlPath, bandeaux('nutrition', client.name))
       const out = join(tmpdir(), `Nutrition-${safeClientFileName(client.name)}-${todayISODate()}.pdf`)
       await fs.writeFile(out, buf)
       return out
@@ -145,7 +168,7 @@ export function registerReportsHandlers(): void {
     if (!client) throw new Error('Client introuvable.')
     const htmlPath = await generateMesuresDocumentHtml(id)
     try {
-      const buf = await htmlFileToPdf(htmlPath)
+      const buf = await htmlFileToPdf(htmlPath, bandeaux('mesures', client.name))
       const out = join(tmpdir(), `Suivi-mesures-${safeClientFileName(client.name)}-${todayISODate()}.pdf`)
       await fs.writeFile(out, buf)
       return out
@@ -167,7 +190,7 @@ export function registerReportsHandlers(): void {
     if (!client) throw new Error('Client introuvable.')
     const htmlPath = await generateFoodJournalHtml(id)
     try {
-      const buf = await htmlFileToPdf(htmlPath)
+      const buf = await htmlFileToPdf(htmlPath, bandeaux('journal', client.name))
       const out = join(tmpdir(), `Journal-alimentaire-${safeClientFileName(client.name)}-${todayISODate()}.pdf`)
       await fs.writeFile(out, buf)
       return out
@@ -247,7 +270,7 @@ export function registerReportsHandlers(): void {
     })
     await step(async () => {
       if (!mesuresHtml) return
-      const buf = await htmlFileToPdf(mesuresHtml)
+      const buf = await htmlFileToPdf(mesuresHtml, bandeaux('mesures', client.name))
       await fs.writeFile(join(dirBilans, `Suivi-mesures-${stem}.pdf`), buf)
       written++
     })
@@ -262,7 +285,7 @@ export function registerReportsHandlers(): void {
     })
     await step(async () => {
       if (!nutriHtml) return
-      const buf = await htmlFileToPdf(nutriHtml)
+      const buf = await htmlFileToPdf(nutriHtml, bandeaux('nutrition', client.name))
       await fs.writeFile(join(dirNutrition, `Nutrition-${stem}.pdf`), buf)
       written++
     })
@@ -270,7 +293,7 @@ export function registerReportsHandlers(): void {
     await step(async () => {
       const p = await generateFoodJournalHtml(id)
       temps.push(p)
-      const buf = await htmlFileToPdf(p)
+      const buf = await htmlFileToPdf(p, bandeaux('journal', client.name))
       await fs.writeFile(join(dirNutrition, `Journal-alimentaire-${stem}.pdf`), buf)
       written++
     })
@@ -388,7 +411,7 @@ export function registerReportsHandlers(): void {
         // l'écran avec ses courbes.
         const htmlPath = await generateMesuresDocumentHtml(clientId)
         paths.push(htmlPath)
-        const pdfBuf = await htmlFileToPdf(htmlPath)
+        const pdfBuf = await htmlFileToPdf(htmlPath, bandeaux('mesures', client.name))
         const pdfPath = join(tmpdir(), `Suivi-mesures-${stem}.pdf`)
         await fs.writeFile(pdfPath, pdfBuf)
         paths.push(pdfPath)
@@ -403,13 +426,13 @@ export function registerReportsHandlers(): void {
         // Le journal part en PDF : une grille à imprimer n'a rien à gagner à
         // voyager en .html, et tout à perdre chez un client dont le navigateur
         // n'est pas associé à ce format.
-        const foodlogBuf = await htmlFileToPdf(foodlogHtml)
+        const foodlogBuf = await htmlFileToPdf(foodlogHtml, bandeaux('journal', client.name))
         const foodlogPath = join(tmpdir(), `Journal-alimentaire-${stem}.pdf`)
         await fs.writeFile(foodlogPath, foodlogBuf)
         paths.push(foodlogPath)
         // Le PDF d'abord, comme pour le bilan : c'est la pièce jointe qui
         // s'ouvre chez tout le monde, quelle que soit la machine du client.
-        const nutriPdfBuf = await htmlFileToPdf(nutriPath)
+        const nutriPdfBuf = await htmlFileToPdf(nutriPath, bandeaux('nutrition', client.name))
         const nutriPdfPath = join(tmpdir(), `Nutrition-${stem}.pdf`)
         await fs.writeFile(nutriPdfPath, nutriPdfBuf)
         paths.push(nutriPdfPath)

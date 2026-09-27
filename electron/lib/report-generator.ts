@@ -106,11 +106,87 @@ async function waitForReportReady(win: BrowserWindow, timeoutMs = 10000): Promis
   // Délai dépassé : on génère quand même avec ce qui est rendu.
 }
 
+/** Identité visuelle des documents client — doit suivre `editorial.css`. */
+const DOC_MARINE = '#001331'
+const DOC_OR = '#c9a77a'
+const DOC_GRIS = '#8a94a6'
+const DOC_FILET = '#e4dccd'
+
+/** Ce qui s'imprime dans les bandeaux de chaque page. */
+export interface BandeauxDocument {
+  /** Nom du client, à gauche du pied de page. */
+  client: string
+  /** Ce qui suit le nom, après une barre oblique. Ex. « Évaluation du 25 juin 2026 ». */
+  mention: string
+  /** Aligné à droite de l'en-tête. Ex. « Bilan de forme physique ». */
+  titre: string
+}
+
+/**
+ * Bandeaux répétés sur chaque page du PDF.
+ *
+ * Chromium n'applique PAS les boîtes de marge de CSS Paged Media
+ * (`@top-left`, `counter(pages)`…) : un en-tête courant ne peut donc pas venir
+ * de la feuille de styles. Il passe forcément par ces gabarits, qui ont leurs
+ * propres règles :
+ *
+ *  - tout le style doit être en ligne, la feuille du document n'est pas chargée ;
+ *  - la taille de police par défaut est minuscule, il faut la poser ;
+ *  - `-webkit-print-color-adjust` est nécessaire, sinon les couleurs tombent ;
+ *  - le gabarit occupe toute la largeur de la page, marges comprises, d'où le
+ *    rembourrage latéral qui réaligne les bandeaux sur le contenu ;
+ *  - `.pageNumber` et `.totalPages` sont remplies par Chromium.
+ *
+ * Le titre de SECTION courante ne peut pas y figurer : le gabarit ignore tout
+ * du contenu de la page qu'il coiffe. On affiche donc le titre du document.
+ */
+function gabaritEntete(b: BandeauxDocument): string {
+  return `<div style="width:100%;font-family:'Segoe UI',Arial,sans-serif;font-size:7.5pt;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+    padding:0 14mm;box-sizing:border-box;">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      padding-bottom:3mm;border-bottom:0.4pt solid ${DOC_FILET};">
+      <span style="color:${DOC_OR};font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Kinésio Conseil</span>
+      <span style="color:${DOC_GRIS};">${echapperHtml(b.titre)}</span>
+    </div>
+  </div>`
+}
+
+function gabaritPied(b: BandeauxDocument): string {
+  return `<div style="width:100%;font-family:'Segoe UI',Arial,sans-serif;font-size:7.5pt;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+    padding:0 14mm;box-sizing:border-box;">
+    <div style="display:flex;align-items:center;justify-content:space-between;
+      padding-top:3mm;border-top:0.4pt solid ${DOC_FILET};color:${DOC_GRIS};">
+      <span>${echapperHtml(b.client)}&nbsp;&nbsp;/&nbsp;&nbsp;${echapperHtml(b.mention)}</span>
+      <span style="color:${DOC_MARINE};font-weight:700;">
+        <span class="pageNumber"></span> / <span class="totalPages"></span>
+      </span>
+    </div>
+  </div>`
+}
+
+/** Un nom de client avec une esperluette casserait le gabarit. */
+function echapperHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
 /**
  * Imprime un document HTML **autonome** (fichier local, données inline) en PDF.
- * Sert pour le document nutrition, qui n'a pas de route React dédiée.
+ * Sert pour la nutrition, le journal et le suivi de mesures (le bilan passe par
+ * la route `/report`, voir plus haut).
+ *
+ * Avec `bandeaux`, chaque page reçoit un en-tête et un pied courants, numéro de
+ * page compris. Les marges haute et basse passent alors à 18 mm pour leur faire
+ * de la place.
+ *
+ * Ces 18 mm doivent être imposés par CSS : les documents déclarent leur propre
+ * `@page { margin }` (12 mm, 9 mm pour le journal), et Chromium le fait passer
+ * AVANT les `margins` de `printToPDF`. Sans l'injection, les 18 mm étaient
+ * ignorés et le filet de l'en-tête touchait le contenu. Les marges latérales
+ * du document, elles, ne sont pas touchées.
  */
-export async function htmlFileToPdf(htmlPath: string): Promise<Buffer> {
+export async function htmlFileToPdf(htmlPath: string, bandeaux?: BandeauxDocument): Promise<Buffer> {
   const win = new BrowserWindow({
     show: false,
     width: 1100,
@@ -121,10 +197,22 @@ export async function htmlFileToPdf(htmlPath: string): Promise<Buffer> {
     await win.loadFile(htmlPath)
     // Le document monte React au chargement — on laisse le rendu se stabiliser.
     await new Promise(resolve => setTimeout(resolve, 700))
+    if (bandeaux) {
+      await win.webContents.insertCSS('@page { margin-top: 18mm !important; margin-bottom: 18mm !important; }')
+    }
     return await win.webContents.printToPDF({
       printBackground: true,
       pageSize: 'A4',
-      margins: { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 }
+      margins: bandeaux
+        ? { top: 0.71, bottom: 0.71, left: 0.4, right: 0.4 } // ≈ 18 mm / 10 mm
+        : { top: 0.4, bottom: 0.4, left: 0.4, right: 0.4 },
+      ...(bandeaux
+        ? {
+            displayHeaderFooter: true,
+            headerTemplate: gabaritEntete(bandeaux),
+            footerTemplate: gabaritPied(bandeaux)
+          }
+        : {})
     })
   } finally {
     if (!win.isDestroyed()) win.destroy()

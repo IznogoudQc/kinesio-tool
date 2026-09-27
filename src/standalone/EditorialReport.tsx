@@ -1235,8 +1235,11 @@ export function FoodJournal({ data }: { data: StandaloneData }) {
   const th: React.CSSProperties = { ...cell, background: '#f0ede6', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.04em', color: '#333', textAlign: 'center' }
 
   return (
-    <div style={{ background: '#fff', color: '#111', minHeight: '100vh', padding: '20px 24px', fontFamily: 'system-ui, sans-serif' }}>
-      <style>{`@media print { @page { size: A4 landscape; margin: 9mm } .fj-noprint { display: none !important } } body { background:#fff } * { -webkit-print-color-adjust: exact; print-color-adjust: exact }`}</style>
+    // `fj-page` : à l'impression, la marge de page suffit — le rembourrage
+    // vertical en plus faisait déborder la grille sur une 2e page avec les
+    // bandeaux du PDF, dès que les lignes de jeûne s'ajoutent.
+    <div className="fj-page" style={{ background: '#fff', color: '#111', minHeight: '100vh', padding: '20px 24px', fontFamily: 'system-ui, sans-serif' }}>
+      <style>{`@media print { @page { size: A4 landscape; margin: 9mm } .fj-noprint { display: none !important } .fj-notes { height: 62px !important } .fj-page { padding-top: 0 !important; padding-bottom: 0 !important } } body { background:#fff } * { -webkit-print-color-adjust: exact; print-color-adjust: exact }`}</style>
 
       <div className="fj-noprint" style={{ textAlign: 'right', marginBottom: '8px' }}>
         <button
@@ -1279,7 +1282,9 @@ export function FoodJournal({ data }: { data: StandaloneData }) {
         </thead>
         <tbody>
           {rows.map(r => (
-            <tr key={r.label} style={{ height: r.height }}>
+            // Notes rétrécit à l'impression : avec les bandeaux de page du PDF
+            // (18 mm en haut et en bas), la grille débordait sur une 2e page.
+            <tr key={r.label} className={r.label === 'Notes' ? 'fj-notes' : undefined} style={{ height: r.height }}>
               <td style={{ ...cell, fontWeight: 600, color: '#001331', fontSize: '12px', background: '#faf8f3' }}>{r.label}</td>
               {days.map(d => (
                 <td key={d} style={cell} />
