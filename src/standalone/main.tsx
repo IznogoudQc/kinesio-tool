@@ -4,6 +4,7 @@ import '../styles/main.css'
 import './editorial.css'
 import { EditorialReport, FoodJournal, NutritionDocument, type StandaloneData } from './EditorialReport'
 import { MesuresDocument } from './MesuresDocument'
+import { installerSommaireFlottant } from './sommaire-flottant'
 
 /** Le processus principal remplace le jeton `<!--REPORT_DATA-->` du gabarit par
  *  les données du client avant d'écrire le fichier. */
@@ -30,6 +31,8 @@ const TITRES: Record<string, string> = {
 if (data) {
   const titre = TITRES[data.docType ?? 'report'] ?? TITRES.report
   document.title = `${titre} — ${data.client.name}`
+  // Permet à editorial.css de cibler un document précis (hauteur d'ouverture).
+  document.documentElement.dataset.doc = data.docType ?? 'report'
 }
 
 createRoot(document.getElementById('root')!).render(
@@ -51,3 +54,7 @@ createRoot(document.getElementById('root')!).render(
     )}
   </StrictMode>
 )
+
+/** Le sommaire flottant s'ajoute après coup, en lisant les sections rendues —
+ *  voir l'en-tête de `sommaire-flottant.ts` pour le pourquoi du parcours DOM. */
+if (data) installerSommaireFlottant(data.docType ?? 'report')
