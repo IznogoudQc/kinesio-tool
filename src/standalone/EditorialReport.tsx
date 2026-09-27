@@ -1349,11 +1349,13 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
         surtitre: 'Votre objectif',
         valeur: objectif.target.toLocaleString('fr-CA', { maximumFractionDigits: 1 }),
         unite: '% de gras',
+        // Pas d'échéance en couverture : une date butoir mise en vedette met une
+        // pression inutile, et se périme dès que le client prend du retard — le
+        // document remis deviendrait alors décourageant. Le rythme et les
+        // semaines estimées restent dans la section « Votre objectif ».
         mention: objectif.atGoal
           ? 'Cible atteinte — l’enjeu est de la tenir'
-          : [`Poids visé ${dualWeight(objectif.goal.goalKg, client.unitWeight)}`, objectif.goalDate ? `échéance ${objectif.goalDate}` : null]
-              .filter(Boolean)
-              .join('  ·  ')
+          : `Poids visé ${dualWeight(objectif.goal.goalKg, client.unitWeight)}`
       }
     : null
   const fenetre = dailyWindows(client.jeunePlanning ?? []).find(p => p.windowStart && p.windowEnd)
