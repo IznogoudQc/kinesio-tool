@@ -61,6 +61,7 @@ import { FastingCalendar } from '../components/FastingCalendar'
 import { headlineFor } from './headline'
 import forestUrl from '../assets/forest.jpg'
 import logoConseil from '../assets/logo-conseil.png'
+import { DocumentCover, jourLocal, ligneReperes, type CoverRepere, type CoverVedette } from '../components/DocumentCover'
 
 /** Données injectées par le processus principal. Volontairement dépourvues de
  *  tout élément privé : ni notes cliniques, ni conseils IA, ni signaux
@@ -1341,14 +1342,65 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
     !!(client.nutritionMot ?? '').trim() ||
     !!(client.nutritionMenu ?? '').trim()
 
+  // Couverture papier. Carte marine = l'objectif chiffré, seulement s'il existe :
+  // un tiret au milieu d'une carte marine ferait croire à une donnée manquante.
+  const vedette: CoverVedette | null = objectif
+    ? {
+        surtitre: 'Votre objectif',
+        valeur: objectif.target.toLocaleString('fr-CA', { maximumFractionDigits: 1 }),
+        unite: '% de gras',
+        mention: objectif.atGoal
+          ? 'Cible atteinte — l’enjeu est de la tenir'
+          : [`Poids visé ${dualWeight(objectif.goal.goalKg, client.unitWeight)}`, objectif.goalDate ? `échéance ${objectif.goalDate}` : null]
+              .filter(Boolean)
+              .join('  ·  ')
+      }
+    : null
+  const fenetre = dailyWindows(client.jeunePlanning ?? []).find(p => p.windowStart && p.windowEnd)
+  const reperesNutrition: CoverRepere[] = [
+    ...(objectif?.macros
+      ? [
+          { label: 'Calories', valeur: Math.round(objectif.macros.targetKcal).toLocaleString('fr-CA'), unite: 'kcal / jour' },
+          { label: 'Protéines', valeur: String(Math.round(objectif.macros.proteinG)), unite: 'g' },
+          { label: 'Lipides', valeur: String(Math.round(objectif.macros.fatG)), unite: 'g' },
+          { label: 'Glucides nets', valeur: String(Math.round(objectif.macros.carbsG)), unite: 'g' }
+        ]
+      : []),
+    ...(typeof client.hydratationMlParJour === 'number' && client.hydratationMlParJour > 0
+      ? [{ label: 'Hydratation', valeur: (client.hydratationMlParJour / 1000).toLocaleString('fr-CA', { maximumFractionDigits: 1 }), unite: 'L / jour' }]
+      : []),
+    ...(fenetre ? [{ label: 'Fenêtre alimentaire', valeur: `${fenetre.windowStart}–${fenetre.windowEnd}` }] : []),
+    // Seulement si Marie-Eve l'a fixé : la valeur par défaut n'est pas un repère
+    // propre au client, et seule dans la grille elle déséquilibrait la page.
+    ...(typeof client.nutritionRepasParJour === 'number' ? [{ label: 'Repas par jour', valeur: String(client.nutritionRepasParJour) }] : [])
+  ].slice(0, 6) // deux colonnes de trois au plus : au-delà, la grille descend sur la forêt
+
   return (
     <div className="overflow-x-hidden bg-cream text-marine">
+      {/* Couverture papier : absente à l'écran, qui garde son ouverture plein
+          écran (voir .ed-print-only dans editorial.css). */}
+      <div className="ed-print-only doc-cover-page">
+        <DocumentCover
+          surtitre="Plan nutrition"
+          titre="Votre plan"
+          clientName={client.name}
+          reperesTexte={ligneReperes(jourLocal(data.generatedAt), client.birthdate, client.sex)}
+          coachName={data.kinesiologist}
+          avatarUrl={data.avatarDataUrl}
+          vedette={vedette}
+          reperes={reperesNutrition}
+          pieceSurtitre="Vos repères, votre rythme"
+          pieceTexte="Un plan personnalisé pour accompagner votre suivi."
+        />
+      </div>
       {/* Impression / PDF : évite de couper les cartes entre deux pages, réduit le
           hero, et force le rendu des fonds. Sans effet à l'écran. */}
       <style>{`
         * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
         @media print {
           @page { margin: 12mm; }
+          /* La couverture papier va a fond perdu. */
+          @page :first { margin: 0; }
           .ed-hero { min-height: 0 !important; }
           .ed-anchor { padding-top: 16px !important; padding-bottom: 16px !important; }
           .rounded-xl, .rounded-lg { break-inside: avoid; }
@@ -1375,7 +1427,7 @@ export function NutritionDocument({ data }: { data: StandaloneData }) {
           .nut-menu-day { break-inside: avoid; }
         }
       `}</style>
-      <header className="ed-hero relative flex min-h-[65svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
+      <header className="ed-hero ed-no-print relative flex min-h-[65svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
         <div className="ed-hero-forest ed-no-print" aria-hidden="true" style={{ backgroundImage: FOREST_BG }} />
         <div className="ed-hero-veil ed-no-print" aria-hidden="true" />
 

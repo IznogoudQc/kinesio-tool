@@ -1,0 +1,21 @@
+/* Polices de la couverture commune (DocumentCover). Les mêmes que le rapport
+ * PDF (print.css, ADR 0011), déclarées ICI aussi : les documents autonomes ne
+ * chargent pas print.css, et leur couverture retombait sinon sur Georgia et une
+ * police système — visiblement différente de celle du bilan. Dans le bundle
+ * autonome, les fichiers sont inlinés en base64 (≈ 155 ko au total). */
+
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: block;
+  src: url('../assets/fonts/fraunces-latin.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: block;
+  src: url('../assets/fonts/inter-latin.woff2') format('woff2');
+}

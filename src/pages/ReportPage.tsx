@@ -17,11 +17,10 @@ import { serieComposition, serieGras } from '../lib/trend-series'
 import { ScoreTrend } from '../components/ScoreTrend'
 import { BodyFatTrend } from '../components/BodyFatTrend'
 import { settingsService } from '../services/settings'
-import { formatBilanDate, formatBilanMonth } from './client/bilanFields'
+import { formatBilanMonth } from './client/bilanFields'
 import { CategoryRangeBar } from '../components/CategoryRangeBar'
 import {
   CATEGORY_LABELS,
-  computeAge,
   getCategorization,
   getNextCategoryTarget,
   getNormPercentiles,
@@ -56,14 +55,12 @@ import { dualWeight, estimatedGoalDate } from '../lib/objectif-format'
 import { formatMmSs } from '../lib/vo2max-calculator'
 import { hasRecoveryData, recoveryRows, aerobicProtocolLabel } from '../lib/report-helpers'
 import { isSectionVisible, parseHiddenSections, type ReportSectionKey } from '../lib/report-sections'
-import logo from '../assets/logo-conseil.png'
-import foretFiligrane from '../assets/foret-filigrane.webp'
+import { DocumentCover, ligneReperes } from '../components/DocumentCover'
 import '../print.css'
 
 // ── Palette imprimable ───────────────────────────────────────────────────────
 const MARINE = '#001331'
 const GOLD = '#b0894f'
-const GOLD_SOFT = '#c9a77a'
 const CREAM = '#f4efe6'
 const GRID = '#e5e0d2'
 const AXIS = '#9a9486'
@@ -91,8 +88,6 @@ const SCORE_OF: Record<Category, number> = {
   TRES_BIEN: 4,
   EXCELLENT: 5
 }
-
-const SEX_LABEL: Record<string, string> = { F: 'Femme', M: 'Homme' }
 
 declare global {
   interface Window {
@@ -494,127 +489,39 @@ function CoverPage({
    *  (aptitude aérobie → VO2max, comme l'ancien rapport). */
   domains?: { label: string; score: CompositeScore; displayValue?: number | null; displayUnit?: string }[]
 }) {
-  const age = computeAge(client.birthdate)
-  // Une ligne de repères, puis la signature en dessous : trois informations de
-  // nature différente sur une seule ligne se lisaient comme une énumération.
-  const reperes = [latest ? formatBilanDate(latest.date) : null, age !== null ? `${age} ans` : null, client.sex ? SEX_LABEL[client.sex] : null]
-    .filter(Boolean)
-    .join('  ·  ')
-
   return (
     <ReportSection pad={false} cover>
-      {/* `height: 100%` et non `flex: 1` : le parent direct est le bloc de
-          ReportSection, pas un conteneur flex — `flex: 1` n'y faisait rien et le
-          fond crème s'arrêtait avec le contenu, en laissant une bande blanche. */}
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: CREAM, position: 'relative', overflow: 'hidden' }}>
-        {/* La forêt n'habille que le bas de page, sous les chiffres, et s'efface
-            vers le haut et vers la gauche. Le fondu est CUIT dans l'image
-            (`foret-filigrane.webp` : `foret.webp` fondue dans CREAM, effacée à
-            22 %, bords égaux au fond) : à l'impression, Chromium sortait un bord
-            net aussi bien avec `mask-image` qu'avec des dégradés transparents. */}
-        <div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            right: 0,
-            bottom: 0,
-            width: '65%',
-            height: '27%',
-            backgroundImage: `url(${foretFiligrane})`,
-            backgroundSize: '100% 100%'
-          }}
-        />
-
-        {/* Bandeau d'identité, pleine largeur. */}
-        <div style={{ background: MARINE, padding: '11mm 20mm', display: 'flex', alignItems: 'center', gap: '5mm', position: 'relative' }}>
-          <img src={logo} alt="" style={{ height: '13mm', width: 'auto' }} />
-          <span style={{ color: '#fff', fontSize: '15pt', fontWeight: 700, letterSpacing: '0.01em' }}>Kinésio Conseil</span>
-        </div>
-
-        <div style={{ padding: '14mm 20mm 12mm', display: 'flex', flexDirection: 'column', flex: 1, position: 'relative' }}>
-          <p style={{ fontSize: '8.5pt', letterSpacing: '0.16em', textTransform: 'uppercase', color: GOLD, fontWeight: 700 }}>
-            Rapport d’évaluation
-          </p>
-          <h1 className="report-display" style={{ fontWeight: 400, fontSize: '40pt', color: MARINE, marginTop: '4mm', lineHeight: 1.05 }}>
-            Votre bilan
-          </h1>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8mm', marginTop: '5mm' }}>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: '17pt', fontWeight: 700, color: MARINE }}>{client.name}</p>
-              {reperes && <p style={{ fontSize: '10.5pt', color: INK_SOFT, marginTop: '3mm' }}>{reperes}</p>}
-              <p style={{ fontSize: '10.5pt', color: INK_SOFT, marginTop: '1.5mm' }}>
-                Préparé par {coachName || 'Marie-Eve Riendeau'}
-              </p>
-            </div>
-            {/* Photo seulement si le client en a une : pas de silhouette de
-                repli, un rond générique n'apprend rien au lecteur. */}
-            {avatarUrl && (
-              <div style={{ width: '28mm', height: '28mm', borderRadius: '50%', flexShrink: 0, overflow: 'hidden', border: `1.5pt solid ${GOLD_SOFT}`, background: '#fff' }}>
-                <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              </div>
-            )}
-          </div>
-
-          {/* Le résultat global, seul sur fond marine : c'est le chiffre que le
-              client cherche en ouvrant le document. */}
-          <div style={{ background: MARINE, borderRadius: '7mm', padding: '10mm 12mm', marginTop: '11mm' }}>
-            <p style={{ fontSize: '8.5pt', letterSpacing: '0.14em', textTransform: 'uppercase', color: GOLD_SOFT, fontWeight: 700 }}>
-              Santé et condition physique globale
-            </p>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '5mm', marginTop: '5mm' }}>
-              <span className="report-display" style={{ fontSize: '54pt', lineHeight: 1, color: '#fff', fontWeight: 400 }}>
-                {overall === null ? '—' : overall.toFixed(1)}
-              </span>
-              <span style={{ fontSize: '12pt', color: '#ffffffb0' }}>sur 4</span>
-            </div>
-            <p style={{ fontSize: '11pt', color: '#fff', fontWeight: 700, marginTop: '5mm' }}>
-              {[overallCategory ? CATEGORY_LABELS[overallCategory] : null, totalBilans > 0 ? `Bilan nº ${totalBilans}` : null]
-                .filter(Boolean)
-                .join('  ·  ')}
-            </p>
-          </div>
-
-          {/* Les quatre domaines, libellé au-dessus de la valeur : en colonnes,
-              la lecture descend au lieu de sauter d'un bord à l'autre. */}
-          {domains && domains.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: '16mm', rowGap: '8mm', marginTop: '11mm' }}>
-              {domains.map(d => (
-                <div key={d.label}>
-                  <p style={{ fontSize: '10pt', color: INK_SOFT }}>{d.label}</p>
-                  <p style={{ fontSize: '16pt', fontWeight: 700, color: MARINE, marginTop: '1.5mm' }}>
-                    {d.displayUnit !== undefined ? (
-                      <>
-                        {d.displayValue == null ? '—' : d.displayValue.toLocaleString('fr-CA', { maximumFractionDigits: 1 })}
-                        {d.displayValue != null && (
-                          <span style={{ fontSize: '11pt', fontWeight: 500 }}>&nbsp;{d.displayUnit}</span>
-                        )}
-                      </>
-                    ) : d.score.score === null ? (
-                      '—'
-                    ) : (
-                      <>
-                        {d.score.score.toFixed(1)}
-                        <span style={{ fontSize: '11pt', fontWeight: 500, color: INK_SOFT }}>&nbsp;/ 4</span>
-                      </>
-                    )}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* `marginTop: auto` pousse la phrase en bas de page ; le `paddingTop`
-              garde un vrai blanc quand la grille des domaines remplit la page. */}
-          <div style={{ marginTop: 'auto', paddingTop: '10mm' }}>
-            <p style={{ fontSize: '8.5pt', letterSpacing: '0.14em', textTransform: 'uppercase', color: GOLD, fontWeight: 700 }}>
-              Vos résultats, vos progrès, vos repères
-            </p>
-            <p style={{ fontSize: '10.5pt', color: INK_SOFT, marginTop: '3mm' }}>
-              Un bilan personnalisé pour accompagner votre suivi.
-            </p>
-          </div>
-        </div>
-      </div>
+      <DocumentCover
+        surtitre="Rapport d’évaluation"
+        titre="Votre bilan"
+        clientName={client.name}
+        reperesTexte={ligneReperes(latest?.date ?? null, client.birthdate, client.sex)}
+        coachName={coachName || 'Marie-Eve Riendeau'}
+        avatarUrl={avatarUrl}
+        vedette={{
+          surtitre: 'Santé et condition physique globale',
+          valeur: overall === null ? '—' : overall.toFixed(1),
+          unite: 'sur 4',
+          mention:
+            [overallCategory ? CATEGORY_LABELS[overallCategory] : null, totalBilans > 0 ? `Bilan nº ${totalBilans}` : null]
+              .filter(Boolean)
+              .join('  ·  ') || undefined
+        }}
+        reperes={(domains ?? []).map(d => ({
+          label: d.label,
+          // L'aptitude aérobie montre le VO2max brut ; les autres, la note sur 4.
+          valeur:
+            d.displayUnit !== undefined
+              ? d.displayValue == null
+                ? null
+                : d.displayValue.toLocaleString('fr-CA', { maximumFractionDigits: 1 })
+              : d.score.score === null
+                ? null
+                : d.score.score.toFixed(1),
+          unite: d.displayUnit !== undefined ? d.displayUnit : '/ 4'
+        }))}
+        pieceTexte="Un bilan personnalisé pour accompagner votre suivi."
+      />
     </ReportSection>
   )
 }

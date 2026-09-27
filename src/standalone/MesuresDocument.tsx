@@ -11,6 +11,7 @@ import {
 } from 'recharts'
 import { FOREST_BG, Section, type StandaloneData } from './EditorialReport'
 import logoConseil from '../assets/logo-conseil.png'
+import { DocumentCover, ligneReperes, type CoverVedette } from '../components/DocumentCover'
 import { formatBilanDate, makeDateTickFormatter } from '../pages/client/bilanFields'
 import { evolution, groupesDeMesures, type GroupeMesures, type SerieMesure } from '../lib/mesures-doc'
 
@@ -696,8 +697,57 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
   // Une colonne par date où quelque chose a été mesuré.
   const dates = [...new Set(toutes.flatMap(s => s.points.map(p => p.date)))].sort()
 
+  // Couverture papier : le poids en vedette, et le chemin depuis la première
+  // prise. Une seule prise : pas d'évolution à montrer, la mention le dit.
+  const derniere = (cle: string) => {
+    const pts = toutes.find(s => s.cle === cle)?.points ?? []
+    return pts.length > 0 ? pts[pts.length - 1] : null
+  }
+  const seriePoids = toutes.find(s => s.cle === 'poids') ?? null
+  const poidsActuel = derniere('poids')
+  const evPoids = seriePoids ? evolution(seriePoids) : null
+  const vedette: CoverVedette | null =
+    seriePoids && poidsActuel
+      ? {
+          surtitre: 'Poids actuel',
+          valeur: nf1(poidsActuel.valeur),
+          unite: seriePoids.unite,
+          mention: evPoids
+            ? `${signe(evPoids.ecart)} ${seriePoids.unite} depuis le ${formatBilanDate(evPoids.depuis.date)}`
+            : `Première prise, le ${formatBilanDate(poidsActuel.date)}`
+        }
+      : null
+  // IMC : le poids brut en kg de la dernière prise, et la taille du bilan le
+  // plus récent qui en porte une — les prises de mesures n'ont pas de taille.
+  const poidsKg = [...circonferences].reverse().map(l => l.poidsKg).find((v): v is number => typeof v === 'number') ?? null
+  const tailleCm = data.bilans.map(b => b.data.taille_cm).find((t): t is number => typeof t === 'number' && t > 0) ?? null
+  const imc = poidsKg !== null && tailleCm !== null ? poidsKg / (tailleCm / 100) ** 2 : null
+  const gras = derniere('gras')
+  const taille = derniere('taille')
+
   return (
     <div className="mes-doc overflow-x-hidden bg-cream text-marine">
+      {/* Couverture papier : absente à l'écran, qui garde son ouverture plein
+          écran (voir .ed-print-only dans editorial.css). */}
+      <div className="ed-print-only doc-cover-page">
+        <DocumentCover
+          surtitre="Suivi des mesures"
+          titre="Vos mesures"
+          clientName={client.name}
+          reperesTexte={ligneReperes(dates[dates.length - 1] ?? null, client.birthdate, client.sex)}
+          coachName={data.kinesiologist}
+          avatarUrl={data.avatarDataUrl}
+          vedette={vedette}
+          reperes={[
+            { label: '% de gras', valeur: gras ? nf1(gras.valeur) : null, unite: '%' },
+            { label: 'Tour de taille', valeur: taille ? nf1(taille.valeur) : null, unite: 'cm' },
+            { label: 'IMC', valeur: imc === null ? null : nf1(imc) },
+            { label: 'Nombre de prises', valeur: String(dates.length) }
+          ]}
+          pieceSurtitre="Vos mesures dans le temps"
+          pieceTexte="Un suivi personnalisé pour accompagner votre progression."
+        />
+      </div>
       {/* Impression / PDF : mêmes règles que les autres documents — fonds rendus,
           cartes jamais coupées entre deux pages, couverture raccourcie.
 
@@ -712,6 +762,8 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
         .mes-impression { display: none; }
         @media print {
           @page { margin: 12mm; }
+          /* La couverture papier va a fond perdu. */
+          @page :first { margin: 0; }
           .ed-hero { min-height: 0 !important; }
 
           /* Le retrait vertical d'une section vit sur le div INTÉRIEUR
@@ -751,7 +803,7 @@ export function MesuresDocument({ data }: { data: StandaloneData }) {
         }
       `}</style>
 
-      <header className="ed-hero relative flex min-h-[65svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
+      <header className="ed-hero ed-no-print relative flex min-h-[65svh] flex-col justify-between overflow-hidden bg-marine px-6 py-10 text-cream sm:px-10">
         <div className="ed-hero-forest ed-no-print" aria-hidden="true" style={{ backgroundImage: FOREST_BG }} />
         <div className="ed-hero-veil ed-no-print" aria-hidden="true" />
 

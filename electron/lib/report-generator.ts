@@ -205,10 +205,20 @@ export async function htmlFileToPdf(htmlPath: string, bandeaux?: BandeauxDocumen
     await win.loadFile(htmlPath)
     // Le document monte React au chargement — on laisse le rendu se stabiliser.
     await new Promise(resolve => setTimeout(resolve, 700))
-    if (bandeaux) {
-      await win.webContents.insertCSS('@page { margin-top: 18mm !important; margin-bottom: 18mm !important; }')
-    }
-    return await win.webContents.printToPDF({
+    // Plan nutrition et suivi des mesures ont une couverture papier : comme pour
+    // le bilan, elle s'imprime à part, sans bandeaux et à fond perdu, puis
+    // remplace la page 1 (ADR 0043). Le journal n'en a pas.
+    const aCouverture =
+      !!bandeaux && (await win.webContents.executeJavaScript("!!document.querySelector('.doc-cover-page')"))
+    const margesBandeaux = !bandeaux
+      ? null
+      : await win.webContents.insertCSS(
+        '@page { margin-top: 18mm !important; margin-bottom: 18mm !important; }' +
+          // 1re passe : la couverture doit tenir dans la page à marges (cette
+          // page 1 est jetée, mais un débordement ajouterait une page).
+          (aCouverture ? ' .doc-cover-page { height: 250mm !important; }' : '')
+      )
+    const pdf = await win.webContents.printToPDF({
       printBackground: true,
       pageSize: 'A4',
       margins: bandeaux
@@ -222,6 +232,20 @@ export async function htmlFileToPdf(htmlPath: string, bandeaux?: BandeauxDocumen
           }
         : {})
     })
+    if (!aCouverture) return pdf
+
+    // Retirée, pas surchargée : même `@page :first { margin: 0 !important }`
+    // injecté ensuite, les 18 mm de la 1re passe gardaient la main en haut et en
+    // bas, et la couverture perdait son fond perdu et son pied de page.
+    if (margesBandeaux) await win.webContents.removeInsertedCSS(margesBandeaux)
+    await win.webContents.insertCSS('@page :first { margin: 0 !important; } .doc-cover-page { height: 297mm !important; }')
+    const couverture = await win.webContents.printToPDF({
+      printBackground: true,
+      pageSize: 'A4',
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+      pageRanges: '1'
+    })
+    return await remplacerCouverture(pdf, couverture)
   } finally {
     if (!win.isDestroyed()) win.destroy()
   }

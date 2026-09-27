@@ -452,3 +452,28 @@
     display: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COUVERTURE PAPIER (plan nutrition, suivi des mesures)
+
+   À l'écran, ces documents s'ouvrent sur leur hero plein écran ; sur papier, sur
+   la couverture commune au bilan (`DocumentCover`). Le hero porte ed-no-print.
+   Le fond perdu vient de `@page :first { margin: 0 }`, posé dans chacun des deux
+   documents — pas ici : la feuille sert aussi au journal, qui garde ses marges.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ed-print-only {
+  display: none;
+}
+@media print {
+  .ed-print-only {
+    display: block;
+  }
+  /* 296 et non 297 mm : une couverture au millimètre près peut pousser une page
+     blanche derrière elle. Le PDF de l'app la porte à 297 mm dans sa passe
+     dédiée (voir htmlFileToPdf). */
+  .doc-cover-page {
+    height: 296mm;
+    overflow: hidden;
+    break-after: page;
+  }
+}
