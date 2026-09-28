@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder, CloudUpload, FolderOpen, LifeBuoy, ChevronDown, ChevronRight } from 'lucide-react'
 import { EffetMotionIcon } from '../components/EffetMotionIcon'
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
+import { EffetNotificationsCard } from './settings/EffetNotificationsCard'
 import { AIProviderCard } from './settings/AIProviderCard'
 import { PainSuggestionsCard } from './settings/PainSuggestionsCard'
 import { SupplementLibraryCard, FoodListCard, FoodMacrosCard } from './settings/NutritionSettingsCards'
@@ -71,6 +72,7 @@ export function SettingsPage() {
               <BackupCard />
               <RestoreProcedure />
               <PulseCard />
+              <EffetNotificationsCard />
               <DummyJeanSeedButton />
             </>
           )}

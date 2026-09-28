@@ -12,6 +12,8 @@ import { registerNutritionTemplatesHandlers } from './ipc/nutritionTemplates'
 import { registerQuestionnairesHandlers } from './ipc/questionnaires'
 import { registerBackupHandlers } from './ipc/backup'
 import { registerPulseHandlers } from './ipc/pulse'
+import { registerEffetNotificationsHandlers } from './ipc/effet-notifications'
+import { demarrerVeilleEffet } from './lib/effet-notifications-service'
 import { maybeRunDailyBackup } from './lib/backup-service'
 import { initDb } from '../db/client'
 import { backfillBilansToMesuresOnce } from './lib/measure-sync'
@@ -112,6 +114,7 @@ app.whenReady().then(() => {
   registerQuestionnairesHandlers()
   registerBackupHandlers()
   registerPulseHandlers()
+  registerEffetNotificationsHandlers()
   // Report unique des bilans existants vers l'onglet Mesures (sens Bilan → Mesures).
   try {
     backfillBilansToMesuresOnce()
@@ -139,6 +142,11 @@ app.whenReady().then(() => {
   // toute la base et l'écrire prend un instant, et l'app doit s'ouvrir d'abord.
   // Le service ne lève jamais et ne fait rien si la dernière est récente.
   setTimeout(() => void maybeRunDailyBackup(), 5000)
+
+  // Veille sur les messages des clientes dans Effet : une notification de
+  // bureau quand l'une d'elles écrit. Se tait d'elle-même si aucune clé n'est
+  // configurée, et ne lève jamais.
+  demarrerVeilleEffet()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

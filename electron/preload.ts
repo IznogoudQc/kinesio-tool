@@ -145,6 +145,12 @@ contextBridge.exposeInMainWorld('api', {
     setPassword: (value: string) => ipcRenderer.invoke('pulse:setPassword', value),
     copyPassword: () => ipcRenderer.invoke('pulse:copyPassword')
   },
+  effetNotifications: {
+    getStatus: () => ipcRenderer.invoke('effet:notifications:status'),
+    setActives: (actives: boolean) => ipcRenderer.invoke('effet:notifications:setActives', actives),
+    verifier: () => ipcRenderer.invoke('effet:notifications:verifier'),
+    setCle: (cle: string) => ipcRenderer.invoke('effet:notifications:setCle', cle)
+  },
   transfer: {
     exportClients: (clientIds: string[]) =>
       ipcRenderer.invoke('transfer:export', clientIds),

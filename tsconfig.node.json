@@ -32,7 +32,8 @@
     "src/lib/measure-sync-map.ts",
     "src/lib/report-scope.ts",
     "src/lib/client-folders.ts",
-    "src/lib/qaap.ts"
+    "src/lib/qaap.ts",
+    "src/lib/effet-notifications.ts"
   ],
   "exclude": ["electron/**/*.test.ts"]
 }

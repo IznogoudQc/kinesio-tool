@@ -452,6 +452,21 @@ interface NutritionTemplate {
   createdAt: string
 }
 
+/** Ce que l'interface sait de la veille sur les messages d'Effet. Aucun contenu
+ *  de message n'y figure, par construction. */
+interface EffetVeilleStatus {
+  /** L'interrupteur : faux = aucune notification affichée (le sondage continue). */
+  actives: boolean
+  /** ISO de la dernière vérification ABOUTIE, `null` si aucune depuis l'installation. */
+  derniereVerification: string | null
+  /** Vrai si une clé lisible est enregistrée sur ce poste. La clé elle-même
+   *  ne quitte jamais le processus principal. */
+  cleConfiguree: boolean
+  /** Faux si aucune clé n'est configurée, ou si elle a été refusée. Sans ce
+   *  drapeau, une heure qui n'avance plus resterait inexplicable. */
+  operationnelle: boolean
+}
+
 interface Window {
   api: {
     clients: {
@@ -620,6 +635,18 @@ interface Window {
       setPassword(value: string): Promise<void>
       /** Copie le mot de passe dans le presse-papiers. `false` s'il n'y en a pas. */
       copyPassword(): Promise<boolean>
+    }
+    /** Veille sur les messages des clientes dans Effet. Ne transporte jamais le
+     *  contenu d'un message : seulement l'interrupteur et l'heure de contrôle. */
+    effetNotifications: {
+      getStatus(): Promise<EffetVeilleStatus>
+      /** Coupe ou rétablit les notifications. Le sondage continue. */
+      setActives(actives: boolean): Promise<EffetVeilleStatus>
+      /** Force une vérification immédiate. */
+      verifier(): Promise<EffetVeilleStatus>
+      /** Enregistre la clé d'accès (chiffrée), puis vérifie aussitôt.
+       *  Chaîne vide = efface la clé. */
+      setCle(cle: string): Promise<EffetVeilleStatus>
     }
     transfer: {
       /** Ouvre « Enregistrer sous ». `null` si Marie-Eve annule. */
