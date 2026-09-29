@@ -15,6 +15,7 @@ import {
 import {
   construireNotification,
   filsANotifier,
+  nonLusParCourriel,
   lireEtatVu,
   majEtatVu,
   type EtatVu
@@ -56,6 +57,16 @@ function cheminEtat(): string {
  */
 let cleUtilisable = true
 let minuterie: NodeJS.Timeout | null = null
+
+/**
+ * Messages non lus par courriel de cliente, pour la pastille de la liste des
+ * clients. Remis à jour à chaque vérification aboutie.
+ *
+ * Que des nombres : aucun texte de message, aucun nom. Volontairement en
+ * mémoire et non sur le disque — la liste se rafraîchit à son ouverture, et un
+ * compte périmé survivant à un redémarrage vaudrait moins que pas de compte.
+ */
+let nonLus: Record<string, number> = {}
 
 async function lireEtat(): Promise<EtatVu> {
   try {
@@ -105,6 +116,11 @@ async function verifierUneFois(): Promise<boolean> {
 
   const vu = await lireEtat()
   const aNotifier = filsANotifier(resultat.fils, vu)
+
+  // Les non-lus par courriel, gardés en mémoire pour la liste des clients. En
+  // mémoire seulement : la liste se rafraîchit à son ouverture, et écrire ces
+  // comptes sur le disque n'ajouterait qu'un fichier à tenir à jour.
+  nonLus = nonLusParCourriel(resultat.fils)
 
   // L'heure de vérification avance même quand l'interrupteur est coupé : Marie
   // doit pouvoir distinguer « personne ne m'a écrit » de « ça ne marche plus ».
@@ -204,6 +220,20 @@ export async function definirCleEffet(cle: string): Promise<EtatVeille> {
 export function definirNotificationsActives(actives: boolean): void {
   writeBooleanSetting(CLE_ACTIVE, actives)
   log.info(`[effet] notifications ${actives ? 'activées' : 'coupées'}`)
+}
+
+/**
+ * Messages non lus par courriel — pour la pastille de la liste des clients.
+ *
+ * Lu à l'ouverture de la liste. Rien n'est poussé vers l'interface : une
+ * pastille qui apparaît d'elle-même pendant que Marie lit son écran n'apportait
+ * pas assez pour justifier le câblage d'un événement.
+ *
+ * Vide tant qu'aucune vérification n'a abouti — donc aucune pastille, plutôt
+ * que des pastilles fausses.
+ */
+export function nonLusParClient(): Record<string, number> {
+  return { ...nonLus }
 }
 
 /** Pour le bouton « Vérifier maintenant » de l'interface. */

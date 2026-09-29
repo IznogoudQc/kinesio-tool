@@ -2,9 +2,11 @@ import { useState, useEffect, useMemo } from 'react'
 import { ChevronRight, Download, Plus, Search, Upload, User, X } from 'lucide-react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { clientsService } from '../services/clients'
+import { effetNotificationsService } from '../services/effetNotifications'
 import { transferService } from '../services/transfer'
 import { ClientAvatar } from '../components/ClientAvatar'
 import { filtrerClients, trierClients } from '../lib/client-search'
+import { normaliserCourriel } from '../lib/effet-notifications'
 
 type View = 'list' | 'form'
 
@@ -27,9 +29,33 @@ const EMPTY_FORM: FormState = {
   unitWeight: 'kg'
 }
 
+
+/**
+ * Pastille « des messages vous attendent », à côté du nom dans la liste.
+ *
+ * Dit combien, jamais de qui ni quoi : le contenu des messages ne sort jamais
+ * d'Effet, et la liste peut être à l'écran pendant qu'une autre cliente est
+ * assise en face de Marie.
+ */
+function PastilleMessages({ nombre }: { nombre?: number }) {
+  if (!nombre || nombre <= 0) return null
+  return (
+    <span
+      className="shrink-0 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-gold text-marine text-xs font-bold tabular-nums"
+      title={nombre === 1 ? 'Un message non lu dans Effet' : `${nombre} messages non lus dans Effet`}
+      aria-label={nombre === 1 ? 'Un message non lu dans Effet' : `${nombre} messages non lus dans Effet`}
+    >
+      {nombre > 99 ? '99+' : nombre}
+    </span>
+  )
+}
+
 export function ClientsPage() {
   const [view, setView] = useState<View>('list')
   const [clients, setClients] = useState<Client[]>([])
+  /** Non-lus dans Effet, par courriel en minuscules. Vide si la veille n'a rien
+   *  ramené — aucune pastille plutôt que des pastilles fausses. */
+  const [nonLus, setNonLus] = useState<Record<string, number>>({})
   const [recherche, setRecherche] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -47,6 +73,18 @@ export function ClientsPage() {
 
   useEffect(() => {
     loadClients()
+  }, [])
+
+  // Les non-lus d'Effet, lus une fois à l'ouverture de la liste. Rien n'est
+  // poussé pendant que la page est ouverte : la veille tourne de son côté et
+  // prévient déjà Marie par une notification de bureau.
+  // Un échec est silencieux — une pastille manquante ne doit pas empêcher
+  // d'afficher les clients.
+  useEffect(() => {
+    effetNotificationsService
+      .nonLus()
+      .then(setNonLus)
+      .catch(() => setNonLus({}))
   }, [])
 
   useEffect(() => {
@@ -438,7 +476,10 @@ export function ClientsPage() {
             >
               <ClientAvatar client={client} size="sm" className="group-hover:ring-2 group-hover:ring-gold/30 transition-all" />
               <div className="flex-1 min-w-0">
-                <p className="text-marine font-medium text-base truncate">{client.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-marine font-medium text-base truncate">{client.name}</p>
+                  <PastilleMessages nombre={nonLus[normaliserCourriel(client.email)]} />
+                </div>
                 <p className="text-marine/50 text-sm mt-0.5 truncate">{client.email}</p>
               </div>
               <ChevronRight size={18} className="text-marine/25 group-hover:text-gold/80 transition-colors shrink-0" />

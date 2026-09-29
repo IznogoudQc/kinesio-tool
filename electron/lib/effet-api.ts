@@ -21,10 +21,6 @@ export const EFFET_RACINE = 'https://kinesio-effet.fly.dev'
  *  mais si rien ne vient en 20 s, mieux vaut réessayer au tour suivant. */
 const DELAI_MS = 20_000
 
-/** Une seule ligne de journal par démarrage pour décrire la forme de la
- *  réponse — voir son usage plus bas. */
-let champsJournalises = false
-
 
 /**
  * Résultat d'une interrogation.
@@ -176,15 +172,6 @@ export async function recupererFils(cle: string): Promise<ResultatFils> {
 
     const donnees: unknown = await reponse.json()
     if (!Array.isArray(donnees)) return { ok: false, raison: 'reseau', detail: 'réponse inattendue' }
-
-    // Les NOMS des champs renvoyés, jamais leurs valeurs : de quoi savoir si
-    // Effet expose un courriel — la seule façon fiable de rapprocher une
-    // cliente d'Effet du client correspondant dans Outils, leurs identifiants
-    // étant propres à chaque base. Une seule ligne par démarrage.
-    if (!champsJournalises && donnees.length > 0 && donnees[0] && typeof donnees[0] === 'object') {
-      champsJournalises = true
-      log.info(`[effet] champs de /coach/fils : ${Object.keys(donnees[0] as object).join(', ')}`)
-    }
 
     return { ok: true, fils: donnees.filter(estFil) }
   } catch (err) {

@@ -149,6 +149,7 @@ contextBridge.exposeInMainWorld('api', {
     getStatus: () => ipcRenderer.invoke('effet:notifications:status'),
     setActives: (actives: boolean) => ipcRenderer.invoke('effet:notifications:setActives', actives),
     verifier: () => ipcRenderer.invoke('effet:notifications:verifier'),
+    nonLus: () => ipcRenderer.invoke('effet:notifications:nonLus'),
     setCle: (cle: string) => ipcRenderer.invoke('effet:notifications:setCle', cle)
   },
   transfer: {

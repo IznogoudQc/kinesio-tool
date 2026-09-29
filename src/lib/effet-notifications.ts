@@ -18,6 +18,16 @@
 /** Un fil de discussion tel que le renvoie `GET /coach/fils`. */
 export interface FilCoach {
   clientId: string
+  /**
+   * Courriel de la cliente chez Effet — la seule jointure possible avec les
+   * clients de Kinésio Outils : les identifiants sont propres à chaque base et
+   * les noms diffèrent (« Marie » là-bas, « Marie-Eve Riendeau » ici).
+   *
+   * `NOT NULL` dans le schéma d'Effet, donc toujours une chaîne. Typé
+   * facultatif malgré tout : une version d'Effet antérieure à l'ajout du champ
+   * ne doit pas faire tomber la veille.
+   */
+  email?: string
   nom: string
   /** ISO 8601 du dernier message, ou `null` si le fil est vide. */
   derniere: string | null
@@ -129,6 +139,45 @@ export function majEtatVu(vu: EtatVu, fils: FilCoach[]): EtatVu {
     }
   }
   return suivant
+}
+
+/**
+ * Met un courriel sous une forme comparable : `Marie.R@Hotmail.ca` et
+ * `marie.r@hotmail.ca ` désignent la même boîte, et les deux applications ne
+ * l'ont pas forcément saisi de la même façon.
+ *
+ * On s'arrête à la casse et aux espaces. Pas de normalisation plus savante
+ * (retrait des points, gestion du `+étiquette`) : deux adresses qui ne
+ * diffèrent que par là PEUVENT appartenir à deux personnes, et rapprocher à
+ * tort deux clientes serait pire que ne pas les rapprocher.
+ */
+export function normaliserCourriel(courriel: string): string {
+  return courriel.trim().toLowerCase()
+}
+
+/**
+ * Les non-lus par courriel, prêts à être croisés avec les clients de Kinésio
+ * Outils pour afficher une pastille.
+ *
+ * Ne porte QUE des nombres : ni nom, ni date, ni contenu. Les fils sans
+ * courriel — une version d'Effet trop ancienne — sont ignorés en silence :
+ * mieux vaut une pastille manquante qu'une pastille posée sur la mauvaise
+ * cliente.
+ */
+export function nonLusParCourriel(fils: FilCoach[]): Record<string, number> {
+  const parCourriel: Record<string, number> = {}
+  for (const fil of fils) {
+    // `typeof` plutôt qu'un simple test de vérité : `estFil` ne contrôle pas ce
+    // champ, et un `email` inattendu (nombre, objet) ferait lever `.trim()` —
+    // donc tomber toute la vérification, notifications comprises.
+    if (typeof fil.email !== 'string' || fil.nonLus <= 0) continue
+    const cle = normaliserCourriel(fil.email)
+    if (!cle) continue
+    // Cumul plutôt qu'écrasement : si deux fils partageaient un courriel, les
+    // additionner reste juste, tandis qu'en écraser un perdrait des messages.
+    parCourriel[cle] = (parCourriel[cle] ?? 0) + fil.nonLus
+  }
+  return parCourriel
 }
 
 /** Écarte ce qui n'est pas un état valide : un fichier tronqué ou bricolé à la

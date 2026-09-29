@@ -18,5 +18,11 @@ export const effetNotificationsService = {
   /** Chaîne vide = efface la clé. */
   setCle(cle: string): Promise<EffetVeilleStatus> {
     return window.api.effetNotifications.setCle(cle)
+  },
+
+  /** Non-lus par courriel, pour la pastille de la liste des clients. Vide tant
+   *  qu'aucune vérification n'a abouti. */
+  nonLus(): Promise<Record<string, number>> {
+    return window.api.effetNotifications.nonLus()
   }
 }

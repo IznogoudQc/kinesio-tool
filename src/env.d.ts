@@ -647,6 +647,9 @@ interface Window {
       setActives(actives: boolean): Promise<EffetVeilleStatus>
       /** Force une vérification immédiate. */
       verifier(): Promise<EffetVeilleStatus>
+      /** Messages non lus par courriel de cliente, pour la pastille de la liste
+       *  des clients. Que des comptes : aucun nom, aucun texte de message. */
+      nonLus(): Promise<Record<string, number>>
       /** Enregistre la clé d'accès (chiffrée), puis vérifie aussitôt.
        *  Chaîne vide = efface la clé. */
       setCle(cle: string): Promise<EffetVeilleStatus>

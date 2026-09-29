@@ -14,6 +14,8 @@ import {
   filsANotifier,
   lireEtatVu,
   majEtatVu,
+  nonLusParCourriel,
+  normaliserCourriel,
   prenomDe,
   type FilCoach
 } from './effet-notifications.ts'
@@ -124,6 +126,53 @@ test('un fichier d’état abîmé ne fait pas tomber l’outil', () => {
   assert.deepEqual(lireEtatVu({ c1: '2026-09-29T18:04:11.000Z' }), { c1: '2026-09-29T18:04:11.000Z' })
 })
 
+// ── Jointure avec les clients de Kinésio Outils ──────────────────────────────
+
+test('les non-lus sont regroupés par courriel', () => {
+  const fils = [
+    fil({ clientId: 'c1', email: 'julie@exemple.com', nonLus: 2 }),
+    fil({ clientId: 'c2', email: 'sophie@exemple.com', nonLus: 1 })
+  ]
+  assert.deepEqual(nonLusParCourriel(fils), { 'julie@exemple.com': 2, 'sophie@exemple.com': 1 })
+})
+
+test('la casse et les espaces ne séparent pas deux fois la même personne', () => {
+  // Effet et Outils n'ont pas forcément saisi l'adresse de la même façon.
+  assert.equal(normaliserCourriel('  Marie.R@Hotmail.CA '), 'marie.r@hotmail.ca')
+  const fils = [fil({ email: '  Marie.R@Hotmail.CA ', nonLus: 3 })]
+  assert.deepEqual(nonLusParCourriel(fils), { 'marie.r@hotmail.ca': 3 })
+})
+
+test('un fil sans non-lus n’apparaît pas', () => {
+  assert.deepEqual(nonLusParCourriel([fil({ email: 'julie@exemple.com', nonLus: 0 })]), {})
+})
+
+test('un fil sans courriel est ignoré en silence', () => {
+  // Cas d'une version d'Effet antérieure à l'ajout du champ : mieux vaut une
+  // pastille manquante qu'une pastille sur la mauvaise cliente.
+  const fils = [fil({ clientId: 'c1', email: undefined, nonLus: 4 })]
+  assert.deepEqual(nonLusParCourriel(fils), {})
+})
+
+test('un courriel qui n’est pas une chaîne ne fait pas tomber la vérification', () => {
+  // `estFil` ne contrôle pas ce champ : un `null` ou un nombre venu d'Effet
+  // ne doit pas faire lever `.trim()`.
+  const fils = [
+    fil({ clientId: 'c1', email: null as unknown as string, nonLus: 2 }),
+    fil({ clientId: 'c2', email: 42 as unknown as string, nonLus: 1 }),
+    fil({ clientId: 'c3', email: 'julie@exemple.com', nonLus: 3 })
+  ]
+  assert.deepEqual(nonLusParCourriel(fils), { 'julie@exemple.com': 3 })
+})
+
+test('deux fils qui partagent un courriel s’additionnent', () => {
+  const fils = [
+    fil({ clientId: 'c1', email: 'julie@exemple.com', nonLus: 2 }),
+    fil({ clientId: 'c2', email: 'JULIE@exemple.com', nonLus: 3 })
+  ]
+  assert.deepEqual(nonLusParCourriel(fils), { 'julie@exemple.com': 5 })
+})
+
 // ── LA RÈGLE QUI PRIME ───────────────────────────────────────────────────────
 
 test('AUCUN texte de message ne sort du module', () => {
@@ -150,7 +199,16 @@ test('AUCUN texte de message ne sort du module', () => {
     assert.ok(!serialiseNotif.includes('entraînement'), 'même un fragment du message est de trop')
   }
 
-  // 3. L'état écrit sur le disque : des dates, rien d'autre.
+  // 3. La table des non-lus servie à la liste des clients : des nombres.
+  const parCourriel = nonLusParCourriel(fils)
+  const serialiseJointure = JSON.stringify(parCourriel)
+  assert.ok(!serialiseJointure.includes(SECRET), 'la jointure ne doit pas porter le message')
+  assert.ok(!serialiseJointure.includes('confidentiel'))
+  for (const valeur of Object.values(parCourriel)) {
+    assert.equal(typeof valeur, 'number', 'la jointure ne contient que des comptes')
+  }
+
+  // 4. L'état écrit sur le disque : des dates, rien d'autre.
   const etat = majEtatVu({}, fils)
   const serialiseEtat = JSON.stringify(etat)
   assert.ok(!serialiseEtat.includes(SECRET), 'l’état local ne doit pas porter le message')

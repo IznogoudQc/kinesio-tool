@@ -4,6 +4,7 @@ import {
   definirCleEffet,
   definirNotificationsActives,
   etatVeille,
+  nonLusParClient,
   verifierMaintenant
 } from '../lib/effet-notifications-service'
 
@@ -23,6 +24,10 @@ export function registerEffetNotificationsHandlers(): void {
   })
 
   ipcMain.handle('effet:notifications:verifier', async () => verifierMaintenant())
+
+  // Pour la pastille de la liste des clients : des comptes par courriel, jamais
+  // un nom ni un texte de message.
+  ipcMain.handle('effet:notifications:nonLus', async () => nonLusParClient())
 
   // Aller simple : la clé entre, elle ne ressort jamais. Chaîne vide = effacer.
   ipcMain.handle('effet:notifications:setCle', async (_e, payload: unknown) =>
