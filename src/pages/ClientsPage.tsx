@@ -75,16 +75,40 @@ export function ClientsPage() {
     loadClients()
   }, [])
 
-  // Les non-lus d'Effet, lus une fois à l'ouverture de la liste. Rien n'est
-  // poussé pendant que la page est ouverte : la veille tourne de son côté et
-  // prévient déjà Marie par une notification de bureau.
+  // Les non-lus d'Effet.
+  //
+  // Relus périodiquement, et pas seulement au montage : cette liste est la page
+  // d'ACCUEIL, donc elle s'affiche avant la première vérification de la veille
+  // (différée de quelques secondes au démarrage). Lue une seule fois, elle ne
+  // voyait qu'un tableau vide et aucune pastille n'apparaissait jamais, alors
+  // même que la notification de bureau, elle, arrivait.
+  //
+  // Ce n'est qu'une lecture de la mémoire du processus principal : aucun appel
+  // réseau, aucune interrogation d'Effet.
+  //
   // Un échec est silencieux — une pastille manquante ne doit pas empêcher
   // d'afficher les clients.
   useEffect(() => {
-    effetNotificationsService
-      .nonLus()
-      .then(setNonLus)
-      .catch(() => setNonLus({}))
+    let vivant = true
+    const relire = () => {
+      effetNotificationsService
+        .nonLus()
+        .then(n => {
+          if (vivant) setNonLus(n)
+        })
+        .catch(() => {
+          if (vivant) setNonLus({})
+        })
+    }
+    relire()
+    // 15 s : la veille fait sa première vérification une quinzaine de secondes
+    // après le démarrage, et la pastille doit suivre peu après — pas au bout
+    // d'une minute.
+    const t = setInterval(relire, 15_000)
+    return () => {
+      vivant = false
+      clearInterval(t)
+    }
   }, [])
 
   useEffect(() => {
