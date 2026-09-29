@@ -1,4 +1,6 @@
-import { safeStorage } from 'electron'
+import { app, safeStorage } from 'electron'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 import log from 'electron-log'
 import { readSetting, writeSetting } from './settings-store'
 import type { FilCoach } from '../../src/lib/effet-notifications'
@@ -19,6 +21,11 @@ export const EFFET_RACINE = 'https://kinesio-effet.fly.dev'
  *  mais si rien ne vient en 20 s, mieux vaut réessayer au tour suivant. */
 const DELAI_MS = 20_000
 
+/** Une seule ligne de journal par démarrage pour décrire la forme de la
+ *  réponse — voir son usage plus bas. */
+let champsJournalises = false
+
+
 /**
  * Résultat d'une interrogation.
  *
@@ -35,18 +42,18 @@ export type ResultatFils =
 /** Réglage où dort la clé, chiffrée, en base64. */
 const CLE_REGLAGE = 'effet.cle'
 
+/** Nom de la variable lue en repli sur le poste de développement. */
+const VARIABLE_DEV = 'EFFET_API_KEY'
+
 /**
- * La clé d'accès à Effet, saisie par Marie dans Paramètres.
+ * La clé saisie dans Paramètres, déchiffrée.
  *
  * Chiffrée par `safeStorage` (DPAPI sous Windows) : le blob en base ne se lit
  * qu'avec la session Windows qui l'a écrit. Une sauvegarde restaurée sur un
  * autre poste le rend illisible — on retombe alors sur « pas de clé », et
  * Marie la ressaisit.
- *
- * Retourne `null` si rien n'est configuré — l'appelant se tait alors, plutôt
- * que de sonder une API qui refusera de toute façon.
  */
-export function cleEffet(): string | null {
+function cleEnregistree(): string | null {
   const blob = readSetting(CLE_REGLAGE)
   if (!blob) return null
   try {
@@ -56,6 +63,60 @@ export function cleEffet(): string | null {
     log.warn('[effet] clé enregistrée illisible sur ce poste — à ressaisir')
     return null
   }
+}
+
+/**
+ * Repli du poste de développement : `EFFET_API_KEY`, dans l'environnement ou
+ * dans le `.env` à la racine du dépôt.
+ *
+ * Le `.env` est lu au moment de l'exécution, et seulement hors paquet : la clé
+ * n'entre jamais dans le build, et une application installée n'ira jamais
+ * chercher un `.env`. (electron-vite ne le charge pas dans `process.env` —
+ * d'où cette lecture à la main.)
+ */
+function cleDeDev(): string | null {
+  if (app.isPackaged) return null
+  const depuisEnv = process.env[VARIABLE_DEV]?.trim()
+  if (depuisEnv) return depuisEnv
+  try {
+    const contenu = readFileSync(join(app.getAppPath(), '.env'), 'utf-8')
+    for (const ligne of contenu.split(/\r?\n/)) {
+      const m = ligne.match(/^\s*EFFET_API_KEY\s*=\s*(.*?)\s*$/)
+      if (m) {
+        const cle = m[1].replace(/^(['"])(.*)\1$/, '$2').trim()
+        return cle.length > 0 ? cle : null
+      }
+    }
+  } catch {
+    // Pas de .env : rien à replier.
+  }
+  return null
+}
+
+/** D'où vient la clé en usage — l'interface le dit, sans jamais la montrer. */
+export type SourceCle = 'parametres' | 'env' | null
+
+/** La clé en usage et sa provenance. Paramètres l'emporte sur le `.env`. */
+function cleEtSource(): { cle: string | null; source: SourceCle } {
+  const enregistree = cleEnregistree()
+  if (enregistree) return { cle: enregistree, source: 'parametres' }
+  const dev = cleDeDev()
+  if (dev) return { cle: dev, source: 'env' }
+  return { cle: null, source: null }
+}
+
+/**
+ * La clé d'accès à Effet : celle de Paramètres, sinon celle du `.env` en dev.
+ *
+ * Retourne `null` si rien n'est configuré — l'appelant se tait alors, plutôt
+ * que de sonder une API qui refusera de toute façon.
+ */
+export function cleEffet(): string | null {
+  return cleEtSource().cle
+}
+
+export function sourceCleEffet(): SourceCle {
+  return cleEtSource().source
 }
 
 /**
@@ -115,6 +176,16 @@ export async function recupererFils(cle: string): Promise<ResultatFils> {
 
     const donnees: unknown = await reponse.json()
     if (!Array.isArray(donnees)) return { ok: false, raison: 'reseau', detail: 'réponse inattendue' }
+
+    // Les NOMS des champs renvoyés, jamais leurs valeurs : de quoi savoir si
+    // Effet expose un courriel — la seule façon fiable de rapprocher une
+    // cliente d'Effet du client correspondant dans Outils, leurs identifiants
+    // étant propres à chaque base. Une seule ligne par démarrage.
+    if (!champsJournalises && donnees.length > 0 && donnees[0] && typeof donnees[0] === 'object') {
+      champsJournalises = true
+      log.info(`[effet] champs de /coach/fils : ${Object.keys(donnees[0] as object).join(', ')}`)
+    }
+
     return { ok: true, fils: donnees.filter(estFil) }
   } catch (err) {
     // Le message d'une erreur réseau peut contenir l'URL, jamais l'en-tête :

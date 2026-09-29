@@ -462,6 +462,9 @@ interface EffetVeilleStatus {
   /** Vrai si une clé lisible est enregistrée sur ce poste. La clé elle-même
    *  ne quitte jamais le processus principal. */
   cleConfiguree: boolean
+  /** Provenance de la clé : `parametres` (saisie, chiffrée), `env` (repli du
+   *  poste de développement), ou `null`. */
+  cleSource: 'parametres' | 'env' | null
   /** Faux si aucune clé n'est configurée, ou si elle a été refusée. Sans ce
    *  drapeau, une heure qui n'avance plus resterait inexplicable. */
   operationnelle: boolean

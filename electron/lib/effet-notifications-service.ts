@@ -3,7 +3,15 @@ import { readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
 import log from 'electron-log'
 import { readBooleanSetting, readSetting, writeBooleanSetting, writeSetting } from './settings-store'
-import { cleEffet, EFFET_RACINE, enregistrerCleEffet, journaliserEchec, recupererFils } from './effet-api'
+import {
+  cleEffet,
+  EFFET_RACINE,
+  enregistrerCleEffet,
+  journaliserEchec,
+  recupererFils,
+  sourceCleEffet,
+  type SourceCle
+} from './effet-api'
 import {
   construireNotification,
   filsANotifier,
@@ -157,19 +165,23 @@ export interface EtatVeille {
   actives: boolean
   /** ISO de la dernière vérification ABOUTIE, ou `null` si aucune encore. */
   derniereVerification: string | null
-  /** Vrai si une clé lisible est enregistrée sur ce poste. */
+  /** Vrai si une clé est en usage, qu'elle vienne de Paramètres ou du `.env`. */
   cleConfiguree: boolean
+  /** Sa provenance : `env` n'arrive que sur le poste de développement. */
+  cleSource: SourceCle
   /** Faux quand aucune clé n'est configurée ou qu'elle a été refusée : sans
    *  cela, une heure qui n'avance plus resterait inexplicable. */
   operationnelle: boolean
 }
 
 export function etatVeille(): EtatVeille {
-  const cleConfiguree = cleEffet() !== null
+  const cleSource = sourceCleEffet()
+  const cleConfiguree = cleSource !== null
   return {
     actives: readBooleanSetting(CLE_ACTIVE, true),
     derniereVerification: readSetting(CLE_DERNIERE_VERIF),
     cleConfiguree,
+    cleSource,
     operationnelle: cleUtilisable && cleConfiguree
   }
 }

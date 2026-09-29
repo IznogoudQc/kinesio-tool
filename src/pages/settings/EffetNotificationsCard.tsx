@@ -157,7 +157,11 @@ export function EffetNotificationsCard() {
         ) : (
           <div className="flex items-center gap-3 flex-wrap">
             <KeyRound size={16} className="text-marine/45" />
-            <p className="text-marine/70 text-sm flex-1">Clé d’accès enregistrée (chiffrée sur ce poste).</p>
+            <p className="text-marine/70 text-sm flex-1">
+              {statut.cleSource === 'env'
+                ? 'Clé lue dans le .env (poste de développement).'
+                : 'Une clé est enregistrée.'}
+            </p>
             <button
               type="button"
               onClick={() => setRemplacer(true)}
@@ -166,14 +170,16 @@ export function EffetNotificationsCard() {
             >
               Remplacer
             </button>
-            <button
-              type="button"
-              onClick={() => void enregistrerCle('')}
-              disabled={occupe}
-              className="px-3 py-1.5 text-marine/60 text-sm hover:text-red-700 disabled:opacity-50"
-            >
-              Effacer
-            </button>
+            {statut.cleSource === 'parametres' && (
+              <button
+                type="button"
+                onClick={() => void enregistrerCle('')}
+                disabled={occupe}
+                className="px-3 py-1.5 text-marine/60 text-sm hover:text-red-700 disabled:opacity-50"
+              >
+                Effacer
+              </button>
+            )}
           </div>
         )}
         {erreurCle && <p className="text-red-700 text-sm mt-2">{erreurCle}</p>}
