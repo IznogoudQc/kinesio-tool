@@ -10,6 +10,36 @@ import {
 } from './settings'
 
 /**
+ * Ouvre une page d'Effet dans le navigateur par défaut.
+ *
+ * On ne tend jamais une URL non vérifiée à `shell.openExternal` : le navigateur
+ * y obéirait aussi bien pour un `file:` ou un protocole exotique. L'adresse
+ * vient de nos réglages aujourd'hui, ce qui ne dispense de rien.
+ *
+ * `chemin` est posé APRÈS coup sur l'URL validée, et jamais concaténé avant
+ * l'analyse : un chemin malveillant ne peut donc pas emporter l'hôte avec lui.
+ */
+async function ouvrirDansEffet(chemin?: string): Promise<void> {
+  const raw = await getPulseUrl()
+
+  let url: URL
+  try {
+    url = new URL(raw)
+  } catch {
+    throw new Error(`L'adresse d'Effet est illisible : ${raw}`)
+  }
+
+  if (url.protocol !== 'https:' || !PULSE_ALLOWED_HOSTS.includes(url.hostname)) {
+    throw new Error(`L'adresse d'Effet n'est pas autorisée : ${raw}`)
+  }
+
+  if (chemin) url.pathname = chemin
+
+  // `url.href` et non `raw` : c'est la forme normalisée qu'on vient de valider.
+  await shell.openExternal(url.href)
+}
+
+/**
  * Effet — l'app web où Marie prescrit les programmes d'entraînement.
  * Application séparée : on l'ouvre dans le navigateur par défaut, jamais dans
  * une fenêtre Electron ni depuis le renderer.
@@ -19,25 +49,18 @@ import {
  * les réglages déjà enregistrés sur le poste de Marie.
  */
 export function registerPulseHandlers(): void {
-  ipcMain.handle('pulse:open', async () => {
-    const raw = await getPulseUrl()
+  ipcMain.handle('pulse:open', async () => ouvrirDansEffet())
 
-    // On ne tend jamais une URL non vérifiée à `shell.openExternal` : le
-    // navigateur y obéirait aussi bien pour un `file:` ou un protocole exotique.
-    // L'adresse vient de nos réglages aujourd'hui, ce qui ne dispense de rien.
-    let url: URL
-    try {
-      url = new URL(raw)
-    } catch {
-      throw new Error(`L'adresse d'Effet est illisible : ${raw}`)
-    }
-
-    if (url.protocol !== 'https:' || !PULSE_ALLOWED_HOSTS.includes(url.hostname)) {
-      throw new Error(`L'adresse d'Effet n'est pas autorisée : ${raw}`)
-    }
-
-    // `url.href` et non `raw` : c'est la forme normalisée qu'on vient de valider.
-    await shell.openExternal(url.href)
+  /**
+   * Ouvre le fil d'une cliente — depuis la pastille de la liste des clients.
+   *
+   * L'identifiant est celui d'EFFET, pas celui de Kinésio Outils. Il est validé
+   * comme UUID : il vient d'une réponse réseau, et se retrouve dans une URL
+   * qu'on remet au navigateur.
+   */
+  ipcMain.handle('pulse:openFil', async (_e, payload: unknown) => {
+    const clientId = z.string().uuid().parse(payload)
+    await ouvrirDansEffet(`/coach/notes/${clientId}`)
   })
 
   // ── Mot de passe de connexion à Effet ──────────────────────────────────────

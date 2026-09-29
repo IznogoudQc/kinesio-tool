@@ -14,6 +14,12 @@ export const pulseService = {
     return window.api.pulse.open()
   },
 
+  /** Ouvre le fil d'une cliente dans Effet. `clientId` est celui d'EFFET, tel
+   *  que la veille l'a rapporté — pas l'identifiant du client dans Outils. */
+  async openFil(clientId: string): Promise<void> {
+    return window.api.pulse.openFil(clientId)
+  },
+
   /** Mot de passe en vigueur : le remplacement enregistré, sinon celui livré
    *  avec l'app. `null` si les deux sont vides. */
   async getPassword(): Promise<string | null> {

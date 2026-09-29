@@ -629,6 +629,9 @@ interface Window {
       /** Ouvre Effet dans le navigateur par défaut. Lève si l'adresse
        *  configurée n'est pas une https vers un hôte attendu. */
       open(): Promise<void>
+      /** Ouvre le fil d'une cliente. `clientId` est celui d'EFFET, pas celui
+       *  de Kinésio Outils. */
+      openFil(clientId: string): Promise<void>
       /** Mot de passe en vigueur : le remplacement enregistré, sinon celui livré
        *  avec l'app. `null` si les deux sont vides. */
       getPassword(): Promise<string | null>
@@ -649,7 +652,7 @@ interface Window {
       verifier(): Promise<EffetVeilleStatus>
       /** Messages non lus par courriel de cliente, pour la pastille de la liste
        *  des clients. Que des comptes : aucun nom, aucun texte de message. */
-      nonLus(): Promise<Record<string, number>>
+      nonLus(): Promise<Record<string, { nonLus: number; clientId: string }>>
       /** Enregistre la clé d'accès (chiffrée), puis vérifie aussitôt.
        *  Chaîne vide = efface la clé. */
       setCle(cle: string): Promise<EffetVeilleStatus>

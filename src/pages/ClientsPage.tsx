@@ -4,9 +4,10 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { clientsService } from '../services/clients'
 import { effetNotificationsService } from '../services/effetNotifications'
 import { transferService } from '../services/transfer'
+import { pulseService } from '../services/pulse'
 import { ClientAvatar } from '../components/ClientAvatar'
 import { filtrerClients, trierClients } from '../lib/client-search'
-import { normaliserCourriel } from '../lib/effet-notifications'
+import { normaliserCourriel, type NonLusClient } from '../lib/effet-notifications'
 
 type View = 'list' | 'form'
 
@@ -37,16 +38,33 @@ const EMPTY_FORM: FormState = {
  * d'Effet, et la liste peut être à l'écran pendant qu'une autre cliente est
  * assise en face de Marie.
  */
-function PastilleMessages({ nombre }: { nombre?: number }) {
-  if (!nombre || nombre <= 0) return null
+function PastilleMessages({ infos }: { infos?: NonLusClient }) {
+  if (!infos || infos.nonLus <= 0) return null
+  const { nonLus, clientId } = infos
+  const libelle =
+    nonLus === 1
+      ? 'Un message non lu dans Effet — cliquez pour l’ouvrir'
+      : `${nonLus} messages non lus dans Effet — cliquez pour les ouvrir`
+
   return (
-    <span
-      className="shrink-0 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-gold text-marine text-xs font-bold tabular-nums"
-      title={nombre === 1 ? 'Un message non lu dans Effet' : `${nombre} messages non lus dans Effet`}
-      aria-label={nombre === 1 ? 'Un message non lu dans Effet' : `${nombre} messages non lus dans Effet`}
+    <button
+      type="button"
+      // La pastille vit DANS le lien de la ligne, qui mène à la fiche du
+      // client. Sans ces deux arrêts, un clic ouvrirait la fiche au lieu du
+      // fil — et la navigation l'emporterait sur l'ouverture du navigateur.
+      onClick={e => {
+        e.preventDefault()
+        e.stopPropagation()
+        // Un échec (adresse mal réglée) ne doit pas casser la liste : Marie
+        // garde le bouton Effet de la barre latérale pour s'y rendre.
+        void pulseService.openFil(clientId).catch(() => undefined)
+      }}
+      className="shrink-0 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-gold text-marine text-xs font-bold tabular-nums hover:bg-gold-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-dark transition-colors cursor-pointer"
+      title={libelle}
+      aria-label={libelle}
     >
-      {nombre > 99 ? '99+' : nombre}
-    </span>
+      {nonLus > 99 ? '99+' : nonLus}
+    </button>
   )
 }
 
@@ -55,7 +73,7 @@ export function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([])
   /** Non-lus dans Effet, par courriel en minuscules. Vide si la veille n'a rien
    *  ramené — aucune pastille plutôt que des pastilles fausses. */
-  const [nonLus, setNonLus] = useState<Record<string, number>>({})
+  const [nonLus, setNonLus] = useState<Record<string, NonLusClient>>({})
   const [recherche, setRecherche] = useState('')
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -502,7 +520,7 @@ export function ClientsPage() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-marine font-medium text-base truncate">{client.name}</p>
-                  <PastilleMessages nombre={nonLus[normaliserCourriel(client.email)]} />
+                  <PastilleMessages infos={nonLus[normaliserCourriel(client.email)]} />
                 </div>
                 <p className="text-marine/50 text-sm mt-0.5 truncate">{client.email}</p>
               </div>

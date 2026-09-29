@@ -133,14 +133,17 @@ test('les non-lus sont regroupés par courriel', () => {
     fil({ clientId: 'c1', email: 'julie@exemple.com', nonLus: 2 }),
     fil({ clientId: 'c2', email: 'sophie@exemple.com', nonLus: 1 })
   ]
-  assert.deepEqual(nonLusParCourriel(fils), { 'julie@exemple.com': 2, 'sophie@exemple.com': 1 })
+  assert.deepEqual(nonLusParCourriel(fils), {
+    'julie@exemple.com': { nonLus: 2, clientId: 'c1' },
+    'sophie@exemple.com': { nonLus: 1, clientId: 'c2' }
+  })
 })
 
 test('la casse et les espaces ne séparent pas deux fois la même personne', () => {
   // Effet et Outils n'ont pas forcément saisi l'adresse de la même façon.
   assert.equal(normaliserCourriel('  Marie.R@Hotmail.CA '), 'marie.r@hotmail.ca')
   const fils = [fil({ email: '  Marie.R@Hotmail.CA ', nonLus: 3 })]
-  assert.deepEqual(nonLusParCourriel(fils), { 'marie.r@hotmail.ca': 3 })
+  assert.deepEqual(nonLusParCourriel(fils), { 'marie.r@hotmail.ca': { nonLus: 3, clientId: 'c1' } })
 })
 
 test('un fil sans non-lus n’apparaît pas', () => {
@@ -162,7 +165,7 @@ test('un courriel qui n’est pas une chaîne ne fait pas tomber la vérificatio
     fil({ clientId: 'c2', email: 42 as unknown as string, nonLus: 1 }),
     fil({ clientId: 'c3', email: 'julie@exemple.com', nonLus: 3 })
   ]
-  assert.deepEqual(nonLusParCourriel(fils), { 'julie@exemple.com': 3 })
+  assert.deepEqual(nonLusParCourriel(fils), { 'julie@exemple.com': { nonLus: 3, clientId: 'c3' } })
 })
 
 test('deux fils qui partagent un courriel s’additionnent', () => {
@@ -170,7 +173,9 @@ test('deux fils qui partagent un courriel s’additionnent', () => {
     fil({ clientId: 'c1', email: 'julie@exemple.com', nonLus: 2 }),
     fil({ clientId: 'c2', email: 'JULIE@exemple.com', nonLus: 3 })
   ]
-  assert.deepEqual(nonLusParCourriel(fils), { 'julie@exemple.com': 5 })
+  // L'identifiant retenu est celui du premier fil : la liste d'Effet est déjà
+  // triée, ce qui attend une réponse en tête.
+  assert.deepEqual(nonLusParCourriel(fils), { 'julie@exemple.com': { nonLus: 5, clientId: 'c1' } })
 })
 
 // ── LA RÈGLE QUI PRIME ───────────────────────────────────────────────────────
@@ -205,7 +210,11 @@ test('AUCUN texte de message ne sort du module', () => {
   assert.ok(!serialiseJointure.includes(SECRET), 'la jointure ne doit pas porter le message')
   assert.ok(!serialiseJointure.includes('confidentiel'))
   for (const valeur of Object.values(parCourriel)) {
-    assert.equal(typeof valeur, 'number', 'la jointure ne contient que des comptes')
+    assert.deepEqual(
+      Object.keys(valeur).sort(),
+      ['clientId', 'nonLus'],
+      'la jointure ne porte qu’un compte et un identifiant'
+    )
   }
 
   // 4. L'état écrit sur le disque : des dates, rien d'autre.

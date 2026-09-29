@@ -22,7 +22,7 @@ export const effetNotificationsService = {
 
   /** Non-lus par courriel, pour la pastille de la liste des clients. Vide tant
    *  qu'aucune vérification n'a abouti. */
-  nonLus(): Promise<Record<string, number>> {
+  nonLus(): Promise<Record<string, { nonLus: number; clientId: string }>> {
     return window.api.effetNotifications.nonLus()
   }
 }

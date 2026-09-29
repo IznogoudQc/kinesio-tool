@@ -16,6 +16,7 @@ import {
   construireNotification,
   filsANotifier,
   nonLusParCourriel,
+  type NonLusClient,
   lireEtatVu,
   majEtatVu,
   type EtatVu
@@ -66,7 +67,7 @@ let minuterie: NodeJS.Timeout | null = null
  * mémoire et non sur le disque — la liste se rafraîchit à son ouverture, et un
  * compte périmé survivant à un redémarrage vaudrait moins que pas de compte.
  */
-let nonLus: Record<string, number> = {}
+let nonLus: Record<string, NonLusClient> = {}
 
 async function lireEtat(): Promise<EtatVu> {
   try {
@@ -232,7 +233,7 @@ export function definirNotificationsActives(actives: boolean): void {
  * Vide tant qu'aucune vérification n'a abouti — donc aucune pastille, plutôt
  * que des pastilles fausses.
  */
-export function nonLusParClient(): Record<string, number> {
+export function nonLusParClient(): Record<string, NonLusClient> {
   return { ...nonLus }
 }
 

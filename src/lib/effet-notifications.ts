@@ -155,17 +155,26 @@ export function normaliserCourriel(courriel: string): string {
   return courriel.trim().toLowerCase()
 }
 
+/** Ce que la liste des clients sait d'un fil : combien de messages attendent,
+ *  et où les lire. Aucun contenu, aucun nom. */
+export interface NonLusClient {
+  nonLus: number
+  /** Identifiant de la cliente CHEZ EFFET — sert à ouvrir le bon fil. Celui de
+   *  Kinésio Outils est différent : les deux bases ont leurs propres clés. */
+  clientId: string
+}
+
 /**
  * Les non-lus par courriel, prêts à être croisés avec les clients de Kinésio
  * Outils pour afficher une pastille.
  *
- * Ne porte QUE des nombres : ni nom, ni date, ni contenu. Les fils sans
- * courriel — une version d'Effet trop ancienne — sont ignorés en silence :
- * mieux vaut une pastille manquante qu'une pastille posée sur la mauvaise
- * cliente.
+ * Ne porte QUE un compte et un identifiant : ni nom, ni date, ni contenu. Les
+ * fils sans courriel — une version d'Effet trop ancienne — sont ignorés en
+ * silence : mieux vaut une pastille manquante qu'une pastille posée sur la
+ * mauvaise cliente.
  */
-export function nonLusParCourriel(fils: FilCoach[]): Record<string, number> {
-  const parCourriel: Record<string, number> = {}
+export function nonLusParCourriel(fils: FilCoach[]): Record<string, NonLusClient> {
+  const parCourriel: Record<string, NonLusClient> = {}
   for (const fil of fils) {
     // `typeof` plutôt qu'un simple test de vérité : `estFil` ne contrôle pas ce
     // champ, et un `email` inattendu (nombre, objet) ferait lever `.trim()` —
@@ -173,9 +182,15 @@ export function nonLusParCourriel(fils: FilCoach[]): Record<string, number> {
     if (typeof fil.email !== 'string' || fil.nonLus <= 0) continue
     const cle = normaliserCourriel(fil.email)
     if (!cle) continue
+    const connu = parCourriel[cle]
     // Cumul plutôt qu'écrasement : si deux fils partageaient un courriel, les
     // additionner reste juste, tandis qu'en écraser un perdrait des messages.
-    parCourriel[cle] = (parCourriel[cle] ?? 0) + fil.nonLus
+    // On garde l'identifiant du PREMIER fil — la liste est déjà triée par
+    // Effet, ce qui attend une réponse d'abord.
+    parCourriel[cle] = {
+      nonLus: (connu?.nonLus ?? 0) + fil.nonLus,
+      clientId: connu?.clientId ?? fil.clientId
+    }
   }
   return parCourriel
 }
