@@ -364,6 +364,7 @@ export function QuestionnairesTab() {
       {editing?.type === 'sante' && (
         <SanteForm
           value={editing}
+          sex={client.sex}
           onChange={setEditing}
           onCancel={() => setEditing(null)}
           onSave={save}
@@ -1163,12 +1164,14 @@ function SanteHistoryCard({ q, onEdit, onDelete }: { q: Questionnaire; onEdit: (
 
 function SanteForm({
   value,
+  sex,
   onChange,
   onCancel,
   onSave,
   saving
 }: {
   value: Extract<Draft, { type: 'sante' }>
+  sex: 'F' | 'M' | null
   onChange: (v: Draft) => void
   onCancel: () => void
   onSave: () => void
@@ -1212,7 +1215,7 @@ function SanteForm({
           <span className="text-marine/40 font-normal"> — cliquez sur la silhouette</span>
         </label>
         <div className="border border-cream-dark/50 rounded-lg p-3 bg-cream/20">
-          <BodyPainMap value={zones} onChange={m => patch({ zonesDetail: m })} />
+          <BodyPainMap value={zones} onChange={m => patch({ zonesDetail: m })} sex={sex} />
         </div>
         <ZoneDetailsList
           value={zones}

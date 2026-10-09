@@ -1,68 +1,51 @@
+import { useState } from 'react'
 import { BODY_REGIONS, cyclePain, type BodyRegion, type PainSeverity, type ZoneMark } from '../../lib/sante'
+import { BODY_CONTOURS } from './body-silhouettes'
 
-/**
- * Silhouette cliquable (face + dos) pour marquer les zones de tension/douleur.
- * Chaque zone cycle rien → jaune (tension) → rouge (douleur) → rien au clic.
- * `value` = { idRégion → sévérité }. Purement contrôlé par le parent.
- */
-
-const FILL: Record<PainSeverity, string> = {
-  jaune: 'rgba(245, 200, 60, 0.78)',
-  rouge: 'rgba(224, 70, 70, 0.80)'
-}
-
-const FACE_REGIONS = BODY_REGIONS.filter(r => r.view === 'face')
-const DOS_REGIONS = BODY_REGIONS.filter(r => r.view === 'dos')
-
-// Contour anatomique (tête + corps d'un seul tenant) — identique face et dos.
-const BODY_PATH =
-  'M 74 48 L 66 55 L 52 58 L 43 72 L 39 104 L 37 138 L 35 165 L 34 182 L 37 191 L 44 188 L 46 166 L 48 140 L 50 98 L 57 150 L 51 186 L 54 206 L 56 250 L 58 298 L 59 338 L 56 361 L 52 373 L 72 374 L 73 360 L 75 300 L 77 216 L 80 207 L 83 216 L 85 300 L 87 360 L 88 374 L 108 373 L 104 361 L 101 338 L 102 298 L 104 250 L 106 206 L 109 186 L 103 150 L 110 98 L 112 140 L 114 166 L 116 188 L 123 191 L 126 182 L 125 165 L 123 138 L 121 104 L 117 72 L 108 58 L 94 55 L 86 48 Z'
-
-function Silhouette() {
-  const p = { fill: '#dfe3ee', stroke: '#b9c0d6', strokeWidth: 1.5 }
-  return (
-    <g>
-      <ellipse cx={80} cy={27} rx={16} ry={19} {...p} />
-      <path d={BODY_PATH} strokeLinejoin="round" {...p} />
-    </g>
-  )
-}
-
-function Figure({
-  title,
-  regions,
-  value,
-  onToggle,
-  readOnly
-}: {
-  title: string
-  regions: BodyRegion[]
+const FILL: Record<PainSeverity, string> = { jaune: 'rgba(245, 200, 60, 0.78)', rouge: 'rgba(224, 70, 70, 0.80)' }
+type Appearance = keyof typeof BODY_CONTOURS
+interface FigureProps {
+  view: BodyRegion['view']
+  appearance: Appearance
   value: Record<string, ZoneMark>
   onToggle: (id: string) => void
-  readOnly?: boolean
-}) {
+  readOnly: boolean
+}
+
+function Figure({ view, appearance, value, onToggle, readOnly }: FigureProps) {
+  const front = view === 'face'
+  const title = front ? 'Face (avant)' : 'Dos (arrière)'
   return (
-    <div className="flex flex-col items-center">
-      <p className="text-marine/60 text-xs font-semibold mb-1">{title}</p>
-      <svg viewBox="0 0 160 380" className="w-[150px] h-auto select-none" role="group" aria-label={title}>
-        <Silhouette />
-        {regions.map(r => {
-          const sev = value[r.id]?.severity
+    <div className="flex min-w-0 flex-col items-center">
+      <p className="text-marine text-xs font-semibold mb-1">{title}</p>
+      <div className="flex w-full max-w-[175px] justify-between px-5 text-[10px] text-marine/60" aria-hidden="true">
+        <span>{front ? 'Droit' : 'Gauche'}</span><span>{front ? 'Gauche' : 'Droit'}</span>
+      </div>
+      <svg viewBox="0 0 160 391" className="w-full max-w-[175px] h-auto select-none" role="group" aria-label={title}>
+        <ellipse cx={80} cy={383} rx={32} ry={3} fill="#23365c" opacity={0.06} />
+        <g fill="#dbe4f2" stroke="#506b94" strokeWidth={1.3} strokeLinejoin="round">
+          <path d={BODY_CONTOURS[appearance]} />
+          <path d="M66 24 Q65 7 80 7 Q95 7 94 24 L93 35 Q91 48 80 49 Q69 48 67 35Z" />
+        </g>
+        <path d={front ? 'M69 62Q80 68 91 62 M79 149h2' : 'M80 64V147 M58 198Q69 208 80 198Q91 208 102 198'}
+          fill="none" stroke="#506b94" opacity={0.45} strokeLinecap="round" />
+        {BODY_REGIONS.filter(r => r.view === view).map(r => {
+          const severity = value[r.id]?.severity
+          const status = severity === 'jaune' ? 'tension légère' : severity === 'rouge' ? 'douleur' : 'non signalée'
           return (
-            <ellipse
-              key={r.id}
-              cx={r.cx}
-              cy={r.cy}
-              rx={r.rx}
-              ry={r.ry}
-              fill={sev ? FILL[sev] : 'transparent'}
-              stroke={sev ? 'none' : '#c2c9dd'}
-              strokeWidth={0.7}
-              strokeDasharray={sev ? undefined : '2.5 2.5'}
-              style={{ cursor: readOnly ? 'default' : 'pointer' }}
+            <ellipse key={r.id} cx={r.cx} cy={r.cy} rx={r.rx} ry={r.ry}
+              fill={severity ? FILL[severity] : 'transparent'}
+              stroke={severity === 'rouge' ? '#c63333' : severity === 'jaune' ? '#bd900c' : '#849abb'}
+              strokeOpacity={severity ? 1 : 0.4} strokeWidth={0.8}
+              strokeDasharray={severity ? undefined : '2 3'}
+              className={readOnly ? '' : 'cursor-pointer hover:stroke-marine hover:stroke-[1.5] focus:stroke-marine focus:stroke-[1.5] focus:outline-none'}
+              role={readOnly ? 'img' : 'button'} tabIndex={readOnly ? undefined : 0}
+              aria-label={`${r.label} (${view}), ${status}`} aria-pressed={readOnly ? undefined : Boolean(severity)}
               onClick={readOnly ? undefined : () => onToggle(r.id)}
-            >
-              <title>{r.label}</title>
+              onKeyDown={readOnly ? undefined : e => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(r.id) }
+              }}>
+              <title>{r.label} — {status}</title>
             </ellipse>
           )
         })}
@@ -71,39 +54,48 @@ function Figure({
   )
 }
 
-export function BodyPainMap({
-  value,
-  onChange,
-  readOnly
-}: {
+interface BodyPainMapProps {
   value: Record<string, ZoneMark>
   onChange?: (next: Record<string, ZoneMark>) => void
   readOnly?: boolean
-}) {
+  sex?: 'F' | 'M' | null
+}
+
+/** Le choix de silhouette est visuel et ne modifie aucune donnée du questionnaire. */
+export function BodyPainMap({ value, onChange, readOnly = false, sex }: BodyPainMapProps) {
+  const [override, setOverride] = useState<Appearance | null>(null)
+  const appearance = override ?? (sex === 'F' ? 'female' : 'male')
+  const disabled = readOnly || !onChange
   function toggle(id: string) {
-    if (!onChange) return
+    if (disabled || !onChange) return
     const next = { ...value }
-    const nx = cyclePain(value[id]?.severity)
-    if (nx) next[id] = { ...value[id], severity: nx }
+    const severity = cyclePain(value[id]?.severity)
+    if (severity) next[id] = { ...value[id], severity }
     else delete next[id]
     onChange(next)
   }
-
   return (
     <div>
-      <div className="flex items-center justify-center gap-6 mb-2 text-xs text-marine/70">
-        <span className="inline-flex items-center gap-1.5">
-          <span className="w-3.5 h-3.5 rounded-full" style={{ background: FILL.jaune }} /> Tension légère
-        </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span className="w-3.5 h-3.5 rounded-full" style={{ background: FILL.rouge }} /> Douleur
-        </span>
-        {!readOnly && <span className="text-marine/40">Clic : rien → jaune → rouge</span>}
+      <div className="flex justify-center mb-4" role="group" aria-label="Apparence de la silhouette">
+        <div className="inline-flex gap-1 rounded-lg bg-marine/5 p-1">
+          {(['male', 'female'] as const).map(option => (
+            <button key={option} type="button" aria-pressed={appearance === option} onClick={() => setOverride(option)}
+              className={`px-4 py-1.5 rounded-md text-xs font-semibold text-marine focus-visible:outline-2 focus-visible:outline-marine ${appearance === option ? 'bg-white shadow-sm' : 'hover:bg-white/60'}`}>
+              {option === 'male' ? 'Homme' : 'Femme'}
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="flex items-start justify-center gap-6 flex-wrap">
-        <Figure title="Face (avant)" regions={FACE_REGIONS} value={value} onToggle={toggle} readOnly={readOnly} />
-        <Figure title="Dos (arrière)" regions={DOS_REGIONS} value={value} onToggle={toggle} readOnly={readOnly} />
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-3 text-xs text-marine/70">
+        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: FILL.jaune }} />Tension légère</span>
+        <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: FILL.rouge }} />Douleur</span>
       </div>
+      <div className="grid grid-cols-2 gap-4 mx-auto max-w-[380px]">
+        <Figure view="face" appearance={appearance} value={value} onToggle={toggle} readOnly={disabled} />
+        <Figure view="dos" appearance={appearance} value={value} onToggle={toggle} readOnly={disabled} />
+      </div>
+      <p className="text-center text-xs text-marine/60 mt-2">Gauche et droite correspondent aux côtés de la personne.</p>
+      {!disabled && <p className="text-center text-xs text-marine/50 mt-1">Clic : tension → douleur → effacer</p>}
     </div>
   )
 }

@@ -54,28 +54,30 @@ export interface BodyRegion {
 /**
  * Régions cliquables — coordonnées dans le repère SVG `0 0 160 380` de chaque
  * silhouette (voir BodyPainMap). Face et dos = ensembles distincts.
+ * G/D désignent les côtés de la personne : de face, G est à droite de l'écran.
+ * Les identifiants persistés restent inchangés, seules les positions sont corrigées.
  */
 export const BODY_REGIONS: readonly BodyRegion[] = [
   // ── Face (avant) ──
   { id: 'f_cou', label: 'Cou', view: 'face', cx: 80, cy: 55, rx: 11, ry: 7 },
-  { id: 'f_epaule_g', label: 'Épaule G', view: 'face', cx: 47, cy: 66, rx: 12, ry: 9 },
-  { id: 'f_epaule_d', label: 'Épaule D', view: 'face', cx: 113, cy: 66, rx: 12, ry: 9 },
+  { id: 'f_epaule_g', label: 'Épaule G', view: 'face', cx: 113, cy: 66, rx: 12, ry: 9 },
+  { id: 'f_epaule_d', label: 'Épaule D', view: 'face', cx: 47, cy: 66, rx: 12, ry: 9 },
   { id: 'f_poitrine', label: 'Poitrine', view: 'face', cx: 80, cy: 90, rx: 22, ry: 13 },
-  { id: 'f_bras_g', label: 'Bras G', view: 'face', cx: 40, cy: 118, rx: 8, ry: 28 },
-  { id: 'f_bras_d', label: 'Bras D', view: 'face', cx: 120, cy: 118, rx: 8, ry: 28 },
+  { id: 'f_bras_g', label: 'Bras G', view: 'face', cx: 120, cy: 118, rx: 8, ry: 28 },
+  { id: 'f_bras_d', label: 'Bras D', view: 'face', cx: 40, cy: 118, rx: 8, ry: 28 },
   { id: 'f_abdomen', label: 'Abdomen', view: 'face', cx: 80, cy: 132, rx: 20, ry: 17 },
-  { id: 'f_main_g', label: 'Main G', view: 'face', cx: 41, cy: 183, rx: 7, ry: 9 },
-  { id: 'f_main_d', label: 'Main D', view: 'face', cx: 119, cy: 183, rx: 7, ry: 9 },
-  { id: 'f_hanche_g', label: 'Hanche G', view: 'face', cx: 65, cy: 196, rx: 12, ry: 11 },
-  { id: 'f_hanche_d', label: 'Hanche D', view: 'face', cx: 95, cy: 196, rx: 12, ry: 11 },
-  { id: 'f_cuisse_g', label: 'Cuisse G', view: 'face', cx: 65, cy: 245, rx: 11, ry: 30 },
-  { id: 'f_cuisse_d', label: 'Cuisse D', view: 'face', cx: 95, cy: 245, rx: 11, ry: 30 },
-  { id: 'f_genou_g', label: 'Genou G', view: 'face', cx: 64, cy: 295, rx: 9, ry: 9 },
-  { id: 'f_genou_d', label: 'Genou D', view: 'face', cx: 96, cy: 295, rx: 9, ry: 9 },
-  { id: 'f_tibia_g', label: 'Tibia G', view: 'face', cx: 63, cy: 335, rx: 9, ry: 22 },
-  { id: 'f_tibia_d', label: 'Tibia D', view: 'face', cx: 97, cy: 335, rx: 9, ry: 22 },
-  { id: 'f_pied_g', label: 'Pied G', view: 'face', cx: 60, cy: 371, rx: 10, ry: 7 },
-  { id: 'f_pied_d', label: 'Pied D', view: 'face', cx: 100, cy: 371, rx: 10, ry: 7 },
+  { id: 'f_main_g', label: 'Main G', view: 'face', cx: 119, cy: 183, rx: 7, ry: 9 },
+  { id: 'f_main_d', label: 'Main D', view: 'face', cx: 41, cy: 183, rx: 7, ry: 9 },
+  { id: 'f_hanche_g', label: 'Hanche G', view: 'face', cx: 95, cy: 196, rx: 12, ry: 11 },
+  { id: 'f_hanche_d', label: 'Hanche D', view: 'face', cx: 65, cy: 196, rx: 12, ry: 11 },
+  { id: 'f_cuisse_g', label: 'Cuisse G', view: 'face', cx: 95, cy: 245, rx: 11, ry: 30 },
+  { id: 'f_cuisse_d', label: 'Cuisse D', view: 'face', cx: 65, cy: 245, rx: 11, ry: 30 },
+  { id: 'f_genou_g', label: 'Genou G', view: 'face', cx: 96, cy: 295, rx: 9, ry: 9 },
+  { id: 'f_genou_d', label: 'Genou D', view: 'face', cx: 64, cy: 295, rx: 9, ry: 9 },
+  { id: 'f_tibia_g', label: 'Tibia G', view: 'face', cx: 97, cy: 335, rx: 9, ry: 22 },
+  { id: 'f_tibia_d', label: 'Tibia D', view: 'face', cx: 63, cy: 335, rx: 9, ry: 22 },
+  { id: 'f_pied_g', label: 'Pied G', view: 'face', cx: 100, cy: 371, rx: 10, ry: 7 },
+  { id: 'f_pied_d', label: 'Pied D', view: 'face', cx: 60, cy: 371, rx: 10, ry: 7 },
   // ── Dos (arrière) ──
   { id: 'd_nuque', label: 'Nuque', view: 'dos', cx: 80, cy: 55, rx: 11, ry: 7 },
   { id: 'd_epaule_g', label: 'Épaule G', view: 'dos', cx: 47, cy: 66, rx: 12, ry: 9 },

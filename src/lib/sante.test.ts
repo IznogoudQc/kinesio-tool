@@ -52,3 +52,16 @@ test('regionLabel — libellé lisible avec la vue', () => {
   assert.equal(regionLabel('d_bas_dos'), 'Bas du dos (lombaires) (dos)')
   assert.equal(regionLabel('inconnu'), 'inconnu')
 })
+
+test('latéralité anatomique — gauche à droite en face, gauche à gauche au dos', () => {
+  for (const region of BODY_REGIONS.filter(r => r.id.endsWith('_g'))) {
+    const right = BODY_REGIONS.find(r => r.id === region.id.replace(/_g$/, '_d'))
+    assert.ok(right, `Paire droite manquante : ${region.id}`)
+    assert.equal(region.cx + right.cx, 160)
+    assert.ok(region.view === 'face' ? region.cx > 80 : region.cx < 80, region.id)
+    assert.equal(region.cy, right.cy)
+  }
+  const saved = { f_bras_g: { severity: 'rouge' as const, description: 'Bras gauche' } }
+  assert.deepEqual(normalizeZones({ zonesDetail: saved }), saved)
+  assert.equal(regionLabel('f_bras_g'), 'Bras G (face)')
+})
