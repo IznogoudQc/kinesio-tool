@@ -61,10 +61,14 @@ interface BodyPainMapProps {
   sex?: 'F' | 'M' | null
 }
 
-/** Le choix de silhouette est visuel et ne modifie aucune donnée du questionnaire. */
+/**
+ * La silhouette suit le sexe de la fiche. Le choix manuel n'apparaît que si le sexe est
+ * absent ; il est visuel et ne modifie aucune donnée du questionnaire.
+ */
 export function BodyPainMap({ value, onChange, readOnly = false, sex }: BodyPainMapProps) {
   const [override, setOverride] = useState<Appearance | null>(null)
-  const appearance = override ?? (sex === 'F' ? 'female' : 'male')
+  const knownSex = sex === 'F' || sex === 'M'
+  const appearance = knownSex ? (sex === 'F' ? 'female' : 'male') : (override ?? 'male')
   const disabled = readOnly || !onChange
   function toggle(id: string) {
     if (disabled || !onChange) return
@@ -76,16 +80,18 @@ export function BodyPainMap({ value, onChange, readOnly = false, sex }: BodyPain
   }
   return (
     <div>
-      <div className="flex justify-center mb-4" role="group" aria-label="Apparence de la silhouette">
-        <div className="inline-flex gap-1 rounded-lg bg-marine/5 p-1">
-          {(['male', 'female'] as const).map(option => (
-            <button key={option} type="button" aria-pressed={appearance === option} onClick={() => setOverride(option)}
-              className={`px-4 py-1.5 rounded-md text-xs font-semibold text-marine focus-visible:outline-2 focus-visible:outline-marine ${appearance === option ? 'bg-white shadow-sm' : 'hover:bg-white/60'}`}>
-              {option === 'male' ? 'Homme' : 'Femme'}
-            </button>
-          ))}
+      {!knownSex && (
+        <div className="flex justify-center mb-4" role="group" aria-label="Apparence de la silhouette">
+          <div className="inline-flex gap-1 rounded-lg bg-marine/5 p-1">
+            {(['male', 'female'] as const).map(option => (
+              <button key={option} type="button" aria-pressed={appearance === option} onClick={() => setOverride(option)}
+                className={`px-4 py-1.5 rounded-md text-xs font-semibold text-marine focus-visible:outline-2 focus-visible:outline-marine ${appearance === option ? 'bg-white shadow-sm' : 'hover:bg-white/60'}`}>
+                {option === 'male' ? 'Homme' : 'Femme'}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 mb-3 text-xs text-marine/70">
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: FILL.jaune }} />Tension légère</span>
         <span className="inline-flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: FILL.rouge }} />Douleur</span>
