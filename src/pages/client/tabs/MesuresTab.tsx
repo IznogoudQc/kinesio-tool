@@ -214,9 +214,9 @@ function MeasureField({
 }
 
 /**
- * Champ d'un pli — une prise, ou plusieurs séparées par « / ».
+ * Champ d'un pli — une prise, ou plusieurs séparées par « - ».
  *
- * Texte et non nombre : un champ numérique refuse la barre oblique. La valeur
+ * Texte et non nombre : un champ numérique refuse le tiret. La valeur
  * enregistrée reste un nombre, celui que `lireSaisiePlis` en déduit.
  */
 function PliInput({
@@ -236,7 +236,7 @@ function PliInput({
         inputMode="decimal"
         value={texte}
         onChange={e => onTexte(e.target.value)}
-        placeholder="5 ou 5/5,5"
+        placeholder="5 ou 5-5,5"
         className={`w-full px-2.5 py-1.5 border rounded-md bg-white text-marine text-base placeholder-marine/25 focus:outline-none focus:ring-2 transition-colors ${
           illisible
             ? 'border-red-300 focus:ring-red-300/60 focus:border-red-400'
@@ -501,10 +501,10 @@ function MeasureEntryPanel({
     })
   }
   /**
-   * Ce que Marie a TAPÉ dans chaque champ de pli — « 5/5,5 » et non 5,3.
+   * Ce que Marie a TAPÉ dans chaque champ de pli — « 5-5,5 » et non 5,3.
    *
    * La base ne garde que la moyenne : le texte ne vit que le temps de la
-   * saisie, sinon le champ s'effacerait à chaque frappe de barre oblique.
+   * saisie, sinon le champ s'effacerait à chaque frappe de tiret.
    */
   const [plisTexte, setPlisTexte] = useState<Partial<Record<PlisKey, string>>>({})
 
@@ -828,10 +828,10 @@ function MeasureEntryPanel({
           <div>
             <p className="text-marine/60 text-sm font-medium uppercase tracking-wide">Plis cutanés (mm)</p>
             {/* Rien à activer : une prise s'écrit comme avant, plusieurs se
-                séparent par « / ». */}
+                séparent par « - ». */}
             <p className="text-marine/45 text-xs mb-2 mt-0.5">
-              Plusieurs prises&nbsp;? Séparez-les par une barre oblique —{' '}
-              <span className="text-marine/60">5/5,5</span> retient la moyenne.
+              Plusieurs prises&nbsp;? Séparez-les par un tiret —{' '}
+              <span className="text-marine/60">5-5,5</span> retient la moyenne.
             </p>
             {!profileComplete && (
               <p className="text-marine/45 text-sm mb-2">

@@ -1,11 +1,15 @@
 /**
- * Un pli, plusieurs prises : « 5/5,5 » vaut 5,25 mm.
+ * Un pli, plusieurs prises : « 5-5,5 » vaut 5,25 mm.
  *
  * Marie reprend chaque pli deux ou trois fois — le pincement bouge, la lecture
  * aussi — et c'est la moyenne qui est retenue. Elle écrit les prises dans le
- * champ, séparées par une barre oblique, plutôt que de faire le calcul de tête.
+ * champ, séparées par un tiret, plutôt que de faire le calcul de tête.
  *
  * Une seule valeur reste une valeur : le champ se saisit comme avant.
+ *
+ * La barre oblique reste acceptée : c'était le séparateur d'origine, et une
+ * saisie en cours d'habitude ne doit pas se perdre en silence. Elle n'est plus
+ * montrée nulle part.
  */
 
 /** Ce que le champ contient, une fois relu. */
@@ -21,15 +25,18 @@ export interface SaisiePlis {
  *
  * La virgule décimale est acceptée : au Québec on écrit « 5,5 » avant « 5.5 ».
  * Les segments vides sont ignorés, sinon la valeur disparaîtrait pendant la
- * frappe, entre la barre oblique et le chiffre suivant.
+ * frappe, entre le tiret et le chiffre suivant.
  *
  * Un nombre seul n'est PAS arrondi — on rend exactement ce qui est écrit. La
  * moyenne, elle, est arrondie au dixième : elle est calculée, pas mesurée, et
  * trois décimales donneraient une fausse impression de précision.
  */
 export function lireSaisiePlis(texte: string): SaisiePlis {
+  // Tiret OU barre oblique — voir l'en-tête du fichier. Un pli ne peut pas
+  // être négatif, le tiret n'est donc jamais un signe : le découper ne crée
+  // aucune ambiguïté.
   const segments = texte
-    .split('/')
+    .split(/[-/]/)
     .map(p => p.trim().replace(',', '.'))
     .filter(p => p !== '')
   if (segments.length === 0) return { valeur: null, prises: 0 }
