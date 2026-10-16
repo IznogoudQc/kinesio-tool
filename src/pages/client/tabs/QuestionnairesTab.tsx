@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useBlocker } from 'react-router-dom'
 import {
   AlertTriangle,
@@ -54,6 +54,15 @@ import { suggestionsForRegion, type PainSuggestionLib } from '../../../lib/pain-
 import { settingsService } from '../../../services/settings'
 import { aiAdviceService, AIAdviceError } from '../../../services/aiAdvice'
 import { BodyPainMap } from '../BodyPainMap'
+import {
+  ecrireBrouillon,
+  effacerBrouillon,
+  heureBrouillon,
+  heureSeule,
+  lireBrouillon,
+  memeContenu,
+  type Brouillon
+} from '../../../lib/questionnaire-brouillon'
 
 function todayISO(): string {
   const d = new Date()
@@ -76,6 +85,16 @@ const TYPE_LABEL: Record<QuestionnaireType, string> = {
   sante: 'Questionnaire de santé',
   fantastic: 'Habitudes de vie'
 }
+
+/** Les types à relire au retour dans l'onglet, pour y chercher un brouillon.
+ *  Dérivé de `TYPE_LABEL` : un cinquième questionnaire sera cherché sans qu'on
+ *  ait à y penser. */
+const TYPES = Object.keys(TYPE_LABEL) as QuestionnaireType[]
+
+/** Délai avant de recopier le brouillon. Assez court pour qu'une fermeture
+ *  brutale ne coûte qu'une phrase, assez long pour ne pas réécrire à chaque
+ *  touche — le stockage local est synchrone. */
+const DELAI_RECOPIE_MS = 600
 
 function asObjectifs(data: unknown): ObjectifsData {
   return { ...((data ?? {}) as ObjectifsData) }
@@ -113,6 +132,103 @@ export function QuestionnairesTab() {
   const [importing, setImporting] = useState(false)
   /** Envoi du formulaire vierge au client (`null` = au repos). */
   const [envoi, setEnvoi] = useState<'envoi' | null>(null)
+
+  // ── Brouillons ─────────────────────────────────────────────────────────────
+  //
+  // Marie a perdu un questionnaire à moitié rempli en fermant l'application.
+  // Chaque frappe est désormais recopiée dans le stockage local, et l'onglet
+  // propose la saisie au retour. Détails dans `lib/questionnaire-brouillon.ts`.
+
+  /** Les brouillons en attente, trouvés au chargement de l'onglet. */
+  const [brouillons, setBrouillons] = useState<{ type: QuestionnaireType; b: Brouillon }[]>([])
+  /** Dernière recopie : l'heure, `'echec'` si le stockage a refusé, `null` si
+   *  rien n'a encore été recopié. Dit sous le formulaire. */
+  const [recopieLe, setRecopieLe] = useState<string | 'echec' | null>(null)
+  /** Demande d'abandon du formulaire en cours. */
+  const [abandon, setAbandon] = useState(false)
+  /**
+   * Le formulaire tel qu'il était à son ouverture.
+   *
+   * Rien n'est recopié tant qu'il n'a pas bougé : sans cela, ouvrir un
+   * questionnaire puis le refermer laisserait un brouillon vide, et l'onglet
+   * proposerait au retour de « reprendre » un formulaire où rien n'a été écrit.
+   */
+  const reference = useRef<Draft | null>(null)
+
+  /** Le formulaire a-t-il bougé depuis son ouverture ? */
+  const modifie = (() => {
+    if (!editing) return false
+    const ref = reference.current
+    if (!ref) return true
+    return ref.date !== editing.date || !memeContenu(ref.data, editing.data)
+  })()
+
+  const relireBrouillons = useCallback(() => {
+    const trouves: { type: QuestionnaireType; b: Brouillon }[] = []
+    for (const type of TYPES) {
+      const b = lireBrouillon(window.localStorage, client.id, type)
+      if (b) trouves.push({ type, b })
+    }
+    setBrouillons(trouves)
+  }, [client.id])
+
+  useEffect(() => {
+    relireBrouillons()
+  }, [relireBrouillons])
+
+  /**
+   * Recopie le formulaire en cours.
+   *
+   * L'effet suit `editing`, qui change à chaque frappe : la minuterie est
+   * remise à zéro tant que Marie écrit, et la recopie a lieu dès qu'elle
+   * s'arrête. Le nettoyage la rend sûre — un démontage ne laisse pas de
+   * minuterie derrière lui.
+   */
+  useEffect(() => {
+    if (!editing || !modifie) return
+    const { id, type, date, data } = editing
+    const t = setTimeout(() => {
+      const range = ecrireBrouillon(window.localStorage, client.id, type, { id, date, data })
+      // Le stockage peut refuser (quota). On le dit plutôt que d'afficher une
+      // heure : laisser croire la saisie à l'abri serait pire que se taire.
+      setRecopieLe(range?.enregistreLe ?? 'echec')
+    }, DELAI_RECOPIE_MS)
+    return () => clearTimeout(t)
+  }, [editing, modifie, client.id])
+
+  /** Ferme le formulaire. `jeterLeBrouillon` : Marie a enregistré ou abandonné
+   *  — dans les deux cas il n'y a plus rien à reprendre. */
+  const fermerFormulaire = useCallback(
+    (type: QuestionnaireType | null, jeterLeBrouillon: boolean) => {
+      if (type && jeterLeBrouillon) effacerBrouillon(window.localStorage, client.id, type)
+      reference.current = null
+      setEditing(null)
+      setRecopieLe(null)
+      setAbandon(false)
+      relireBrouillons()
+    },
+    [client.id, relireBrouillons]
+  )
+
+  /** « Annuler » : on ne jette une saisie qu'après l'avoir demandé. Un
+   *  formulaire intouché se referme sans question. */
+  function demanderAnnulation() {
+    if (!editing) return
+    if (modifie) {
+      setAbandon(true)
+      return
+    }
+    fermerFormulaire(editing.type, true)
+  }
+
+  /** Reprend un brouillon là où il avait été laissé. */
+  function reprendre(type: QuestionnaireType, b: Brouillon) {
+    const draft = makeDraft(type, b.id, b.date, b.data)
+    reference.current = draft
+    setEditing(draft)
+    setRecopieLe(b.enregistreLe)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   /**
    * Envoie le questionnaire d'habitudes de vie, vierge et remplissable.
@@ -184,8 +300,23 @@ export function QuestionnairesTab() {
     return () => clearTimeout(t)
   }, [toast])
 
-  const dirty = editing !== null
-  const blocker = useBlocker(dirty && !saving)
+  // Un formulaire ouvert mais intouché ne retient plus la navigation : il n'y
+  // a rien à y perdre, et la question était du bruit.
+  const blocker = useBlocker(modifie && !saving)
+
+  /**
+   * Quitter la page coupe l'effet de recopie avant sa minuterie.
+   *
+   * La fenêtre de confirmation laisse largement le temps de recopier, mais on
+   * ne fait pas reposer la saisie sur la vitesse de lecture de Marie : dès que
+   * la navigation est retenue, le brouillon part.
+   */
+  useEffect(() => {
+    if (blocker.state !== 'blocked' || !editing) return
+    const { id, type, date, data } = editing
+    const range = ecrireBrouillon(window.localStorage, client.id, type, { id, date, data })
+    setRecopieLe(range?.enregistreLe ?? 'echec')
+  }, [blocker.state, editing, client.id])
 
   /**
    * Construit un brouillon pour un type donné.
@@ -216,12 +347,18 @@ export function QuestionnairesTab() {
       sante: emptySante(),
       fantastic: emptyFantasticData()
     }
-    setEditing(makeDraft(type, null, date, vierge[type]))
+    const draft = makeDraft(type, null, date, vierge[type])
+    reference.current = draft
+    setEditing(draft)
+    setRecopieLe(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function startEdit(q: Questionnaire) {
-    setEditing(makeDraft(q.type, q.id, q.date, q.data))
+    const draft = makeDraft(q.type, q.id, q.date, q.data)
+    reference.current = draft
+    setEditing(draft)
+    setRecopieLe(null)
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -243,7 +380,9 @@ export function QuestionnairesTab() {
       }
       const type = editing.type
       const qaapSigne = type === 'qaap' && qaapIsSigned(editing.data as QaapData)
-      setEditing(null)
+      // Le questionnaire est en base : le brouillon n'a plus rien à protéger,
+      // et le garder le ferait proposer au retour comme une saisie perdue.
+      fermerFormulaire(type, true)
       await reload()
       setToast(`${TYPE_LABEL[type]} enregistré`)
 
@@ -342,12 +481,55 @@ export function QuestionnairesTab() {
         <div className="text-red-700 text-base bg-red-50 border border-red-200 rounded-md px-4 py-3">{error}</div>
       )}
 
+      {/* Saisies interrompues. Proposées, jamais restaurées d'office : un
+          formulaire qui se remplit tout seul au chargement laisserait Marie
+          dans le doute sur ce qu'elle a enregistré. */}
+      {!editing &&
+        brouillons.map(({ type, b }) => (
+          <div
+            key={type}
+            className="bg-gold/10 border border-gold/40 rounded-md px-4 py-3 flex items-start justify-between gap-4 flex-wrap"
+          >
+            <div className="flex items-start gap-2.5">
+              <PencilLine size={17} className="text-gold-dark mt-0.5 shrink-0" />
+              <p className="text-marine text-base">
+                <span className="font-semibold">{TYPE_LABEL[type]}</span> — saisie non enregistrée, laissée{' '}
+                {heureBrouillon(b.enregistreLe)}.
+                <span className="block text-marine/55 text-sm mt-0.5">
+                  {b.id
+                    ? 'Modification d’un questionnaire existant.'
+                    : `Nouveau questionnaire daté du ${formatBilanDate(b.date)}.`}
+                </span>
+              </p>
+            </div>
+            <div className="flex items-center gap-3 shrink-0">
+              <button
+                type="button"
+                onClick={() => reprendre(type, b)}
+                className="px-4 py-2 bg-gold text-marine font-semibold rounded-md text-base hover:bg-gold-dark transition-colors shadow-sm"
+              >
+                Reprendre
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  effacerBrouillon(window.localStorage, client.id, type)
+                  relireBrouillons()
+                }}
+                className="text-marine/55 hover:text-marine text-sm underline decoration-marine/20 transition-colors"
+              >
+                Jeter
+              </button>
+            </div>
+          </div>
+        ))}
+
       {editing?.type === 'qaap' && (
         <QaapForm
           value={editing}
           clientName={client.name}
           onChange={setEditing}
-          onCancel={() => setEditing(null)}
+          onCancel={demanderAnnulation}
           onSave={save}
           saving={saving}
         />
@@ -356,7 +538,7 @@ export function QuestionnairesTab() {
         <ObjectifsForm
           value={editing}
           onChange={setEditing}
-          onCancel={() => setEditing(null)}
+          onCancel={demanderAnnulation}
           onSave={save}
           saving={saving}
         />
@@ -366,7 +548,7 @@ export function QuestionnairesTab() {
           value={editing}
           sex={client.sex}
           onChange={setEditing}
-          onCancel={() => setEditing(null)}
+          onCancel={demanderAnnulation}
           onSave={save}
           saving={saving}
         />
@@ -375,11 +557,36 @@ export function QuestionnairesTab() {
         <FantasticForm
           value={editing}
           onChange={setEditing}
-          onCancel={() => setEditing(null)}
+          onCancel={demanderAnnulation}
           onSave={save}
           saving={saving}
           onImport={() => setImporting(true)}
           sex={client.sex}
+        />
+      )}
+
+      {/* Ce que devient la saisie si l'application se ferme. Marie a perdu un
+          questionnaire : elle a besoin de le voir, pas de le supposer. */}
+      {editing && recopieLe !== null && (
+        <p
+          className={`text-sm -mt-3 ${recopieLe === 'echec' ? 'text-red-600' : 'text-marine/45'}`}
+          aria-live="polite"
+        >
+          {recopieLe === 'echec'
+            ? 'Le brouillon n’a pas pu être gardé sur ce poste. Enregistrez avant de fermer l’application.'
+            : `Brouillon gardé à ${heureSeule(recopieLe)} — la saisie sera proposée au retour si l’application se ferme.`}
+        </p>
+      )}
+
+      {/* Abandonner une saisie se demande. « Annuler » est voisin de
+          « Enregistrer », et ce qu'il jette ne se retrouve nulle part. */}
+      {abandon && editing && (
+        <ConfirmDialog
+          message={`Abandonner ce ${TYPE_LABEL[editing.type]} ?`}
+          detail="Ce qui a été saisi sans être enregistré sera perdu."
+          confirmLabel="Abandonner"
+          onCancel={() => setAbandon(false)}
+          onConfirm={() => fermerFormulaire(editing.type, true)}
         />
       )}
 
@@ -498,7 +705,12 @@ export function QuestionnairesTab() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
           <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark p-6">
             <h2 className="text-marine font-semibold text-xl mb-2">Questionnaire non enregistré</h2>
-            <p className="text-marine/60 text-base mb-5">Si vous quittez, les réponses saisies seront perdues.</p>
+            {/* Le brouillon rend le départ réversible : le dire évite de faire
+                enregistrer un formulaire à moitié rempli par crainte. */}
+            <p className="text-marine/60 text-base mb-5">
+              Les réponses ne sont pas encore dans le dossier du client. Elles sont gardées en brouillon et vous
+              seront proposées au retour dans cet onglet.
+            </p>
             <div className="flex items-center justify-end gap-3">
               <button
                 type="button"
@@ -511,7 +723,7 @@ export function QuestionnairesTab() {
               <button
                 type="button"
                 onClick={() => blocker.proceed?.()}
-                className="px-5 py-2 bg-red-600 text-white font-semibold rounded-md text-base hover:bg-red-700 transition-colors"
+                className="px-5 py-2 bg-marine text-cream font-semibold rounded-md text-base hover:bg-marine-light transition-colors"
               >
                 Quitter sans enregistrer
               </button>
@@ -1562,12 +1774,19 @@ function YesNoButton({
   )
 }
 
+/** Confirmation d'un geste qui détruit. `detail` et `confirmLabel` ont les
+ *  valeurs de la suppression d'un questionnaire, le cas d'origine — un abandon
+ *  de saisie les remplace, parce qu'il ne supprime rien du dossier. */
 function ConfirmDialog({
   message,
+  detail = 'Cette action est irréversible.',
+  confirmLabel = 'Supprimer',
   onCancel,
   onConfirm
 }: {
   message: string
+  detail?: string
+  confirmLabel?: string
   onCancel: () => void
   onConfirm: () => Promise<void> | void
 }) {
@@ -1583,7 +1802,7 @@ function ConfirmDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-marine/40 backdrop-blur-sm p-6">
       <div className="bg-cream rounded-lg shadow-2xl w-full max-w-md border border-cream-dark p-6">
         <h2 className="text-marine font-semibold text-xl mb-2">{message}</h2>
-        <p className="text-marine/50 text-sm mb-5">Cette action est irréversible.</p>
+        <p className="text-marine/50 text-sm mb-5">{detail}</p>
         <div className="flex items-center justify-end gap-3">
           <button
             type="button"
@@ -1608,7 +1827,7 @@ function ConfirmDialog({
             className="inline-flex items-center gap-2 px-5 py-2 bg-red-600 text-white font-semibold rounded-md text-base hover:bg-red-700 transition-colors disabled:opacity-50"
           >
             {busy && <Loader2 size={15} className="animate-spin" />}
-            Supprimer
+            {confirmLabel}
           </button>
         </div>
       </div>
