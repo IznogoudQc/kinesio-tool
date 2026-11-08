@@ -1,4 +1,4 @@
-import { dialog, ipcMain } from 'electron'
+import { clipboard, dialog, ipcMain } from 'electron'
 import keytar from 'keytar'
 import nodemailer from 'nodemailer'
 import { z } from 'zod'
@@ -204,6 +204,32 @@ export function registerSettingsHandlers(): void {
   ipcMain.handle('settings:smtp:hasPassword', async () => {
     const pwd = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT)
     return pwd !== null && pwd.length > 0
+  })
+
+  /**
+   * Rend le mot de passe SMTP en clair — pour le relire et le reporter ailleurs
+   * (un mot de passe d'application Gmail ne se réaffiche jamais chez Google).
+   *
+   * C'est le SEUL canal qui sort ce secret du trousseau vers l'interface, et il
+   * n'est appelé que sur un geste explicite dans Paramètres. L'écran le
+   * remasque tout seul ensuite : Marie reçoit ses clientes devant cet écran.
+   */
+  ipcMain.handle('settings:smtp:getPassword', async () => {
+    return keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT)
+  })
+
+  /**
+   * Copie le mot de passe sans jamais l'afficher — le chemin à préférer quand
+   * il s'agit seulement de le coller dans une autre application.
+   *
+   * La copie se fait ICI : `navigator.clipboard` demande un contexte sécurisé,
+   * et la fenêtre est chargée en `file://` une fois l'app empaquetée.
+   */
+  ipcMain.handle('settings:smtp:copyPassword', async () => {
+    const pwd = await keytar.getPassword(KEYTAR_SERVICE, KEYTAR_ACCOUNT)
+    if (!pwd) return false
+    clipboard.writeText(pwd)
+    return true
   })
 
   ipcMain.handle('settings:smtp:test', async () => {

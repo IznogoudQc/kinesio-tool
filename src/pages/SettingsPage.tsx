@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder, CloudUpload, FolderOpen, LifeBuoy, ChevronDown, ChevronRight } from 'lucide-react'
+import { Mail, ServerCog, UserCog, Check, AlertCircle, Loader2, Gauge, FileDown, Folder, CloudUpload, FolderOpen, LifeBuoy, ChevronDown, ChevronRight, Eye, EyeOff, Copy } from 'lucide-react'
+
+/** Combien de temps un mot de passe reste lisible à l'écran. Assez pour le
+ *  recopier, trop court pour qu'il reste affiché quand une cliente entre. */
+const DELAI_MASQUAGE_MS = 30_000
 import { EffetMotionIcon } from '../components/EffetMotionIcon'
 import { DummyJeanSeedButton } from './settings/DummyJeanSeedButton'
 import { EffetNotificationsCard } from './settings/EffetNotificationsCard'
@@ -656,6 +660,63 @@ function SmtpCard() {
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<SmtpTestResult | null>(null)
 
+  // ── Revoir le mot de passe ────────────────────────────────────────────────
+  //
+  // Un mot de passe d'application Gmail ne se réaffiche jamais chez Google :
+  // sans ce bouton, le reporter dans une autre application veut dire en
+  // regénérer un et reconfigurer celui-ci.
+  //
+  // Il se remasque tout seul : Marie reçoit ses clientes devant cet écran.
+
+  /** Le champ montre-t-il son contenu en clair ? */
+  const [enClair, setEnClair] = useState(false)
+  /** La valeur sortie du trousseau — pour savoir si elle a été retouchée. */
+  const [valeurRelue, setValeurRelue] = useState<string | null>(null)
+  /** Avis de copie (`null` = au repos). */
+  const [copie, setCopie] = useState<'ok' | 'rien' | null>(null)
+
+  useEffect(() => {
+    if (!enClair) return
+    const t = setTimeout(() => masquer(), DELAI_MASQUAGE_MS)
+    return () => clearTimeout(t)
+    // `masquer` relit `password` et `valeurRelue` : la minuterie repart à
+    // chaque frappe, ce qui est voulu — on ne remasque pas sous les doigts.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enClair, password, valeurRelue])
+
+  useEffect(() => {
+    if (!copie) return
+    const t = setTimeout(() => setCopie(null), 2500)
+    return () => clearTimeout(t)
+  }, [copie])
+
+  /** Montre le mot de passe : celui qui vient d'être tapé, sinon l'enregistré. */
+  async function montrer() {
+    setError(null)
+    if (!password && hasStoredPassword) {
+      const pwd = await settingsService.getSmtpPassword()
+      if (!pwd) {
+        setHasStoredPassword(false)
+        return
+      }
+      setValeurRelue(pwd)
+      setPassword(pwd)
+    }
+    setEnClair(true)
+  }
+
+  /** Remasque. Une valeur relue et non retouchée repart : le champ vide veut
+   *  dire « garder celui qui est enregistré », et c'est ce qu'on veut. */
+  function masquer() {
+    setEnClair(false)
+    if (valeurRelue !== null && password === valeurRelue) setPassword('')
+    setValeurRelue(null)
+  }
+
+  async function copier() {
+    setCopie((await settingsService.copySmtpPassword()) ? 'ok' : 'rien')
+  }
+
   useEffect(() => {
     Promise.all([
       settingsService.getSmtpConfig(),
@@ -760,16 +821,52 @@ function SmtpCard() {
           </Field>
           <Field
             label="Mot de passe"
-            hint={hasStoredPassword ? 'Un mot de passe est déjà enregistré. Laissez vide pour le conserver.' : undefined}
+            hint={
+              enClair
+                ? 'Masqué automatiquement dans quelques secondes.'
+                : hasStoredPassword
+                  ? 'Un mot de passe est déjà enregistré. Laissez vide pour le conserver.'
+                  : undefined
+            }
           >
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder={hasStoredPassword ? '••••••••' : 'Mot de passe SMTP'}
-              autoComplete="new-password"
-              className={inputClass()}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type={enClair ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder={hasStoredPassword ? '••••••••' : 'Mot de passe SMTP'}
+                autoComplete="new-password"
+                className={`${inputClass()} ${enClair ? 'font-mono' : ''}`}
+              />
+              {/* Afficher n'a de sens que s'il y a quelque chose à montrer. */}
+              {(hasStoredPassword || password) && (
+                <button
+                  type="button"
+                  onClick={() => (enClair ? masquer() : montrer())}
+                  aria-label={enClair ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  title={enClair ? 'Masquer' : 'Afficher le mot de passe'}
+                  className="shrink-0 p-2.5 border border-cream-dark rounded-md text-marine/70 hover:text-marine hover:border-gold/60 transition-colors"
+                >
+                  {enClair ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
+              )}
+              {hasStoredPassword && (
+                <button
+                  type="button"
+                  onClick={copier}
+                  aria-label="Copier le mot de passe"
+                  title="Copier le mot de passe (sans l’afficher)"
+                  className="shrink-0 p-2.5 border border-cream-dark rounded-md text-marine/70 hover:text-marine hover:border-gold/60 transition-colors"
+                >
+                  {copie === 'ok' ? <Check size={17} className="text-green-600" /> : <Copy size={17} />}
+                </button>
+              )}
+            </div>
+            {copie && (
+              <p className={`text-xs mt-1 ${copie === 'ok' ? 'text-green-700' : 'text-marine/45'}`} aria-live="polite">
+                {copie === 'ok' ? 'Mot de passe copié dans le presse-papiers.' : 'Aucun mot de passe enregistré.'}
+              </p>
+            )}
           </Field>
           <label className="flex items-center gap-2.5 text-base text-marine cursor-pointer">
             <input

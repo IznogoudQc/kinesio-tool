@@ -581,6 +581,10 @@ interface Window {
       setSmtpConfig(data: SmtpConfig): Promise<void>
       setSmtpPassword(password: string): Promise<void>
       hasSmtpPassword(): Promise<boolean>
+      /** Le mot de passe en clair, `null` s'il n'y en a pas. Sur geste explicite. */
+      getSmtpPassword(): Promise<string | null>
+      /** Copie sans afficher. `false` s'il n'y a rien à copier. */
+      copySmtpPassword(): Promise<boolean>
       testSmtpConnection(): Promise<SmtpTestResult>
       getEmailTemplate(): Promise<EmailTemplate>
       setEmailTemplate(data: EmailTemplate): Promise<void>

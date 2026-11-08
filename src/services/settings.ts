@@ -27,6 +27,16 @@ export const settingsService = {
     return window.api.settings.hasSmtpPassword()
   },
 
+  /** Relit le mot de passe enregistré, pour l'afficher sur demande. */
+  async getSmtpPassword(): Promise<string | null> {
+    return window.api.settings.getSmtpPassword()
+  },
+
+  /** Le copie sans l'afficher. `false` s'il n'y en a pas. */
+  async copySmtpPassword(): Promise<boolean> {
+    return window.api.settings.copySmtpPassword()
+  },
+
   async testSmtpConnection(): Promise<SmtpTestResult> {
     return window.api.settings.testSmtpConnection()
   },

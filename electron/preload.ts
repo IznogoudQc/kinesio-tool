@@ -87,6 +87,10 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.invoke('settings:smtp:setPassword', password),
     hasSmtpPassword: () =>
       ipcRenderer.invoke('settings:smtp:hasPassword'),
+    getSmtpPassword: () =>
+      ipcRenderer.invoke('settings:smtp:getPassword'),
+    copySmtpPassword: () =>
+      ipcRenderer.invoke('settings:smtp:copyPassword'),
     testSmtpConnection: () =>
       ipcRenderer.invoke('settings:smtp:test'),
     getEmailTemplate: () =>
